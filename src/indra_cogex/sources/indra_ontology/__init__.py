@@ -16,4 +16,4 @@ class Processor:
         for source, target, data in self.bio_ontology.edges(data=True):
             data = copy.copy(data)
             edge_type = data.pop('type')
-            yield Relation(source, target, edge_type, data)
+            yield Relation(source, target, [edge_type], data)

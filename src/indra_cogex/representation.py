@@ -19,11 +19,11 @@ class Node:
 
 
 class Relation:
-    def __init__(self, source_id, target_id, labels, data):
+    def __init__(self, source_id, target_id, labels, data=None):
         self.source_id = source_id
         self.target_id = target_id
         self.labels = labels
-        self.data = data
+        self.data = data if data else {}
 
     def __str__(self):
         data_str = (', '.join(['%s:\'%s\'' % (k, v)
