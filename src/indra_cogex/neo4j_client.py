@@ -27,7 +27,7 @@ class Neo4jClient:
             tx.run(query, parameters=query_params)
             tx.commit()
         except Exception as e:
-            print(e)
+            logger.error(e)
         finally:
             tx.close()
 
@@ -120,7 +120,24 @@ class Neo4jClient:
             query, query_params={'nodes': [n.to_json()['data'] for n in nodes]})
 
     def add_relations(self, relations: List[Relation]):
-        pass
+        if not relations:
+            return None
+        labels_str = ':'.join(relations[0].labels)
+        prop_str = ',\n'.join(['rel.%s = relation.%s' % (k, k)
+                               for k in relations[0].data])
+        query = """
+            UNWIND $relations AS relation
+            MATCH (e1 {id: relation.source_id}), (e2 {id: relation.target_id})
+            MERGE (e1)-[rel:%s]->(e2)
+            SET %s
+        """ % (labels_str, prop_str)
+        rel_params = []
+        for rel in relations:
+            rd = dict(source_id=rel.source_id,
+                      target_id=rel.target_id,
+                      **rel.data)
+            rel_params.append(rd)
+        return self.create_tx(query, query_params={'relations': rel_params})
 
     def add_node(self, node: Node):
         prop_str = ',\n'.join(['n.%s = \'%s\'' % (k, v)
