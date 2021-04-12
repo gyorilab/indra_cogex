@@ -1,10 +1,15 @@
 __all__ = ['Neo4jClient']
 
+import logging
 from typing import List
 from neo4j import GraphDatabase
 
 from indra.statements import *
 from indra_cogex.representation import Node, Relation
+
+
+logger = logging.getLogger(__name__)
+
 
 NEO4J_URL = 'bolt://localhost:7687'
 
@@ -18,6 +23,7 @@ class Neo4jClient:
     def create_tx(self, query, query_params=None):
         tx = self.get_session().begin_transaction()
         try:
+            logger.info(query)
             tx.run(query, parameters=query_params)
             tx.commit()
         except Exception as e:
@@ -104,13 +110,14 @@ class Neo4jClient:
             return
         prop_str = ',\n'.join(['n.%s = node.%s' % (k, k)
                                for k in nodes[0].data])
+        labels_str = ':'.join(nodes[0].labels)
         query = """
             UNWIND $nodes AS node
-            MERGE (n:node.labels {'id': node.id})
+            MERGE (n:%s {id: node.id})
             SET %s
-        """ % prop_str
+        """ % (labels_str, prop_str)
         return self.create_tx(
-            query, query_params={'nodes': [n.to_json() for n in nodes]})
+            query, query_params={'nodes': [n.to_json()['data'] for n in nodes]})
 
     def add_relations(self, relations: List[Relation]):
         pass
