@@ -7,6 +7,12 @@ class Node:
         self.labels = labels
         self.data = data if data else {}
 
+    def to_json(self):
+        data = {k: v for k, v in self.data.items()}
+        data['id'] = self.identifier
+        return {'labels': self.labels,
+                'data': data}
+
     def __str__(self):
         data_str = (', '.join(['%s:\'%s\'' % (k, v)
                     for k, v in [('id', self.identifier)] +
@@ -24,6 +30,12 @@ class Relation:
         self.target_id = target_id
         self.labels = labels
         self.data = data if data else {}
+
+    def to_json(self):
+        return {'source_id': self.source_id,
+                'target_id': self.target_id,
+                'labels': self.labels,
+                'data': self.data}
 
     def __str__(self):
         data_str = (', '.join(['%s:\'%s\'' % (k, v)
