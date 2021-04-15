@@ -23,7 +23,7 @@ class Neo4jClient:
     def create_tx(self, query, query_params=None):
         tx = self.get_session().begin_transaction()
         try:
-            logger.info(query)
+            #logger.info(query)
             tx.run(query, parameters=query_params)
             tx.commit()
         except Exception as e:
@@ -105,19 +105,29 @@ class Neo4jClient:
         query = """MATCH(n) DETACH DELETE n"""
         return self.create_tx(query)
 
+    def create_nodes(self, nodes: List[Node]):
+        nodes_str = ',\n'.join([str(n) for n in nodes])
+        query = """CREATE %s""" % nodes_str
+        return self.create_tx(query)
+
     def add_nodes(self, nodes: List[Node]):
         if not nodes:
             return
         prop_str = ',\n'.join(['n.%s = node.%s' % (k, k)
                                for k in nodes[0].data])
-        labels_str = ':'.join(nodes[0].labels)
+        #labels_str = ':'.join(nodes[0].labels)
         query = """
             UNWIND $nodes AS node
-            MERGE (n:%s {id: node.id})
+            MERGE (n {id: node.id})
             SET %s
-        """ % (labels_str, prop_str)
+            WITH n, node
+            CALL apoc.create.addLabels(n, node.labels)
+            YIELD n
+        """ % prop_str
         return self.create_tx(
-            query, query_params={'nodes': [n.to_json()['data'] for n in nodes]})
+            query, query_params={'nodes': [dict(**n.to_json()['data'],
+                                                labels=n.labels)
+                                           for n in nodes]})
 
     def add_relations(self, relations: List[Relation]):
         if not relations:
