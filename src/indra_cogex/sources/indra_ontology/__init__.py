@@ -1,9 +1,10 @@
 import copy
-from indra.ontology.bio import bio_ontology
+from indra.ontology.bio import bio_ontology, BioOntology
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import Processor
 
 
-class Processor:
+class OntologyProcessor(Processor):
     def __init__(self):
         self.bio_ontology = bio_ontology
         self.bio_ontology.initialize()
