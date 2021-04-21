@@ -1,8 +1,9 @@
 import pickle
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import Processor
 
 
-class Processor:
+class BgeeProcessor(Processor):
     def __init__(self, path):
         self.rel_type = 'expressed_in'
         with open(path, 'rb') as fh:

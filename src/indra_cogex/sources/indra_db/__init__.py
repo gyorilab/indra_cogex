@@ -1,12 +1,13 @@
 import pickle
 import logging
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import Processor
 
 
 logger = logging.getLogger(__name__)
 
 
-class Processor:
+class DbProcessor(Processor):
     def __init__(self, path):
         with open(path, 'rb') as fh:
             df = pickle.load(fh)
