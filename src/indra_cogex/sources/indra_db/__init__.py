@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # 's3://bigmech/indra-db/dumps/2021-01-26/sif.pkl'
 
 class DbProcessor(Processor):
+    name = 'database'
     df: pd.DataFrame
 
     def __init__(self, path=None):
@@ -22,7 +23,7 @@ class DbProcessor(Processor):
             path = pystow.join('indra', 'db', name='sif.pkl')
         with open(path, 'rb') as fh:
             df = pickle.load(fh)
-        logger.info('Loaded %d rows from %s', humanize.intword(len(df)), path)
+        logger.info('Loaded %s rows from %s', humanize.intword(len(df)), path)
         self.df = df
 
     def get_nodes(self):
