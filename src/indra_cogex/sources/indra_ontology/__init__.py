@@ -31,8 +31,8 @@ class OntologyProcessor(Processor):
             yield Relation(_norm(source), _norm(target), [edge_type], data)
 
 
-def _norm(node):
+def _norm(node: str) -> str:
     ns, identifier = node.split(':', 1)
-    if identifier.starswith(f'{ns}:'):
+    if identifier.startswith(f'{ns}:'):
         identifier = identifier[len(ns) + 1:]
     return f'{ns}:{identifier}'
