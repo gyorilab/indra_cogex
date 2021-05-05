@@ -2,14 +2,15 @@
 
 """Base classes for processors."""
 
+import csv
+import gzip
+from abc import ABC
 from collections import defaultdict
+from pathlib import Path
+from typing import ClassVar, DefaultDict, Iterable, Set, Tuple
 
 import pystow
-from abc import ABC
-from pathlib import Path
-from textwrap import dedent
 from tqdm import tqdm
-from typing import ClassVar, DefaultDict, Iterable, Set, Tuple
 
 from indra_cogex.representation import Node, Relation
 
@@ -20,7 +21,7 @@ __all__ = [
 # deal with importing from wherever with https://stackoverflow.com/questions/36922843/neo4j-3-x-load-csv-absolute-file-path
 # Find neo4j conf and comment out this line: dbms.directories.import=import
 # /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf for me
-
+# data stored in /usr/local/var/neo4j/data/databases
 
 """
 1. Iterate all nodes
@@ -42,7 +43,13 @@ class Processor(ABC):
 
     @property
     def directory(self) -> Path:
-        return pystow.join('indra', 'cogex', self.name)
+        """Return the directory for this processor."""
+        return self.module.base
+
+    @property
+    def module(self) -> pystow.Module:
+        """Return the :mod:`pystow` module for this processor."""
+        return pystow.module('indra', 'cogex', self.name)
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
@@ -52,7 +59,8 @@ class Processor(ABC):
         """Iterate over the relations to upload."""
         raise NotImplemented
 
-    def dump(self):
+    def dump(self) -> None:
+        """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
         id_to_type = {}
 
         type_to_node: DefaultDict[str, Set[Node]] = defaultdict(set)
@@ -62,30 +70,49 @@ class Processor(ABC):
             type_to_node[ntype].add(node)
             type_to_metadata[ntype].update(node.data.keys())
 
-        pmodule = pystow.module('indra', 'cogex', self.name)
         for ntype, nodes in type_to_node.items():
             metadata = sorted(type_to_metadata[ntype])
-            data_path = pmodule.join('nodes', name=f'{ntype}.tsv')
-            cypher_path = pmodule.join('nodes', name=f'{ntype}.cypher.txt')
-            print(ntype, metadata, len(nodes))
-            with data_path.open('w') as file:
-                print('identifier', *metadata, sep='\t', file=file)
-                for node in tqdm(nodes, desc=f'Node: {ntype}', unit_scale=True):
-                    print(node.identifier, *[node.data.get(key, '') for key in metadata], file=file, sep='\t')
-            cypher = dedent(f'''\
-                CREATE CONSTRAINT ON (n:{ntype}) ASSERT n.id IS UNIQUE;
-                USING PERIODIC COMMIT
-                LOAD CSV WITH HEADERS FROM "file://{data_path.as_posix()}" AS row FIELDTERMINATOR '\\t'
-                MERGE (n:{ntype} {{ id: row.identifier }})
-                ''')
-            if metadata:
-                creates = '\n'.join(
-                    f'n.{key} = row.{key}'
-                    for key in metadata
+
+            data_sample_path = self.module.join('nodes', name=f'{ntype}_sample.csv')
+            data_path = self.module.join('nodes', name=f'{ntype}.csv.gz')
+            # cypher_path = self.module.join('nodes', name=f'{ntype}.cypher.txt')
+
+            with gzip.open(data_path, mode='wt') as node_file:
+                nodes = tqdm(nodes, desc=f'Node: {ntype}', unit_scale=True)
+                node_rows = (
+                    (node.identifier, ntype, *[node.data.get(key, '') for key in metadata])
+                    for node in nodes
                 )
-                cypher += f'ON CREATE SET {creates}'
-            with cypher_path.open('w') as file:
-                print(cypher, file=file)
+                node_writer = csv.writer(node_file)
+
+                with data_sample_path.open('w') as node_sample_file:
+                    node_sample_writer = csv.writer(node_sample_file)
+
+                    header = f'{ntype.lower()}Id:ID', ':LABEL', *metadata
+                    node_sample_writer.writerow(header)
+                    node_writer.writerow(header)
+
+                    for _, node_row in zip(range(10), node_rows):
+                        node_sample_writer.writerow(node_row)
+                        node_writer.writerow(node_row)
+
+                # Write remaining nodes
+                node_writer.writerows(node_rows)
+
+            # cypher = dedent(f'''\
+            #     CREATE CONSTRAINT ON (n:{ntype}) ASSERT n.id IS UNIQUE;
+            #     USING PERIODIC COMMIT
+            #     LOAD CSV WITH HEADERS FROM "file://{data_path.as_posix()}" AS row FIELDTERMINATOR '\\t'
+            #     MERGE (n:{ntype} {{ id: row.identifier }})
+            #     ''')
+            # if metadata:
+            #     creates = '\n'.join(
+            #         f'n.{key} = row.{key}'
+            #         for key in metadata
+            #     )
+            #     cypher += f'ON CREATE SET {creates}'
+            # with cypher_path.open('w') as file:
+            #     print(cypher, file=file)
 
         types_to_rel: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
         types_to_metadata: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
@@ -96,8 +123,25 @@ class Processor(ABC):
             types_to_metadata[t].update(rel.data.keys())
         for (stype, rtype, ttype), rels in types_to_rel.items():
             metadata = sorted(type_to_metadata[stype, rtype, ttype])
-            data_path = pmodule.join('edges', name=f'{stype}_{rtype}_{ttype}.tsv')
-            with data_path.open('w') as file:
-                print('source_id', 'target_id', *metadata, sep='\t', file=file)
-                for rel in tqdm(rels, desc=f'Edge: {stype} {rtype} {ttype}', unit_scale=True):
-                    print(rel.source_id, rel.target_id, *[rel.data.get(key) for key in metadata], file=file, sep='\t')
+            edge_data_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}.csv.gz')
+            edge_data_sample_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}_sample.tsv')
+            with gzip.open(edge_data_path, 'wt') as edge_file:
+                rels = tqdm(rels, desc=f'Edge: {stype} {rtype} {ttype}', unit_scale=True)
+                edge_rows = (
+                    (rel.source_id, rel.target_id, rtype, *[rel.data.get(key) for key in metadata])
+                    for rel in rels
+                )
+                edge_writer = csv.writer(edge_file)
+
+                with edge_data_sample_path.open('w') as edge_sample_file:
+                    edge_sample_writer = csv.writer(edge_sample_file)
+                    header = ':START_ID', ':END_ID', ':TYPE', *metadata
+                    edge_sample_writer.writerow(header)
+                    edge_writer.writerow(header)
+
+                    for _, edge_row in zip(range(10), edge_rows):
+                        edge_sample_writer.writerow(edge_row)
+                        edge_writer.writerow(edge_row)
+
+                # Write remaining edges
+                edge_writer.writerows(edge_rows)
