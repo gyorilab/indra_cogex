@@ -25,20 +25,37 @@ class DbProcessor(Processor):
             df = pickle.load(fh)
         logger.info('Loaded %s rows from %s', humanize.intword(len(df)), path)
         self.df = df
+        for side in 'AB':
+            self.df[side] = [
+                f'{prefix}:{identifier}'
+                for prefix, identifier in self.df[[f'ag{side}_ns', f'ag{side}_id']].values
+            ]
 
     def get_nodes(self):
-        for _, row in self.df.iterrows():
-            for agent_id in ['A', 'B']:
-                identifier = self._get_curie(row, agent_id)
-                yield Node(identifier, ['BioEntity'])
+        df = (
+            pd.concat([self._get_nodes('A'), self._get_nodes('B')])
+                .sort_values('curie')
+                .drop_duplicates()
+        )
+        for curie, name in df.values:
+            yield Node(curie, ['BioEntity'], dict(name=name))
+
+    def _get_nodes(self, side):
+        columns = {
+            side: 'curie',
+            f'ag{side}_name': 'name',
+        }
+        return (
+            self.df[[side, f'ag{side}_name']]
+                .drop_duplicates()
+                .rename(columns=columns)
+        )
 
     def get_relations(self):
-        for _, row in self.df.iterrows():
-            source = self._get_curie(row, 'A')
-            target = self._get_curie(row, 'B')
-            edge_type = row['stmt_type']
-            data = {k: row[k] for k in {'stmt_hash', 'evidence_count'}}
-            yield Relation(source, target, [edge_type], data)
+        columns = ['A', 'B', 'stmt_type', 'evidence_count', 'stmt_hash']
+        for source, target, stmt_type, ev_count, stmt_hash in self.df[columns].drop_duplicates().values:
+            data = {'stmt_hash:int': stmt_hash, 'evidence_count:int': ev_count}
+            yield Relation(source, target, [stmt_type], data)
 
     @staticmethod
     def _get_curie(row, agent_id):
