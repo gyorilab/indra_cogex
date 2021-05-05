@@ -5,6 +5,7 @@ import humanize
 import pandas as pd
 import pystow
 
+from indra.ontology.bio import bio_ontology
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -30,12 +31,17 @@ class DbProcessor(Processor):
                 f'{prefix}:{identifier}'
                 for prefix, identifier in self.df[[f'ag{side}_ns', f'ag{side}_id']].values
             ]
+            # A lot of the names in the SIF dump are all over
+            self.df[f'ag{side}_name'] = [
+                bio_ontology.get_name(prefix, identifier)
+                for prefix, identifier in self.df[[f'ag{side}_ns', f'ag{side}_id']].values
+            ]
 
     def get_nodes(self):
         df = (
             pd.concat([self._get_nodes('A'), self._get_nodes('B')], ignore_index=True)
-                .sort_values('curie')
                 .drop_duplicates()
+                .sort_values('curie')
         )
         for curie, name in df.values:
             yield Node(curie, ['BioEntity'], dict(name=name))
@@ -51,7 +57,3 @@ class DbProcessor(Processor):
         for source, target, stmt_type, ev_count, stmt_hash in self.df[columns].drop_duplicates().values:
             data = {'stmt_hash:long': stmt_hash, 'evidence_count:long': ev_count}
             yield Relation(source, target, [stmt_type], data)
-
-    @staticmethod
-    def _get_curie(row, agent_id):
-        return f"{row[f'ag{agent_id}_ns']}:{row[f'ag{agent_id}_id']}"
