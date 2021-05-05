@@ -1,8 +1,13 @@
 neo4j stop
 rm import.report
+
+# Delete the old database and associated transactions
 rm -rf /usr/local/var/neo4j/data/databases/indra
 rm -rf /usr/local/var/neo4j/data/transactions/indra
+
+# Just show what it is. This should match the --database option used below
 cat /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf | grep "dbms\.default_database"
+
 neo4j-admin import \
   --database=indra \
   --delimiter='TAB' \
@@ -20,4 +25,5 @@ neo4j-admin import \
   --relationships=/Users/cthoyt/.data/indra/cogex/database/edges/BioEntity_Inhibition_BioEntity.tsv.gz \
   --relationships=/Users/cthoyt/.data/indra/cogex/database/edges/BioEntity_IncreaseAmount_BioEntity.tsv.gz \
   --relationships=/Users/cthoyt/.data/indra/cogex/database/edges/BioEntity_DecreaseAmount_BioEntity.tsv.gz
+
 neo4j start
