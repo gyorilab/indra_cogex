@@ -33,28 +33,23 @@ class DbProcessor(Processor):
 
     def get_nodes(self):
         df = (
-            pd.concat([self._get_nodes('A'), self._get_nodes('B')])
+            pd.concat([self._get_nodes('A'), self._get_nodes('B')], ignore_index=True)
                 .sort_values('curie')
                 .drop_duplicates()
         )
         for curie, name in df.values:
             yield Node(curie, ['BioEntity'], dict(name=name))
 
-    def _get_nodes(self, side):
-        columns = {
+    def _get_nodes(self, side: str) -> pd.DataFrame:
+        return self.df[[side, f'ag{side}_name']].rename(columns={
             side: 'curie',
             f'ag{side}_name': 'name',
-        }
-        return (
-            self.df[[side, f'ag{side}_name']]
-                .drop_duplicates()
-                .rename(columns=columns)
-        )
+        })
 
     def get_relations(self):
         columns = ['A', 'B', 'stmt_type', 'evidence_count', 'stmt_hash']
         for source, target, stmt_type, ev_count, stmt_hash in self.df[columns].drop_duplicates().values:
-            data = {'stmt_hash:int': stmt_hash, 'evidence_count:int': ev_count}
+            data = {'stmt_hash:long': stmt_hash, 'evidence_count:long': ev_count}
             yield Relation(source, target, [stmt_type], data)
 
     @staticmethod
