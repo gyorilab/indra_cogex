@@ -1,4 +1,5 @@
 import copy
+
 import logging
 from typing import Optional
 
@@ -20,16 +21,18 @@ class OntologyProcessor(Processor):
         self.ontology.initialize()
 
     def get_nodes(self):
-        for node in self.ontology:
-            # ns, id = pyobo.normalize_curie(node)
-            # if not ns or not id:
-            #     logger.warning('could not normalize %s', node)
-            #     continue
-            # node = f'{ns}:{id}'
-            yield Node(node, ['BioEntity'], self.ontology.nodes[node])
+        for node, data in self.ontology.nodes(data=True):
+            yield Node(_norm(node), ['BioEntity'], data)
 
     def get_relations(self):
         for source, target, data in self.ontology.edges(data=True):
             data = copy.copy(data)
             edge_type = data.pop('type')
-            yield Relation(source, target, [edge_type], data)
+            yield Relation(_norm(source), _norm(target), [edge_type], data)
+
+
+def _norm(node):
+    ns, identifier = node.split(':', 1)
+    if identifier.starswith(f'{ns}:'):
+        identifier = identifier[len(ns) + 1:]
+    return f'{ns}:{identifier}'
