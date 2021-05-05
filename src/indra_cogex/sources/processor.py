@@ -9,6 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import ClassVar, DefaultDict, Iterable, Set, Tuple
 
+import click
 import pystow
 from tqdm import tqdm
 
@@ -59,16 +60,32 @@ class Processor(ABC):
         """Iterate over the relations to upload."""
         raise NotImplemented
 
+    @classmethod
+    def cli(cls):
+        """Run the CLI for this processor."""
+
+        @click.command()
+        def _main():
+            processor = cls()
+            processor.dump()
+
+        _main()
+
     def dump(self) -> None:
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
-        id_to_type = {}
+        node_id_to_type = self._dump_nodes()
+        self._dump_edges(node_id_to_type)
+
+    def _dump_nodes(self):
+        node_id_to_type = {}
 
         type_to_node: DefaultDict[str, Set[Node]] = defaultdict(set)
         type_to_metadata = defaultdict(set)
-        for node in self.get_nodes():
-            ntype = id_to_type[node.identifier] = node.labels[0]
+        for node in tqdm(self.get_nodes(), desc=f'{self.name} indexing nodes'):
+            ntype = node_id_to_type[node.identifier] = '|'.join(sorted(node.labels))
             type_to_node[ntype].add(node)
             type_to_metadata[ntype].update(node.data.keys())
+        type_to_metadata = dict(type_to_metadata)
 
         for ntype, nodes in type_to_node.items():
             metadata = sorted(type_to_metadata[ntype])
@@ -114,15 +131,20 @@ class Processor(ABC):
             # with cypher_path.open('w') as file:
             #     print(cypher, file=file)
 
+        return node_id_to_type
+
+    def _dump_edges(self, node_id_to_type):
         types_to_rel: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
-        types_to_metadata: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
-        for rel in self.get_relations():
-            rel_type = rel.labels[0]
-            t = id_to_type[rel.source_id], rel_type, id_to_type[rel.target_id]
+        types_to_metadata = defaultdict(set)
+        for rel in tqdm(self.get_relations(), desc=f'{self.name} indexing edges'):
+            rel_type = '|'.join(sorted(rel.labels))
+            t = node_id_to_type[rel.source_id], rel_type, node_id_to_type[rel.target_id]
             types_to_rel[t].add(rel)
             types_to_metadata[t].update(rel.data.keys())
+        types_to_metadata = dict(types_to_metadata)
+
         for (stype, rtype, ttype), rels in types_to_rel.items():
-            metadata = sorted(type_to_metadata[stype, rtype, ttype])
+            metadata = sorted(types_to_metadata[stype, rtype, ttype])
             edge_data_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}.csv.gz')
             edge_data_sample_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}_sample.tsv')
             with gzip.open(edge_data_path, 'wt') as edge_file:

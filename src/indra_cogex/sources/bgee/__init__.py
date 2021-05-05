@@ -28,5 +28,3 @@ class BgeeProcessor(Processor):
                 yield Relation(f'HGNC:{hgnc_id}', context_id, [self.rel_type])
 
 
-if __name__ == '__main__':
-    BgeeProcessor().dump()
