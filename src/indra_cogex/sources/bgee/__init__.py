@@ -26,5 +26,3 @@ class BgeeProcessor(Processor):
         for context_id, hgnc_ids in self.expressions.items():
             for hgnc_id in hgnc_ids:
                 yield Relation(f'HGNC:{hgnc_id}', context_id, [self.rel_type])
-
-
