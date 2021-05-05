@@ -14,7 +14,7 @@ def main():
     for processor_cls in processor_resolver.classes:
         click.secho(f'Processing {processor_cls.name}', fg='green', bold=True)
         processor = processor_cls()
-        processor.dump()
+        _node_paths, _edge_paths = processor.dump()
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ import csv
 import gzip
 from abc import ABC
 from collections import defaultdict
+from operator import attrgetter
 from pathlib import Path
 from typing import ClassVar, DefaultDict, Iterable, Set, Tuple
 
@@ -73,10 +74,11 @@ class Processor(ABC):
 
         _main()
 
-    def dump(self) -> None:
+    def dump(self):
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
-        node_id_to_type = self._dump_nodes()
-        self._dump_edges(node_id_to_type)
+        node_paths, node_id_to_type = self._dump_nodes()
+        edge_paths = self._dump_edges(node_id_to_type)
+        return node_paths, edge_paths
 
     def _dump_nodes(self):
         node_id_to_type = {}
@@ -89,11 +91,13 @@ class Processor(ABC):
             type_to_metadata[ntype].update(node.data.keys())
         type_to_metadata = dict(type_to_metadata)
 
+        paths = []
         for ntype, nodes in type_to_node.items():
             metadata = sorted(type_to_metadata[ntype])
-
-            data_sample_path = self.module.join('nodes', name=f'{ntype}_sample.csv')
-            data_path = self.module.join('nodes', name=f'{ntype}.csv.gz')
+            nodes = sorted(nodes, key=attrgetter('identifier'))
+            data_sample_path = self.module.join('nodes', name=f'{ntype}_sample.tsv')
+            data_path = self.module.join('nodes', name=f'{ntype}.tsv.gz')
+            paths.append(data_path)
             # cypher_path = self.module.join('nodes', name=f'{ntype}.cypher.txt')
 
             with gzip.open(data_path, mode='wt') as node_file:
@@ -102,10 +106,10 @@ class Processor(ABC):
                     (node.identifier, ntype, *[node.data.get(key, '') for key in metadata])
                     for node in nodes
                 )
-                node_writer = csv.writer(node_file)
+                node_writer = csv.writer(node_file, delimiter='\t')
 
                 with data_sample_path.open('w') as node_sample_file:
-                    node_sample_writer = csv.writer(node_sample_file)
+                    node_sample_writer = csv.writer(node_sample_file, delimiter='\t')
 
                     header = f'{ntype.lower()}Id:ID', ':LABEL', *metadata
                     node_sample_writer.writerow(header)
@@ -133,7 +137,7 @@ class Processor(ABC):
             # with cypher_path.open('w') as file:
             #     print(cypher, file=file)
 
-        return node_id_to_type
+        return paths, node_id_to_type
 
     def _dump_edges(self, node_id_to_type):
         types_to_rel: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
@@ -145,20 +149,23 @@ class Processor(ABC):
             types_to_metadata[t].update(rel.data.keys())
         types_to_metadata = dict(types_to_metadata)
 
+        paths = []
         for (stype, rtype, ttype), rels in types_to_rel.items():
             metadata = sorted(types_to_metadata[stype, rtype, ttype])
-            edge_data_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}.csv.gz')
-            edge_data_sample_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}_sample.tsv')
-            with gzip.open(edge_data_path, 'wt') as edge_file:
+            data_sample_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}_sample.tsv')
+            data_path = self.module.join('edges', name=f'{stype}_{rtype}_{ttype}.tsv.gz')
+            paths.append(data_path)
+            rels = sorted(rels, key=lambda r: (r.source_id, r.target_id))
+            with gzip.open(data_path, 'wt') as edge_file:
                 rels = tqdm(rels, desc=f'Edge: {stype} {rtype} {ttype}', unit_scale=True)
                 edge_rows = (
                     (rel.source_id, rel.target_id, rtype, *[rel.data.get(key) for key in metadata])
                     for rel in rels
                 )
-                edge_writer = csv.writer(edge_file)
+                edge_writer = csv.writer(edge_file, delimiter='\t')
 
-                with edge_data_sample_path.open('w') as edge_sample_file:
-                    edge_sample_writer = csv.writer(edge_sample_file)
+                with data_sample_path.open('w') as edge_sample_file:
+                    edge_sample_writer = csv.writer(edge_sample_file, delimiter='\t')
                     header = ':START_ID', ':END_ID', ':TYPE', *metadata
                     edge_sample_writer.writerow(header)
                     edge_writer.writerow(header)
@@ -169,3 +176,4 @@ class Processor(ABC):
 
                 # Write remaining edges
                 edge_writer.writerows(edge_rows)
+        return paths
