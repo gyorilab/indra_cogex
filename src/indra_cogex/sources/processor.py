@@ -11,6 +11,7 @@ from typing import ClassVar, DefaultDict, Iterable, Set, Tuple
 
 import click
 import pystow
+from more_click import verbose_option
 from tqdm import tqdm
 
 from indra_cogex.representation import Node, Relation
@@ -65,6 +66,7 @@ class Processor(ABC):
         """Run the CLI for this processor."""
 
         @click.command()
+        @verbose_option
         def _main():
             processor = cls()
             processor.dump()
@@ -81,7 +83,7 @@ class Processor(ABC):
 
         type_to_node: DefaultDict[str, Set[Node]] = defaultdict(set)
         type_to_metadata = defaultdict(set)
-        for node in tqdm(self.get_nodes(), desc=f'{self.name} indexing nodes'):
+        for node in tqdm(self.get_nodes(), desc=f'{self.name} indexing nodes', unit_scale=True):
             ntype = node_id_to_type[node.identifier] = '|'.join(sorted(node.labels))
             type_to_node[ntype].add(node)
             type_to_metadata[ntype].update(node.data.keys())
@@ -136,7 +138,7 @@ class Processor(ABC):
     def _dump_edges(self, node_id_to_type):
         types_to_rel: DefaultDict[Tuple[str, str, str], Set[Relation]] = defaultdict(set)
         types_to_metadata = defaultdict(set)
-        for rel in tqdm(self.get_relations(), desc=f'{self.name} indexing edges'):
+        for rel in tqdm(self.get_relations(), desc=f'{self.name} indexing edges', unit_scale=True):
             rel_type = '|'.join(sorted(rel.labels))
             t = node_id_to_type[rel.source_id], rel_type, node_id_to_type[rel.target_id]
             types_to_rel[t].add(rel)
