@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+NEO4J_VERSION=4.2.0
+NEO4J_PATH=/usr/local/Cellar/neo4j/$NEO4J_VERSION
 
 # Output commands as you go
 set -x
@@ -11,7 +13,7 @@ rm -rf /usr/local/var/neo4j/data/databases/indra
 rm -rf /usr/local/var/neo4j/data/transactions/indra
 
 # Just show what it is. This should match the --database option used below
-cat /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf | grep "dbms\.default_database"
+cat $NEO4J_PATH/libexec/conf/neo4j.conf | grep "dbms\.default_database"
 
 COGEX=$(pystow join indra cogex)
 echo "INDRA COGEX directory: $COGEX"
