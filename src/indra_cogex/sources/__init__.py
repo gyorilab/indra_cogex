@@ -5,6 +5,7 @@ from class_resolver import Resolver
 from .bgee import BgeeProcessor
 from .indra_db import DbProcessor
 from .indra_ontology import OntologyProcessor
+from .pathways import PyoboProcessor, ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 
 __all__ = [
@@ -15,4 +16,7 @@ __all__ = [
     'OntologyProcessor',
 ]
 
-processor_resolver = Resolver.from_subclasses(Processor)
+processor_resolver = Resolver.from_subclasses(
+    Processor,
+    skip={PyoboProcessor},
+)

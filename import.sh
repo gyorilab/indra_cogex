@@ -21,17 +21,13 @@ neo4j-admin import \
   --delimiter='TAB' \
   --skip-duplicate-nodes=true \
   --skip-bad-relationships=true \
-  --nodes=$COGEX/bgee/nodes/BioEntity.tsv.gz \
-  --relationships=$COGEX/bgee/edges/BioEntity_expressed_in_BioEntity.tsv.gz \
-  --nodes=$COGEX/ontology/nodes/BioEntity.tsv.gz \
-  --relationships=$COGEX/ontology/edges/BioEntity_isa_BioEntity.tsv.gz \
-  --relationships=$COGEX/ontology/edges/BioEntity_partof_BioEntity.tsv.gz \
-  --relationships=$COGEX/ontology/edges/BioEntity_xref_BioEntity.tsv.gz \
-  --nodes=$COGEX/database/nodes/BioEntity.tsv.gz \
-  --relationships=$COGEX/database/edges/BioEntity_Complex_BioEntity.tsv.gz \
-  --relationships=$COGEX/database/edges/BioEntity_Activation_BioEntity.tsv.gz \
-  --relationships=$COGEX/database/edges/BioEntity_Inhibition_BioEntity.tsv.gz \
-  --relationships=$COGEX/database/edges/BioEntity_IncreaseAmount_BioEntity.tsv.gz \
-  --relationships=$COGEX/database/edges/BioEntity_DecreaseAmount_BioEntity.tsv.gz
+  --nodes=$COGEX/bgee/nodes.tsv.gz \
+  --relationships=$COGEX/bgee/edges.tsv.gz \
+  --nodes=$COGEX/ontology/nodes.tsv.gz \
+  --relationships=$COGEX/ontology/edges.tsv.gz \
+  --nodes=$COGEX/database/nodes.tsv.gz \
+  --relationships=$COGEX/database/edges.tsv.gz \
+  --nodes=$COGEX/reactome/nodes.tsv.gz \
+  --relationships=$COGEX/reactome/edges.tsv.gz
 
 neo4j start

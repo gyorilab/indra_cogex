@@ -11,10 +11,10 @@ from . import processor_resolver
 @click.command()
 @verbose_option
 def main():
-    for processor_cls in processor_resolver.classes:
+    for processor_cls in sorted(processor_resolver.classes):
         click.secho(f'Processing {processor_cls.name}', fg='green', bold=True)
         processor = processor_cls()
-        _node_paths, _edge_paths = processor.dump()
+        _node_path, _edge_path = processor.dump()
 
 
 if __name__ == '__main__':
