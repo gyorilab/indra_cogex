@@ -1,5 +1,4 @@
 import copy
-
 import logging
 from typing import Optional
 
@@ -16,8 +15,10 @@ class OntologyProcessor(Processor):
 
     def __init__(self, ontology: Optional[IndraOntology] = None):
         if ontology is None:
-            from indra.ontology.bio import bio_ontology as ontology
-        self.ontology = ontology
+            import indra.ontology.bio
+            self.ontology = indra.ontology.bio.bio_ontology
+        else:
+            self.ontology = ontology
         self.ontology.initialize()
 
     def get_nodes(self):

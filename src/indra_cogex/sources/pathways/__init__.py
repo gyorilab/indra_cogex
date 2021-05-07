@@ -3,9 +3,10 @@ from typing import ClassVar
 
 import pyobo
 import pyobo.api.utils
+from pyobo.struct import has_part
+
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
-from pyobo.struct import has_part
 
 logger = logging.getLogger(__name__)
 

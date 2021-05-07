@@ -2,14 +2,13 @@ __all__ = ["Neo4jClient"]
 
 import logging
 from typing import List
+
 from neo4j import GraphDatabase
 
 from indra.statements import *
 from indra_cogex.representation import Node, Relation
 
-
 logger = logging.getLogger(__name__)
-
 
 NEO4J_URL = "bolt://localhost:7687"
 

@@ -1,3 +1,5 @@
+"""Representations for nodes and relations to upload to Neo4j."""
+
 __all__ = ["Node", "Relation"]
 
 

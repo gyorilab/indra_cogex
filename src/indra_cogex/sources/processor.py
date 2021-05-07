@@ -2,17 +2,17 @@
 
 """Base classes for processors."""
 
-import gzip
-
-import click
 import csv
-import pystow
+import gzip
 from abc import ABC
-from more_click import verbose_option
 from operator import attrgetter
 from pathlib import Path
-from tqdm import tqdm
 from typing import ClassVar, Iterable
+
+import click
+import pystow
+from more_click import verbose_option
+from tqdm import tqdm
 
 from indra_cogex.representation import Node, Relation
 

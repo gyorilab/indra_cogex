@@ -1,5 +1,6 @@
 import os
 import pickle
+
 import pyobo
 
 from indra_cogex.representation import Node, Relation
