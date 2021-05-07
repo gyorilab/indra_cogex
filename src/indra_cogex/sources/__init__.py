@@ -9,11 +9,11 @@ from .pathways import PyoboProcessor, ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 
 __all__ = [
-    'processor_resolver',
-    'Processor',
-    'BgeeProcessor',
-    'DbProcessor',
-    'OntologyProcessor',
+    "processor_resolver",
+    "Processor",
+    "BgeeProcessor",
+    "DbProcessor",
+    "OntologyProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(

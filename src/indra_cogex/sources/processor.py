@@ -17,7 +17,7 @@ from typing import ClassVar, Iterable
 from indra_cogex.representation import Node, Relation
 
 __all__ = [
-    'Processor',
+    "Processor",
 ]
 
 # deal with importing from wherever with https://stackoverflow.com/questions/36922843/neo4j-3-x-load-csv-absolute-file-path
@@ -51,7 +51,7 @@ class Processor(ABC):
     @property
     def module(self) -> pystow.Module:
         """Return the :mod:`pystow` module for this processor."""
-        return pystow.module('indra', 'cogex', self.name)
+        return pystow.module("indra", "cogex", self.name)
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
@@ -80,28 +80,28 @@ class Processor(ABC):
         return node_paths, edge_paths
 
     def _dump_nodes(self) -> Path:
-        path = self.module.join(name=f'nodes.tsv.gz')
-        sample_path = self.module.join(name=f'nodes_sample.tsv')
+        path = self.module.join(name=f"nodes.tsv.gz")
+        sample_path = self.module.join(name=f"nodes_sample.tsv")
         if path.is_file():
             return path
 
-        nodes = sorted(self.get_nodes(), key=attrgetter('identifier'))
-        metadata = sorted(set(
-            key
-            for node in nodes
-            for key in node.data
-        ))
+        nodes = sorted(self.get_nodes(), key=attrgetter("identifier"))
+        metadata = sorted(set(key for node in nodes for key in node.data))
         node_rows = (
-            (node.identifier, '|'.join(node.labels), *[node.data.get(key, '') for key in metadata])
-            for node in tqdm(nodes, desc=f'Nodes', unit_scale=True)
+            (
+                node.identifier,
+                "|".join(node.labels),
+                *[node.data.get(key, "") for key in metadata],
+            )
+            for node in tqdm(nodes, desc=f"Nodes", unit_scale=True)
         )
 
-        with gzip.open(path, mode='wt') as node_file:
-            node_writer = csv.writer(node_file, delimiter='\t')
-            with sample_path.open('w') as node_sample_file:
-                node_sample_writer = csv.writer(node_sample_file, delimiter='\t')
+        with gzip.open(path, mode="wt") as node_file:
+            node_writer = csv.writer(node_file, delimiter="\t")
+            with sample_path.open("w") as node_sample_file:
+                node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
 
-                header = f':ID', ':LABEL', *metadata
+                header = f":ID", ":LABEL", *metadata
                 node_sample_writer.writerow(header)
                 node_writer.writerow(header)
 
@@ -130,28 +130,29 @@ class Processor(ABC):
         return path
 
     def _dump_edges(self) -> Path:
-        path = self.module.join(name=f'edges.tsv.gz')
-        sample_path = self.module.join(name=f'edges_sample.tsv')
+        path = self.module.join(name=f"edges.tsv.gz")
+        sample_path = self.module.join(name=f"edges_sample.tsv")
         if path.is_file():
             return path
 
         rels = self.get_relations()
         rels = sorted(rels, key=lambda r: (r.source_id, r.target_id))
-        metadata = sorted(set(
-            key
-            for rel in rels
-            for key in rel.data
-        ))
+        metadata = sorted(set(key for rel in rels for key in rel.data))
         edge_rows = (
-            (rel.source_id, rel.target_id, '|'.join(sorted(rel.labels)), *[rel.data.get(key) for key in metadata])
-            for rel in tqdm(rels, desc='Edges', unit_scale=True)
+            (
+                rel.source_id,
+                rel.target_id,
+                "|".join(sorted(rel.labels)),
+                *[rel.data.get(key) for key in metadata],
+            )
+            for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(path, 'wt') as edge_file:
-            edge_writer = csv.writer(edge_file, delimiter='\t')
-            with sample_path.open('w') as edge_sample_file:
-                edge_sample_writer = csv.writer(edge_sample_file, delimiter='\t')
-                header = ':START_ID', ':END_ID', ':TYPE', *metadata
+        with gzip.open(path, "wt") as edge_file:
+            edge_writer = csv.writer(edge_file, delimiter="\t")
+            with sample_path.open("w") as edge_sample_file:
+                edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
+                header = ":START_ID", ":END_ID", ":TYPE", *metadata
                 edge_sample_writer.writerow(header)
                 edge_writer.writerow(header)
 

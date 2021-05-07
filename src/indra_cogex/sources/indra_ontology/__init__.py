@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class OntologyProcessor(Processor):
-    name = 'ontology'
+    name = "ontology"
     ontology: IndraOntology
 
     def __init__(self, ontology: Optional[IndraOntology] = None):
@@ -22,17 +22,17 @@ class OntologyProcessor(Processor):
 
     def get_nodes(self):
         for node, data in self.ontology.nodes(data=True):
-            yield Node(_norm(node), ['BioEntity'], data)
+            yield Node(_norm(node), ["BioEntity"], data)
 
     def get_relations(self):
         for source, target, data in self.ontology.edges(data=True):
             data = copy.copy(data)
-            edge_type = data.pop('type')
+            edge_type = data.pop("type")
             yield Relation(_norm(source), _norm(target), [edge_type], data)
 
 
 def _norm(node: str) -> str:
-    ns, identifier = node.split(':', 1)
-    if identifier.startswith(f'{ns}:'):
-        identifier = identifier[len(ns) + 1:]
-    return f'{ns}:{identifier}'
+    ns, identifier = node.split(":", 1)
+    if identifier.startswith(f"{ns}:"):
+        identifier = identifier[len(ns) + 1 :]
+    return f"{ns}:{identifier}"

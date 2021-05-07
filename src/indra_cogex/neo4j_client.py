@@ -1,4 +1,4 @@
-__all__ = ['Neo4jClient']
+__all__ = ["Neo4jClient"]
 
 import logging
 from typing import List
@@ -11,7 +11,7 @@ from indra_cogex.representation import Node, Relation
 logger = logging.getLogger(__name__)
 
 
-NEO4J_URL = 'bolt://localhost:7687'
+NEO4J_URL = "bolt://localhost:7687"
 
 
 class Neo4jClient:
@@ -23,7 +23,7 @@ class Neo4jClient:
     def create_tx(self, query, query_params=None):
         tx = self.get_session().begin_transaction()
         try:
-            #logger.info(query)
+            # logger.info(query)
             tx.run(query, parameters=query_params)
             tx.commit()
         except Exception as e:
@@ -49,7 +49,11 @@ class Neo4jClient:
             MATCH p=({id: '%s'})-[r:%s]->({id: '%s'})
             RETURN p
             LIMIT 1
-        """ % (source, relation, target)
+        """ % (
+            source,
+            relation,
+            target,
+        )
         res = self.query_tx(query)
         if res:
             return True
@@ -61,7 +65,10 @@ class Neo4jClient:
             MATCH p=({id: '%s'})-[r]->({id: '%s'})
             RETURN r
             LIMIT 1
-        """ % (source, target)
+        """ % (
+            source,
+            target,
+        )
         res = self.query_tx(query)
         return res
 
@@ -69,14 +76,20 @@ class Neo4jClient:
         query = """
             MATCH p=({id: '%s'})-[r:%s]->(t)
             RETURN t
-        """ % (source, relation)
+        """ % (
+            source,
+            relation,
+        )
         return self.query_tx(query)
 
     def get_sources(self, relation, target):
         query = """
             MATCH p=(s)-[r:%s]->({id: '%s'})
             RETURN s
-        """ % (relation, target)
+        """ % (
+            relation,
+            target,
+        )
         return self.query_tx(query)
 
     def get_target_agents(self, source, relation):
@@ -94,11 +107,11 @@ class Neo4jClient:
 
     @staticmethod
     def node_to_agent(node):
-        name = node.get('name')
-        grounding = node.get('id')
+        name = node.get("name")
+        grounding = node.get("id")
         if not name:
             name = grounding
-        db_ns, db_id = grounding.split(':', maxsplit=1)
+        db_ns, db_id = grounding.split(":", maxsplit=1)
         return Agent(name, db_refs={db_ns: db_id})
 
     def delete_all(self):
@@ -106,56 +119,65 @@ class Neo4jClient:
         return self.create_tx(query)
 
     def create_nodes(self, nodes: List[Node]):
-        nodes_str = ',\n'.join([str(n) for n in nodes])
+        nodes_str = ",\n".join([str(n) for n in nodes])
         query = """CREATE %s""" % nodes_str
         return self.create_tx(query)
 
     def add_nodes(self, nodes: List[Node]):
         if not nodes:
             return
-        prop_str = ',\n'.join(['n.%s = node.%s' % (k, k)
-                               for k in nodes[0].data])
-        #labels_str = ':'.join(nodes[0].labels)
-        query = """
+        prop_str = ",\n".join(["n.%s = node.%s" % (k, k) for k in nodes[0].data])
+        # labels_str = ':'.join(nodes[0].labels)
+        query = (
+            """
             UNWIND $nodes AS node
             MERGE (n {id: node.id})
             SET %s
             WITH n, node
             CALL apoc.create.addLabels(n, node.labels)
             YIELD n
-        """ % prop_str
+        """
+            % prop_str
+        )
         return self.create_tx(
-            query, query_params={'nodes': [dict(**n.to_json()['data'],
-                                                labels=n.labels)
-                                           for n in nodes]})
+            query,
+            query_params={
+                "nodes": [dict(**n.to_json()["data"], labels=n.labels) for n in nodes]
+            },
+        )
 
     def add_relations(self, relations: List[Relation]):
         if not relations:
             return None
-        labels_str = ':'.join(relations[0].labels)
-        prop_str = ',\n'.join(['rel.%s = relation.%s' % (k, k)
-                               for k in relations[0].data])
+        labels_str = ":".join(relations[0].labels)
+        prop_str = ",\n".join(
+            ["rel.%s = relation.%s" % (k, k) for k in relations[0].data]
+        )
         query = """
             UNWIND $relations AS relation
             MATCH (e1 {id: relation.source_id}), (e2 {id: relation.target_id})
             MERGE (e1)-[rel:%s]->(e2)
             SET %s
-        """ % (labels_str, prop_str)
+        """ % (
+            labels_str,
+            prop_str,
+        )
         rel_params = []
         for rel in relations:
-            rd = dict(source_id=rel.source_id,
-                      target_id=rel.target_id,
-                      **rel.data)
+            rd = dict(source_id=rel.source_id, target_id=rel.target_id, **rel.data)
             rel_params.append(rd)
-        return self.create_tx(query, query_params={'relations': rel_params})
+        return self.create_tx(query, query_params={"relations": rel_params})
 
     def add_node(self, node: Node):
-        prop_str = ',\n'.join(['n.%s = \'%s\'' % (k, v)
-                               for k, v in node.data.items()])
+        prop_str = ",\n".join(["n.%s = '%s'" % (k, v) for k, v in node.data.items()])
         query = """
             MERGE (n:%s {id: '%s'})
             SET %s
-        """ % (node.labels, node.identifier, prop_str)
+        """ % (
+            node.labels,
+            node.identifier,
+            prop_str,
+        )
         return self.create_tx(query)
 
     def add_relation(self, relation: Relation):

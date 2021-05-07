@@ -12,10 +12,10 @@ from . import processor_resolver
 @verbose_option
 def main():
     for processor_cls in processor_resolver:
-        click.secho(f'Processing {processor_cls.name}', fg='green', bold=True)
+        click.secho(f"Processing {processor_cls.name}", fg="green", bold=True)
         processor = processor_cls()
         _node_path, _edge_path = processor.dump()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
