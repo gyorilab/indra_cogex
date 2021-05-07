@@ -1,5 +1,6 @@
 INDRA CoGEx
 ===========
+[![Tests](https://github.com/bgyori/indra_cogex/actions/workflows/tests.yml/badge.svg)](https://github.com/bgyori/indra_cogex/actions/workflows/tests.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 INDRA CoGEx (Context Graph Extension) is an automatically assembled
