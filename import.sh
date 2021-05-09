@@ -30,6 +30,8 @@ neo4j-admin import \
   --nodes=$COGEX/database/nodes.tsv.gz \
   --relationships=$COGEX/database/edges.tsv.gz \
   --nodes=$COGEX/reactome/nodes.tsv.gz \
-  --relationships=$COGEX/reactome/edges.tsv.gz
+  --relationships=$COGEX/reactome/edges.tsv.gz \
+  --nodes=$COGEX/go/nodes.tsv.gz \
+  --relationships=$COGEX/go/edges.tsv.gz
 
 neo4j start
