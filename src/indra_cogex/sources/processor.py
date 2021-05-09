@@ -101,7 +101,7 @@ class Processor(ABC):
             with sample_path.open("w") as node_sample_file:
                 node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
 
-                header = f":ID", ":LABEL", *metadata
+                header = f"id:ID", ":LABEL", *metadata
                 node_sample_writer.writerow(header)
                 node_writer.writerow(header)
 
