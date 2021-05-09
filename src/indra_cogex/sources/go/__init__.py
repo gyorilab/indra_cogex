@@ -53,8 +53,8 @@ class GoProcessor(Processor):
 
 
 def load_goa(url):
-    df = pd.read_csv(GOA_URL, sep="\t", skiprows=23, dtype=str, header=None)
+    df = pd.read_csv(url, sep="\t", skiprows=41, dtype=str, header=None)
     df[3].fillna("", inplace=True)
-    df = df[~df["Qualifier"].str.startswith("NOT")]
-    df = df[df["Evidence_Code"].isin(EVIDENCE_CODES)]
+    df = df[~df[3].str.startswith("NOT")]
+    df = df[df[6].isin(EVIDENCE_CODES)]
     return df
