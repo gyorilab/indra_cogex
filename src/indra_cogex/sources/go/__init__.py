@@ -33,8 +33,13 @@ class GoProcessor(Processor):
         logger.info("Loaded %s rows from %s", len(self.df), GOA_URL)
 
     def get_nodes(self):
-        return
-        yield
+        for go_node in self.df[4].unique():
+            yield Node(go_node, ["BioEntity"])
+        for up_id in self.df[1].unique():
+            hgnc_id = uniprot_client.get_hgnc_id(up_id)
+            if not hgnc_id:
+                continue
+            yield Node(f"HGNC:{hgnc_id}", ["BioEntity"])
 
     def get_relations(self):
         rel_type = "associated_with"
