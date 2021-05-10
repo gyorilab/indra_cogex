@@ -11,7 +11,7 @@ rm import.report
 
 # Delete the old database and associated transactions
 rm -rf $NEO4J_DATA/databases/indra
-rm -rf $NEO4J_DATA/usr/local/var/neo4j/data/transactions/indra
+rm -rf $NEO4J_DATA/transactions/indra
 
 # Just show what it is. This should match the --database option used below
 cat $NEO4J_PATH/libexec/conf/neo4j.conf | grep "dbms\.default_database"
