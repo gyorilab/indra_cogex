@@ -52,7 +52,7 @@ class GoProcessor(Processor):
 
 def load_goa(url):
     logger.info("Loading GO annotations from %s", url)
-    df = pd.read_csv(url, sep="\t", skiprows=41, dtype=str, header=None)
+    df = pd.read_csv(url, sep="\t", comment="!", dtype=str, header=None)
     logger.info("Processing GO annotations table")
     df.rename(
         columns={
