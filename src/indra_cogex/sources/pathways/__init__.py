@@ -11,13 +11,12 @@ from indra_cogex.sources.processor import Processor
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "PyoboProcessor",
     "WikipathwaysProcessor",
     "ReactomeProcessor",
 ]
 
 
-class PyoboProcessor(Processor):
+class PyoboProcessorMixin:
     prefix: ClassVar[str]
     relation: ClassVar[Relation]
     relation_label: ClassVar[str]
@@ -42,14 +41,14 @@ class PyoboProcessor(Processor):
             )
 
 
-class WikipathwaysProcessor(PyoboProcessor):
+class WikipathwaysProcessor(Processor, PyoboProcessorMixin):
     name = "wikipathways"
     prefix = "wikipathways"
     relation = has_part
     relation_label = "haspart"
 
 
-class ReactomeProcessor(PyoboProcessor):
+class ReactomeProcessor(Processor, PyoboProcessorMixin):
     name = "reactome"
     prefix = "reactome"
     relation = has_part
