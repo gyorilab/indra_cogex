@@ -43,7 +43,7 @@ def main(load: bool, load_only: bool, force: bool):
                 processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    if load:
+    if load or load_only:
         command = dedent(
             f"""\
         neo4j-admin import \\
