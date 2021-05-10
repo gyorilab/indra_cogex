@@ -33,10 +33,9 @@ class GoProcessor(Processor):
         logger.info("Loaded %s rows from %s", len(self.df), GOA_URL)
 
     def get_nodes(self):
-        for go_node in self.df[4].unique():
+        for go_node in self.df["GO_ID"].unique():
             yield Node(go_node, ["BioEntity"])
-        for up_id in self.df[1].unique():
-            hgnc_id = uniprot_client.get_hgnc_id(up_id)
+        for hgnc_id in self.df["HGNC_ID"].unique():
             if not hgnc_id:
                 continue
             yield Node(f"HGNC:{hgnc_id}", ["BioEntity"])
@@ -44,11 +43,10 @@ class GoProcessor(Processor):
     def get_relations(self):
         rel_type = "associated_with"
         for _, row in self.df.iterrows():
-            up_id = row[1]
-            go_id = row[4]
-            hgnc_id = uniprot_client.get_hgnc_id(up_id)
+            hgnc_id = row["HGNC_ID"]
             if not hgnc_id:
                 continue
+            go_id = row["GO_ID"]
             source = f"HGNC:{hgnc_id}"
             # Note that we don't add the extra GO: by current convention
             target = go_id
@@ -59,7 +57,18 @@ class GoProcessor(Processor):
 
 def load_goa(url):
     df = pd.read_csv(url, sep="\t", skiprows=41, dtype=str, header=None)
-    df[3].fillna("", inplace=True)
-    df = df[~df[3].str.startswith("NOT")]
-    df = df[df[6].isin(EVIDENCE_CODES)]
+    df.rename(
+        columns={
+            1: "UP_ID",
+            3: "Qualifier",
+            4: "GO_ID",
+            6: "EC",
+        },
+        inplace=True,
+    )
+    df["HGNC_ID"] = df.apply(lambda row: uniprot_client.get_hgnc_id(row["UP_ID"]))
+    df["Qualifier"].fillna("", inplace=True)
+    df = df[~df["Qualifier"].str.startswith("NOT")]
+    df = df[df["EC"].isin(EVIDENCE_CODES)]
+    df.apply()
     return df
