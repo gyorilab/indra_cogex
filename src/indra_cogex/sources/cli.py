@@ -17,15 +17,22 @@ from . import processor_resolver
     is_flag=True,
     help="If true, automatically loads the data through ``neo4j-admin import``",
 )
+@click.option(
+    "-f",
+    "--force",
+    is_flag=True,
+    help="If true, rebuild all resources",
+)
 @verbose_option
-def main(load: bool):
+def main(load: bool, force: bool):
     paths = []
     for processor_cls in processor_resolver:
-        click.secho(f"Processing {processor_cls.name}", fg="green", bold=True)
         if (
-            not processor_cls.nodes_path.is_file()
+            force
+            or not processor_cls.nodes_path.is_file()
             or not processor_cls.edges_path.is_file()
         ):
+            click.secho(f"Processing {processor_cls.name}", fg="green", bold=True)
             processor = processor_cls()
             processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
