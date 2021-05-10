@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+"""Processors for pathway databases."""
+
 import logging
 from typing import ClassVar
 
@@ -21,7 +25,7 @@ class PyoboProcessorMixin:
     relation: ClassVar[Relation]
     relation_label: ClassVar[str]
 
-    def get_nodes(self):
+    def get_nodes(self):  # noqa:D102
         # TODO add license
         version = pyobo.api.utils.get_version(self.prefix)
         for identifier, name in pyobo.get_id_name_mapping("wikipathways").items():
@@ -31,7 +35,7 @@ class PyoboProcessorMixin:
                 dict(name=name, version=version),
             )
 
-    def get_relations(self):
+    def get_relations(self):  # noqa:D102
         df = pyobo.get_filtered_relations_df(self.prefix, self.relation)
         for identifier, t_prefix, t_identifier in df.values:
             yield Relation(
@@ -41,14 +45,18 @@ class PyoboProcessorMixin:
             )
 
 
-class WikipathwaysProcessor(Processor, PyoboProcessorMixin):
+class WikipathwaysProcessor(PyoboProcessorMixin, Processor):
+    """Processor for WikiPathways gene-pathway links."""
+
     name = "wikipathways"
     prefix = "wikipathways"
     relation = has_part
     relation_label = "haspart"
 
 
-class ReactomeProcessor(Processor, PyoboProcessorMixin):
+class ReactomeProcessor(PyoboProcessorMixin, Processor):
+    """Processor for Reactome gene-pathway links."""
+
     name = "reactome"
     prefix = "reactome"
     relation = has_part

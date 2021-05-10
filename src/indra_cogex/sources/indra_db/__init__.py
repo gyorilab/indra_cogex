@@ -1,5 +1,11 @@
+# -*- coding: utf-8 -*-
+
+"""Processor for the INDRA database."""
+
 import logging
 import pickle
+from pathlib import Path
+from typing import Union
 
 import humanize
 import pandas as pd
@@ -17,12 +23,20 @@ logger = logging.getLogger(__name__)
 
 
 class DbProcessor(Processor):
+    """Processor for the INDRA database."""
+
     name = "database"
     df: pd.DataFrame
 
-    def __init__(self, path=None):
+    def __init__(self, path: Union[None, str, Path] = None):
+        """Initialize the INDRA database processor.
+
+        :param path: The path to the INDRA database SIF dump pickle. If none given, will look in the default location.
+        """
         if path is None:
             path = pystow.join("indra", "db", name="sif.pkl")
+        elif isinstance(path, str):
+            path = Path(path)
         with open(path, "rb") as fh:
             df = pickle.load(fh)
         logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
@@ -42,7 +56,7 @@ class DbProcessor(Processor):
                 ].values
             ]
 
-    def get_nodes(self):
+    def get_nodes(self):  # noqa:D102
         df = (
             pd.concat([self._get_nodes("A"), self._get_nodes("B")], ignore_index=True)
             .drop_duplicates()
@@ -59,7 +73,7 @@ class DbProcessor(Processor):
             }
         )
 
-    def get_relations(self):
+    def get_relations(self):  # noqa:D102
         columns = ["A", "B", "stmt_type", "evidence_count", "stmt_hash"]
         for source, target, stmt_type, ev_count, stmt_hash in (
             self.df[columns].drop_duplicates().values

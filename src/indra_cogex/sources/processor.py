@@ -4,7 +4,7 @@
 
 import csv
 import gzip
-from abc import ABC
+from abc import ABC, abstractmethod
 from operator import attrgetter
 from pathlib import Path
 from typing import ClassVar, Iterable
@@ -20,22 +20,12 @@ __all__ = [
     "Processor",
 ]
 
-# deal with importing from wherever with https://stackoverflow.com/questions/36922843/neo4j-3-x-load-csv-absolute-file-path
+
+# deal with importing from wherever with
+#  https://stackoverflow.com/questions/36922843/neo4j-3-x-load-csv-absolute-file-path
 # Find neo4j conf and comment out this line: dbms.directories.import=import
 # /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf for me
 # data stored in /usr/local/var/neo4j/data/databases
-
-"""
-1. Iterate all nodes
-2. group by node type
-2. Metadata configuration
-3. Dump to TSV
-4. Bulk load
-
-1. Iterate all relations
-2. Group by source/target node type
-3. Output different TSV for each as well as metadata TSV to automatically build bulk load query
-"""
 
 
 class Processor(ABC):
@@ -44,20 +34,23 @@ class Processor(ABC):
     name: ClassVar[str]
     module: ClassVar[pystow.Module]
     directory: ClassVar[Path]
+    nodes_path: ClassVar[Path]
+    edges_path: ClassVar[Path]
 
     def __init_subclass__(cls, **kwargs):
+        """Initialize the class attributes."""
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
         cls.nodes_path = cls.module.join(name="nodes.tsv.gz")
         cls.edges_path = cls.module.join(name="edges.tsv.gz")
 
+    @abstractmethod
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
-        raise NotImplemented
 
+    @abstractmethod
     def get_relations(self) -> Iterable[Relation]:
         """Iterate over the relations to upload."""
-        raise NotImplemented
 
     @classmethod
     def cli(cls):
@@ -78,7 +71,7 @@ class Processor(ABC):
         return node_paths, edge_paths
 
     def _dump_nodes(self) -> Path:
-        sample_path = self.module.join(name=f"nodes_sample.tsv")
+        sample_path = self.module.join(name="nodes_sample.tsv")
         if self.nodes_path.is_file():
             return self.nodes_path
 
@@ -90,15 +83,15 @@ class Processor(ABC):
                 "|".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
-            for node in tqdm(nodes, desc=f"Nodes", unit_scale=True)
+            for node in tqdm(nodes, desc="Nodes", unit_scale=True)
         )
 
         with gzip.open(self.nodes_path, mode="wt") as node_file:
-            node_writer = csv.writer(node_file, delimiter="\t")
+            node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             with sample_path.open("w") as node_sample_file:
                 node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
 
-                header = f"id:ID", ":LABEL", *metadata
+                header = "id:ID", ":LABEL", *metadata
                 node_sample_writer.writerow(header)
                 node_writer.writerow(header)
 
@@ -127,7 +120,7 @@ class Processor(ABC):
         return self.nodes_path
 
     def _dump_edges(self) -> Path:
-        sample_path = self.module.join(name=f"edges_sample.tsv")
+        sample_path = self.module.join(name="edges_sample.tsv")
         if self.edges_path.is_file():
             return self.edges_path
 
@@ -145,7 +138,7 @@ class Processor(ABC):
         )
 
         with gzip.open(self.edges_path, "wt") as edge_file:
-            edge_writer = csv.writer(edge_file, delimiter="\t")
+            edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
             with sample_path.open("w") as edge_sample_file:
                 edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
                 header = ":START_ID", ":END_ID", ":TYPE", *metadata
