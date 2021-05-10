@@ -51,16 +51,19 @@ class GoProcessor(Processor):
 
 def load_goa(url):
     logger.info("Loading GO annotations from %s", url)
-    df = pd.read_csv(url, sep="\t", comment="!", dtype=str, header=None)
-    logger.info("Processing GO annotations table")
-    df.rename(
-        columns={
-            1: "UP_ID",
-            3: "Qualifier",
-            4: "GO_ID",
-            6: "EC",
-        },
-        inplace=True,
+    df = pd.read_csv(
+        url,
+        sep="\t",
+        comment="!",
+        dtype=str,
+        header=None,
+        usecols=[1, 3, 4, 6],
+        names=[
+            "UP_ID",
+            "Qualifier",
+            "GO_ID",
+            "EC",
+        ],
     )
     df["HGNC_ID"] = df.apply(
         lambda row: uniprot_client.get_hgnc_id(row["UP_ID"]),
