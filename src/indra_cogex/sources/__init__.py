@@ -6,7 +6,7 @@ from .bgee import BgeeProcessor
 from .go import GoProcessor
 from .indra_db import DbProcessor
 from .indra_ontology import OntologyProcessor
-from .pathways import PyoboProcessor, ReactomeProcessor, WikipathwaysProcessor
+from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 
 __all__ = [
@@ -18,7 +18,4 @@ __all__ = [
     "OntologyProcessor",
 ]
 
-processor_resolver = Resolver.from_subclasses(
-    Processor,
-    skip={PyoboProcessor},
-)
+processor_resolver = Resolver.from_subclasses(Processor)

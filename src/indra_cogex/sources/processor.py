@@ -42,16 +42,15 @@ class Processor(ABC):
     """A processor creates nodes and iterables to upload to Neo4j."""
 
     name: ClassVar[str]
+    module: ClassVar[pystow.Module]
+    directory: ClassVar[Path]
 
-    @property
-    def directory(self) -> Path:
-        """Return the directory for this processor."""
-        return self.module.base
 
-    @property
-    def module(self) -> pystow.Module:
-        """Return the :mod:`pystow` module for this processor."""
-        return pystow.module("indra", "cogex", self.name)
+    def __init_subclass__(cls, **kwargs):
+        cls.module = pystow.module("indra", "cogex", cls.name)
+        cls.directory = cls.module.base
+        cls.nodes_path = cls.module.join(name="nodes.tsv.gz")
+        cls.edges_path = cls.module.join(name="edges.tsv.gz")
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
@@ -80,10 +79,9 @@ class Processor(ABC):
         return node_paths, edge_paths
 
     def _dump_nodes(self) -> Path:
-        path = self.module.join(name=f"nodes.tsv.gz")
         sample_path = self.module.join(name=f"nodes_sample.tsv")
-        if path.is_file():
-            return path
+        if self.nodes_path.is_file():
+            return self.nodes_path
 
         nodes = sorted(self.get_nodes(), key=attrgetter("identifier"))
         metadata = sorted(set(key for node in nodes for key in node.data))
@@ -96,7 +94,7 @@ class Processor(ABC):
             for node in tqdm(nodes, desc=f"Nodes", unit_scale=True)
         )
 
-        with gzip.open(path, mode="wt") as node_file:
+        with gzip.open(self.nodes_path, mode="wt") as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")
             with sample_path.open("w") as node_sample_file:
                 node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
@@ -127,13 +125,12 @@ class Processor(ABC):
             # with cypher_path.open('w') as file:
             #     print(cypher, file=file)
 
-        return path
+        return self.nodes_path
 
     def _dump_edges(self) -> Path:
-        path = self.module.join(name=f"edges.tsv.gz")
         sample_path = self.module.join(name=f"edges_sample.tsv")
-        if path.is_file():
-            return path
+        if self.edges_path.is_file():
+            return self.edges_path
 
         rels = self.get_relations()
         rels = sorted(rels, key=lambda r: (r.source_id, r.target_id))
@@ -148,7 +145,7 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(path, "wt") as edge_file:
+        with gzip.open(self.edges_path, "wt") as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")
             with sample_path.open("w") as edge_sample_file:
                 edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
@@ -162,4 +159,4 @@ class Processor(ABC):
 
             # Write remaining edges
             edge_writer.writerows(edge_rows)
-        return path
+        return self.edges_path
