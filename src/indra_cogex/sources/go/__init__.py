@@ -35,16 +35,12 @@ class GoProcessor(Processor):
         for go_node in self.df["GO_ID"].unique():
             yield Node(go_node, ["BioEntity"])
         for hgnc_id in self.df["HGNC_ID"].unique():
-            if not hgnc_id:
-                continue
             yield Node(f"HGNC:{hgnc_id}", ["BioEntity"])
 
     def get_relations(self):
         rel_type = "associated_with"
         for _, row in self.df.iterrows():
             hgnc_id = row["HGNC_ID"]
-            if not hgnc_id:
-                continue
             go_id = row["GO_ID"]
             source = f"HGNC:{hgnc_id}"
             # Note that we don't add the extra GO: by current convention
@@ -71,6 +67,7 @@ def load_goa(url):
         lambda row: uniprot_client.get_hgnc_id(row["UP_ID"]),
         axis=1,
     )
+    df = df[~df["HGNC_ID"].isna()]
     df["Qualifier"].fillna("", inplace=True)
     df = df[~df["Qualifier"].str.startswith("NOT")]
     df = df[df["EC"].isin(EVIDENCE_CODES)]
