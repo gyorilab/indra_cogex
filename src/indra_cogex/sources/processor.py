@@ -45,7 +45,6 @@ class Processor(ABC):
     module: ClassVar[pystow.Module]
     directory: ClassVar[Path]
 
-
     def __init_subclass__(cls, **kwargs):
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
