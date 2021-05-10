@@ -30,7 +30,6 @@ class GoProcessor(Processor):
 
     def __init__(self):
         self.df = load_goa(GOA_URL)
-        logger.info("Loaded %s rows from %s", len(self.df), GOA_URL)
 
     def get_nodes(self):
         for go_node in self.df["GO_ID"].unique():
@@ -56,7 +55,9 @@ class GoProcessor(Processor):
 
 
 def load_goa(url):
+    logger.info("Loading GO annotations from %s", url)
     df = pd.read_csv(url, sep="\t", skiprows=41, dtype=str, header=None)
+    logger.info("Processing GO annotations table")
     df.rename(
         columns={
             1: "UP_ID",
@@ -66,9 +67,12 @@ def load_goa(url):
         },
         inplace=True,
     )
-    df["HGNC_ID"] = df.apply(lambda row: uniprot_client.get_hgnc_id(row["UP_ID"]))
+    df["HGNC_ID"] = df.apply(
+        lambda row: uniprot_client.get_hgnc_id(row["UP_ID"]),
+        axis=1,
+    )
     df["Qualifier"].fillna("", inplace=True)
     df = df[~df["Qualifier"].str.startswith("NOT")]
     df = df[df["EC"].isin(EVIDENCE_CODES)]
-    df.apply()
+    logger.info("Loaded %s rows", len(df))
     return df
