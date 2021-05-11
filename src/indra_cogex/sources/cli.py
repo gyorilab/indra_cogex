@@ -11,7 +11,7 @@ from more_click import verbose_option
 from . import processor_resolver
 
 
-@click.group()
+@click.command()
 @click.option(
     "--load",
     is_flag=True,
@@ -55,7 +55,7 @@ def main(load: bool, load_only: bool, force: bool):
         """
         ).rstrip()
         for node_path, edge_path in paths:
-            command += f"\\\n  --nodes {node_path} \\\n  --edges {edge_path}"
+            command += f"\\\n  --nodes {node_path} \\\n  --relationships {edge_path}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
