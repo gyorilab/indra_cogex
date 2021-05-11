@@ -33,7 +33,7 @@ def main(load: bool, load_only: bool, force: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
     for processor_cls in processor_resolver:
-        if getattr(processor_cls, "importable") is False:
+        if not processor_cls.importable:
             continue
         click.secho(f"Checking {processor_cls.name}", fg="green", bold=True)
         if not load_only:
