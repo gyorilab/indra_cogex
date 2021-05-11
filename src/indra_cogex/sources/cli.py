@@ -30,6 +30,7 @@ from . import processor_resolver
 )
 @verbose_option
 def main(load: bool, load_only: bool, force: bool):
+    """Generate and import Neo4j nodes and edges tables."""
     paths = []
     for processor_cls in processor_resolver:
         if not load_only:
@@ -45,7 +46,7 @@ def main(load: bool, load_only: bool, force: bool):
 
     if load or load_only:
         command = dedent(
-            f"""\
+            """\
         neo4j-admin import \\
           --database=indra \\
           --delimiter='TAB' \\
@@ -58,7 +59,7 @@ def main(load: bool, load_only: bool, force: bool):
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
-        os.system(command)
+        os.system(command)  # noqa:S605
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8, 3.9 ]
+        python-version: [ 3.6, 3.9 ]
         tox-env: [ manifest, flake8, pyroma, mypy ]
     steps:
       - uses: actions/checkout@v2
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8, 3.9 ]
+        python-version: [ 3.6, 3.9 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -36,8 +36,8 @@ jobs:
         run: pip install tox
       - name: Check RST conformity with doc8
         run: tox -e doc8
-      - name: Check docstring coverage
-        run: tox -e docstr-coverage
+      # - name: Check docstring coverage
+      #   run: tox -e docstr-coverage
       - name: Check documentation build with Sphinx
         run: tox -e docs
   tests:
@@ -46,7 +46,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ 3.8, 3.9 ]
+        python-version: [ 3.6, 3.9 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}

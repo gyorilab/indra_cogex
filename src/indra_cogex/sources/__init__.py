@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+"""Processors for generating nodes and relations for upload to Neo4j."""
+
 from class_resolver import Resolver
 
 from .bgee import BgeeProcessor
-from .go import GoProcessor
+from .go import GoaProcessor
 from .indra_db import DbProcessor
 from .indra_ontology import OntologyProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
@@ -13,7 +15,9 @@ __all__ = [
     "processor_resolver",
     "Processor",
     "BgeeProcessor",
-    "GoProcessor",
+    "ReactomeProcessor",
+    "WikipathwaysProcessor",
+    "GoaProcessor",
     "DbProcessor",
     "OntologyProcessor",
 ]
