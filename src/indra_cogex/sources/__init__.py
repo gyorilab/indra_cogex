@@ -5,7 +5,7 @@
 from class_resolver import Resolver
 
 from .bgee import BgeeProcessor
-from .go import GoaProcessor
+from .goa import GoaProcessor
 from .indra_db import DbProcessor
 from .indra_ontology import OntologyProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
