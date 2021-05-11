@@ -77,13 +77,13 @@ class Neo4jClient:
     def get_target_relations(self, source, relation=None):
         return self.get_relations(source=source, target=None, relation=relation)
 
-    def get_targets(self, source, relation):
+    def get_targets(self, source, relation=None):
         return self.get_common_targets([source], relation)
 
-    def get_sources(self, relation, target):
-        return self.get_common_sources(relation, [target])
+    def get_sources(self, target, relation=None):
+        return self.get_common_sources([target], relation)
 
-    def get_common_sources(self, relation, targets):
+    def get_common_sources(self, targets, relation):
         parts = ["(s)-[:%s]->({id: '%s'})" % (relation, target) for target in targets]
         query = """
             MATCH %s
@@ -91,6 +91,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
+        print(query)
         return self.query_tx(query)
 
     def get_common_targets(self, sources, relation):
@@ -101,6 +102,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
+        print(query)
         return self.query_tx(query)
 
     def get_target_agents(self, source, relation):
@@ -108,8 +110,8 @@ class Neo4jClient:
         agents = [self.path_to_agents(path)[0] for path in paths]
         return agents
 
-    def get_source_agents(self, relation, target):
-        paths = self.get_sources(relation, target)
+    def get_source_agents(self, target, relation):
+        paths = self.get_sources(target, relation)
         agents = [self.path_to_agents(path)[0] for path in paths]
         return agents
 
