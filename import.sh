@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-NEO4J_VERSION=4.2.0
+NEO4J_VERSION=$(neo4j version | cut -f 2 -d ' ')
 NEO4J_PATH=/usr/local/Cellar/neo4j/$NEO4J_VERSION
 NEO4J_DATA=/usr/local/var/neo4j/data
 
