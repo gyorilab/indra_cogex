@@ -63,7 +63,6 @@ class Neo4jClient:
         query = """
             MATCH p=({id: '%s'})-[r]->({id: '%s'})
             RETURN r
-            LIMIT 1
         """ % (
             source,
             target,
@@ -74,7 +73,7 @@ class Neo4jClient:
     def get_targets(self, source, relation):
         query = """
             MATCH p=({id: '%s'})-[r:%s]->(t)
-            RETURN t
+            RETURN DISTINCT t
         """ % (
             source,
             relation,
@@ -84,10 +83,30 @@ class Neo4jClient:
     def get_sources(self, relation, target):
         query = """
             MATCH p=(s)-[r:%s]->({id: '%s'})
-            RETURN s
+            RETURN DISTINCT s
         """ % (
             relation,
             target,
+        )
+        return self.query_tx(query)
+
+    def get_common_sources(self, relation, targets):
+        parts = ["(s)-[:%s]->({id: '%s'})" % (relation, target) for target in targets]
+        query = """
+            MATCH %s
+            RETURN DISTINCT s
+        """ % ",".join(
+            parts
+        )
+        return self.query_tx(query)
+
+    def get_common_targets(self, sources, relation):
+        parts = ["({id: '%s'})-[:%s]->(t)" % (source, relation) for source in sources]
+        query = """
+            MATCH %s
+            RETURN DISTINCT t
+        """ % ",".join(
+            parts
         )
         return self.query_tx(query)
 
