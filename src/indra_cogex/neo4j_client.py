@@ -32,9 +32,14 @@ class Neo4jClient:
 
     def query_tx(self, query):
         tx = self.get_session().begin_transaction()
-        res = tx.run(query)
-        values = res.values()
+        try:
+            res = tx.run(query)
+        except Exception as e:
+            logger.error(e)
+            tx.close()
+            return
         tx.close()
+        values = res.values()
         return values
 
     def get_session(self, renew=False):
