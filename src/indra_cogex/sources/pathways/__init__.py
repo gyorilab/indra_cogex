@@ -20,10 +20,12 @@ __all__ = [
 ]
 
 
-class PyoboProcessorMixin:
+class PyoboProcessor(Processor):
+    name = "pyobo"
     prefix: ClassVar[str]
     relation: ClassVar[Relation]
     relation_label: ClassVar[str]
+    importable = False
 
     def get_nodes(self):  # noqa:D102
         # TODO add license
@@ -45,22 +47,24 @@ class PyoboProcessorMixin:
             )
 
 
-class WikipathwaysProcessor(PyoboProcessorMixin, Processor):
+class WikipathwaysProcessor(PyoboProcessor):
     """Processor for WikiPathways gene-pathway links."""
 
     name = "wikipathways"
     prefix = "wikipathways"
     relation = has_part
     relation_label = "haspart"
+    importable = True
 
 
-class ReactomeProcessor(PyoboProcessorMixin, Processor):
+class ReactomeProcessor(PyoboProcessor):
     """Processor for Reactome gene-pathway links."""
 
     name = "reactome"
     prefix = "reactome"
     relation = has_part
     relation_label = "haspart"
+    importable = True
 
 
 if __name__ == "__main__":

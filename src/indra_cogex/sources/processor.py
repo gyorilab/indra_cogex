@@ -36,6 +36,7 @@ class Processor(ABC):
     directory: ClassVar[Path]
     nodes_path: ClassVar[Path]
     edges_path: ClassVar[Path]
+    importable = True
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
