@@ -5,7 +5,7 @@ from typing import List
 
 from neo4j import GraphDatabase
 
-from indra.statements import *
+from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class Neo4jClient:
         if not name:
             name = grounding
         db_ns, db_id = grounding.split(":", maxsplit=1)
-        return Agent(name, db_refs={db_ns: db_id})
+        return get_standard_agent(name, {db_ns: db_id})
 
     def delete_all(self):
         query = """MATCH(n) DETACH DELETE n"""
