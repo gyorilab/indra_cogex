@@ -33,13 +33,14 @@ def main(load: bool, load_only: bool, force: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
     for processor_cls in processor_resolver:
+        click.secho(f"Checking {processor_cls.name}", fg="green", bold=True)
         if not load_only:
             if (
                 force
                 or not processor_cls.nodes_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                click.secho(f"Processing {processor_cls.name}", fg="green", bold=True)
+                click.secho("Processing...", fg="green")
                 processor = processor_cls()
                 processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
