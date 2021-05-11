@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-NEO4J_VERSION=$(neo4j version | cut -f 2 -d ' ')
+# NEO4J_VERSION=$(neo4j version | cut -f 2 -d ' ')
 NEO4J_CONFIG=$(neo4j console | grep "^\s*config" | sed 's/^[ \t]*data:[ \t]*//g')
 NEO4J_DATA=$(neo4j console | grep "^\s*data" | sed 's/^[ \t]*data:[ \t]*//g')
 
