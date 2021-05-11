@@ -70,6 +70,28 @@ class Neo4jClient:
         res = self.query_tx(query)
         return res
 
+    def get_source_relations(self, target, relation=None):
+        query = """
+            MATCH p=(s)-[r%s]->({id: '%s'})
+            RETURN DISTINCT r
+        """ % (
+            ":%s" % relation if relation else "",
+            target,
+        )
+        res = self.query_tx(query)
+        return res
+
+    def get_target_relations(self, source, relation=None):
+        query = """
+            MATCH p=({id: '%s'})-[r%s]->(t)
+            RETURN DISTINCT r
+        """ % (
+            source,
+            ":%s" % relation if relation else "",
+        )
+        res = self.query_tx(query)
+        return res
+
     def get_targets(self, source, relation):
         query = """
             MATCH p=({id: '%s'})-[r:%s]->(t)
