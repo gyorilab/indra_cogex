@@ -49,73 +49,39 @@ class Neo4jClient:
         return self.session
 
     def has_relation(self, source, target, relation):
-        query = """
-            MATCH p=({id: '%s'})-[r:%s]->({id: '%s'})
-            RETURN p
-            LIMIT 1
-        """ % (
-            source,
-            relation,
-            target,
-        )
-        res = self.query_tx(query)
+        res = self.get_relations(source, target, relation, limit=1)
         if res:
             return True
         else:
             return False
 
-    def get_relations(self, source, target):
+    def get_relations(self, source=None, target=None, relation=None, limit=None):
+        if not source and not target:
+            raise ValueError("source or target should be specified")
         query = """
-            MATCH p=({id: '%s'})-[r]->({id: '%s'})
-            RETURN r
+            MATCH p=(%s)-[r%s]->(%s)
+            RETURN DISTINCT r
+            %s
         """ % (
-            source,
-            target,
+            "{id: '%s'}" % source if source else "s",
+            "" if not relation else ":%s" % relation,
+            "{id: '%s'}" % target if target else "t",
+            "" if not limit else "LIMIT %s" % limit,
         )
         res = self.query_tx(query)
         return res
 
     def get_source_relations(self, target, relation=None):
-        query = """
-            MATCH p=(s)-[r%s]->({id: '%s'})
-            RETURN DISTINCT r
-        """ % (
-            ":%s" % relation if relation else "",
-            target,
-        )
-        res = self.query_tx(query)
-        return res
+        return self.get_relations(source=None, target=target, relation=relation)
 
     def get_target_relations(self, source, relation=None):
-        query = """
-            MATCH p=({id: '%s'})-[r%s]->(t)
-            RETURN DISTINCT r
-        """ % (
-            source,
-            ":%s" % relation if relation else "",
-        )
-        res = self.query_tx(query)
-        return res
+        return self.get_relations(source=source, target=None, relation=relation)
 
     def get_targets(self, source, relation):
-        query = """
-            MATCH p=({id: '%s'})-[r:%s]->(t)
-            RETURN DISTINCT t
-        """ % (
-            source,
-            relation,
-        )
-        return self.query_tx(query)
+        return self.get_common_targets([source], relation)
 
     def get_sources(self, relation, target):
-        query = """
-            MATCH p=(s)-[r:%s]->({id: '%s'})
-            RETURN DISTINCT s
-        """ % (
-            relation,
-            target,
-        )
-        return self.query_tx(query)
+        return self.get_common_sources(relation, [target])
 
     def get_common_sources(self, relation, targets):
         parts = ["(s)-[:%s]->({id: '%s'})" % (relation, target) for target in targets]
