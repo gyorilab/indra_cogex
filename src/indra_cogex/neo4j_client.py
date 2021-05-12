@@ -1,10 +1,13 @@
 __all__ = ["Neo4jClient"]
 
 import logging
-from typing import List
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
+import neo4j
+import neo4j.graph
 from neo4j import GraphDatabase
 
+from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation
 
@@ -14,12 +17,39 @@ NEO4J_URL = "bolt://localhost:7687"
 
 
 class Neo4jClient:
-    def __init__(self, url=NEO4J_URL, auth=None):
+    """A client to communicate with an INDRA CogEx neo4j instance
+
+    Parameters
+    ----------
+    url :
+        The bolt URL to the neo4j instance.
+    auth :
+        A tuple consisting of the user name and password for the neo4j instance.
+    """
+
+    def __init__(
+        self,
+        url: Optional[str] = NEO4J_URL,
+        auth: Optional[Tuple[str, str]] = None,
+    ):
         self.url = url
         self.driver = GraphDatabase.driver(self.url, auth=auth)
         self.session = None
 
-    def create_tx(self, query, query_params=None):
+    def create_tx(
+        self,
+        query: str,
+        query_params: Optional[Mapping[str, Any]] = None,
+    ):
+        """Run a transaction which writes to the neo4j instance.
+
+        Parameters
+        ----------
+        query :
+            The query string to be executed.
+        query_params :
+            Parameters associated with the query.
+        """
         tx = self.get_session().begin_transaction()
         try:
             # logger.info(query)
@@ -30,7 +60,20 @@ class Neo4jClient:
         finally:
             tx.close()
 
-    def query_tx(self, query):
+    def query_tx(self, query: str) -> Union[List[List[Any]], None]:
+        """Run a read-only query and return the results.
+
+        Parameters
+        ----------
+        query :
+            The query string to be executed.
+
+        Returns
+        -------
+        values :
+            A list of results where each result is a list of one or more
+            objects (typically neo4j nodes or relations).
+        """
         tx = self.get_session().begin_transaction()
         try:
             res = tx.run(query)
@@ -38,28 +81,62 @@ class Neo4jClient:
             logger.error(e)
             tx.close()
             return
-        tx.close()
         values = res.values()
+        tx.close()
         return values
 
-    def get_session(self, renew=False):
+    def get_session(self, renew: Optional[bool] = False) -> neo4j.work.simple.Session:
+        """Return an existing session or create one if needed.
+
+        Parameters
+        ----------
+        renew :
+            If True, a new session is created. Default: False
+
+        Returns
+        -------
+        session
+            A neo4j session.
+        """
         if self.session is None or renew:
             sess = self.driver.session()
             self.session = sess
         return self.session
 
-    def has_relation(self, source, target, relation):
+    def has_relation(self, source: str, target: str, relation: str) -> bool:
+        """Return True if there is a relation between the source and the target.
+
+        Parameters
+        ----------
+        source :
+             Source identifier.
+        target :
+            Target identifier.
+        relation :
+            Relation type.
+
+        Returns
+        -------
+        related :
+            True if there is a relation of the given type, otherwise False.
+        """
         res = self.get_relations(source, target, relation, limit=1)
         if res:
             return True
         else:
             return False
 
-    def get_relations(self, source=None, target=None, relation=None, limit=None):
+    def get_relations(
+        self,
+        source: Optional[str] = None,
+        target: Optional[str] = None,
+        relation: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> List[neo4j.graph.Relationship]:
         if not source and not target:
             raise ValueError("source or target should be specified")
         query = """
-            MATCH p=(%s)-[r%s]->(%s)
+            MATCH (%s)-[r%s]->(%s)
             RETURN DISTINCT r
             %s
         """ % (
@@ -68,13 +145,21 @@ class Neo4jClient:
             "{id: '%s'}" % target if target else "t",
             "" if not limit else "LIMIT %s" % limit,
         )
-        res = self.query_tx(query)
-        return res
+        rels = [res[0] for res in self.query_tx(query)]
+        return rels
 
-    def get_source_relations(self, target, relation=None):
+    def get_source_relations(
+        self,
+        target: str,
+        relation: Optional[str] = None,
+    ) -> List[neo4j.graph.Relationship]:
         return self.get_relations(source=None, target=target, relation=relation)
 
-    def get_target_relations(self, source, relation=None):
+    def get_target_relations(
+        self,
+        source: str,
+        relation: Optional[str] = None,
+    ) -> List[neo4j.graph.Relationship]:
         return self.get_relations(source=source, target=None, relation=relation)
 
     def get_targets(self, source, relation=None):
@@ -91,10 +176,13 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        print(query)
         return self.query_tx(query)
 
-    def get_common_targets(self, sources, relation):
+    def get_common_targets(
+        self,
+        sources: List[str],
+        relation: str,
+    ) -> List[neo4j.graph.Node]:
         parts = ["({id: '%s'})-[:%s]->(t)" % (source, relation) for source in sources]
         query = """
             MATCH %s
@@ -102,24 +190,21 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        print(query)
-        return self.query_tx(query)
+        nodes = [res[0] for res in self.query_tx(query)]
+        return nodes
 
-    def get_target_agents(self, source, relation):
-        paths = self.get_targets(source, relation)
-        agents = [self.path_to_agents(path)[0] for path in paths]
+    def get_target_agents(self, source: str, relation: str) -> List[Agent]:
+        targets = self.get_targets(source, relation)
+        agents = [self.node_to_agent(target) for target in targets]
         return agents
 
-    def get_source_agents(self, target, relation):
-        paths = self.get_sources(target, relation)
-        agents = [self.path_to_agents(path)[0] for path in paths]
+    def get_source_agents(self, target: str, relation: str) -> List[Agent]:
+        sources = self.get_sources(target, relation)
+        agents = [self.node_to_agent(source) for source in sources]
         return agents
-
-    def path_to_agents(self, path):
-        return [self.node_to_agent(node) for node in path]
 
     @staticmethod
-    def node_to_agent(node):
+    def node_to_agent(node: neo4j.graph.Node) -> Agent:
         name = node.get("name")
         grounding = node.get("id")
         if not name:
