@@ -162,6 +162,20 @@ class Neo4jClient:
     ) -> List[neo4j.graph.Relationship]:
         return self.get_relations(source=source, target=None, relation=relation)
 
+    def get_all_relations(
+        self,
+        node: str,
+        relation: Optional[str] = None,
+    ) -> List[neo4j.graph.Relationship]:
+        source_rels = self.get_source_relations(node, relation)
+        target_rels = self.get_target_relations(node, relation)
+        all_rels = source_rels + target_rels
+        return all_rels
+
+    def get_property_from_relations(self, relations, property):
+        props = {rel[property] for rel in relations if property in rel}
+        return props
+
     def get_targets(self, source, relation=None):
         return self.get_common_targets([source], relation)
 
