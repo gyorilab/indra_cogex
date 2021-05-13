@@ -32,9 +32,11 @@ class BgeeProcessor(Processor):
             self.expressions = pickle.load(fh)
 
     def get_nodes(self):  # noqa:D102
-        for context_id in self.expressions:
+        for context in self.expressions:
+            context_ns, context_id = get_context(context)
             yield Node(
-                *context_id.split(":", maxsplit=1),
+                context_ns,
+                context_id,
                 ["BioEntity"],
                 data={"name": pyobo.get_name_by_curie(context_id)},
             )
@@ -49,8 +51,15 @@ class BgeeProcessor(Processor):
     def get_relations(self):  # noqa:D102
         data = {"source": self.name}
         for context, hgnc_ids in self.expressions.items():
-            context_ns, context_id = context.split(":", maxsplit=1)
+            context_ns, context_id = get_context(context)
             for hgnc_id in hgnc_ids:
                 yield Relation(
                     "HGNC", hgnc_id, context_ns, context_id, [self.rel_type], data
                 )
+
+
+def get_context(context):
+    context_ns, context_id = context.split(":", maxsplit=1)
+    if context_ns == "UBERON":
+        context_id = f"UBERON:{context_id}"
+    return context_ns, context_id

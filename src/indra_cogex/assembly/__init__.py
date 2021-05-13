@@ -1,11 +1,11 @@
 from collections import defaultdict
-from typing import List
+from typing import List, Optional
 from indra_cogex.representation import Node
 
 
 class NodeAssembler:
-    def __init__(self, nodes: List[Node]):
-        self.nodes = nodes
+    def __init__(self, nodes: Optional[List[Node]] = None):
+        self.nodes = nodes if nodes else []
         self.conflicts = []
 
     def add_nodes(self, nodes: List[Node]):
