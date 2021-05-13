@@ -66,9 +66,32 @@ class DbProcessor(Processor):
             yield Node(db_ns, db_id, ["BioEntity"], dict(name=name))
 
     def get_relations(self):  # noqa:D102
-        columns = ["A", "B", "stmt_type", "evidence_count", "stmt_hash"]
-        for source, target, stmt_type, ev_count, stmt_hash in (
+        columns = [
+            "agA_ns",
+            "agA_id",
+            "agB_ns",
+            "agB_id",
+            "stmt_type",
+            "source_counts",
+            "stmt_hash",
+        ]
+        for (
+            source_ns,
+            source_id,
+            target_ns,
+            target_id,
+            stmt_type,
+            source_counts,
+            stmt_hash,
+        ) in (
             self.df[columns].drop_duplicates().values
         ):
-            data = {"stmt_hash:long": stmt_hash, "evidence_count:long": ev_count}
-            yield Relation(source, target, [stmt_type], data)
+            data = {"stmt_hash:long": stmt_hash, "evidence_count:str": source_counts}
+            yield Relation(
+                source_ns,
+                source_id,
+                target_ns,
+                target_id,
+                [stmt_type, "Statement"],
+                data,
+            )
