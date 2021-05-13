@@ -4,8 +4,8 @@
 
 import csv
 import gzip
+import logging
 from abc import ABC, abstractmethod
-from operator import attrgetter
 from pathlib import Path
 from typing import ClassVar, Iterable
 
@@ -15,6 +15,7 @@ from more_click import verbose_option
 from tqdm import tqdm
 
 from indra.databases import identifiers
+from indra.statements.validate import assert_valid_db_refs
 
 from indra_cogex.representation import Node, Relation
 
@@ -22,6 +23,7 @@ __all__ = [
     "Processor",
 ]
 
+logger = logging.getLogger(__name__)
 
 # deal with importing from wherever with
 #  https://stackoverflow.com/questions/36922843/neo4j-3-x-load-csv-absolute-file-path
@@ -84,6 +86,7 @@ class Processor(ABC):
 
     @staticmethod
     def _dump_nodes_to_path(nodes, metadata, nodes_path, sample_path=None):
+        nodes = list(validate_nodes(nodes))
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
@@ -117,6 +120,7 @@ class Processor(ABC):
             return self.edges_path
 
         rels = self.get_relations()
+        rels = validate_relations(rels)
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
         )
@@ -160,3 +164,24 @@ def norm_id(db_ns, db_id):
         if ns_embedded:
             identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
     return f"{identifiers_ns}:{identifiers_id}"
+
+
+def validate_nodes(nodes):
+    for idx, node in enumerate(nodes):
+        try:
+            assert_valid_db_refs({node.db_ns: node.db_id})
+            yield node
+        except Exception as e:
+            logger.info(f"{idx}: {node} - {e}")
+            continue
+
+
+def validate_relations(relations):
+    for idx, rel in enumerate(relations):
+        try:
+            assert_valid_db_refs({rel.source_ns: rel.source_id})
+            assert_valid_db_refs({rel.target_ns: rel.target_id})
+            yield rel
+        except Exception as e:
+            logger.info(f"{idx}: {rel} - {e}")
+            continue

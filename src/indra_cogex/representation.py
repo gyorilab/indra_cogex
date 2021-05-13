@@ -108,7 +108,10 @@ class Relation:
     def __str__(self):  # noqa:D105
         data_str = ", ".join(["%s:'%s'" % (k, v) for k, v in self.data.items()])
         labels_str = ":".join(self.labels)
-        return f"({self.source_id})-[:{labels_str} {data_str}]->" f"({self.target_id})"
+        return (
+            f"({self.source_ns}, {self.source_id})-[:{labels_str} {data_str}]->"
+            f"({self.target_ns}, {self.target_id})"
+        )
 
     def __repr__(self):  # noqa:D105
         return str(self)

@@ -62,4 +62,6 @@ def get_context(context):
     context_ns, context_id = context.split(":", maxsplit=1)
     if context_ns == "UBERON":
         context_id = f"UBERON:{context_id}"
+    elif context_ns == "CL":
+        context_id = f"CL:{context_id}"
     return context_ns, context_id
