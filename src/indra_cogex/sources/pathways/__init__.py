@@ -66,6 +66,10 @@ class PyoboProcessor(Processor):
             else:
                 return "EGID", identifier
         elif prefix == "uniprot":
+            # Some of the UniProt IDs are isoforms, for now, we just strip
+            # these off. We could do something more principled later.
+            if "-" in identifier:
+                identifier, _ = identifier.split("-")
             hgnc_id = uniprot_client.get_hgnc_id(identifier)
             if hgnc_id:
                 return "HGNC", hgnc_id
