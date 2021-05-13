@@ -166,5 +166,5 @@ def norm_id(db_ns, db_id):
         "namespace_embedded"
     )
     if ns_embedded:
-        identifiers_id = identifiers_id[len(identifiers_ns) :]
+        identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
     return f"{identifiers_ns}:{identifiers_id}"
