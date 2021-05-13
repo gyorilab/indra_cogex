@@ -14,6 +14,8 @@ import pystow
 from more_click import verbose_option
 from tqdm import tqdm
 
+from indra.databases import identifiers
+
 from indra_cogex.representation import Node, Relation
 
 __all__ = [
@@ -76,11 +78,11 @@ class Processor(ABC):
         if self.nodes_path.is_file():
             return self.nodes_path
 
-        nodes = sorted(self.get_nodes(), key=attrgetter("identifier"))
+        nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
         metadata = sorted(set(key for node in nodes for key in node.data))
         node_rows = (
             (
-                node.identifier,
+                norm_id(node.db_ns, node.db_id),
                 "|".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
@@ -126,12 +128,14 @@ class Processor(ABC):
             return self.edges_path
 
         rels = self.get_relations()
-        rels = sorted(rels, key=lambda r: (r.source_id, r.target_id))
+        rels = sorted(
+            rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
+        )
         metadata = sorted(set(key for rel in rels for key in rel.data))
         edge_rows = (
             (
-                rel.source_id,
-                rel.target_id,
+                norm_id(rel.source_ns, rel.source_id),
+                norm_id(rel.target_ns, rel.target_id),
                 "|".join(sorted(rel.labels)),
                 *[rel.data.get(key) for key in metadata],
             )
@@ -153,3 +157,14 @@ class Processor(ABC):
             # Write remaining edges
             edge_writer.writerows(edge_rows)
         return self.edges_path
+
+
+def norm_id(db_ns, db_id):
+    identifiers_ns = identifiers.get_identifiers_ns(db_ns)
+    identifiers_id = db_id
+    ns_embedded = identifiers.identifiers_registry.get(identifiers_ns, {}).get(
+        "namespace_embedded"
+    )
+    if ns_embedded:
+        identifiers_id = identifiers_id[len(identifiers_ns) :]
+    return f"{identifiers_ns}:{identifiers_id}"
