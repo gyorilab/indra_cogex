@@ -80,6 +80,10 @@ class Processor(ABC):
 
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
         metadata = sorted(set(key for node in nodes for key in node.data))
+        self._dump_nodes_to_path(nodes, metadata, self.nodes_path, sample_path)
+
+    @staticmethod
+    def _dump_nodes_to_path(nodes, metadata, nodes_path, sample_path=None):
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
@@ -89,38 +93,23 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Nodes", unit_scale=True)
         )
 
-        with gzip.open(self.nodes_path, mode="wt") as node_file:
+        with gzip.open(nodes_path, mode="wt") as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
-            with sample_path.open("w") as node_sample_file:
-                node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
+            if sample_path:
+                with sample_path.open("w") as node_sample_file:
+                    node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
 
-                header = "id:ID", ":LABEL", *metadata
-                node_sample_writer.writerow(header)
-                node_writer.writerow(header)
+                    header = "id:ID", ":LABEL", *metadata
+                    node_sample_writer.writerow(header)
+                    node_writer.writerow(header)
 
-                for _, node_row in zip(range(10), node_rows):
-                    node_sample_writer.writerow(node_row)
-                    node_writer.writerow(node_row)
-
+                    for _, node_row in zip(range(10), node_rows):
+                        node_sample_writer.writerow(node_row)
+                        node_writer.writerow(node_row)
             # Write remaining nodes
             node_writer.writerows(node_rows)
 
-            # cypher = dedent(f'''\
-            #     CREATE CONSTRAINT ON (n:{ntype}) ASSERT n.id IS UNIQUE;
-            #     USING PERIODIC COMMIT
-            #     LOAD CSV WITH HEADERS FROM "file://{data_path.as_posix()}" AS row FIELDTERMINATOR '\\t'
-            #     MERGE (n:{ntype} {{ id: row.identifier }})
-            #     ''')
-            # if metadata:
-            #     creates = '\n'.join(
-            #         f'n.{key} = row.{key}'
-            #         for key in metadata
-            #     )
-            #     cypher += f'ON CREATE SET {creates}'
-            # with cypher_path.open('w') as file:
-            #     print(cypher, file=file)
-
-        return self.nodes_path
+        return nodes_path
 
     def _dump_edges(self) -> Path:
         sample_path = self.module.join(name="edges_sample.tsv")

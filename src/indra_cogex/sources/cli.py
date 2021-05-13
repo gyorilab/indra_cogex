@@ -6,9 +6,12 @@ import os
 from textwrap import dedent
 
 import click
+import pystow
 from more_click import verbose_option
 
 from . import processor_resolver
+from .processor import Processor
+from ..assembly import NodeAssembler
 
 
 @click.command()
@@ -32,6 +35,7 @@ from . import processor_resolver
 def main(load: bool, load_only: bool, force: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
+    na = NodeAssembler()
     for processor_cls in processor_resolver:
         if not processor_cls.importable:
             continue
@@ -44,8 +48,16 @@ def main(load: bool, load_only: bool, force: bool):
             ):
                 click.secho("Processing...", fg="green")
                 processor = processor_cls()
+                na.add_nodes(list(processor.get_nodes()))
                 processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
+
+    # Now create and dump the assembled nodes
+    assembled_nodes = na.assemble_nodes()
+    assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
+    metadata = sorted(set(key for node in assembled_nodes for key in node.data))
+    nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
+    Processor._dump_nodes_to_path(assembled_nodes, metadata, nodes_path)
 
     if load or load_only:
         command = dedent(
@@ -57,8 +69,8 @@ def main(load: bool, load_only: bool, force: bool):
           --skip-bad-relationships=true
         """
         ).rstrip()
-        for node_path, edge_path in paths:
-            command += f"\\\n  --nodes {node_path} \\\n  --relationships {edge_path}"
+        for _, edge_path in paths:
+            command += f"\\\n  --relationships {edge_path}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
