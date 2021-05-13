@@ -33,7 +33,7 @@ class PyoboProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         # TODO add license
         version = pyobo.api.utils.get_version(self.prefix)
-        for identifier, name in pyobo.get_id_name_mapping("wikipathways").items():
+        for identifier, name in pyobo.get_id_name_mapping(self.prefix).items():
             db_ns, db_id = get_ns_id_from_identifiers(self.prefix, identifier)
             yield Node(
                 db_ns,
@@ -92,7 +92,3 @@ class ReactomeProcessor(PyoboProcessor):
     relation = has_part
     relation_label = "haspart"
     importable = True
-
-
-if __name__ == "__main__":
-    WikipathwaysProcessor.cli()
