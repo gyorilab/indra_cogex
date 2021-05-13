@@ -14,15 +14,15 @@ class NodeAssembler:
     def assemble_nodes(self) -> List[Node]:
         nodes_by_id = defaultdict(list)
         for node in self.nodes:
-            nodes_by_id[node.identifier].append(node)
+            nodes_by_id[(node.db_ns, node.db_id)].append(node)
 
         assembled_nodes = [
-            self.get_aggregate_node(identifier, node_group)
-            for identifier, node_group in nodes_by_id.items()
+            self.get_aggregate_node(db_ns, db_id, node_group)
+            for (db_ns, db_id), node_group in nodes_by_id.items()
         ]
         return assembled_nodes
 
-    def get_aggregate_node(self, identifier: str, nodes: List[Node]) -> Node:
+    def get_aggregate_node(self, db_ns: str, db_id: str, nodes: List[Node]) -> Node:
         labels = set()
         data = {}
         for node in nodes:
@@ -35,7 +35,7 @@ class NodeAssembler:
                     )
                 else:
                     data[data_key] = data_val
-        return Node(identifier, labels, data)
+        return Node(db_ns, db_id, labels, data)
 
 
 class Conflict:
