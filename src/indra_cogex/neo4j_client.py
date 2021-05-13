@@ -1,7 +1,7 @@
 __all__ = ["Neo4jClient"]
 
 import logging
-from typing import Any, List, Mapping, Optional, Tuple, Union
+from typing import Any, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j
 import neo4j.graph
@@ -172,32 +172,113 @@ class Neo4jClient:
         all_rels = source_rels + target_rels
         return all_rels
 
-    def get_property_from_relations(self, relations, property):
+    def get_property_from_relations(
+        self, relations: List[neo4j.graph.Relationship], property: str
+    ) -> Set[str]:
+        """Return the set of property values on given relations.
+
+        Parameters
+        ----------
+        relations :
+            The relations, each of which may or may not contain a value for
+            the given property.
+        property :
+            The key/name of the property to look for on each relation.
+
+        Returns
+        -------
+        props
+            A set of the values of the given property on the given list
+            of relations.
+        """
         props = {rel[property] for rel in relations if property in rel}
         return props
 
-    def get_targets(self, source, relation=None):
-        return self.get_common_targets([source], relation)
+    def get_sources(self, target: str, relation: str = None):
+        """Return the nodes related to the target via a given relation type.
 
-    def get_sources(self, target, relation=None):
+        Parameters
+        ----------
+        target :
+            The target node's ID.
+        relation :
+            The relation label to constrain to when finding sources.
+
+        Returns
+        -------
+        sources
+            A list of source nodes.
+        """
         return self.get_common_sources([target], relation)
 
     def get_common_sources(self, targets, relation):
-        parts = ["(s)-[:%s]->({id: '%s'})" % (relation, target) for target in targets]
+        """Return the common source nodes related to all the given targets
+        via a given relation type.
+
+        Parameters
+        ----------
+        targets :
+            The target nodes' IDs.
+        relation :
+            The relation label to constrain to when finding sources.
+
+        Returns
+        -------
+        sources
+            A list of source nodes.
+        """
+        rel_str = ":%s" % relation if relation else ""
+        parts = ["(s)-[%s]->({id: '%s'})" % (rel_str, target) for target in targets]
         query = """
             MATCH %s
             RETURN DISTINCT s
         """ % ",".join(
             parts
         )
-        return self.query_tx(query)
+        nodes = [res[0] for res in self.query_tx(query)]
+        return nodes
+
+    def get_targets(
+        self, source: str, relation: Optional[str] = None
+    ) -> List[neo4j.graph.Node]:
+        """Return the nodes related to the source via a given relation type.
+
+        Parameters
+        ----------
+        source :
+            The source node's ID.
+        relation :
+            The relation label to constrain to when finding targets.
+
+        Returns
+        -------
+        targets
+            A list of target nodes.
+        """
+        return self.get_common_targets([source], relation)
 
     def get_common_targets(
         self,
         sources: List[str],
         relation: str,
     ) -> List[neo4j.graph.Node]:
-        parts = ["({id: '%s'})-[:%s]->(t)" % (source, relation) for source in sources]
+        """Return the common target nodes related to all the given sources
+        via a given relation type.
+
+        Parameters
+        ----------
+        sources :
+            The source nodes' IDs.
+        relation :
+            The relation label to constrain to when finding targets.
+
+        Returns
+        -------
+        targets
+            A list of target nodes.
+        """
+        rel_str = ":%s" % relation if relation else ""
+        parts = ["({id: '%s'})-[%s]->(t)" % (source, rel_str) for source in sources]
         query = """
             MATCH %s
             RETURN DISTINCT t
@@ -208,17 +289,46 @@ class Neo4jClient:
         return nodes
 
     def get_target_agents(self, source: str, relation: str) -> List[Agent]:
+        """Return the nodes related to the source via a given relation type as INDRA Agents.
+
+        Parameters
+        ----------
+        source :
+            The source node's ID.
+        relation :
+            The relation label to constrain to when finding targets.
+
+        Returns
+        -------
+        targets
+            A list of target nodes as INDRA Agents.
+        """
         targets = self.get_targets(source, relation)
         agents = [self.node_to_agent(target) for target in targets]
         return agents
 
     def get_source_agents(self, target: str, relation: str) -> List[Agent]:
+        """Return the nodes related to the target via a given relation type as INDRA Agents.
+
+        Parameters
+        ----------
+        target :
+            The target node's ID.
+        relation :
+            The relation label to constrain to when finding sources.
+
+        Returns
+        -------
+        sources
+            A list of source nodes as INDRA Agents.
+        """
         sources = self.get_sources(target, relation)
         agents = [self.node_to_agent(source) for source in sources]
         return agents
 
     @staticmethod
     def node_to_agent(node: neo4j.graph.Node) -> Agent:
+        """Return an INDRA Agent from a graph node."""
         name = node.get("name")
         grounding = node.get("id")
         if not name:
@@ -227,15 +337,18 @@ class Neo4jClient:
         return get_standard_agent(name, {db_ns: db_id})
 
     def delete_all(self):
+        """Delete everything in the neo4j database."""
         query = """MATCH(n) DETACH DELETE n"""
         return self.create_tx(query)
 
     def create_nodes(self, nodes: List[Node]):
+        """Create a set of new graph nodes."""
         nodes_str = ",\n".join([str(n) for n in nodes])
         query = """CREATE %s""" % nodes_str
         return self.create_tx(query)
 
     def add_nodes(self, nodes: List[Node]):
+        """Merge a set of graph nodes (create or update)."""
         if not nodes:
             return
         prop_str = ",\n".join(["n.%s = node.%s" % (k, k) for k in nodes[0].data])
@@ -259,6 +372,7 @@ class Neo4jClient:
         )
 
     def add_relations(self, relations: List[Relation]):
+        """Merge a set of graph relations (create or update)."""
         if not relations:
             return None
         labels_str = ":".join(relations[0].labels)
@@ -281,6 +395,7 @@ class Neo4jClient:
         return self.create_tx(query, query_params={"relations": rel_params})
 
     def add_node(self, node: Node):
+        """Merge a single node into the graph."""
         prop_str = ",\n".join(["n.%s = '%s'" % (k, v) for k, v in node.data.items()])
         query = """
             MERGE (n:%s {id: '%s'})
@@ -291,6 +406,3 @@ class Neo4jClient:
             prop_str,
         )
         return self.create_tx(query)
-
-    def add_relation(self, relation: Relation):
-        pass
