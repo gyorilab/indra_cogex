@@ -34,18 +34,23 @@ class BgeeProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         for context_id in self.expressions:
             yield Node(
-                context_id,
+                *context_id.split(":", maxsplit=1),
                 ["BioEntity"],
                 data={"name": pyobo.get_name_by_curie(context_id)},
             )
         for hgnc_id in set.union(*[set(v) for v in self.expressions.values()]):
             yield Node(
-                f"HGNC:{hgnc_id}",
+                "HGNC",
+                hgnc_id,
                 ["BioEntity"],
                 data={"name": pyobo.get_name("hgnc", hgnc_id)},
             )
 
     def get_relations(self):  # noqa:D102
-        for context_id, hgnc_ids in self.expressions.items():
+        data = {"source": self.name}
+        for context, hgnc_ids in self.expressions.items():
+            context_ns, context_id = context.split(":", maxsplit=1)
             for hgnc_id in hgnc_ids:
-                yield Relation(f"HGNC:{hgnc_id}", context_id, [self.rel_type])
+                yield Relation(
+                    "HGNC", hgnc_id, context_ns, context_id, [self.rel_type], data
+                )

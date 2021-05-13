@@ -34,17 +34,15 @@ class OntologyProcessor(Processor):
 
     def get_nodes(self):  # noqa:D102
         for node, data in self.ontology.nodes(data=True):
-            yield Node(_norm(node), ["BioEntity"], data)
+            db_ns, db_id = self.ontology.get_ns_id(node)
+            yield Node(db_ns, db_id, ["BioEntity"], data)
 
     def get_relations(self):  # noqa:D102
         for source, target, data in self.ontology.edges(data=True):
+            source_ns, source_id = self.ontology.get_ns_id(source)
+            target_ns, target_id = self.ontology.get_ns_id(target)
             data = copy.copy(data)
             edge_type = data.pop("type")
-            yield Relation(_norm(source), _norm(target), [edge_type], data)
-
-
-def _norm(node: str) -> str:
-    ns, identifier = node.split(":", 1)
-    if identifier.startswith(f"{ns}:"):
-        identifier = identifier[len(ns) + 1 :]
-    return f"{ns}:{identifier}"
+            yield Relation(
+                source_ns, source_id, target_ns, target_id, [edge_type], data
+            )
