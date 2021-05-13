@@ -42,12 +42,6 @@ class DbProcessor(Processor):
         logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
         self.df = df
         for side in "AB":
-            self.df[side] = [
-                f"{prefix}:{identifier}"
-                for prefix, identifier in self.df[
-                    [f"ag{side}_ns", f"ag{side}_id"]
-                ].values
-            ]
             # A lot of the names in the SIF dump are all over
             self.df[f"ag{side}_name"] = [
                 bio_ontology.get_name(prefix, identifier)
@@ -57,21 +51,19 @@ class DbProcessor(Processor):
             ]
 
     def get_nodes(self):  # noqa:D102
-        df = (
-            pd.concat([self._get_nodes("A"), self._get_nodes("B")], ignore_index=True)
-            .drop_duplicates()
-            .sort_values("curie")
-        )
-        for curie, name in df.values:
-            yield Node(curie, ["BioEntity"], dict(name=name))
-
-    def _get_nodes(self, side: str) -> pd.DataFrame:
-        return self.df[[side, f"ag{side}_name"]].rename(
-            columns={
-                side: "curie",
-                f"ag{side}_name": "name",
-            }
-        )
+        df = pd.concat(
+            [
+                self.df[["agA_ns", "agA_id", "agA_name"]].rename(
+                    {"agA_ns": "ns", "agA_id": "id", "agA_name": "name"}
+                ),
+                self.df[["agB_ns", "agB_id", "agB_name"]].rename(
+                    {"agB_ns": "ns", "agB_id": "id", "agB_name": "name"}
+                ),
+            ],
+            ignore_index=True,
+        ).drop_duplicates()
+        for db_ns, db_id, name in df.values:
+            yield Node(db_ns, db_id, ["BioEntity"], dict(name=name))
 
     def get_relations(self):  # noqa:D102
         columns = ["A", "B", "stmt_type", "evidence_count", "stmt_hash"]
