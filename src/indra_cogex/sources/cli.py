@@ -48,16 +48,21 @@ def main(load: bool, load_only: bool, force: bool):
             ):
                 click.secho("Processing...", fg="green")
                 processor = processor_cls()
+                # FIXME: this is redundant, we get nodes twice
                 na.add_nodes(list(processor.get_nodes()))
                 processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    # Now create and dump the assembled nodes
-    assembled_nodes = na.assemble_nodes()
-    assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
-    metadata = sorted(set(key for node in assembled_nodes for key in node.data))
+    # FIXME: This doesn't work unless the processors are also running and
+    # getting nodes
     nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
-    Processor._dump_nodes_to_path(assembled_nodes, metadata, nodes_path)
+    if not load_only:
+        if force or not nodes_path.is_file():
+            # Now create and dump the assembled nodes
+            assembled_nodes = na.assemble_nodes()
+            assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
+            metadata = sorted(set(key for node in assembled_nodes for key in node.data))
+            Processor._dump_nodes_to_path(assembled_nodes, metadata, nodes_path)
 
     if load or load_only:
         command = dedent(
@@ -66,8 +71,10 @@ def main(load: bool, load_only: bool, force: bool):
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
-          --skip-bad-relationships=true
+          --skip-bad-relationships=true \\
+          --nodes %s
         """
+            % nodes_path
         ).rstrip()
         for _, edge_path in paths:
             command += f"\\\n  --relationships {edge_path}"
