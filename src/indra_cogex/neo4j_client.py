@@ -11,6 +11,7 @@ from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import norm_id
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,9 @@ class Neo4jClient:
             self.session = sess
         return self.session
 
-    def has_relation(self, source: str, target: str, relation: str) -> bool:
+    def has_relation(
+        self, source: Tuple[str, str], target: Tuple[str, str], relation: str
+    ) -> bool:
         """Return True if there is a relation between the source and the target.
 
         Parameters
@@ -129,13 +132,15 @@ class Neo4jClient:
 
     def get_relations(
         self,
-        source: Optional[str] = None,
-        target: Optional[str] = None,
+        source: Optional[Tuple[str, str]] = None,
+        target: Optional[Tuple[str, str]] = None,
         relation: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[neo4j.graph.Relationship]:
         if not source and not target:
             raise ValueError("source or target should be specified")
+        source = norm_id(*source) if source else None
+        target = norm_id(*target) if target else None
         query = """
             MATCH (%s)-[r%s]->(%s)
             RETURN DISTINCT r
@@ -146,35 +151,35 @@ class Neo4jClient:
             "{id: '%s'}" % target if target else "t",
             "" if not limit else "LIMIT %s" % limit,
         )
-        rels = [res[0] for res in self.query_tx(query)]
+        rels = [self.neo4j_to_relation(res[0]) for res in self.query_tx(query)]
         return rels
 
     def get_source_relations(
         self,
-        target: str,
+        target: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[neo4j.graph.Relationship]:
         return self.get_relations(source=None, target=target, relation=relation)
 
     def get_target_relations(
         self,
-        source: str,
+        source: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[neo4j.graph.Relationship]:
         return self.get_relations(source=source, target=None, relation=relation)
 
     def get_all_relations(
         self,
-        node: str,
+        node: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[neo4j.graph.Relationship]:
-        source_rels = self.get_source_relations(node, relation)
-        target_rels = self.get_target_relations(node, relation)
+        source_rels = self.get_source_relations(target=node, relation=relation)
+        target_rels = self.get_target_relations(source=node, relation=relation)
         all_rels = source_rels + target_rels
         return all_rels
 
     def get_property_from_relations(
-        self, relations: List[neo4j.graph.Relationship], property: str
+        self, relations: List[Relation], prop: str
     ) -> Set[str]:
         """Return the set of property values on given relations.
 
@@ -183,7 +188,7 @@ class Neo4jClient:
         relations :
             The relations, each of which may or may not contain a value for
             the given property.
-        property :
+        prop :
             The key/name of the property to look for on each relation.
 
         Returns
@@ -192,10 +197,10 @@ class Neo4jClient:
             A set of the values of the given property on the given list
             of relations.
         """
-        props = {rel[property] for rel in relations if property in rel}
+        props = {rel.data[prop] for rel in relations if prop in rel.data}
         return props
 
-    def get_sources(self, target: str, relation: str = None):
+    def get_sources(self, target: Tuple[str, str], relation: str = None):
         """Return the nodes related to the target via a given relation type.
 
         Parameters
@@ -212,7 +217,9 @@ class Neo4jClient:
         """
         return self.get_common_sources([target], relation)
 
-    def get_common_sources(self, targets, relation):
+    def get_common_sources(
+        self, targets: List[Tuple[str, str]], relation: str
+    ) -> List[Node]:
         """Return the common source nodes related to all the given targets
         via a given relation type.
 
@@ -229,7 +236,9 @@ class Neo4jClient:
             A list of source nodes.
         """
         rel_str = ":%s" % relation if relation else ""
-        parts = ["(s)-[%s]->({id: '%s'})" % (rel_str, target) for target in targets]
+        parts = [
+            "(s)-[%s]->({id: '%s'})" % (rel_str, norm_id(*target)) for target in targets
+        ]
         query = """
             MATCH %s
             RETURN DISTINCT s
@@ -240,8 +249,8 @@ class Neo4jClient:
         return nodes
 
     def get_targets(
-        self, source: str, relation: Optional[str] = None
-    ) -> List[neo4j.graph.Node]:
+        self, source: Tuple[str, str], relation: Optional[str] = None
+    ) -> List[Node]:
         """Return the nodes related to the source via a given relation type.
 
         Parameters
@@ -262,7 +271,7 @@ class Neo4jClient:
         self,
         sources: List[str],
         relation: str,
-    ) -> List[neo4j.graph.Node]:
+    ) -> List[Node]:
         """Return the common target nodes related to all the given sources
         via a given relation type.
 
@@ -279,7 +288,9 @@ class Neo4jClient:
             A list of target nodes.
         """
         rel_str = ":%s" % relation if relation else ""
-        parts = ["({id: '%s'})-[%s]->(t)" % (source, rel_str) for source in sources]
+        parts = [
+            "({id: '%s'})-[%s]->(t)" % (norm_id(*source), rel_str) for source in sources
+        ]
         query = """
             MATCH %s
             RETURN DISTINCT t
@@ -289,7 +300,7 @@ class Neo4jClient:
         nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
         return nodes
 
-    def get_target_agents(self, source: str, relation: str) -> List[Agent]:
+    def get_target_agents(self, source: Tuple[str, str], relation: str) -> List[Agent]:
         """Return the nodes related to the source via a given relation type as INDRA Agents.
 
         Parameters
@@ -308,7 +319,7 @@ class Neo4jClient:
         agents = [self.node_to_agent(target) for target in targets]
         return agents
 
-    def get_source_agents(self, target: str, relation: str) -> List[Agent]:
+    def get_source_agents(self, target: Tuple[str, str], relation: str) -> List[Agent]:
         """Return the nodes related to the target via a given relation type as INDRA Agents.
 
         Parameters
