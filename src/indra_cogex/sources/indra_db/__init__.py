@@ -2,9 +2,11 @@
 
 """Processor for the INDRA database."""
 
+import json
 import logging
 import pickle
 from pathlib import Path
+from tqdm import tqdm
 from typing import Union
 
 import humanize
@@ -12,10 +14,12 @@ import pandas as pd
 import pystow
 
 from indra.ontology.bio import bio_ontology
+from indra.databases.identifiers import ensure_prefix_if_needed
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
 logger = logging.getLogger(__name__)
+tqdm.pandas()
 
 
 # If you don't have the data, get it from:
@@ -41,6 +45,7 @@ class DbProcessor(Processor):
             df = pickle.load(fh)
         logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
         self.df = df
+        logger.info("Fixing ID and naming issues...")
         for side in "AB":
             # A lot of the names in the SIF dump are all over
             self.df[f"ag{side}_name"] = [
@@ -49,15 +54,19 @@ class DbProcessor(Processor):
                     [f"ag{side}_ns", f"ag{side}_id"]
                 ].values
             ]
+            self.df[f"ag{side}_id"] = self.df.progress_apply(
+                lambda row: fix_id(row[f"ag{side}_ns"], row[f"ag{side}_id"]), axis=1
+            )
+        self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
 
     def get_nodes(self):  # noqa:D102
         df = pd.concat(
             [
                 self.df[["agA_ns", "agA_id", "agA_name"]].rename(
-                    {"agA_ns": "ns", "agA_id": "id", "agA_name": "name"}
+                    columns={"agA_ns": "ns", "agA_id": "id", "agA_name": "name"}
                 ),
                 self.df[["agB_ns", "agB_id", "agB_name"]].rename(
-                    {"agB_ns": "ns", "agB_id": "id", "agB_name": "name"}
+                    columns={"agB_ns": "ns", "agB_id": "id", "agB_name": "name"}
                 ),
             ],
             ignore_index=True,
@@ -86,7 +95,7 @@ class DbProcessor(Processor):
         ) in (
             self.df[columns].drop_duplicates().values
         ):
-            data = {"stmt_hash:long": stmt_hash, "evidence_count:str": source_counts}
+            data = {"stmt_hash:long": stmt_hash, "evidence_count:string": source_counts}
             yield Relation(
                 source_ns,
                 source_id,
@@ -95,3 +104,12 @@ class DbProcessor(Processor):
                 [stmt_type, "Statement"],
                 data,
             )
+
+
+def fix_id(db_ns, db_id):
+    if db_ns == "GO":
+        if db_id.isnumeric():
+            db_id = "0" * (7 - len(db_id)) + db_id
+
+    db_id = ensure_prefix_if_needed(db_ns, db_id)
+    return db_id
