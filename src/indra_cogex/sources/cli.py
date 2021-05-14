@@ -61,8 +61,7 @@ def main(load: bool, load_only: bool, force: bool):
             # Now create and dump the assembled nodes
             assembled_nodes = na.assemble_nodes()
             assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
-            metadata = sorted(set(key for node in assembled_nodes for key in node.data))
-            Processor._dump_nodes_to_path(assembled_nodes, metadata, nodes_path)
+            Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
 
     if load or load_only:
         command = dedent(

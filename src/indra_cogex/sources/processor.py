@@ -81,12 +81,12 @@ class Processor(ABC):
             return self.nodes_path
 
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
-        metadata = sorted(set(key for node in nodes for key in node.data))
-        self._dump_nodes_to_path(nodes, metadata, self.nodes_path, sample_path)
+        self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
 
     @staticmethod
-    def _dump_nodes_to_path(nodes, metadata, nodes_path, sample_path=None):
+    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None):
         nodes = list(validate_nodes(nodes))
+        metadata = sorted(set(key for node in nodes for key in node.data))
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
@@ -96,16 +96,14 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Nodes", unit_scale=True)
         )
 
+        header = "id:ID", ":LABEL", *metadata
         with gzip.open(nodes_path, mode="wt") as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
+            node_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as node_sample_file:
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
-
-                    header = "id:ID", ":LABEL", *metadata
                     node_sample_writer.writerow(header)
-                    node_writer.writerow(header)
-
                     for _, node_row in zip(range(10), node_rows):
                         node_sample_writer.writerow(node_row)
                         node_writer.writerow(node_row)
