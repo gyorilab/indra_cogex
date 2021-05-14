@@ -7,7 +7,7 @@ ignore =
     S403 # pickle
     S301 # pickle
     W503 # line break before binary operator
-    E203 # conflicts with black
+    S101 # Don't complain about asserts
 exclude =
     .tox,
     .git,
