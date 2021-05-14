@@ -110,6 +110,13 @@ def fix_id(db_ns, db_id):
     if db_ns == "GO":
         if db_id.isnumeric():
             db_id = "0" * (7 - len(db_id)) + db_id
-
+    if db_ns == "EFO" and db_id.startswith("EFO:"):
+        db_id = db_id[4:]
+    # FIXME: we need to be able to fix namespace as well, not just IDs,
+    # requires refactoring
+    # if db_ns == 'UP' and db_id.startswith('SL'):
+    #    db_ns = 'UPLOC'
+    if db_ns == "UP" and "-" in db_id and not db_id.startswith("SL-"):
+        db_id = db_id.split("-")[0]
     db_id = ensure_prefix_if_needed(db_ns, db_id)
     return db_id
