@@ -26,12 +26,12 @@ class NodeAssembler:
         labels = set()
         data = {}
         for node in nodes:
-            labels |= node.labels
+            labels |= set(node.labels)
             for data_key, data_val in node.data.items():
                 previous_val = data.get(data_key)
                 if previous_val and previous_val != data_val:
                     self.conflicts.append(
-                        Conflict(f"{data_key}:{previous_val}"), f"{data_key}:{data_val}"
+                        Conflict(f"{data_key}:{previous_val}", f"{data_key}:{data_val}")
                     )
                 else:
                     data[data_key] = data_val
