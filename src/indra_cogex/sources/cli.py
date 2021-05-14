@@ -66,15 +66,14 @@ def main(load: bool, load_only: bool, force: bool):
 
     if load or load_only:
         command = dedent(
-            """\
+            f"""\
         neo4j-admin import \\
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
           --skip-bad-relationships=true \\
-          --nodes %s
+          --nodes {nodes_path}
         """
-            % nodes_path
         ).rstrip()
         for _, edge_path in paths:
             command += f"\\\n  --relationships {edge_path}"
