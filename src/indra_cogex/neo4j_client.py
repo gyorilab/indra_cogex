@@ -269,7 +269,7 @@ class Neo4jClient:
 
     def get_common_targets(
         self,
-        sources: List[str],
+        sources: List[Tuple[str, str]],
         relation: str,
     ) -> List[Node]:
         """Return the common target nodes related to all the given sources
@@ -401,7 +401,7 @@ class Neo4jClient:
         """Merge a set of graph relations (create or update)."""
         if not relations:
             return None
-        labels_str = ":".join(relations[0].labels)
+        labels_str = relations[0].rel_type
         prop_str = ",\n".join(
             ["rel.%s = relation.%s" % (k, k) for k in relations[0].data]
         )
@@ -428,7 +428,7 @@ class Neo4jClient:
             SET %s
         """ % (
             node.labels,
-            node.identifier,
+            norm_id(node.db_ns, node.db_id),
             prop_str,
         )
         return self.create_tx(query)
