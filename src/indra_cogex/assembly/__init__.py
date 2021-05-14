@@ -30,21 +30,21 @@ class NodeAssembler:
             for data_key, data_val in node.data.items():
                 previous_val = data.get(data_key)
                 if previous_val and previous_val != data_val:
-                    self.conflicts.append(
-                        Conflict(f"{data_key}:{previous_val}", f"{data_key}:{data_val}")
-                    )
+                    self.conflicts.append(Conflict(data_key, previous_val, data_val))
                 else:
                     data[data_key] = data_val
+        labels = sorted(labels)
         return Node(db_ns, db_id, labels, data)
 
 
 class Conflict:
-    def __init__(self, first, second):
-        self.first = first
-        self.second = second
+    def __init__(self, key, val1, val2):
+        self.key = key
+        self.val1 = val1
+        self.val2 = val2
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return f"Conflict({self.first}, {self.second})"
+        return f"Conflict({self.key}, {self.val1}, {self.val2})"
