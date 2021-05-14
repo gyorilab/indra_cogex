@@ -113,9 +113,9 @@ class Neo4jClient:
         Parameters
         ----------
         source :
-             Source identifier.
+             Source namespace and identifier.
         target :
-            Target identifier.
+            Target namespace and identifier.
         relation :
             Relation type.
 
@@ -136,14 +136,14 @@ class Neo4jClient:
         target: Optional[Tuple[str, str]] = None,
         relation: Optional[str] = None,
         limit: Optional[int] = None,
-    ) -> List[neo4j.graph.Relationship]:
+    ) -> List[Relation]:
         if not source and not target:
             raise ValueError("source or target should be specified")
         source = norm_id(*source) if source else None
         target = norm_id(*target) if target else None
         query = """
-            MATCH (%s)-[r%s]->(%s)
-            RETURN DISTINCT r
+            MATCH p=(%s)-[%s]->(%s)
+            RETURN DISTINCT p
             %s
         """ % (
             "{id: '%s'}" % source if source else "s",
@@ -158,21 +158,21 @@ class Neo4jClient:
         self,
         target: Tuple[str, str],
         relation: Optional[str] = None,
-    ) -> List[neo4j.graph.Relationship]:
+    ) -> List[Relation]:
         return self.get_relations(source=None, target=target, relation=relation)
 
     def get_target_relations(
         self,
         source: Tuple[str, str],
         relation: Optional[str] = None,
-    ) -> List[neo4j.graph.Relationship]:
+    ) -> List[Relation]:
         return self.get_relations(source=source, target=None, relation=relation)
 
     def get_all_relations(
         self,
         node: Tuple[str, str],
         relation: Optional[str] = None,
-    ) -> List[neo4j.graph.Relationship]:
+    ) -> List[Relation]:
         source_rels = self.get_source_relations(target=node, relation=relation)
         target_rels = self.get_target_relations(source=node, relation=relation)
         all_rels = source_rels + target_rels
@@ -200,7 +200,7 @@ class Neo4jClient:
         props = {rel.data[prop] for rel in relations if prop in rel.data}
         return props
 
-    def get_sources(self, target: Tuple[str, str], relation: str = None):
+    def get_sources(self, target: Tuple[str, str], relation: str = None) -> List[Node]:
         """Return the nodes related to the target via a given relation type.
 
         Parameters
@@ -339,11 +339,20 @@ class Neo4jClient:
         return agents
 
     @staticmethod
-    def neo4j_to_node(neo4j_node):
+    def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
         props = dict(neo4j_node)
         node_id = props.pop("id")
         db_ns, db_id = process_identifier(node_id)
         return Node(db_ns, db_id, neo4j_node.labels, props)
+
+    @staticmethod
+    def neo4j_to_relation(neo4j_path: neo4j.graph.Path) -> Relation:
+        neo4j_relation = neo4j_path.relationships[0]
+        rel_type = neo4j_relation.type
+        props = dict(neo4j_relation)
+        source_ns, source_id = process_identifier(neo4j_relation.start_node)
+        target_ns, target_id = process_identifier(neo4j_relation.end_node)
+        return Relation(source_ns, source_id, target_ns, target_id, rel_type, props)
 
     @staticmethod
     def node_to_agent(node: Node) -> Agent:
