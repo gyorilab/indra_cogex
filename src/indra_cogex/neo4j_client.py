@@ -7,6 +7,7 @@ import neo4j
 import neo4j.graph
 from neo4j import GraphDatabase
 
+from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation
@@ -235,7 +236,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        nodes = [res[0] for res in self.query_tx(query)]
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
         return nodes
 
     def get_targets(
@@ -285,7 +286,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        nodes = [res[0] for res in self.query_tx(query)]
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
         return nodes
 
     def get_target_agents(self, source: str, relation: str) -> List[Agent]:
@@ -327,14 +328,19 @@ class Neo4jClient:
         return agents
 
     @staticmethod
-    def node_to_agent(node: neo4j.graph.Node) -> Agent:
+    def neo4j_to_node(neo4j_node):
+        props = dict(neo4j_node)
+        node_id = props.pop("id")
+        db_ns, db_id = process_identifier(node_id)
+        return Node(db_ns, db_id, neo4j_node.labels, props)
+
+    @staticmethod
+    def node_to_agent(node: Node) -> Agent:
         """Return an INDRA Agent from a graph node."""
-        name = node.get("name")
-        grounding = node.get("id")
+        name = node.data.get("name")
         if not name:
-            name = grounding
-        db_ns, db_id = grounding.split(":", maxsplit=1)
-        return get_standard_agent(name, {db_ns: db_id})
+            name = f"{node.db_ns}:{node.db_id}"
+        return get_standard_agent(name, {node.db_ns: node.db_id})
 
     def delete_all(self):
         """Delete everything in the neo4j database."""
@@ -406,3 +412,10 @@ class Neo4jClient:
             prop_str,
         )
         return self.create_tx(query)
+
+
+def process_identifier(identifier):
+    graph_ns, graph_id = identifier.split(":", maxsplit=1)
+    db_ns, db_id = identifiers.get_ns_id_from_identifiers(graph_ns, graph_id)
+    db_id = identifiers.ensure_prefix_if_needed(db_ns, db_id)
+    return db_ns, db_id
