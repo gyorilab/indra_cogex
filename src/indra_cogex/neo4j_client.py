@@ -137,6 +137,27 @@ class Neo4jClient:
         relation: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Relation]:
+        """Return relations based on source, target and type constraints.
+
+        This is a generic function for getting relations, all of its parameters
+        are optional, though at least a source or a target needs to be provided.
+
+        Parameters
+        ----------
+        source :
+            Surce namespace and ID.
+        target :
+            Target namespace and ID.
+        relation :
+            Relation type.
+        limit :
+            A limit on the number of relations returned.
+
+        Returns
+        -------
+        rels :
+            A list of relations matching the constraints.
+        """
         if not source and not target:
             raise ValueError("source or target should be specified")
         source = norm_id(*source) if source else None
@@ -159,6 +180,20 @@ class Neo4jClient:
         target: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[Relation]:
+        """Get relations that connect sources to the given target.
+
+        Parameters
+        ----------
+        target :
+            Target namespace and identifier.
+        relation :
+            Relation type.
+
+        Returns
+        -------
+        rels :
+            A list of relations matching the constraints.
+        """
         return self.get_relations(source=None, target=target, relation=relation)
 
     def get_target_relations(
@@ -166,6 +201,20 @@ class Neo4jClient:
         source: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[Relation]:
+        """Get relations that connect targets from the given source.
+
+        Parameters
+        ----------
+        source :
+            Source namespace and identifier.
+        relation :
+            Relation type.
+
+        Returns
+        -------
+        rels :
+            A list of relations matching the constraints.
+        """
         return self.get_relations(source=source, target=None, relation=relation)
 
     def get_all_relations(
@@ -173,6 +222,20 @@ class Neo4jClient:
         node: Tuple[str, str],
         relation: Optional[str] = None,
     ) -> List[Relation]:
+        """Get relations that connect sources and targets with the given node.
+
+        Parameters
+        ----------
+        node :
+            Node namespace and identifier.
+        relation :
+            Relation type.
+
+        Returns
+        -------
+        rels :
+            A list of relations matching the constraints.
+        """
         source_rels = self.get_source_relations(target=node, relation=relation)
         target_rels = self.get_target_relations(source=node, relation=relation)
         all_rels = source_rels + target_rels
@@ -256,7 +319,7 @@ class Neo4jClient:
         Parameters
         ----------
         source :
-            The source node's ID.
+            Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
 
@@ -278,7 +341,7 @@ class Neo4jClient:
         Parameters
         ----------
         sources :
-            The source nodes' IDs.
+            Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
 
@@ -306,7 +369,7 @@ class Neo4jClient:
         Parameters
         ----------
         source :
-            The source node's ID.
+            Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
 
@@ -325,7 +388,7 @@ class Neo4jClient:
         Parameters
         ----------
         target :
-            The target node's ID.
+            Target namespace and identifier.
         relation :
             The relation label to constrain to when finding sources.
 
@@ -340,6 +403,19 @@ class Neo4jClient:
 
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
+        """Return a Node from a neo4j internal node.
+
+        Parameters
+        ----------
+        neo4j_node :
+            A neo4j internal node using its internal data structure and
+            identifier scheme.
+
+        Returns
+        -------
+        node :
+            A Node object with the INDRA standard identifier scheme.
+        """
         props = dict(neo4j_node)
         node_id = props.pop("id")
         db_ns, db_id = process_identifier(node_id)
@@ -347,16 +423,41 @@ class Neo4jClient:
 
     @staticmethod
     def neo4j_to_relation(neo4j_path: neo4j.graph.Path) -> Relation:
+        """Return a Relation from a neo4j internal single-relation path.
+
+        Parameters
+        ----------
+        neo4j_path :
+            A neo4j internal single-edge path using its internal data structure
+            and identifier scheme.
+
+        Returns
+        -------
+        relation :
+            A Relation object with the INDRA standard identifier scheme.
+        """
         neo4j_relation = neo4j_path.relationships[0]
         rel_type = neo4j_relation.type
         props = dict(neo4j_relation)
-        source_ns, source_id = process_identifier(neo4j_relation.start_node)
-        target_ns, target_id = process_identifier(neo4j_relation.end_node)
+        source_ns, source_id = process_identifier(neo4j_relation.start_node["id"])
+        target_ns, target_id = process_identifier(neo4j_relation.end_node["id"])
         return Relation(source_ns, source_id, target_ns, target_id, rel_type, props)
 
     @staticmethod
     def node_to_agent(node: Node) -> Agent:
-        """Return an INDRA Agent from a graph node."""
+        """Return an INDRA Agent from a Node.
+
+        Parameters
+        ----------
+        node :
+            A Node object.
+
+        Returns
+        -------
+        agent :
+            An INDRA Agent with standardized name and expanded/standardized
+            db_refs.
+        """
         name = node.data.get("name")
         if not name:
             name = f"{node.db_ns}:{node.db_id}"
@@ -434,7 +535,22 @@ class Neo4jClient:
         return self.create_tx(query)
 
 
-def process_identifier(identifier):
+def process_identifier(identifier: str) -> Tuple[str, str]:
+    """Process a neo4j-internal identifier string into an INDRA namespace and ID.
+
+    Parameters
+    ----------
+    identifier :
+        An identifier string (containing both prefix and ID) corresponding
+        to an internal neo4j graph node.
+
+    Returns
+    -------
+    db_ns:
+        An INDRA-standard namespace corresponding to the input identifier.
+    db_id:
+        An INDRA-standard identifier corresponding to the input identifier.
+    """
     graph_ns, graph_id = identifier.split(":", maxsplit=1)
     db_ns, db_id = identifiers.get_ns_id_from_identifiers(graph_ns, graph_id)
     db_id = identifiers.ensure_prefix_if_needed(db_ns, db_id)
