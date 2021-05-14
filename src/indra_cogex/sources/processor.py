@@ -90,7 +90,7 @@ class Processor(ABC):
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
-                "|".join(node.labels),
+                ";".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
             for node in tqdm(nodes, desc="Nodes", unit_scale=True)
@@ -127,7 +127,7 @@ class Processor(ABC):
             (
                 norm_id(rel.source_ns, rel.source_id),
                 norm_id(rel.target_ns, rel.target_id),
-                "|".join(sorted(rel.labels)),
+                rel.rel_type,
                 *[rel.data.get(key) for key in metadata],
             )
             for rel in tqdm(rels, desc="Edges", unit_scale=True)

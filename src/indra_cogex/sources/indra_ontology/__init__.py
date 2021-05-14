@@ -43,6 +43,4 @@ class OntologyProcessor(Processor):
             target_ns, target_id = self.ontology.get_ns_id(target)
             data = copy.copy(data)
             edge_type = data.pop("type")
-            yield Relation(
-                source_ns, source_id, target_ns, target_id, [edge_type], data
-            )
+            yield Relation(source_ns, source_id, target_ns, target_id, edge_type, data)

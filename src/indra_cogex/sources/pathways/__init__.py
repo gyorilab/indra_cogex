@@ -54,7 +54,7 @@ class PyoboProcessor(Processor):
                 pathway_id,
                 gene_ns,
                 gene_id,
-                [self.relation_label],
+                self.relation_label,
                 dict(source=self.name),
             )
 

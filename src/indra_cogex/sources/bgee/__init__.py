@@ -54,7 +54,7 @@ class BgeeProcessor(Processor):
             context_ns, context_id = get_context(context)
             for hgnc_id in hgnc_ids:
                 yield Relation(
-                    "HGNC", hgnc_id, context_ns, context_id, [self.rel_type], data
+                    "HGNC", hgnc_id, context_ns, context_id, self.rel_type, data
                 )
 
 

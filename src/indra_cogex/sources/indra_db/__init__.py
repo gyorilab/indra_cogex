@@ -95,13 +95,13 @@ class DbProcessor(Processor):
         ) in (
             self.df[columns].drop_duplicates().values
         ):
-            data = {"stmt_hash:long": stmt_hash, "evidence_count:string": source_counts}
+            data = {"stmt_hash:long": stmt_hash, "source_counts:string": source_counts}
             yield Relation(
                 source_ns,
                 source_id,
                 target_ns,
                 target_id,
-                [stmt_type, "Statement"],
+                stmt_type,
                 data,
             )
 

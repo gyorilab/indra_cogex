@@ -52,7 +52,7 @@ class GoaProcessor(Processor):
             all_ecs = ",".join(sorted(set(ecs)))
             # Possible properties could be e.g., evidence codes
             data = {"evidence_codes:string": all_ecs, "source": self.name}
-            yield Relation("HGNC", hgnc_id, "GO", go_id, [rel_type], data)
+            yield Relation("HGNC", hgnc_id, "GO", go_id, rel_type, data)
 
 
 def load_goa(url: str) -> pd.DataFrame:

@@ -77,21 +77,21 @@ class Relation:
         source_id: str,
         target_ns: str,
         target_id: str,
-        labels: Collection[str],
+        rel_type: str,
         data: Optional[Mapping[str, Any]] = None,
     ):
         """Initialize the relation.
 
         :param source_id: The identifier of the source node
         :param target_id: The identifier of the target node
-        :param labels: The collection of labels for the relation.
+        :param rel_type: The relation's type.
         :param data: The optional data dictionary associated with the relation.
         """
         self.source_ns = source_ns
         self.source_id = source_id
         self.target_ns = target_ns
         self.target_id = target_id
-        self.labels = list(labels)
+        self.rel_type = rel_type
         self.data = data if data else {}
 
     def to_json(self):
@@ -101,15 +101,14 @@ class Relation:
             "source_id": self.source_id,
             "target_ns": self.target_ns,
             "target_id": self.target_id,
-            "labels": self.labels,
+            "rel_type": self.rel_type,
             "data": self.data,
         }
 
     def __str__(self):  # noqa:D105
         data_str = ", ".join(["%s:'%s'" % (k, v) for k, v in self.data.items()])
-        labels_str = ":".join(self.labels)
         return (
-            f"({self.source_ns}, {self.source_id})-[:{labels_str} {data_str}]->"
+            f"({self.source_ns}, {self.source_id})-[:{self.rel_type} {data_str}]->"
             f"({self.target_ns}, {self.target_id})"
         )
 
