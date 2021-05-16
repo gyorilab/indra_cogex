@@ -1,6 +1,7 @@
 from collections import defaultdict
-from typing import List, Optional
-from indra_cogex.representation import Dict, Node
+from typing import Dict, List, Optional
+
+from indra_cogex.representation import Node
 
 
 class NodeAssembler:
