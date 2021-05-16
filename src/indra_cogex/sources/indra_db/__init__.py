@@ -55,13 +55,14 @@ class DbProcessor(Processor):
                     [f"ag{side}_ns", f"ag{side}_id"]
                 ].values
             ]
-            breakpoint()
             self.df[f"ag{side}_ns"], self.df[f"ag{side}_id"] = list(
                 zip(
                     *[
                         fix_id(db_ns, db_id)
                         for db_ns, db_id in tqdm(
-                            zip(list(df[f"ag{side}_ns"]), list(df[f"ag{side}_id"]))
+                            zip(list(df[f"ag{side}_ns"]), list(df[f"ag{side}_id"])),
+                            total=len(df),
+                            desc="Fixing IDs",
                         )
                     ]
                 )
