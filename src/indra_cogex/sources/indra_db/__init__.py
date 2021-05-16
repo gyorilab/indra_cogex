@@ -7,7 +7,7 @@ import logging
 import pickle
 from pathlib import Path
 from tqdm import tqdm
-from typing import Union
+from typing import Tuple, Union
 
 import humanize
 import pandas as pd
@@ -42,6 +42,7 @@ class DbProcessor(Processor):
         elif isinstance(path, str):
             path = Path(path)
         with open(path, "rb") as fh:
+            logger.info("Loading %s" % path)
             df = pickle.load(fh)
         logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
         self.df = df
@@ -54,8 +55,16 @@ class DbProcessor(Processor):
                     [f"ag{side}_ns", f"ag{side}_id"]
                 ].values
             ]
-            self.df[f"ag{side}_id"] = self.df.progress_apply(
-                lambda row: fix_id(row[f"ag{side}_ns"], row[f"ag{side}_id"]), axis=1
+            breakpoint()
+            self.df[f"ag{side}_ns"], self.df[f"ag{side}_id"] = list(
+                zip(
+                    *[
+                        fix_id(db_ns, db_id)
+                        for db_ns, db_id in tqdm(
+                            zip(list(df[f"ag{side}_ns"]), list(df[f"ag{side}_id"]))
+                        )
+                    ]
+                )
             )
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
 
@@ -106,17 +115,16 @@ class DbProcessor(Processor):
             )
 
 
-def fix_id(db_ns, db_id):
+def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
+    """Fix ID issues specific to the SIF dump."""
     if db_ns == "GO":
         if db_id.isnumeric():
             db_id = "0" * (7 - len(db_id)) + db_id
     if db_ns == "EFO" and db_id.startswith("EFO:"):
         db_id = db_id[4:]
-    # FIXME: we need to be able to fix namespace as well, not just IDs,
-    # requires refactoring
-    # if db_ns == 'UP' and db_id.startswith('SL'):
-    #    db_ns = 'UPLOC'
+    if db_ns == "UP" and db_id.startswith("SL"):
+        db_ns = "UPLOC"
     if db_ns == "UP" and "-" in db_id and not db_id.startswith("SL-"):
         db_id = db_id.split("-")[0]
     db_id = ensure_prefix_if_needed(db_ns, db_id)
-    return db_id
+    return db_ns, db_id
