@@ -81,7 +81,7 @@ class Processor(ABC):
             return self.nodes_path
 
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
-        self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
+        return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
 
     @staticmethod
     def _dump_nodes_to_path(nodes, nodes_path, sample_path=None):

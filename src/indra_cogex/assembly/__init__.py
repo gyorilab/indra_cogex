@@ -1,12 +1,12 @@
 from collections import defaultdict
 from typing import List, Optional
-from indra_cogex.representation import Node
+from indra_cogex.representation import Dict, Node
 
 
 class NodeAssembler:
     def __init__(self, nodes: Optional[List[Node]] = None):
         self.nodes = nodes if nodes else []
-        self.conflicts = []
+        self.conflicts: List[Conflict] = []
 
     def add_nodes(self, nodes: List[Node]):
         self.nodes += nodes
@@ -24,7 +24,7 @@ class NodeAssembler:
 
     def get_aggregate_node(self, db_ns: str, db_id: str, nodes: List[Node]) -> Node:
         labels = set()
-        data = {}
+        data: Dict[str, str] = {}
         for node in nodes:
             labels |= set(node.labels)
             for data_key, data_val in node.data.items():
@@ -33,8 +33,7 @@ class NodeAssembler:
                     self.conflicts.append(Conflict(data_key, previous_val, data_val))
                 else:
                     data[data_key] = data_val
-        labels = sorted(labels)
-        return Node(db_ns, db_id, labels, data)
+        return Node(db_ns, db_id, sorted(labels), data)
 
 
 class Conflict:
