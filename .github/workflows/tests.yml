@@ -16,13 +16,15 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: pip install tox
       - name: Set PyTest options
         if: github.event_name != 'pull_request'
         run:
-          echo "::set-env name=PYTEST_ADDOPTS::-m nonpublic"
-      - name: Test with pytest
-        run: |
+          echo "PYTEST_ADDOPTS=-m nonpublic" >> $GITHUB_ENV
+      - name: Check PyTest options
+        run:
           echo $PYTEST_ADDOPTS
+      - name: Install dependencies
+        run: pip install tox
+      - name: Test with pytest
+        run:
           tox -e py
