@@ -77,10 +77,6 @@ class Processor(ABC):
 
     def _dump_nodes(self) -> Path:
         sample_path = self.module.join(name="nodes_sample.tsv")
-        if self.nodes_path.is_file():
-            logger.info(f"{self.nodes_path} exists, returning")
-            return self.nodes_path
-
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
         return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
 
@@ -116,10 +112,6 @@ class Processor(ABC):
 
     def _dump_edges(self) -> Path:
         sample_path = self.module.join(name="edges_sample.tsv")
-        if self.edges_path.is_file():
-            logger.info(f"{self.edges_path} exists, returning")
-            return self.edges_path
-
         logger.info(f"Dumping into {self.edges_path}...")
         rels = self.get_relations()
         rels = validate_relations(rels)
