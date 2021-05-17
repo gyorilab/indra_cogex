@@ -19,5 +19,8 @@ jobs:
       - name: Install dependencies
         run: pip install tox
       - name: Test with pytest
+        env:
+          PYTEST_ADDOPTS: $(if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then echo "-m nonpublic"; fi)
         run:
+          echo PYTEST_ADDOPTS
           tox -e py
