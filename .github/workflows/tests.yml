@@ -18,9 +18,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: pip install tox
+      - name: Set PyTest options
+        if: ${{ env.GITHUB_EVENT_NAME == 'pull_request' }}
+        run:
+          echo "::set-env name=PYTEST_ADDOPTS::-m nonpublic"
       - name: Test with pytest
-        env:
-          PYTEST_ADDOPTS: $(if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then echo "-m nonpublic"; fi)
         run: |
           echo $PYTEST_ADDOPTS
           tox -e py
