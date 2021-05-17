@@ -17,9 +17,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set PyTest options
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'pull_request'
         run:
-          echo "PYTEST_ADDOPTS=-m nonpublic" >> $GITHUB_ENV
+          echo "PYTEST_ADDOPTS=-m 'not nonpublic'" >> $GITHUB_ENV
       - name: Check PyTest options
         run:
           echo $PYTEST_ADDOPTS
