@@ -5,6 +5,9 @@
 import logging
 from typing import ClassVar
 
+from indra.databases import hgnc_client
+from indra.databases import uniprot_client
+from indra.databases.identifiers import get_ns_id_from_identifiers
 import pyobo
 import pyobo.api.utils
 from pyobo.struct import has_part
@@ -30,9 +33,11 @@ class PyoboProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         # TODO add license
         version = pyobo.api.utils.get_version(self.prefix)
-        for identifier, name in pyobo.get_id_name_mapping("wikipathways").items():
+        for identifier, name in pyobo.get_id_name_mapping(self.prefix).items():
+            db_ns, db_id = get_ns_id_from_identifiers(self.prefix, identifier)
             yield Node(
-                f"{self.prefix}:{identifier}",
+                db_ns,
+                db_id,
                 ["BioEntity"],
                 dict(name=name, version=version),
             )
@@ -40,11 +45,37 @@ class PyoboProcessor(Processor):
     def get_relations(self):  # noqa:D102
         df = pyobo.get_filtered_relations_df(self.prefix, self.relation)
         for identifier, t_prefix, t_identifier in df.values:
+            pathway_ns, pathway_id = get_ns_id_from_identifiers(self.prefix, identifier)
+            gene_ns, gene_id = self.get_gene(t_prefix, t_identifier)
+            if not gene_ns:
+                continue
             yield Relation(
-                f"{self.prefix}:{identifier}",
-                f"{t_prefix}:{t_identifier}",
-                [self.relation_label],
+                pathway_ns,
+                pathway_id,
+                gene_ns,
+                gene_id,
+                self.relation_label,
+                dict(source=self.name),
             )
+
+    def get_gene(self, prefix, identifier):
+        if prefix == "ncbigene":
+            hgnc_id = hgnc_client.get_hgnc_from_entrez(identifier)
+            if hgnc_id:
+                return "HGNC", hgnc_id
+            else:
+                return "EGID", identifier
+        elif prefix == "uniprot":
+            # Some of the UniProt IDs are isoforms, for now, we just strip
+            # these off. We could do something more principled later.
+            if "-" in identifier:
+                identifier, _ = identifier.split("-")
+            hgnc_id = uniprot_client.get_hgnc_id(identifier)
+            if hgnc_id:
+                return "HGNC", hgnc_id
+            else:
+                return "UP", identifier
+        return None, None
 
 
 class WikipathwaysProcessor(PyoboProcessor):
@@ -65,7 +96,3 @@ class ReactomeProcessor(PyoboProcessor):
     relation = has_part
     relation_label = "haspart"
     importable = True
-
-
-if __name__ == "__main__":
-    WikipathwaysProcessor.cli()

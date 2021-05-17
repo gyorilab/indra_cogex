@@ -6,9 +6,12 @@ import os
 from textwrap import dedent
 
 import click
+import pystow
 from more_click import verbose_option
 
 from . import processor_resolver
+from .processor import Processor
+from ..assembly import NodeAssembler
 
 
 @click.command()
@@ -32,6 +35,7 @@ from . import processor_resolver
 def main(load: bool, load_only: bool, force: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
+    na = NodeAssembler()
     for processor_cls in processor_resolver:
         if not processor_cls.importable:
             continue
@@ -44,21 +48,34 @@ def main(load: bool, load_only: bool, force: bool):
             ):
                 click.secho("Processing...", fg="green")
                 processor = processor_cls()
+                # FIXME: this is redundant, we get nodes twice
+                na.add_nodes(list(processor.get_nodes()))
                 processor.dump()
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
+    # FIXME: This doesn't work unless the processors are also running and
+    # getting nodes
+    nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
+    if not load_only:
+        if force or not nodes_path.is_file():
+            # Now create and dump the assembled nodes
+            assembled_nodes = na.assemble_nodes()
+            assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
+            Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
+
     if load or load_only:
         command = dedent(
-            """\
+            f"""\
         neo4j-admin import \\
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
-          --skip-bad-relationships=true
+          --skip-bad-relationships=true \\
+          --nodes {nodes_path}
         """
         ).rstrip()
-        for node_path, edge_path in paths:
-            command += f"\\\n  --nodes {node_path} \\\n  --relationships {edge_path}"
+        for _, edge_path in paths:
+            command += f"\\\n  --relationships {edge_path}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")

@@ -12,28 +12,41 @@ class Node:
 
     def __init__(
         self,
-        identifier: str,
+        db_ns: str,
+        db_id: str,
         labels: Collection[str],
         data: Optional[Mapping[str, Any]] = None,
     ):
         """Initialize the node.
 
-        :param identifier: The identifier of the node
-        :param labels: The collection of labels for the relation.
-        :param data: The optional data dictionary associated with the node.
+        Parameters
+        ----------
+        db_ns :
+            The namespace associated with the node. Uses the INDRA standard.
+        db_id :
+            The identifier within the namespace associated with the node.
+            Uses the INDRA standard.
+        labels :
+            A collection of labels for the node.
+        data :
+            An optional data dictionary associated with the node.
         """
-        self.identifier = identifier
+        if not db_ns or not db_id:
+            raise ValueError("Invalid namespace or ID.")
+        self.db_ns = db_ns
+        self.db_id = db_id
         self.labels = labels
         self.data = data if data else {}
 
     def to_json(self):
         """Serialize the node to JSON."""
         data = {k: v for k, v in self.data.items()}
-        data["id"] = self.identifier
+        data["db_ns"] = self.db_ns
+        data["db_id"] = self.db_id
         return {"labels": self.labels, "data": data}
 
     def _get_data_str(self):
-        pieces = ["id:'%s'" % self.identifier]
+        pieces = ["id:'%s:%s'" % (self.db_ns, self.db_id)]
         for k, v in self.data.items():
             if isinstance(v, str):
                 value = "'" + v.replace("'", "\\'") + "'"
@@ -60,36 +73,44 @@ class Relation:
 
     def __init__(
         self,
+        source_ns: str,
         source_id: str,
+        target_ns: str,
         target_id: str,
-        labels: Collection[str],
+        rel_type: str,
         data: Optional[Mapping[str, Any]] = None,
     ):
         """Initialize the relation.
 
         :param source_id: The identifier of the source node
         :param target_id: The identifier of the target node
-        :param labels: The collection of labels for the relation.
+        :param rel_type: The relation's type.
         :param data: The optional data dictionary associated with the relation.
         """
+        self.source_ns = source_ns
         self.source_id = source_id
+        self.target_ns = target_ns
         self.target_id = target_id
-        self.labels = list(labels)
+        self.rel_type = rel_type
         self.data = data if data else {}
 
     def to_json(self):
         """Serialize the relation to JSON."""
         return {
+            "source_ns": self.source_ns,
             "source_id": self.source_id,
+            "target_ns": self.target_ns,
             "target_id": self.target_id,
-            "labels": self.labels,
+            "rel_type": self.rel_type,
             "data": self.data,
         }
 
     def __str__(self):  # noqa:D105
         data_str = ", ".join(["%s:'%s'" % (k, v) for k, v in self.data.items()])
-        labels_str = ":".join(self.labels)
-        return f"({self.source_id})-[:{labels_str} {data_str}]->" f"({self.target_id})"
+        return (
+            f"({self.source_ns}, {self.source_id})-[:{self.rel_type} {data_str}]->"
+            f"({self.target_ns}, {self.target_id})"
+        )
 
     def __repr__(self):  # noqa:D105
         return str(self)
