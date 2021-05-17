@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install tox
       - name: Set PyTest options
-        if: ${{ env.GITHUB_EVENT_NAME == 'pull_request' }}
+        if: github.event_name != 'pull_request'
         run:
           echo "::set-env name=PYTEST_ADDOPTS::-m nonpublic"
       - name: Test with pytest
