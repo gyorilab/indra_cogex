@@ -1,4 +1,4 @@
-from indra_cogex.sources.processor import norm_id
+from indra_cogex.representation import norm_id
 
 
 def test_norm_id():

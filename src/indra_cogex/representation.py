@@ -6,6 +6,8 @@ from typing import Any, Collection, Mapping, Optional
 
 __all__ = ["Node", "Relation"]
 
+from indra.databases import identifiers
+
 
 class Node:
     """Representation for a node."""
@@ -114,3 +116,17 @@ class Relation:
 
     def __repr__(self):  # noqa:D105
         return str(self)
+
+
+def norm_id(db_ns, db_id):
+    identifiers_ns = identifiers.get_identifiers_ns(db_ns)
+    identifiers_id = db_id
+    if not identifiers_ns:
+        identifiers_ns = db_ns.lower()
+    else:
+        ns_embedded = identifiers.identifiers_registry.get(identifiers_ns, {}).get(
+            "namespace_embedded"
+        )
+        if ns_embedded:
+            identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
+    return f"{identifiers_ns}:{identifiers_id}"

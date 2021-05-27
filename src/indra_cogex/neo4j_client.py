@@ -10,8 +10,7 @@ from neo4j import GraphDatabase
 from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
-from indra_cogex.representation import Node, Relation
-from indra_cogex.sources.processor import norm_id
+from indra_cogex.representation import Node, Relation, norm_id
 
 logger = logging.getLogger(__name__)
 

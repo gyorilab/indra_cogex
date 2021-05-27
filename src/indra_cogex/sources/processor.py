@@ -14,10 +14,9 @@ import pystow
 from more_click import verbose_option
 from tqdm import tqdm
 
-from indra.databases import identifiers
 from indra.statements.validate import assert_valid_db_refs
 
-from indra_cogex.representation import Node, Relation
+from indra_cogex.representation import Node, Relation, norm_id
 
 __all__ = [
     "Processor",
@@ -144,20 +143,6 @@ class Processor(ABC):
             # Write remaining edges
             edge_writer.writerows(edge_rows)
         return self.edges_path
-
-
-def norm_id(db_ns, db_id):
-    identifiers_ns = identifiers.get_identifiers_ns(db_ns)
-    identifiers_id = db_id
-    if not identifiers_ns:
-        identifiers_ns = db_ns.lower()
-    else:
-        ns_embedded = identifiers.identifiers_registry.get(identifiers_ns, {}).get(
-            "namespace_embedded"
-        )
-        if ns_embedded:
-            identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
-    return f"{identifiers_ns}:{identifiers_id}"
 
 
 def validate_nodes(nodes):
