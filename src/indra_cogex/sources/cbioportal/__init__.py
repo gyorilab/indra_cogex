@@ -19,12 +19,23 @@ class CbioportalProcessor(Processor):
             path = Path(path)
 
         self.df = pd.read_csv(path, sep="\t")
+        self.rel_type = "copy_number_altered_in"
 
     def get_nodes(self):
-        for index, row in self.df.iterrows():
-            yield Node(row['Hugo_Symbol'])
+        for index, gene in self.df.iterrows():
+            yield Node(db_ns="HGNC", db_id=gene["Hugo_Symbol"])
 
-        for column in list(self.df.columns.values)[1:]:
-            yield Node(column)
+        for cell_line in list(self.df.columns.values)[1:]:
+            yield Node(db_ns="CCLE", db_id=cell_line)
 
-    # TODO: def get_relations(self):
+    def get_relations(self):
+        for index, gene in self.df.iterrows():
+            for cell_line in list(self.df.columns.values)[1:]:
+                # TODO: Checking values (2, -2)
+                yield Relation(
+                    source_ns="HGNC",
+                    source_id=gene,
+                    target_ns="CCLE",
+                    target_id=cell_line,
+                    rel_type=self.rel_type,
+                )
