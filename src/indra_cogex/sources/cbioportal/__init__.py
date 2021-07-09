@@ -25,17 +25,17 @@ class CbioportalProcessor(Processor):
         for index, gene in self.df.iterrows():
             yield Node(db_ns="HGNC", db_id=gene["Hugo_Symbol"])
 
-        for cell_line in list(self.df.columns.values)[1:]:
+        for cell_line in self.df.columns.values[1:]:
             yield Node(db_ns="CCLE", db_id=cell_line)
 
     def get_relations(self):
         for index, gene in self.df.iterrows():
-            for cell_line in list(self.df.columns.values)[1:]:
-                # TODO: Checking values (2, -2)
-                yield Relation(
-                    source_ns="HGNC",
-                    source_id=gene,
-                    target_ns="CCLE",
-                    target_id=cell_line,
-                    rel_type=self.rel_type,
-                )
+            for cell_line in self.df.columns.values[1:]:
+                if gene[cell_line] != 0:
+                    yield Relation(
+                        source_ns="HGNC",
+                        source_id=gene['Hugo_Symbol'],
+                        target_ns="CCLE",
+                        target_id=cell_line,
+                        rel_type=self.rel_type,
+                    )
