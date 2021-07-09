@@ -34,7 +34,7 @@ class CbioportalProcessor(Processor):
                 if gene[cell_line] != 0:
                     yield Relation(
                         source_ns="HGNC",
-                        source_id=gene['Hugo_Symbol'],
+                        source_id=gene["Hugo_Symbol"],
                         target_ns="CCLE",
                         target_id=cell_line,
                         rel_type=self.rel_type,
