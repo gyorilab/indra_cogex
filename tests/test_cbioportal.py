@@ -28,3 +28,4 @@ def test_get_relations():
     assert relations[1].rel_type == "copy_number_altered_in"
     assert relations[1].source_id == "NAT2"
     assert relations[1].target_id == "SW1116_LARGE_INTESTINE"
+
