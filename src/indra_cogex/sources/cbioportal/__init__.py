@@ -23,10 +23,10 @@ class CbioportalProcessor(Processor):
 
     def get_nodes(self):
         for index, gene in self.df.iterrows():
-            yield Node(db_ns="HGNC", db_id=gene["Hugo_Symbol"])
+            yield Node(db_ns="HGNC", db_id=gene["Hugo_Symbol"], labels=["BioEntity"])
 
         for cell_line in self.df.columns.values[1:]:
-            yield Node(db_ns="CCLE", db_id=cell_line)
+            yield Node(db_ns="CCLE", db_id=cell_line, labels=["BioEntity"])
 
     def get_relations(self):
         for index, gene in self.df.iterrows():
