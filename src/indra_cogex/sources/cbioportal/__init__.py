@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Union
 
+from indra.databases import hgnc_client
+
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -22,20 +24,27 @@ class CbioportalProcessor(Processor):
         self.rel_type = "copy_number_altered_in"
 
     def get_nodes(self):
-        for index, gene in self.df.iterrows():
-            yield Node(db_ns="HGNC", db_id=gene["Hugo_Symbol"], labels=["BioEntity"])
+        for index, row in self.df.iterrows():
+            hgnc_id = hgnc_client.get_hgnc_id(row["Hugo_Symbol"])
+            if not hgnc_id:
+                continue
+            yield Node(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
 
         for cell_line in self.df.columns.values[1:]:
-            yield Node(db_ns="CCLE", db_id=cell_line, labels=["BioEntity"])
+            yield Node(db_ns="ccle", db_id=cell_line, labels=["BioEntity"])
 
     def get_relations(self):
-        for index, gene in self.df.iterrows():
+        for index, row in self.df.iterrows():
+            hgnc_id = hgnc_client.get_hgnc_id(row["Hugo_Symbol"])
+            if not hgnc_id:
+                continue
             for cell_line in self.df.columns.values[1:]:
-                if gene[cell_line] != 0:
+                if row[cell_line] != 0:
                     yield Relation(
-                        source_ns="HGNC",
-                        source_id=gene["Hugo_Symbol"],
-                        target_ns="CCLE",
+                        source_ns="hgnc",
+                        source_id=hgnc_id,
+                        target_ns="ccle",
                         target_id=cell_line,
                         rel_type=self.rel_type,
+                        data={"CNA": row[cell_line]},
                     )
