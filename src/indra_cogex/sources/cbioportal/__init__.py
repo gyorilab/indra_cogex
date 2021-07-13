@@ -74,4 +74,20 @@ class CbioportalProcessor(Processor):
                             data={"CNA": row[cell_line]},
                         )
 
-        # TODO: mutation relations (data={"HGVSp_Short": row['HGVSp_Short']})
+        if self.mutations_df is not None:
+            for index, row in self.mutations_df.iterrows():
+                if not pd.isna(row["HGVSp_Short"]):
+                    hgnc_id = hgnc_client.get_hgnc_id(row["Hugo_Symbol"])
+                    cell_line_id = row["Tumor_Sample_Barcode"]
+                    if not hgnc_id:
+                        continue
+                    yield Relation(
+                        source_ns="hgnc",
+                        source_id=hgnc_id,
+                        target_ns="ccle",
+                        target_id=cell_line_id,
+                        rel_type=self.mutations_rel_type,
+                        data={"HGVSp_Short": row["HGVSp_Short"]},
+                    )
+
+        # TODO: mutation relations (data={"HGVSp_Short": row["HGVSp_Short"]})
