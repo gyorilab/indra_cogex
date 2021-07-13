@@ -44,25 +44,19 @@ class CbioportalProcessor(Processor):
         self.mutations_df = pd.read_csv(mutations_path, sep="\t", comment="#")
 
     def get_nodes(self):
-        if self.cna_df is not None:
-            for index, row in self.cna_df.iterrows():
-                hgnc_id = hgnc_client.get_hgnc_id(row["Hugo_Symbol"])
-                if not hgnc_id:
-                    continue
-                yield Node(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
+        # Collect all gene symbols from both tables
+        for hgnc_symbol in set(self.cna_df["Hugo_Symbol"]) | set(
+            self.mutations_df["Hugo_Symbol"]
+        ):
+            hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
+            if not hgnc_id:
+                continue
+            yield Node(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
 
-            for cell_line in self.cna_df.columns.values[1:]:
-                yield Node(db_ns="ccle", db_id=cell_line, labels=["BioEntity"])
-
-        if self.mutations_df is not None:
-            for index, row in self.mutations_df.iterrows():
-                if not pd.isna(row["HGVSp_Short"]):
-                    hgnc_id = hgnc_client.get_hgnc_id(row["Hugo_Symbol"])
-                    cell_line_id = row["Tumor_Sample_Barcode"]
-                    if not hgnc_id:
-                        continue
-                    yield Node(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
-                    yield Node(db_ns="ccle", db_id=cell_line_id, labels=["BioEntity"])
+        for cell_line in set(self.cna_df.columns.values[1:]) | set(
+            self.mutations_df["Tumor_Sample_Barcode"]
+        ):
+            yield Node(db_ns="ccle", db_id=cell_line, labels=["BioEntity"])
 
     def get_relations(self):
         if self.cna_df is not None:
