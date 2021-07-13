@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Union
 
+import pystow
 from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
@@ -18,23 +19,29 @@ class CbioportalProcessor(Processor):
         cna_path: Union[str, Path, None] = None,
         mutations_path: Union[str, Path, None] = None,
     ):
-        if isinstance(cna_path, str):
+        default_mut_path = pystow.join(
+            "indra",
+            "cogex",
+            "cbioportal",
+            "ccle_broad_2019",
+            name="data_mutations_extended.txt",
+        )
+        default_cna_path = pystow.join(
+            "indra", "cogex", "cbioportal", "ccle_broad_2019", name="data_CNA.txt"
+        )
+
+        if not cna_path:
+            cna_path = default_cna_path
+        elif isinstance(cna_path, str):
             cna_path = Path(cna_path)
 
-        if isinstance(mutations_path, str):
+        if not mutations_path:
+            mutations_path = default_mut_path
+        elif isinstance(mutations_path, str):
             mutations_path = Path(mutations_path)
 
-        if cna_path is not None:
-            self.cna_df = pd.read_csv(cna_path, sep="\t")
-            self.cna_rel_type = "copy_number_altered_in"
-        else:
-            self.cna_df = None
-
-        if mutations_path is not None:
-            self.mutations_df = pd.read_csv(mutations_path, sep="\t", comment="#")
-            self.mutations_rel_type = "mutated_in"
-        else:
-            self.mutations_df = None
+        self.cna_df = pd.read_csv(cna_path, sep="\t")
+        self.mutations_df = pd.read_csv(mutations_path, sep="\t", comment="#")
 
     def get_nodes(self):
         if self.cna_df is not None:
@@ -70,7 +77,7 @@ class CbioportalProcessor(Processor):
                             source_id=hgnc_id,
                             target_ns="ccle",
                             target_id=cell_line,
-                            rel_type=self.cna_rel_type,
+                            rel_type="copy_numer_altered_in",
                             data={"CNA": row[cell_line]},
                         )
 
@@ -86,6 +93,6 @@ class CbioportalProcessor(Processor):
                         source_id=hgnc_id,
                         target_ns="ccle",
                         target_id=cell_line_id,
-                        rel_type=self.mutations_rel_type,
+                        rel_type="mutated_in",
                         data={"HGVSp_Short": row["HGVSp_Short"]},
                     )
