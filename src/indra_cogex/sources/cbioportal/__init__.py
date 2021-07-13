@@ -89,5 +89,3 @@ class CbioportalProcessor(Processor):
                         rel_type=self.mutations_rel_type,
                         data={"HGVSp_Short": row["HGVSp_Short"]},
                     )
-
-        # TODO: mutation relations (data={"HGVSp_Short": row["HGVSp_Short"]})
