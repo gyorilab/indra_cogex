@@ -10,17 +10,18 @@ def test_get_nodes():
     cp = CbioportalProcessor(cna_path=cna_path, mutations_path=mutations_path)
     nodes = []
     nodes.extend(cp.get_nodes())
-    assert len(nodes) == 10
+    assert len(nodes) == 9
+
     assert nodes[0].db_id == "5"
-    assert nodes[1].db_id == "7646"
-    assert nodes[2].db_id == "186"
-    assert nodes[3].db_id == "DMS53_LUNG"
-    assert nodes[4].db_id == "SW1116_LARGE_INTESTINE"
-    assert nodes[5].db_id == "NCIH1694_LUNG"
-    assert nodes[6].db_id == "3084"
-    assert nodes[7].db_id == "127399_SOFT_TISSUE"
-    assert nodes[8].db_id == "29037"
-    assert nodes[9].db_id == "127399_SOFT_TISSUE"
+    assert nodes[1].db_id == "186"
+    assert nodes[2].db_id == "3084"
+    assert nodes[3].db_id == "7646"
+    assert nodes[4].db_id == "29037"
+
+    assert nodes[5].db_id == "127399_SOFT_TISSUE"
+    assert nodes[6].db_id == "DMS53_LUNG"
+    assert nodes[7].db_id == "NCIH1694_LUNG"
+    assert nodes[8].db_id == "SW1116_LARGE_INTESTINE"
 
 
 def test_get_relations():

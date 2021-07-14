@@ -45,16 +45,16 @@ class CbioportalProcessor(Processor):
 
     def get_nodes(self):
         # Collect all gene symbols from both tables
-        for hgnc_symbol in set(self.cna_df["Hugo_Symbol"]) | set(
-            self.mutations_df["Hugo_Symbol"]
+        for hgnc_symbol in sorted(set(self.cna_df["Hugo_Symbol"]) | set(
+            self.mutations_df["Hugo_Symbol"])
         ):
             hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
             if not hgnc_id:
                 continue
             yield Node(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
 
-        for cell_line in set(self.cna_df.columns.values[1:]) | set(
-            self.mutations_df["Tumor_Sample_Barcode"]
+        for cell_line in sorted(set(self.cna_df.columns.values[1:]) | set(
+            self.mutations_df["Tumor_Sample_Barcode"])
         ):
             yield Node(db_ns="ccle", db_id=cell_line, labels=["BioEntity"])
 
@@ -71,7 +71,7 @@ class CbioportalProcessor(Processor):
                             source_id=hgnc_id,
                             target_ns="ccle",
                             target_id=cell_line,
-                            rel_type="copy_numer_altered_in",
+                            rel_type="copy_number_altered_in",
                             data={"CNA": row[cell_line]},
                         )
 
