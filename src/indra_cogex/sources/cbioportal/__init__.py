@@ -115,7 +115,7 @@ class CcleDrugResponseProcessor(Processor):
             "cogex",
             "cbioportal",
             "ccle_broad_2019",
-            name="data_drug_treatment_IC50",
+            name="data_drug_treatment_IC50.txt",
         )
 
         if not path:
@@ -149,7 +149,7 @@ class CcleDrugResponseProcessor(Processor):
                             drug_ns,
                             drug_id,
                             rel_type="sensitive_to",
-                            data={"IC50": row[cell_line]},
+                            data={"IC50": row[cell_line], "source": "ccle"},
                         )
 
     def ground_drug(self, std_id, name=None, synonyms=None):
