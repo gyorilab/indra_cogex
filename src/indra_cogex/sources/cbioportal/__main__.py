@@ -1,4 +1,5 @@
-from . import CbioportalProcessor
+from . import CcleCnaProcessor, CcleMutationsProcessor
 
 if __name__ == "__main__":
-    CbioportalProcessor.cli()
+    CcleCnaProcessor.cli()
+    CcleMutationsProcessor.cli()
