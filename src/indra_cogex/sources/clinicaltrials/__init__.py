@@ -5,7 +5,7 @@ from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 
 drug_pattern = re.compile(r"^Drug: ([a-zA-Z ]|\d)+$")
-#id_pattern = re.compile(r'^https://ClinicalTrials.gov/show/NCT(\d+)$')
+# id_pattern = re.compile(r'^https://ClinicalTrials.gov/show/NCT(\d+)$')
 
 
 class ClinicaltrialsProcessor(Processor):
@@ -24,16 +24,16 @@ class ClinicaltrialsProcessor(Processor):
                         db_ns=matches[0].term.db, db_id=matches[0].term.id, labels=[]
                     )
 
-        for interventions in self.df["Interventions"]:
-            if not pd.isna(interventions):
-                for intervention in interventions.split("|"):
+        for index, row in self.df.iterrows():
+            if not pd.isna(row["Interventions"]):
+                for intervention in row["Interventions"].split("|"):
                     if drug_pattern.match(intervention):
-                        matches = gilda.ground(intervention[6:])
-                        if matches:
+                        int_matches = gilda.ground(intervention[6:])
+                        if int_matches:
                             yield Node(
                                 db_ns=matches[0].term.db,
-                                db_id=matches[0].term.id,
-                                labels=[],
+                                db_id=row["URL"][32:],
+                                labels=[]
                             )
 
     def get_relations(self):
@@ -55,12 +55,12 @@ class ClinicaltrialsProcessor(Processor):
                                         source_id=source_id,
                                         target_ns=target_ns,
                                         target_id=target_id,
-                                        rel_type="has_trial"
+                                        rel_type="has_trial",
                                     )
                                     yield Relation(
                                         source_ns=source_ns,
                                         source_id=source_id,
                                         target_ns=target_ns,
                                         target_id=target_id,
-                                        rel_type="tested_in"
+                                        rel_type="tested_in",
                                     )
