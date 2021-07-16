@@ -54,7 +54,7 @@ class CcleMutationsProcessor(Processor):
                     target_ns="ccle",
                     target_id=cell_line_id,
                     rel_type="mutated_in",
-                    data={"HGVSp_Short": row["HGVSp_Short"]},
+                    data={"HGVSp_Short": row["HGVSp_Short"], "source": "ccle"},
                 )
 
 
@@ -100,5 +100,5 @@ class CcleCnaProcessor(Processor):
                         target_ns="ccle",
                         target_id=cell_line,
                         rel_type="copy_number_altered_in",
-                        data={"CNA": row[cell_line]},
+                        data={"CNA": row[cell_line], "source": "ccle"},
                     )
