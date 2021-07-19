@@ -1,8 +1,8 @@
 import re
 import pandas as pd
 import gilda
-from indra_cogex.sources.processor import Processor
-from indra_cogex.representation import Node, Relation
+from src.indra_cogex.sources.processor import Processor
+from src.indra_cogex.representation import Node, Relation
 
 drug_pattern = re.compile(r"^Drug: ([a-zA-Z ]|\d)+$")
 # id_pattern = re.compile(r'^https://ClinicalTrials.gov/show/NCT(\d+)$')
@@ -31,7 +31,7 @@ class ClinicaltrialsProcessor(Processor):
                         int_matches = gilda.ground(intervention[6:])
                         if int_matches:
                             yield Node(
-                                db_ns=matches[0].term.db,
+                                db_ns=int_matches[0].term.db,
                                 db_id=row["URL"][32:],
                                 labels=[]
                             )
