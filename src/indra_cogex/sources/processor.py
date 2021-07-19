@@ -148,7 +148,7 @@ class Processor(ABC):
 def validate_nodes(nodes):
     for idx, node in enumerate(nodes):
         try:
-            assert_valid_db_refs({node.db_ns.upper(): node.db_id})
+            assert_valid_db_refs({node.db_ns: node.db_id})
             yield node
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
@@ -158,8 +158,8 @@ def validate_nodes(nodes):
 def validate_relations(relations):
     for idx, rel in enumerate(relations):
         try:
-            assert_valid_db_refs({rel.source_ns.upper(): rel.source_id})
-            assert_valid_db_refs({rel.target_ns.upper(): rel.target_id})
+            assert_valid_db_refs({rel.source_ns: rel.source_id})
+            assert_valid_db_refs({rel.target_ns: rel.target_id})
             yield rel
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
