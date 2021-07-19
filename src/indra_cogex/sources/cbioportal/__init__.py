@@ -1,5 +1,8 @@
+import re
+
 import pandas as pd
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Union
 
@@ -127,8 +130,8 @@ class CcleDrugResponseProcessor(Processor):
         self.drug_mappings = {}
 
     def get_nodes(self):
-        for drug in list(self.df["ENTITY_STABLE_ID"]):
-            db_ns, db_id = self.ground_drug(drug)
+        drugs = self.get_drug_mappings()
+        for db_ns, db_id in drugs.values():
             if db_ns and db_id:
                 yield Node(db_ns, db_id, labels=["BioEntity"])
 
@@ -139,7 +142,7 @@ class CcleDrugResponseProcessor(Processor):
         cell_lines = self.df.columns[5:]
         for _, row in self.df.iterrows():
             drug = row["ENTITY_STABLE_ID"]
-            drug_ns, drug_id = self.ground_drug(drug)
+            drug_ns, drug_id = self.drug_mappings.get(drug, (None, None))
             if drug_ns and drug_id:
                 for cell_line in cell_lines:
                     if not pd.isna(row[cell_line]) and row[cell_line] < 10:
@@ -152,14 +155,31 @@ class CcleDrugResponseProcessor(Processor):
                             data={"IC50": row[cell_line], "source": "ccle"},
                         )
 
-    def ground_drug(self, std_id, name=None, synonyms=None):
-        cached_grounding = self.drug_mappings.get(std_id)
-        if cached_grounding:
-            return cached_grounding
-        matches = gilda.ground(std_id)
-        if matches:
-            db_ns, db_id = matches[0].term.db, matches[0].term.id
-        else:
-            db_ns, db_id = None, None
-        self.drug_mappings[std_id] = (db_ns, db_id)
-        return db_ns, db_id
+    def get_drug_mappings(self):
+        self.drug_mappings = {}
+        for _, row in self.df.iterrows():
+            # We skip ones of the form "Afatinib 1/2" because we use the
+            # corresponding "Afatinib 2/2" entries instead.
+            if re.match(r"^(.+) 1/2$", row["NAME"]):
+                continue
+            elif re.match(r"^(.+) 2/2$", row["NAME"]):
+                to_ground = [row["ENTITY_STABLE_ID"].rsplit("-", 1)[0]]
+            else:
+                to_ground = [row["ENTITY_STABLE_ID"]]
+
+            match = re.search(r"SYNONYMS:(.+)", row["DESCRIPTION"])
+            if match:
+                to_ground += match.groups()[0].split(", ")
+
+            db_ns, db_id = self.ground_drug(to_ground)
+            self.drug_mappings[row["ENTITY_STABLE_ID"]] = (db_ns, db_id)
+        return self.drug_mappings
+
+    def ground_drug(self, names):
+        for name in names:
+            matches = gilda.ground(name)
+            if matches:
+                db_ns, db_id = matches[0].term.db, matches[0].term.id
+                return db_ns, db_id
+        print("Could not match %s" % str(names))
+        return None, None
