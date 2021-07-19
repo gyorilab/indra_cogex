@@ -167,9 +167,11 @@ class CcleDrugResponseProcessor(Processor):
             else:
                 to_ground = [row["ENTITY_STABLE_ID"]]
 
-            match = re.search(r"SYNONYMS:(.+)", row["DESCRIPTION"])
+            match = re.search(r"Synonyms:(.+)", row["DESCRIPTION"])
             if match:
-                to_ground += match.groups()[0].split(", ")
+                syns = match.groups()[0]
+                if syns != "None":
+                    to_ground += [syn.strip() for syn in syns.split(",")]
 
             db_ns, db_id = self.ground_drug(to_ground)
             self.drug_mappings[row["ENTITY_STABLE_ID"]] = (db_ns, db_id)
