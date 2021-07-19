@@ -1,10 +1,10 @@
 import re
 import pandas as pd
 import gilda
-from src.indra_cogex.sources.processor import Processor
-from src.indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import Processor
+from indra_cogex.representation import Node, Relation
 
-drug_pattern = re.compile(r"^Drug: ([a-zA-Z ]|\d)+$")
+drug_pattern = re.compile(r"^Drug: (.+)$")
 # id_pattern = re.compile(r'^https://ClinicalTrials.gov/show/NCT(\d+)$')
 
 
@@ -16,25 +16,35 @@ class ClinicaltrialsProcessor(Processor):
         self.df = pd.read_csv(path, sep="\t")
 
     def get_nodes(self):
-        for conditions in self.df["Conditions"]:
-            for condition in conditions.split("|"):
+        for index, row in self.df.iterrows():
+            valid = False
+            for condition in row["Conditions"].split("|"):
                 matches = gilda.ground(condition)
                 if matches:
+                    valid = True
                     yield Node(
-                        db_ns=matches[0].term.db, db_id=matches[0].term.id, labels=[]
+                        db_ns=matches[0].term.db, db_id=matches[0].term.id,
+                        labels=[]
                     )
 
-        for index, row in self.df.iterrows():
             if not pd.isna(row["Interventions"]):
                 for intervention in row["Interventions"].split("|"):
                     if drug_pattern.match(intervention):
                         int_matches = gilda.ground(intervention[6:])
                         if int_matches:
+                            valid = True
                             yield Node(
                                 db_ns=int_matches[0].term.db,
-                                db_id=row["URL"][32:],
+                                db_id=int_matches[0].term.id,
                                 labels=[]
                             )
+
+            if valid:
+                yield Node(
+                    db_ns="CLINICALTRIALS",
+                    db_id=row["URL"][32:],
+                    labels=[]
+                )
 
     def get_relations(self):
         for index, row in self.df.iterrows():

@@ -1,4 +1,4 @@
-from src.indra_cogex.sources.clinicaltrials import ClinicaltrialsProcessor
+from indra_cogex.sources.clinicaltrials import ClinicaltrialsProcessor
 import os
 
 
