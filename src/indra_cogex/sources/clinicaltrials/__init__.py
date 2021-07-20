@@ -28,7 +28,9 @@ class ClinicaltrialsProcessor(Processor):
                 if cond_matches:
                     valid_cond = True
                     yield Node(
-                        db_ns=cond_matches[0].term.db, db_id=cond_matches[0].term.id, labels=[]
+                        db_ns=cond_matches[0].term.db,
+                        db_id=cond_matches[0].term.id,
+                        labels=[],
                     )
 
             if not pd.isna(row["Interventions"]):
@@ -44,24 +46,30 @@ class ClinicaltrialsProcessor(Processor):
                             )
 
             if valid_cond:
-                self.has_trial_cond.append((cond_matches[0].term.db, cond_matches[0].term.id))
+                self.has_trial_cond.append(
+                    (cond_matches[0].term.db, cond_matches[0].term.id)
+                )
                 self.has_trial_nct.append((row["URL"][32:]))
 
             if valid_int:
-                self.tested_in_int.append((int_matches[0].term.db, int_matches[0].term.id))
+                self.tested_in_int.append(
+                    (int_matches[0].term.db, int_matches[0].term.id)
+                )
                 self.tested_in_nct.append((row["URL"][32:]))
 
             if valid_cond or valid_int:
                 yield Node(db_ns="CLINICALTRIALS", db_id=row["URL"][32:], labels=[])
 
     def get_relations(self):
-        for (cond_ns, cond_id), target_id in zip(self.has_trial_cond, self.has_trial_nct):
+        for (cond_ns, cond_id), target_id in zip(
+            self.has_trial_cond, self.has_trial_nct
+        ):
             yield Relation(
                 source_ns=cond_ns,
                 source_id=cond_id,
                 target_ns="CLINICALTRIALS",
                 target_id=target_id,
-                rel_type="has_trial"
+                rel_type="has_trial",
             )
         for (int_ns, int_id), target_id in zip(self.tested_in_int, self.tested_in_nct):
             yield Relation(
@@ -69,6 +77,5 @@ class ClinicaltrialsProcessor(Processor):
                 source_id=int_id,
                 target_ns="CLINICALTRIALS",
                 target_id=target_id,
-                rel_type="tested_in"
+                rel_type="tested_in",
             )
-
