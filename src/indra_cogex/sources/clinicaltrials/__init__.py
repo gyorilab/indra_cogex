@@ -26,14 +26,14 @@ class ClinicaltrialsProcessor(Processor):
                 cond_matches = gilda.ground(condition)
                 if cond_matches:
                     valid = True
+                    self.has_trial_cond_ns.append(cond_matches[0].term.db)
+                    self.has_trial_cond_id.append(cond_matches[0].term.id)
+                    self.has_trial_nct.append((row["URL"][32:]))
                     yield Node(
                         db_ns=cond_matches[0].term.db,
                         db_id=cond_matches[0].term.id,
                         labels=[],
                     )
-                    self.has_trial_cond_ns.append(cond_matches[0].term.db)
-                    self.has_trial_cond_id.append(cond_matches[0].term.id)
-                    self.has_trial_nct.append((row["URL"][32:]))
 
             if not pd.isna(row["Interventions"]):
                 for intervention in row["Interventions"].split("|"):
@@ -41,14 +41,15 @@ class ClinicaltrialsProcessor(Processor):
                         int_matches = gilda.ground(intervention[6:])
                         if int_matches:
                             valid = True
+                            self.tested_in_int_ns.append(int_matches[0].term.db)
+                            self.tested_in_int_id.append(int_matches[0].term.id)
+                            self.tested_in_nct.append((row["URL"][32:]))
+                            print(int_matches[0])
                             yield Node(
                                 db_ns=int_matches[0].term.db,
                                 db_id=int_matches[0].term.id,
                                 labels=[],
                             )
-                            self.tested_in_int_ns.append(int_matches[0].term.db)
-                            self.tested_in_int_id.append(int_matches[0].term.id)
-                            self.tested_in_nct.append((row["URL"][32:]))
 
             if valid:
                 yield Node(db_ns="CLINICALTRIALS", db_id=row["URL"][32:], labels=[])

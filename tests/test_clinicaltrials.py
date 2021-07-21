@@ -20,8 +20,8 @@ def test_get_relations():
     cp = ClinicaltrialsProcessor(path)
     nodes = list(cp.get_nodes())
     relations = list(cp.get_relations())
-    assert len(relations) is not 0
-    # assert str(relations[0].source_ns) is "MESH"
-    # assert str(relations[0].source_id) is "D010468"
-    # assert str(relations[0].target_ns) is "CLINICALTRIALS"
-    # assert relations[0].target_id is "NCT04966000"
+    assert len(relations) != 0
+    assert relations[0].source_ns == "MESH"
+    assert relations[0].source_id == "D010468"
+    assert relations[0].target_ns == "CLINICALTRIALS"
+    assert relations[0].target_id == "NCT04966000"
