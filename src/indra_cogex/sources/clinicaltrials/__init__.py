@@ -1,18 +1,13 @@
-import re
-import pandas as pd
 import gilda
 from xml.etree import ElementTree as ET
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
-
-# drug_pattern = re.compile(r"^Drug: (.+)$")
 
 
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
 
     def __init__(self, path):
-        # self.df = pd.read_csv(path, sep="\t")
         self.tree = ET.parse(path)
         self.has_trial_cond_ns = []
         self.has_trial_cond_id = []
@@ -25,7 +20,7 @@ class ClinicaltrialsProcessor(Processor):
         for study in self.tree.findall("study"):
             valid = False
             for condition in study[3]:
-                cond_matches = gilda.ground(str(condition))
+                cond_matches = gilda.ground(condition.text)
                 if cond_matches:
                     valid = True
                     self.has_trial_cond_ns.append(cond_matches[0].term.db)
@@ -39,13 +34,12 @@ class ClinicaltrialsProcessor(Processor):
 
             for intervention in study[4]:
                 if intervention.attrib["type"] == "Drug":
-                    int_matches = gilda.ground(str(intervention))
+                    int_matches = gilda.ground(intervention.text)
                     if int_matches:
                         valid = True
                         self.tested_in_int_ns.append(int_matches[0].term.db)
                         self.tested_in_int_id.append(int_matches[0].term.id)
                         self.tested_in_nct.append(study[6].text[32:])
-                        print(int_matches[0])
                         yield Node(
                             db_ns=int_matches[0].term.db,
                             db_id=int_matches[0].term.id,
