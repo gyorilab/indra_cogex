@@ -18,7 +18,7 @@ class ClinicaltrialsProcessor(Processor):
 
     def get_nodes(self):
         for index, row in self.df.iterrows():
-            for condition in row["Condition"]:
+            for condition in str(row["Condition"]).split("|"):
                 cond_matches = gilda.ground(condition)
                 if cond_matches:
                     self.has_trial_cond_ns.append(cond_matches[0].term.db)

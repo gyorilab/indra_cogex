@@ -31,6 +31,6 @@ def test_get_relations():
     for relation in relations:
         assert relation.source_ns != ""
         assert relation.source_id != ""
-        assert relation.target_ns == 'CLINICALTRIALS'
+        assert relation.target_ns == "CLINICALTRIALS"
         assert relation.target_id != ""
         assert relation.rel_type == "has_trial" or relation.rel_type == "tested_in"
