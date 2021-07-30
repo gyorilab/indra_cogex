@@ -1,5 +1,6 @@
 import gilda
 import pandas as pd
+import tqdm
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 
@@ -34,7 +35,7 @@ class ClinicaltrialsProcessor(Processor):
         return None
 
     def get_nodes(self):
-        for index, row in self.df.iterrows():
+        for index, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
             for condition in str(row["Condition"]).split("|"):
                 cond_term = self.ground_condition(condition)
                 if cond_term:
@@ -48,6 +49,9 @@ class ClinicaltrialsProcessor(Processor):
                 self.has_trial_nct.append(row["NCTId"])
                 yield Node(db_ns=cond_ns, db_id=cond_id, labels=["BioEntity"])
 
+            # We first try grounding the names with Gilda, if any match, we
+            # use it, if there are no matches, we go by provided MeSH ID
+            found_drug_gilda = False
             for int_name, int_type in zip(
                 str(row["InterventionName"]).split("|"),
                 str(row["InterventionType"]).split("|"),
@@ -55,15 +59,18 @@ class ClinicaltrialsProcessor(Processor):
                 if int_type == "Drug":
                     drug_term = self.ground_drug(int_name)
                     if drug_term:
-                        drug_ns = drug_term.db
-                        drug_id = drug_term.id
-                    else:
-                        drug_ns = "MESH"
-                        drug_id = row["InterventionMeshTerm"]
-                    self.tested_in_int_ns.append(drug_ns)
-                    self.tested_in_int_id.append(drug_id)
-                    self.tested_in_nct.append(row["NCTId"])
-                    yield Node(db_ns=drug_ns, db_id=drug_id, labels=["BioEntity"])
+                        self.tested_in_int_ns.append(drug_term.db)
+                        self.tested_in_int_id.append(drug_term.id)
+                        self.tested_in_nct.append(row["NCTId"])
+                        yield Node(
+                            db_ns=drug_term.db, db_id=drug_term.id, labels=["BioEntity"]
+                        )
+                        found_drug_gilda = True
+            # If there is no Gilda much but there are some MeSH IDs given
+            if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
+                for mesh_id in row["InterventionMeshId"].split("|"):
+                    self.tested_in_int_ns.append("MESH")
+                    self.tested_in_int_id.append(mesh_id)
 
             yield Node(db_ns="CLINICALTRIALS", db_id=row["NCTId"], labels=[])
 
