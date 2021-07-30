@@ -79,7 +79,8 @@ class ClinicaltrialsProcessor(Processor):
                     self.tested_in_nct.append(row["NCTId"])
                     yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
 
-            yield Node(db_ns="CLINICALTRIALS", db_id=row["NCTId"], labels=[])
+        for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
+            yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=[])
 
     def get_relations(self):
         for cond_ns, cond_id, target_id in zip(
