@@ -36,18 +36,23 @@ class ClinicaltrialsProcessor(Processor):
 
     def get_nodes(self):
         for index, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
+            found_disease_gilda = False
             for condition in str(row["Condition"]).split("|"):
                 cond_term = self.ground_condition(condition)
                 if cond_term:
-                    cond_ns = cond_term.db
-                    cond_id = cond_term.id
-                else:
-                    cond_ns = "MESH"
-                    cond_id = row["ConditionMeshId"]
-                self.has_trial_cond_ns.append(cond_ns)
-                self.has_trial_cond_id.append(cond_id)
-                self.has_trial_nct.append(row["NCTId"])
-                yield Node(db_ns=cond_ns, db_id=cond_id, labels=["BioEntity"])
+                    self.has_trial_nct.append(row["NCTId"])
+                    self.has_trial_cond_ns.append(cond_term.db)
+                    self.has_trial_cond_id.append(cond_term.id)
+                    yield Node(
+                        db_ns=cond_term.db, db_id=cond_term.id, labels=["BioEntity"]
+                    )
+                    found_disease_gilda = True
+            if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
+                for mesh_id in row["ConditionMeshId"].split("|"):
+                    self.has_trial_nct.append(row["NCTId"])
+                    self.has_trial_cond_ns.append("MESH")
+                    self.has_trial_cond_id.append(mesh_id)
+                    yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
 
             # We first try grounding the names with Gilda, if any match, we
             # use it, if there are no matches, we go by provided MeSH ID
@@ -71,6 +76,8 @@ class ClinicaltrialsProcessor(Processor):
                 for mesh_id in row["InterventionMeshId"].split("|"):
                     self.tested_in_int_ns.append("MESH")
                     self.tested_in_int_id.append(mesh_id)
+                    self.tested_in_nct.append(row["NCTId"])
+                    yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
 
             yield Node(db_ns="CLINICALTRIALS", db_id=row["NCTId"], labels=[])
 
