@@ -51,6 +51,9 @@ class Sentence:
         self.tokens = [Token(**td) for td in token_data]
         self.dependency_graph = make_graph(self.tokens, roots, edges)
 
+    def draw_graph(self, fname):
+        return draw_graph(self.dependency_graph, fname)
+
     def __str__(self):
         return "Sentence(%s)" % ", ".join([t.word for t in self.tokens])
 
@@ -63,6 +66,20 @@ class Document:
         self.doc_id = document_data["id"]
         self.metadata = document_data["metadata"]
         self.sentences = [Sentence(s) for s in document_data["sentences"]]
+
+    def draw_graph(self, fname):
+        graphs = []
+        for idx, sentence in enumerate(self.sentences):
+            g = networkx.relabel_nodes(
+                sentence.dependency_graph,
+                mapping={
+                    i: "%s:%s" % (idx, i) for i in range(len(sentence.dependency_graph))
+                },
+                copy=True,
+            )
+            graphs.append(g)
+        joint_graph = networkx.compose_all(graphs)
+        draw_graph(joint_graph, fname)
 
     def __str__(self):
         return f"Document({self.doc_id}, {len(self.sentences)} sentences)"
