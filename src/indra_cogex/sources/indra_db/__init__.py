@@ -92,6 +92,7 @@ class DbProcessor(Processor):
             "agB_id",
             "stmt_type",
             "source_counts",
+            "ev_count",
             "stmt_hash",
         ]
         for (
@@ -105,7 +106,11 @@ class DbProcessor(Processor):
         ) in (
             self.df[columns].drop_duplicates().values
         ):
-            data = {"stmt_hash:long": stmt_hash, "source_counts:string": source_counts}
+            data = {
+                "stmt_hash:long": stmt_hash,
+                "source_counts:string": source_counts,
+                "ev_count:int": sum(source_counts.values()),
+            }
             yield Relation(
                 source_ns,
                 source_id,
