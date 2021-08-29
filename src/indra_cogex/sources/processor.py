@@ -57,16 +57,22 @@ class Processor(ABC):
         """Iterate over the relations to upload."""
 
     @classmethod
-    def cli(cls):
-        """Run the CLI for this processor."""
+    def get_cli(cls) -> click.Command:
+        """Get the CLI for this processor."""
 
         @click.command()
         @verbose_option
         def _main():
+            click.secho(f"Building {cls.name}", fg="green", bold=True)
             processor = cls()
             processor.dump()
 
-        _main()
+        return _main
+
+    @classmethod
+    def cli(cls) -> None:
+        """Run the CLI for this processor."""
+        cls.get_cli()()
 
     def dump(self):
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
