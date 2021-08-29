@@ -85,6 +85,7 @@ class DbProcessor(Processor):
             yield Node(db_ns, db_id, ["BioEntity"], dict(name=name))
 
     def get_relations(self):  # noqa:D102
+        rel_type = "indra_rel"
         columns = [
             "agA_ns",
             "agA_id",
@@ -92,7 +93,8 @@ class DbProcessor(Processor):
             "agB_id",
             "stmt_type",
             "source_counts",
-            "ev_count",
+            "evidence_count",
+            "belief",
             "stmt_hash",
         ]
         for (
@@ -102,6 +104,8 @@ class DbProcessor(Processor):
             target_id,
             stmt_type,
             source_counts,
+            evidence_count,
+            belief,
             stmt_hash,
         ) in (
             self.df[columns].drop_duplicates().values
@@ -109,14 +113,16 @@ class DbProcessor(Processor):
             data = {
                 "stmt_hash:long": stmt_hash,
                 "source_counts:string": source_counts,
-                "ev_count:int": sum(source_counts.values()),
+                "evidence_count:int": evidence_count,
+                "stmt_type:string": stmt_type,
+                "belief:float": belief,
             }
             yield Relation(
                 source_ns,
                 source_id,
                 target_ns,
                 target_id,
-                stmt_type,
+                rel_type,
                 data,
             )
 
