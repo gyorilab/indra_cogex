@@ -35,7 +35,11 @@ class DbProcessor(Processor):
     def __init__(self, path: Union[None, str, Path] = None):
         """Initialize the INDRA database processor.
 
-        :param path: The path to the INDRA database SIF dump pickle. If none given, will look in the default location.
+        Parameters
+        ----------
+        path :
+            The path to the INDRA database SIF dump pickle. If none given,
+            will look in the default location.
         """
         if path is None:
             path = pystow.join("indra", "db", name="sif.pkl")
