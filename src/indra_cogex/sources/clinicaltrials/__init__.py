@@ -1,6 +1,9 @@
 import gilda
 import pandas as pd
+from pathlib import Path
+import pystow
 import tqdm
+from typing import Union
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 
@@ -8,7 +11,19 @@ from indra_cogex.representation import Node, Relation
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
 
-    def __init__(self, path):
+    def __init__(self, path: Union[str, Path, None] = None):
+        default_path = pystow.join(
+            "indra",
+            "cogex",
+            "clinicaltrials",
+            name="clinical_trials.csv.gz",
+        )
+
+        if not path:
+            path = default_path
+        elif isinstance(path, str):
+            path = Path(path)
+
         self.df = pd.read_csv(path, sep=",", skiprows=10)
         self.has_trial_cond_ns = []
         self.has_trial_cond_id = []
