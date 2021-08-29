@@ -1,4 +1,5 @@
 import re
+import logging
 
 import pandas as pd
 
@@ -12,6 +13,8 @@ from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+
+logger = logging.getLogger(__name__)
 
 
 class CcleMutationsProcessor(Processor):
@@ -183,5 +186,5 @@ class CcleDrugResponseProcessor(Processor):
             if matches:
                 db_ns, db_id = matches[0].term.db, matches[0].term.id
                 return db_ns, db_id
-        print("Could not match %s" % str(names))
+        logger.info("Could not match %s" % str(names))
         return None, None

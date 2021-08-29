@@ -1,0 +1,21 @@
+"APIVrs: 1.01.03"
+"DataVrs: 2021:07:25 22:17:01.972"
+"Expression: ALL"
+"NStudiesAvail: 384408"
+"NStudiesFound: 384408"
+"MinRank: 1"
+"MaxRank: 400000"
+"NStudiesReturned: 384408"
+"Field Names: NCTId,BriefTitle,Condition,ConditionMeshTerm,ConditionMeshId,InterventionName,InterventionType,InterventionMeshTerm,InterventionMeshId"
+
+"Rank","NCTId","BriefTitle","Condition","ConditionMeshTerm","ConditionMeshId","InterventionName","InterventionType","InterventionMeshTerm","InterventionMeshId"
+1,"NCT04977401","EndoscoPic Submucosal dIssection Using geL Versus glycerOl for Submucosal iNjection","Early Gastric Cancer|Rectal Polyp","Stomach Neoplasms","D000013274","Endoscopic submucosal dissection|use of Orise Gel as lifting agent for endoscopic submucosal dissection|use of glycerol as lifting agent for endoscopic submucosal dissection","Procedure|Device|Device","Glycerol","D000005990"
+2,"NCT04977388","NORTHERA (DROXIDOPA) for Dysautonomia in Adult Survivors of Menkes Disease and Occipital Horn Syndrome","Menkes Disease|Occipital Horn Syndrome","Primary Dysautonomias|Autonomic Nervous System Diseases|Menkes Kinky Hair Syndrome|Ehlers-Danlos Syndrome|Cutis Laxa|Syndrome","D000054969|D000001342|D000007706|D000004535|D000003483|D000013577","Droxidopa|Placebo","Drug|Other","Droxidopa","D000015103"
+3,"NCT04977375","Trial of Anti-PD-1 Immunotherapy and Stereotactic Radiation in Patients With Recurrent Glioblastoma","Glioblastoma Multiforme","Glioblastoma","D000005909","Pembrolizumab|Stereotactic Radiation Therapy|Surgical Resection","Drug|Radiation|Procedure","Pembrolizumab","C000582435"
+4,"NCT04977362","Interdisciplinary Perioperative Care in Minimally-invasive Heart Valve Surgery","Heart Valve Diseases","Heart Valve Diseases","D000006349","Enhanced Recovery After Surgery|Treatment as Usual","Other|Other",,
+5,"NCT04977349","Manual Therapy Effectivity and Exercises in Musicians","Orofacial Pain","Facial Pain","D000005157","Manual Therapy|Exercise program","Other|Other",,
+6,"NCT04977336","A Study Evaluating Efficacy and Safety of VX-548 for Acute Pain After a Bunionectomy","Acute Pain","Acute Pain","D000059787","VX-548|HB/APAP|Placebo (matched to VX-548)|Placebo (matched to HB/APAP)","Drug|Drug|Drug|Drug","Acetaminophen","D000000082"
+7,"NCT04977323","Comparison Effectiveness of Distractions on Pain and Fear of Children","Pain and Fear and Child and Cathetersor Indwelling",,,"TICK-B group","Other",,
+8,"NCT04977310","TARGET-LOAD Pilot Study Comparing Hemodynamics-guided LVAD Unloading vs. Standard of Care","Heart Failure","Heart Failure","D000006333","CardioMEMS","Device",,
+9,"NCT04977297","Move to Music Video Intervention for ICU Survivors","Critical Illness|Intensive Care Unit Syndrome","Critical Illness","D000016638","Move to Music Intervention (M2M)|Move to Music -Video (M2M-V) Intervention","Behavioral|Behavioral",,
+10,"NCT04977284","Noninvasive Neuroprosthesis for Autonomic Recovery After SCI","Spinal Cord Injuries","Spinal Cord Injuries","D000013119","DS7R, Digitimer, UK","Device",,
