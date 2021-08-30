@@ -26,3 +26,7 @@ Build the graph then bulk import into Neo4j with:
 $ python -m indra_cogex.sources
 $ sh import.sh
 ```
+
+## Funding
+The development of this project is funded under the DARPA Young Faculty Award
+(ARO grant W911NF2010255).
