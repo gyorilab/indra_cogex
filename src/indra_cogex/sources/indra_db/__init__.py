@@ -142,5 +142,7 @@ def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
         db_ns = "UPLOC"
     if db_ns == "UP" and "-" in db_id and not db_id.startswith("SL-"):
         db_id = db_id.split("-")[0]
+    if db_ns == "FPLX" and db_id == "TCF-LEF":
+        db_id = "TCF_LEF"
     db_id = ensure_prefix_if_needed(db_ns, db_id)
     return db_ns, db_id
