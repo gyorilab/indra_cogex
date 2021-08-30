@@ -35,7 +35,11 @@ class DbProcessor(Processor):
     def __init__(self, path: Union[None, str, Path] = None):
         """Initialize the INDRA database processor.
 
-        :param path: The path to the INDRA database SIF dump pickle. If none given, will look in the default location.
+        Parameters
+        ----------
+        path :
+            The path to the INDRA database SIF dump pickle. If none given,
+            will look in the default location.
         """
         if path is None:
             path = pystow.join("indra", "db", name="sif.pkl")
@@ -85,6 +89,7 @@ class DbProcessor(Processor):
             yield Node(db_ns, db_id, ["BioEntity"], dict(name=name))
 
     def get_relations(self):  # noqa:D102
+        rel_type = "indra_rel"
         columns = [
             "agA_ns",
             "agA_id",
@@ -92,6 +97,8 @@ class DbProcessor(Processor):
             "agB_id",
             "stmt_type",
             "source_counts",
+            "evidence_count",
+            "belief",
             "stmt_hash",
         ]
         for (
@@ -101,17 +108,25 @@ class DbProcessor(Processor):
             target_id,
             stmt_type,
             source_counts,
+            evidence_count,
+            belief,
             stmt_hash,
         ) in (
             self.df[columns].drop_duplicates().values
         ):
-            data = {"stmt_hash:long": stmt_hash, "source_counts:string": source_counts}
+            data = {
+                "stmt_hash:long": stmt_hash,
+                "source_counts:string": source_counts,
+                "evidence_count:int": evidence_count,
+                "stmt_type:string": stmt_type,
+                "belief:float": belief,
+            }
             yield Relation(
                 source_ns,
                 source_id,
                 target_ns,
                 target_id,
-                stmt_type,
+                rel_type,
                 data,
             )
 
@@ -127,5 +142,7 @@ def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
         db_ns = "UPLOC"
     if db_ns == "UP" and "-" in db_id and not db_id.startswith("SL-"):
         db_id = db_id.split("-")[0]
+    if db_ns == "FPLX" and db_id == "TCF-LEF":
+        db_id = "TCF_LEF"
     db_id = ensure_prefix_if_needed(db_ns, db_id)
     return db_ns, db_id
