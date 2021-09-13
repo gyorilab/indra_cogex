@@ -9,6 +9,12 @@ from .goa import GoaProcessor
 from .indra_db import DbProcessor
 from .indra_ontology import OntologyProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
+from .cbioportal import (
+    CcleCnaProcessor,
+    CcleMutationsProcessor,
+    CcleDrugResponseProcessor,
+)
+from .clinicaltrials import ClinicaltrialsProcessor
 from .processor import Processor
 
 __all__ = [
@@ -20,6 +26,10 @@ __all__ = [
     "GoaProcessor",
     "DbProcessor",
     "OntologyProcessor",
+    "CcleCnaProcessor",
+    "CcleMutationsProcessor",
+    "CcleDrugResponseProcessor",
+    "ClinicaltrialsProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)
