@@ -98,9 +98,13 @@ class ClinicaltrialsProcessor(Processor):
             yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=[])
 
     def get_relations(self):
+        added = set()
         for cond_ns, cond_id, target_id in zip(
             self.has_trial_cond_ns, self.has_trial_cond_id, self.has_trial_nct
         ):
+            if (cond_ns, cond_id, target_id) in added:
+                continue
+            added.add((cond_ns, cond_id, target_id))
             yield Relation(
                 source_ns=cond_ns,
                 source_id=cond_id,
@@ -108,9 +112,13 @@ class ClinicaltrialsProcessor(Processor):
                 target_id=target_id,
                 rel_type="has_trial",
             )
+        added = set()
         for int_ns, int_id, target_id in zip(
             self.tested_in_int_ns, self.tested_in_int_id, self.tested_in_nct
         ):
+            if (int_ns, int_id, target_id) in added:
+                continue
+            added.add((int_ns, int_id, target_id))
             yield Relation(
                 source_ns=int_ns,
                 source_id=int_id,
