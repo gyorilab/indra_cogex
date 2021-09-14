@@ -435,12 +435,33 @@ class Neo4jClient:
         relation :
             A Relation object with the INDRA standard identifier scheme.
         """
-        neo4j_relation = neo4j_path.relationships[0]
-        rel_type = neo4j_relation.type
-        props = dict(neo4j_relation)
-        source_ns, source_id = process_identifier(neo4j_relation.start_node["id"])
-        target_ns, target_id = process_identifier(neo4j_relation.end_node["id"])
-        return Relation(source_ns, source_id, target_ns, target_id, rel_type, props)
+        return Neo4jClient.neo4j_to_relations(neo4j_path)[0]
+
+    @staticmethod
+    def neo4j_to_relations(neo4j_path: neo4j.graph.Path) -> List[Relation]:
+        """Return a Relation from a neo4j internal single-relation path.
+
+        Parameters
+        ----------
+        neo4j_path :
+            A neo4j internal single-edge path using its internal data structure
+            and identifier scheme.
+
+        Returns
+        -------
+        :
+            A list of Relation objects with the INDRA standard identifier
+            scheme.
+        """
+        relations = []
+        for neo4j_relation in neo4j_path.relationships:
+            rel_type = neo4j_relation.type
+            props = dict(neo4j_relation)
+            source_ns, source_id = process_identifier(neo4j_relation.start_node["id"])
+            target_ns, target_id = process_identifier(neo4j_relation.end_node["id"])
+            rel = Relation(source_ns, source_id, target_ns, target_id, rel_type, props)
+            relations.append(rel)
+        return relations
 
     @staticmethod
     def node_to_agent(node: Node) -> Agent:

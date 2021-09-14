@@ -3,6 +3,7 @@
 """Run the sources CLI."""
 
 import os
+import pickle
 from textwrap import dedent
 
 import click
@@ -31,8 +32,13 @@ from ..assembly import NodeAssembler
     is_flag=True,
     help="If true, rebuild all resources",
 )
+@click.option(
+    "--with_sudo",
+    is_flag=True,
+    help="If true, sudo is prepended to the neo4j-admin import command",
+)
 @verbose_option
-def main(load: bool, load_only: bool, force: bool):
+def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
     na = NodeAssembler()
@@ -44,17 +50,22 @@ def main(load: bool, load_only: bool, force: bool):
             if (
                 force
                 or not processor_cls.nodes_path.is_file()
+                or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                click.secho("Processing...", fg="green")
                 processor = processor_cls()
+                click.secho("Processing...", fg="green")
                 # FIXME: this is redundant, we get nodes twice
-                na.add_nodes(list(processor.get_nodes()))
+                nodes = list(processor.get_nodes())
                 processor.dump()
+            else:
+                click.secho("Loading cached nodes...", fg="green")
+                with open(processor_cls.nodes_indra_path, "rb") as fh:
+                    nodes = pickle.load(fh)
+            na.add_nodes(nodes)
+
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    # FIXME: This doesn't work unless the processors are also running and
-    # getting nodes
     nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
     if not load_only:
         if force or not nodes_path.is_file():
@@ -64,9 +75,10 @@ def main(load: bool, load_only: bool, force: bool):
             Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
 
     if load or load_only:
+        sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        neo4j-admin import \\
+        {sudo_prefix} neo4j-admin import \\
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
