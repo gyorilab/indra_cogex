@@ -31,8 +31,13 @@ from ..assembly import NodeAssembler
     is_flag=True,
     help="If true, rebuild all resources",
 )
+@click.option(
+    "--with_sudo",
+    is_flag=True,
+    help="If true, sudo is prepended to the neo4j-admin import command",
+)
 @verbose_option
-def main(load: bool, load_only: bool, force: bool):
+def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
     """Generate and import Neo4j nodes and edges tables."""
     paths = []
     na = NodeAssembler()
@@ -64,9 +69,10 @@ def main(load: bool, load_only: bool, force: bool):
             Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
 
     if load or load_only:
+        sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        neo4j-admin import \\
+        {sudo_prefix} neo4j-admin import \\
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
