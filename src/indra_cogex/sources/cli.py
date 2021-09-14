@@ -50,6 +50,7 @@ def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
             if (
                 force
                 or not processor_cls.nodes_path.is_file()
+                or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
                 processor = processor_cls()
