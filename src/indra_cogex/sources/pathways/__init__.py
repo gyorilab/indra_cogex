@@ -8,6 +8,7 @@ from typing import ClassVar
 from indra.databases import hgnc_client
 from indra.databases import uniprot_client
 from indra.databases.identifiers import get_ns_id_from_identifiers
+from indra.ontology.bio import bio_ontology
 import pyobo
 import pyobo.api.utils
 from pyobo.struct import has_part
@@ -48,6 +49,9 @@ class PyoboProcessor(Processor):
             pathway_ns, pathway_id = get_ns_id_from_identifiers(self.prefix, identifier)
             gene_ns, gene_id = self.get_gene(t_prefix, t_identifier)
             if not gene_ns:
+                continue
+            # This is to skip e.g., unreviewed non-human proteins
+            if not bio_ontology.get_name(gene_ns, gene_id):
                 continue
             yield Relation(
                 pathway_ns,
