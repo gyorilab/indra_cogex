@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-SUDO=false
+SUDO=false  # Set to true to run as sudo
 
 
-if [ SUDO = true ]
+if [[ $SUDO == "true" ]]
 then
    NEO4J_PREFIX="sudo"
    COGEX_SUDO_ARG="--with-sudo"
@@ -25,12 +25,12 @@ echo "NEO4J_DATA=$NEO4J_DATA"
 # Output commands as you go
 set -x
 
-$PREFIX neo4j stop
-rm import.report
+$NEO4J_PREFIX neo4j stop
+$NEO4J_PREFIX rm import.report
 
 # Delete the old database and associated transactions
-rm -rf $NEO4J_DATA/databases/indra
-$PREFIX rm -rf $NEO4J_DATA/transactions/indra
+$NEO4J_PREFIX rm -rf $NEO4J_DATA/databases/indra
+$NEO4J_PREFIX rm -rf $NEO4J_DATA/transactions/indra
 
 # Just show what it is. This should match the --database option used below
 cat $NEO4J_CONFIG/neo4j.conf | grep "dbms\.default_database"
@@ -38,4 +38,4 @@ cat $NEO4J_CONFIG/neo4j.conf | grep "dbms\.default_database"
 
 python -m indra_cogex.sources --load $SUDO_ARG
 
-$PREFIX neo4j start
+$NEO4J_PREFIX neo4j start
