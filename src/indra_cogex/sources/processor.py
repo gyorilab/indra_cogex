@@ -5,6 +5,7 @@
 import csv
 import gzip
 import logging
+import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Iterable
@@ -38,6 +39,7 @@ class Processor(ABC):
     module: ClassVar[pystow.Module]
     directory: ClassVar[Path]
     nodes_path: ClassVar[Path]
+    nodes_indra_path: ClassVar[Path]
     edges_path: ClassVar[Path]
     importable = True
 
@@ -45,7 +47,11 @@ class Processor(ABC):
         """Initialize the class attributes."""
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
+        # These are nodes directly in the neo4j encoding
         cls.nodes_path = cls.module.join(name="nodes.tsv.gz")
+        # These are nodes in the original INDRA-oriented representation
+        # needed for assembly
+        cls.nodes_indra_path = cls.module.join(name="nodes.pkl")
         cls.edges_path = cls.module.join(name="edges.tsv.gz")
 
     @abstractmethod
@@ -83,6 +89,8 @@ class Processor(ABC):
     def _dump_nodes(self) -> Path:
         sample_path = self.module.join(name="nodes_sample.tsv")
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
+        with open(self.nodes_indra_path, "wb") as fh:
+            pickle.dump(nodes, fh)
         return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
 
     @staticmethod

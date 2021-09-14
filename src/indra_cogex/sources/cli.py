@@ -3,6 +3,7 @@
 """Run the sources CLI."""
 
 import os
+import pickle
 from textwrap import dedent
 
 import click
@@ -51,15 +52,19 @@ def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
                 or not processor_cls.nodes_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                click.secho("Processing...", fg="green")
                 processor = processor_cls()
+                click.secho("Processing...", fg="green")
                 # FIXME: this is redundant, we get nodes twice
-                na.add_nodes(list(processor.get_nodes()))
+                nodes = list(processor.get_nodes())
                 processor.dump()
+            else:
+                click.secho("Loading cached nodes...", fg="green")
+                with open(processor_cls.nodes_indra_path, "rb") as fh:
+                    nodes = pickle.load(fh)
+            na.add_nodes(nodes)
+
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    # FIXME: This doesn't work unless the processors are also running and
-    # getting nodes
     nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
     if not load_only:
         if force or not nodes_path.is_file():
