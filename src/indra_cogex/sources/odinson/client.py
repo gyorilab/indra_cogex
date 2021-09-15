@@ -10,3 +10,9 @@ def send_request(grammar, url=ODINSON_URL):
     resp = requests.post(endpoint, json=obj)
     resp.raise_for_status()
     return resp.json()
+
+
+def process_rules(rules, url=ODINSON_URL):
+    rules_str = "\n".join([r.compile() for r in rules])
+    grammar = f"- rules:\n {rules_str}"
+    return send_request(grammar, url)
