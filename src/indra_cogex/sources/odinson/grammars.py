@@ -7,8 +7,8 @@ class Rule:
 
     def compile(self):
         return (
-            f"- name: {self.name}\n  label: {self.label}\n  "
-            f"type: {self.type}\n  pattern: |\n    {self.pattern}"
+            f"- name: {self.name}\n   label: {self.label}\n   "
+            f"type: {self.type}\n   pattern: |\n    {self.pattern}"
         )
 
 

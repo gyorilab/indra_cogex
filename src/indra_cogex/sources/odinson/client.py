@@ -14,5 +14,5 @@ def send_request(grammar, url=ODINSON_URL):
 
 def process_rules(rules, url=ODINSON_URL):
     rules_str = "\n".join([r.compile() for r in rules])
-    grammar = f"- rules:\n {rules_str}"
+    grammar = f"rules:\n {rules_str}"
     return send_request(grammar, url)
