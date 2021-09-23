@@ -5,6 +5,12 @@ class Rule:
         self.type = type
         self.pattern = pattern
 
+    def __str__(self):
+        return f"Rule({self.name}, {self.label}, {self.type}, {self.pattern})"
+
+    def __repr__(self):
+        return str(self)
+
     def compile(self):
         return (
             f"- name: {self.name}\n   label: {self.label}\n   "
