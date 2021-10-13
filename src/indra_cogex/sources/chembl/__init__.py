@@ -70,9 +70,7 @@ class ChemblIndicationsProcessor(Processor):
 
     def get_relations(self) -> Iterable[Relation]:
         """Iterate over ChEMBL indication annotations."""
-        for chembl_id, mesh_id, max_phase in tqdm(
-            self.df.values, unit_scale=True, desc="chembl indication relations"
-        ):
+        for chembl_id, mesh_id, max_phase in self.df.values:
             chemical = self.chemicals[chembl_id]
             indication = self.indications[mesh_id]
             yield Relation(
