@@ -3,18 +3,13 @@
 """Processor for ChEMBL."""
 
 import logging
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
 import bioversions
 import chembl_downloader
 from tqdm import tqdm
 
-from indra.ontology.standardize import (
-    get_grounding,
-    get_standard_name,
-    standardize_db_refs,
-)
-from indra_cogex.representation import Node, Relation
+from indra_cogex.representation import Node, Relation, standardize
 from indra_cogex.sources.processor import Processor
 
 logger = logging.getLogger(__name__)
@@ -53,7 +48,7 @@ class ChemblIndicationsProcessor(Processor):
         for chembl_id, chembl_name in tqdm(
             chemical_df.values, unit_scale=True, desc="caching chemicals"
         ):
-            db_ns, db_id, name = self._standardize("CHEMBL", chembl_id, chembl_name)
+            db_ns, db_id, name = standardize("CHEMBL", chembl_id, chembl_name)
             self.chemicals[chembl_id] = Node(
                 db_ns,
                 db_id,
@@ -65,7 +60,7 @@ class ChemblIndicationsProcessor(Processor):
         for mesh_id in tqdm(
             self.df.mesh_id.unique(), unit_scale=True, desc="caching indications"
         ):
-            db_ns, db_id, name = self._standardize("MESH", mesh_id)
+            db_ns, db_id, name = standardize("MESH", mesh_id)
             if name is None:
                 tqdm.write(f"no name found for MESH:{mesh_id}")
             self.indications[mesh_id] = Node(
@@ -74,16 +69,6 @@ class ChemblIndicationsProcessor(Processor):
                 ["BioEntity"],
                 dict(name=name),
             )
-
-    def _standardize(
-        self, prefix: str, identifier: str, name: Optional[str] = None
-    ) -> Tuple[str, str, str]:
-        db_refs = standardize_db_refs({prefix: identifier})
-        db_ns, db_id = get_grounding(db_refs)
-        if db_ns is None or db_id is None:
-            return prefix, identifier, name
-        name = get_standard_name(db_refs) or name
-        return db_ns, db_id, name
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over ChEMBL chemicals and indications"""
