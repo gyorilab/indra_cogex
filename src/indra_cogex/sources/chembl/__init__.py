@@ -9,7 +9,7 @@ import bioversions
 import chembl_downloader
 from tqdm import tqdm
 
-from indra_cogex.representation import Node, Relation, standardize
+from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
 logger = logging.getLogger(__name__)
@@ -42,33 +42,26 @@ class ChemblIndicationsProcessor(Processor):
     def __init__(self, version: Optional[str] = None):
         self.version = version or bioversions.get_version("chembl")
         self.df = chembl_downloader.query(SQL, version=self.version)
-
-        self.chemicals = {}
         chemical_df = chembl_downloader.query(MOLECULE_SQL, version=version)
-        for chembl_id, chembl_name in tqdm(
-            chemical_df.values, unit_scale=True, desc="caching chemicals"
-        ):
-            db_ns, db_id, name = standardize("CHEMBL", chembl_id, chembl_name)
-            self.chemicals[chembl_id] = Node(
-                db_ns,
-                db_id,
-                ["BioEntity"],
-                dict(name=name),
+        self.chemicals = {
+            chembl_id: Node.standardized(
+                db_ns="CHEMBL",
+                db_id=chembl_id,
+                name=chembl_name,
+                labels=["BioEntity"],
             )
-
-        self.indications = {}
-        for mesh_id in tqdm(
-            self.df.mesh_id.unique(), unit_scale=True, desc="caching indications"
-        ):
-            db_ns, db_id, name = standardize("MESH", mesh_id)
-            if name is None:
-                tqdm.write(f"no name found for MESH:{mesh_id}")
-            self.indications[mesh_id] = Node(
-                db_ns,
-                db_id,
-                ["BioEntity"],
-                dict(name=name),
+            for chembl_id, chembl_name in tqdm(
+                chemical_df.values, unit_scale=True, desc="caching chemicals"
             )
+        }
+        self.indications = {
+            mesh_id: Node.standardized(
+                db_ns="MESH", db_id=mesh_id, labels=["BioEntity"]
+            )
+            for mesh_id in tqdm(
+                self.df.mesh_id.unique(), unit_scale=True, desc="caching indications"
+            )
+        }
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over ChEMBL chemicals and indications"""

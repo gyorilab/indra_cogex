@@ -42,6 +42,24 @@ class Node:
         self.labels = labels
         self.data = data if data else {}
 
+    @classmethod
+    def standardized(
+        cls,
+        *,
+        db_ns: str,
+        db_id: str,
+        name: Optional[str] = None,
+        labels: Collection[str],
+    ) -> "Node":
+        """Initialize the node, but first standardize the prefix/identifier/name."""
+        db_ns, db_id, name = standardize(db_ns, db_id, name)
+        return cls(
+            db_ns,
+            db_id,
+            labels,
+            dict(name=name),
+        )
+
     def to_json(self):
         """Serialize the node to JSON."""
         data = {k: v for k, v in self.data.items()}
