@@ -32,23 +32,25 @@ class DbProcessor(Processor):
     name = "database"
     df: pd.DataFrame
 
-    def __init__(self, path: Union[None, str, Path] = None):
+    def __init__(self, dir_path: Union[None, str, Path] = None):
         """Initialize the INDRA database processor.
 
         Parameters
         ----------
-        path :
-            The path to the INDRA database SIF dump pickle. If none given,
-            will look in the default location.
+        dir_path :
+            The path to the directory containing INDRA database SIF dump pickle
+            and batches of statements (stored in batch*.json.gz files).
+            If none given, will look in the default location.      
         """
-        if path is None:
-            path = pystow.join("indra", "db", name="sif.pkl")
-        elif isinstance(path, str):
-            path = Path(path)
-        with open(path, "rb") as fh:
-            logger.info("Loading %s" % path)
+        if dir_path is None:
+            dir_path = pystow.join("indra", "db")
+        elif isinstance(dir_path, str):
+            dir_path = Path(dir_path)
+        sif_path = dir_path.joinpath("sif.pkl")
+        with open(sif_path, "rb") as fh:
+            logger.info("Loading %s" % sif_path)
             df = pickle.load(fh)
-        logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
+        logger.info("Loaded %s rows from %s", humanize.intword(len(df)), sif_path)
         self.df = df
         logger.info("Fixing ID and naming issues...")
         for side in "AB":
@@ -72,6 +74,7 @@ class DbProcessor(Processor):
                 )
             )
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
+        self.stmt_fnames = dir_path.glob("batch*.json.gz")
 
     def get_nodes(self):  # noqa:D102
         df = pd.concat(
