@@ -6,6 +6,8 @@ import gzip
 import json
 import logging
 import pickle
+import click 
+from more_click import verbose_option
 from pathlib import Path
 from tqdm import tqdm
 from typing import Tuple, Union, Optional
@@ -186,6 +188,21 @@ class DbProcessor(Processor):
                     data,
                 )
         logger.info(f'Got {total_count} total relations')         
+
+    @classmethod
+    def get_cli(cls) -> click.Command:
+        """Get the CLI for this processor."""
+
+        # Add custom option not available in other processors
+        @click.command()
+        @click.option("--add_jsons", is_flag=True)
+        @verbose_option
+        def _main(add_jsons: bool):
+            click.secho(f"Building {cls.name}", fg="green", bold=True)
+            processor = cls(add_jsons=add_jsons)
+            processor.dump()
+
+        return _main
 
 def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
     """Fix ID issues specific to the SIF dump."""
