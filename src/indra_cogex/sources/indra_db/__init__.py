@@ -50,6 +50,12 @@ class DbProcessor(Processor):
             dir_path = pystow.join("indra", "db")
         elif isinstance(dir_path, str):
             dir_path = Path(dir_path)
+        if add_jsons:
+            self.stmt_fnames = dir_path.glob("batch*.json.gz")
+            logger.info("Creating DB with Statement JSONs")
+        else:
+            self.stmt_fnames = None
+            logger.info("Creating DB without Statement JSONs")
         sif_path = dir_path.joinpath("sif.pkl")
         with open(sif_path, "rb") as fh:
             logger.info("Loading %s" % sif_path)
@@ -79,9 +85,6 @@ class DbProcessor(Processor):
             )
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
         self.df = self.df.dropna(subset=['belief'])
-        self.stmt_fnames = None
-        if add_jsons:
-            self.stmt_fnames = dir_path.glob("batch*.json.gz")
 
     def get_nodes(self):  # noqa:D102
         df = pd.concat(
