@@ -82,6 +82,6 @@ class ChemblIndicationsProcessor(Processor):
                 dict(
                     source=self.name,
                     max_phase=max_phase,
-                    versions=self.version,
+                    version=self.version,
                 ),
             )
