@@ -7,8 +7,13 @@ import gzip
 import json
 import tqdm
 import os.path
+from typing import List, Tuple
 
 import networkx
+
+import gilda
+from indra.statements import Agent
+from indra.ontology.standardize import get_standard_agent
 
 
 class Token:
@@ -64,6 +69,16 @@ class Sentence:
         if self.dependency_graph:
             return draw_graph(self.dependency_graph, fname)
 
+    def get_grounded_agents(self):
+        """Return a list of grounded agents in the sentence.
+
+        Returns
+        -------
+        grounded_agents : list of Agent
+            A list of grounded agents in the sentence.
+        """
+        return grounded_agents_from_tokens(self.tokens)
+
     def __str__(self):
         return "Sentence(%s)" % ", ".join([t.word for t in self.tokens])
 
@@ -93,6 +108,19 @@ class Document:
         joint_graph = networkx.compose_all(graphs)
         draw_graph(joint_graph, fname)
 
+    def get_grounded_agents(self):
+        """Return a list of grounded agents in the document.
+
+        Returns
+        -------
+        grounded_agents : list of Agent
+            A list of grounded agents in the document.
+        """
+        grounded_agents = []
+        for sentence in self.sentences:
+            grounded_agents += sentence.get_grounded_agents()
+        return grounded_agents
+
     def __str__(self):
         return f"Document({self.doc_id}, {len(self.sentences)} sentences)"
 
@@ -100,7 +128,24 @@ class Document:
         return str(self)
 
 
-def make_graph(tokens, roots, edges):
+def make_graph(tokens: List[Token], roots: List[int], edges: Tuple):
+    """Make a dependency graph from tokens, the root and edges between them.
+
+    Parameters
+    ----------
+    tokens :
+        A list of tokens.
+    roots :
+        A list of root node indices.
+    edges :
+        A lists of edges between the tokens.
+
+    Returns
+    -------
+    :
+        A dependency graph.
+    """
+
     nodes = []
     for idx, token in enumerate(tokens):
         node_data = token.to_json()
@@ -119,7 +164,21 @@ def make_graph(tokens, roots, edges):
     return g
 
 
-def draw_graph(g, fname):
+def draw_graph(g: networkx.Graph, fname: str):
+    """Draw a graph using pygraphviz and return the AGraph object.
+
+    Parameters
+    ----------
+    g :
+        A graph to draw.
+    fname :
+        The name of the file to write the graph to.
+
+    Returns
+    -------
+    :
+        A graphviz graph object.
+    """
     g = g.copy()
     for node in g.nodes:
         if "\\" in g.nodes[node]["label"]:
@@ -133,7 +192,16 @@ def draw_graph(g, fname):
     return ag
 
 
-def process_into_graphs(docs_path, cached=True):
+def process_into_graphs(docs_path: List[str], cached: bool = True):
+    """Dump interpretation graphs for documents in a folder.
+
+    Parameters
+    ----------
+    docs_path :
+        Path to a folder containing JSON gz files representing annotated documents.
+    cached :
+        If True, use cached graphs if they exist.
+    """
     fnames = glob.glob(os.path.join(docs_path, "*.json.gz"))
     for fname in tqdm.tqdm(fnames):
         doc = process_document(fname)
@@ -150,3 +218,42 @@ def process_document(json_gz_path):
     with gzip.open(json_gz_path, "r") as fh:
         document_data = json.load(fh)
     return Document(document_data)
+
+
+def grounded_agents_from_tokens(tokens: List[Token]) -> List[Agent]:
+    """Return a list of grounded Agents from a list of tokens.
+
+    Parameters
+    ----------
+    tokens :
+        A list of tokens.
+
+    Returns
+    -------
+    :
+        A list of grounded Agents.
+    """
+    idx = 0
+    entities = []
+    while idx < len(tokens):
+        if tokens[idx].entity.startswith("B-"):
+            entity_text_parts = [tokens[idx].raw]
+            idx += 1
+            while idx < len(tokens) and tokens[idx].entity.startswith("I-"):
+                entity_text_parts.append(tokens[idx].raw)
+                idx += 1
+            entities.append(" ".join(entity_text_parts))
+        else:
+            idx += 1
+
+    grounded_agents = []
+    for entity in entities:
+        matches = gilda.ground(entity)
+        if matches:
+            agent = get_standard_agent(
+                matches[0].term.entry_name, {matches[0].term.db: matches[0].term.id}
+            )
+        else:
+            agent = Agent(entity, db_refs={"TEXT": entity})
+        grounded_agents.append(agent)
+    return grounded_agents
