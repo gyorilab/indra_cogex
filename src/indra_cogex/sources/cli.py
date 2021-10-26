@@ -2,9 +2,11 @@
 
 """Run the sources CLI."""
 
+import json
 import os
 import pickle
 from textwrap import dedent
+from typing import Optional, TextIO
 
 import click
 import pystow
@@ -37,9 +39,18 @@ from ..assembly import NodeAssembler
     is_flag=True,
     help="If true, sudo is prepended to the neo4j-admin import command",
 )
+@click.option(
+    "--config",
+    type=click.File("r"),
+    help="Path to a JSON configuration file whose keys match the names of the processors"
+    " and values are dictionaries matching the __init__ parameters for the processor",
+)
 @verbose_option
-def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
+def main(
+    load: bool, load_only: bool, force: bool, with_sudo: bool, config: Optional[TextIO]
+):
     """Generate and import Neo4j nodes and edges tables."""
+    config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
     for processor_cls in processor_resolver:
@@ -53,7 +64,7 @@ def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
                 or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                processor = processor_cls()
+                processor = processor_cls(**config.get(processor_cls.name, {}))
                 click.secho("Processing...", fg="green")
                 # FIXME: this is redundant, we get nodes twice
                 nodes = list(processor.get_nodes())
