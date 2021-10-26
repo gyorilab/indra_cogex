@@ -2,6 +2,7 @@
 
 """Tests for the build CLI."""
 
+import json
 import os
 import unittest
 from pathlib import Path
@@ -78,12 +79,17 @@ class TestCLI(unittest.TestCase):
     def test_cli_configged(self, _):
         """Test running the CLI with a config file."""
         runner = CliRunner()
+        non_default_key = "amazing"
+
         with TemporaryDirectory() as directory:
             directory = Path(directory)
             processor_dir = directory / "output"
             processor_dir.mkdir()
 
-            config = {"key": "amazing"}
+            config = {MockProcessor.name: {"key": non_default_key}}
+            config_path = os.path.join(directory, "config.json")
+            with open(config_path, "w") as file:
+                json.dump(config, file, indent=2)
 
             # override the __init_subclass__ with the directory for this test
             MockProcessor.directory = directory
@@ -92,8 +98,14 @@ class TestCLI(unittest.TestCase):
             MockProcessor.edges_path = directory / "edges.tsv.gz"
 
             res = runner.invoke(
-                main, args=["--nodes-path", os.path.join(directory, "nodes.tsv")]
+                main,
+                args=[
+                    "--nodes-path",
+                    os.path.join(directory, "nodes.tsv"),
+                    "--config",
+                    config_path,
+                ],
             )
             self.assertEqual(0, res.exit_code, msg=res.exception)
             self.assertIn(SUCCESS_TEXT, res.output)
-            self.assertIn(DEFAULT_KEY, res.output)
+            self.assertIn(non_default_key, res.output)
