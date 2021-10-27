@@ -2,9 +2,12 @@
 
 """Run the sources CLI."""
 
+import json
 import os
 import pickle
+from pathlib import Path
 from textwrap import dedent
+from typing import Iterable, Optional, TextIO, Type
 
 import click
 import pystow
@@ -13,6 +16,12 @@ from more_click import verbose_option
 from . import processor_resolver
 from .processor import Processor
 from ..assembly import NodeAssembler
+
+DEFAULT_NODES_PATH = pystow.join("indra", "cogex", "assembled", name="nodes.tsv.gz")
+
+
+def _iter_resolvers() -> Iterable[Type[Processor]]:
+    return iter(processor_resolver)
 
 
 @click.command()
@@ -37,12 +46,31 @@ from ..assembly import NodeAssembler
     is_flag=True,
     help="If true, sudo is prepended to the neo4j-admin import command",
 )
+@click.option(
+    "--config",
+    type=click.File("r"),
+    help="Path to a JSON configuration file whose keys match the names of the processors"
+    " and values are dictionaries matching the __init__ parameters for the processor",
+)
+@click.option(
+    "--nodes-path",
+    default=DEFAULT_NODES_PATH,
+)
 @verbose_option
-def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
+def main(
+    load: bool,
+    load_only: bool,
+    force: bool,
+    with_sudo: bool,
+    config: Optional[TextIO],
+    nodes_path,
+):
     """Generate and import Neo4j nodes and edges tables."""
+    nodes_path = Path(nodes_path)
+    config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
-    for processor_cls in processor_resolver:
+    for processor_cls in _iter_resolvers():
         if not processor_cls.importable:
             continue
         click.secho(f"Checking {processor_cls.name}", fg="green", bold=True)
@@ -53,20 +81,22 @@ def main(load: bool, load_only: bool, force: bool, with_sudo: bool):
                 or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                processor = processor_cls()
+                processor = processor_cls(**config.get(processor_cls.name, {}))
                 click.secho("Processing...", fg="green")
                 # FIXME: this is redundant, we get nodes twice
                 nodes = list(processor.get_nodes())
                 processor.dump()
             else:
-                click.secho("Loading cached nodes...", fg="green")
+                click.secho(
+                    f"Loading cached nodes from {processor_cls.nodes_indra_path}",
+                    fg="green",
+                )
                 with open(processor_cls.nodes_indra_path, "rb") as fh:
                     nodes = pickle.load(fh)
             na.add_nodes(nodes)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    nodes_path = pystow.module("indra", "cogex", "assembled").join(name="nodes.tsv.gz")
     if not load_only:
         if force or not nodes_path.is_file():
             # Now create and dump the assembled nodes
