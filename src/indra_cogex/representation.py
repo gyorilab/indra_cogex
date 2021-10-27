@@ -142,7 +142,7 @@ def standardize(
     prefix: str, identifier: str, name: Optional[str] = None
 ) -> Tuple[str, str, str]:
     """Get a standardized prefix, identifier, and name, if possible."""
-    db_refs, standard_name = standardize_name_db_refs({prefix: identifier})
+    standard_name, db_refs = standardize_name_db_refs({prefix: identifier})
     name = standard_name if standard_name else name
     db_ns, db_id = get_grounding(db_refs)
     if db_ns is None or db_id is None:
