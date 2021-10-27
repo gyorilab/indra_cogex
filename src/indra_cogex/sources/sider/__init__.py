@@ -5,21 +5,21 @@
 from collections import Counter
 from typing import Iterable
 
+import gilda
+import gilda.grounder
 import pandas as pd
+import pyobo
+import pystow
 from biomappings import load_mappings
 from tabulate import tabulate
 from tqdm import tqdm
 
-import gilda
-import gilda.grounder
-import pyobo
 from indra.databases.identifiers import get_ns_id_from_identifiers
-from indra_cogex.constants import MODULE
 from indra_cogex.representation import Node, Relation, standardize
 from indra_cogex.sources import Processor
 
 VERSION = "4.1"
-SUBMODULE = MODULE.submodule("indra", "cogex", "sider", VERSION)
+SUBMODULE = pystow.module("indra", "cogex", "sider", VERSION)
 URL = "http://sideeffects.embl.de/media/download/meddra_all_se.tsv.gz"
 SIDE_EFFECTS_HEADER = [
     # 'STITCH_FLAT_ID',
