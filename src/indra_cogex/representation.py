@@ -7,7 +7,7 @@ from typing import Any, Collection, Mapping, Optional, Tuple
 __all__ = ["Node", "Relation"]
 
 from indra.databases import identifiers
-from indra.ontology.standardize import get_standard_name, standardize_db_refs
+from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
 
 
@@ -142,11 +142,11 @@ def standardize(
     prefix: str, identifier: str, name: Optional[str] = None
 ) -> Tuple[str, str, str]:
     """Get a standardized prefix, identifier, and name, if possible."""
-    db_refs = standardize_db_refs({prefix: identifier})
+    db_refs, standard_name = standardize_name_db_refs({prefix: identifier})
+    name = standard_name if standard_name else name
     db_ns, db_id = get_grounding(db_refs)
     if db_ns is None or db_id is None:
         return prefix, identifier, name
-    name = get_standard_name(db_refs) or name
     return db_ns, db_id, name
 
 
