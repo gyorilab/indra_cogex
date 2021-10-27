@@ -171,13 +171,7 @@ class Neo4jClient:
             "{id: '%s'}" % target if target else "t",
             "" if not limit else "LIMIT %s" % limit,
         )
-        rels = []
-        for res in self.query_tx(query):
-            try:
-                rels.append(self.neo4j_to_relation(res[0]))
-            except Exception as e:
-                logger.warning(e)
-                logger.warning(res[0])
+        rels = [self.neo4j_to_relation(res[0]) for res in self.query_tx(query)]
         return rels
 
     def get_source_relations(
