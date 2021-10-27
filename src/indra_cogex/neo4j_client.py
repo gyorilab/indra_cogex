@@ -573,5 +573,12 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
     """
     graph_ns, graph_id = identifier.split(":", maxsplit=1)
     db_ns, db_id = identifiers.get_ns_id_from_identifiers(graph_ns, graph_id)
-    db_id = identifiers.ensure_prefix_if_needed(db_ns, db_id)
+    # This is a corner case where the prefix is not in the registry
+    # and in those cases we just use the upper case version of the prefix
+    # in the graph to revert it to the INDRA-compatible key.
+    if not db_ns:
+        db_ns = graph_ns.upper()
+        db_id = graph_id
+    else:
+        db_id = identifiers.ensure_prefix_if_needed(db_ns, db_id)
     return db_ns, db_id
