@@ -2,12 +2,15 @@
 
 """Processor for the INDRA database."""
 
+import gzip
 import json
 import logging
 import pickle
+import click 
+from more_click import verbose_option
 from pathlib import Path
 from tqdm import tqdm
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import humanize
 import pandas as pd
@@ -32,23 +35,34 @@ class DbProcessor(Processor):
     name = "database"
     df: pd.DataFrame
 
-    def __init__(self, path: Union[None, str, Path] = None):
+    def __init__(self, dir_path: Union[None, str, Path] = None,
+                 add_jsons: Optional[bool] = False):
         """Initialize the INDRA database processor.
 
         Parameters
         ----------
-        path :
-            The path to the INDRA database SIF dump pickle. If none given,
-            will look in the default location.
+        dir_path :
+            The path to the directory containing INDRA database SIF dump pickle
+            and batches of statements (stored in batch*.json.gz files, only if
+            add_jsons=True). If none given, will look in the default location.
+        add_jsons :
+            Whether to include statements JSONs in relation data. Default: False.
         """
-        if path is None:
-            path = pystow.join("indra", "db", name="sif.pkl")
-        elif isinstance(path, str):
-            path = Path(path)
-        with open(path, "rb") as fh:
-            logger.info("Loading %s" % path)
+        if dir_path is None:
+            dir_path = pystow.join("indra", "db")
+        elif isinstance(dir_path, str):
+            dir_path = Path(dir_path)
+        if add_jsons:
+            self.stmt_fnames = dir_path.glob("batch*.json.gz")
+            logger.info("Creating DB with Statement JSONs")
+        else:
+            self.stmt_fnames = None
+            logger.info("Creating DB without Statement JSONs")
+        sif_path = dir_path.joinpath("sif.pkl")
+        with open(sif_path, "rb") as fh:
+            logger.info("Loading %s" % sif_path)
             df = pickle.load(fh)
-        logger.info("Loaded %s rows from %s", humanize.intword(len(df)), path)
+        logger.info("Loaded %s rows from %s", humanize.intword(len(df)), sif_path)
         self.df = df
         logger.info("Fixing ID and naming issues...")
         for side in "AB":
@@ -72,6 +86,7 @@ class DbProcessor(Processor):
                 )
             )
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
+        self.df = self.df.dropna(subset=['belief'])
 
     def get_nodes(self):  # noqa:D102
         df = pd.concat(
@@ -101,35 +116,93 @@ class DbProcessor(Processor):
             "belief",
             "stmt_hash",
         ]
-        for (
-            source_ns,
-            source_id,
-            target_ns,
-            target_id,
-            stmt_type,
-            source_counts,
-            evidence_count,
-            belief,
-            stmt_hash,
-        ) in (
-            self.df[columns].drop_duplicates().values
-        ):
-            data = {
-                "stmt_hash:long": stmt_hash,
-                "source_counts:string": source_counts,
-                "evidence_count:int": evidence_count,
-                "stmt_type:string": stmt_type,
-                "belief:float": belief,
-            }
-            yield Relation(
+        total_count = 0
+        # If we want to add statement JSONs, process the statement batches and
+        # map to records in SIF dataframe
+        if self.stmt_fnames:
+            # Remove duplicate hashes (e.g. reverse edges for Complexes)
+            df = self.df.drop_duplicates(subset='stmt_hash', keep='first')
+            # Convert to dict with hashes as keys
+            df = df.set_index('stmt_hash')
+            df_dict = df.to_dict(orient='index')
+            for fname in tqdm(self.stmt_fnames):
+                count = 0
+                with gzip.open(fname, 'r') as fh:
+                    # For each statement find corresponding row in df
+                    for i, line in enumerate(fh.readlines()):
+                        stmt = json.loads(line)
+                        stmt_hash = int(stmt['matches_hash'])
+                        try:
+                            values = df_dict[stmt_hash]
+                            data = {
+                                "stmt_hash:long": stmt_hash,
+                                "source_counts:string": values['source_counts'],
+                                "evidence_count:int": values['evidence_count'],
+                                "stmt_type:string": values['stmt_type'],
+                                "belief:float": values['belief'],
+                                "stmt_json:string": json.dumps(stmt),
+                            }
+                            count += 1
+                            yield Relation(
+                                values['agA_ns'],
+                                values['agA_id'],
+                                values['agB_ns'],
+                                values['agB_id'],
+                                rel_type,
+                                data,
+                            )
+                        # This statement is not in df
+                        except KeyError:
+                            continue
+                total_count += count
+                logger.info(f'Got {count} relations from {i} records in {fname}')
+        # Otherwise only process the SIF dataframe
+        else:
+            for (
                 source_ns,
                 source_id,
                 target_ns,
                 target_id,
-                rel_type,
-                data,
-            )
+                stmt_type,
+                source_counts,
+                evidence_count,
+                belief,
+                stmt_hash,
+            ) in (
+                self.df[columns].drop_duplicates().values
+            ):
+                data = {
+                    "stmt_hash:long": stmt_hash,
+                    "source_counts:string": source_counts,
+                    "evidence_count:int": evidence_count,
+                    "stmt_type:string": stmt_type,
+                    "belief:float": belief,
+                }
+                total_count += 1
+                yield Relation(
+                    source_ns,
+                    source_id,
+                    target_ns,
+                    target_id,
+                    rel_type,
+                    data,
+                )
+        logger.info(f'Got {total_count} total relations')         
 
+    @classmethod
+    def get_cli(cls) -> click.Command:
+        """Get the CLI for this processor."""
+
+        # Add custom option not available in other processors
+        @click.command()
+        @click.option("--add_jsons", is_flag=True)
+        @verbose_option
+        def _main(add_jsons: bool):
+            click.secho(f"Building {cls.name}", fg="green", bold=True)
+            processor = cls(add_jsons=add_jsons)
+            processor.dump()
+
+        return _main
 
 def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
     """Fix ID issues specific to the SIF dump."""
