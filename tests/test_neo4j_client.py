@@ -3,7 +3,7 @@ import pytest
 from indra.config import get_config
 from indra.statements import Agent
 
-from indra_cogex.neo4j_client import Neo4jClient
+from indra_cogex.neo4j_client import Neo4jClient, process_identifier
 
 
 def _get_client():
@@ -53,3 +53,9 @@ def test_get_sources():
     sources = nc.get_sources(("FPLX", "ERK"), "isa")
     assert len(sources) == 2
     assert {s.data["name"] for s in sources} == {"MAPK1", "MAPK3"}, sources
+
+
+def test_process_identifier():
+    assert process_identifier("hgnc:6871") == ("HGNC", "6871")
+    assert process_identifier("chebi:1234") == ("CHEBI", "CHEBI:1234")
+    assert process_identifier("uploc:SL-0086") == ("UPLOC", "SL-0086")
