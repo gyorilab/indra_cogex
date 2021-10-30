@@ -15,9 +15,11 @@ from biomappings import load_mappings
 from tabulate import tabulate
 from tqdm import tqdm
 
+from indra.databases import biolookup_client
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra_cogex.representation import Node, Relation, standardize
 from indra_cogex.sources import Processor
+
 
 VERSION = "4.1"
 SUBMODULE = pystow.module("indra", "cogex", "sider", VERSION)
@@ -140,9 +142,12 @@ class SIDERSideEffectProcessor(Processor):
                 labels=["BioEntity"],
             )
             for pubchem_id in tqdm(
-                self.df["pubchem_id"], unit_scale=True, desc="caching chemicals"
+                self.df["pubchem_id"], unit_scale=True, desc="Caching chemicals"
             )
         }
+        for node in tqdm(self.chemicals.values(), desc="Finding chemical names"):
+            if node.data["name"] is None:
+                node.data["name"] = biolookup_client.get_name(node.db_ns, node.db_id)
 
         umls_mapper = UmlsMapper()
         self.side_effects = {}
