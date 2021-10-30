@@ -2,11 +2,13 @@
 
 """Representations for nodes and relations to upload to Neo4j."""
 
-from typing import Any, Collection, Mapping, Optional
+from typing import Any, Collection, Mapping, Optional, Tuple
 
 __all__ = ["Node", "Relation"]
 
 from indra.databases import identifiers
+from indra.ontology.standardize import standardize_name_db_refs
+from indra.statements.agent import get_grounding
 
 
 class Node:
@@ -39,6 +41,24 @@ class Node:
         self.db_id = db_id
         self.labels = labels
         self.data = data if data else {}
+
+    @classmethod
+    def standardized(
+        cls,
+        *,
+        db_ns: str,
+        db_id: str,
+        name: Optional[str] = None,
+        labels: Collection[str],
+    ) -> "Node":
+        """Initialize the node, but first standardize the prefix/identifier/name."""
+        db_ns, db_id, name = standardize(db_ns, db_id, name)
+        return cls(
+            db_ns,
+            db_id,
+            labels,
+            dict(name=name),
+        )
 
     def to_json(self):
         """Serialize the node to JSON."""
@@ -116,6 +136,18 @@ class Relation:
 
     def __repr__(self):  # noqa:D105
         return str(self)
+
+
+def standardize(
+    prefix: str, identifier: str, name: Optional[str] = None
+) -> Tuple[str, str, str]:
+    """Get a standardized prefix, identifier, and name, if possible."""
+    standard_name, db_refs = standardize_name_db_refs({prefix: identifier})
+    name = standard_name if standard_name else name
+    db_ns, db_id = get_grounding(db_refs)
+    if db_ns is None or db_id is None:
+        return prefix, identifier, name
+    return db_ns, db_id, name
 
 
 def norm_id(db_ns, db_id):
