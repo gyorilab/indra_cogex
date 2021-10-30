@@ -2,6 +2,7 @@
 
 """Processor for SIDER."""
 
+import re
 from collections import Counter
 from typing import Iterable
 
@@ -31,9 +32,12 @@ SIDE_EFFECTS_HEADER = [
 ]
 
 
+cid_to_pubchem_pattern = re.compile(r"^CID(?:0)+(\d+)$")
+
+
 def stitch_stereo_to_pubchem(cid: str) -> str:
     assert cid.startswith("CID")
-    return str(cid[3:])
+    return re.sub(cid_to_pubchem_pattern, "\\1", cid)
 
 
 class UmlsMapper:
@@ -168,7 +172,7 @@ class SIDERSideEffectProcessor(Processor):
                 chemical.db_id,
                 indication.db_ns,
                 indication.db_id,
-                "causes",
+                "has_side_effect",
                 dict(
                     source=self.name,
                     version=VERSION,

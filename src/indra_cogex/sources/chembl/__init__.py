@@ -78,7 +78,7 @@ class ChemblIndicationsProcessor(Processor):
                 chemical.db_id,
                 indication.db_ns,
                 indication.db_id,
-                "treats",
+                "has_indication",
                 dict(
                     source=self.name,
                     max_phase=max_phase,
