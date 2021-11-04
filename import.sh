@@ -5,7 +5,7 @@ SUDO=false  # Set to true to run as sudo
 if [[ $SUDO == "true" ]]
 then
    NEO4J_PREFIX="sudo"
-   COGEX_SUDO_ARG="--with-sudo"
+   COGEX_SUDO_ARG="--with_sudo"
 else
    NEO4J_PREFIX=""
    COGEX_SUDO_ARG=""
