@@ -88,13 +88,8 @@ class Processor(ABC):
 
     def _dump_nodes(self) -> Tuple[Path, List[Node]]:
         sample_path = self.module.join(name="nodes_sample.tsv")
-        nodes = sorted(
-            [
-                n
-                for n in tqdm(self.get_nodes(), desc="Node generation", unit_scale=True)
-            ],
-            key=lambda x: (x.db_ns, x.db_id),
-        )
+        nodes = tqdm(self.get_nodes(), desc="Node generation", unit_scale=True, unit="node")
+        nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
         with open(self.nodes_indra_path, "wb") as fh:
             pickle.dump(nodes, fh)
         return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path), nodes
