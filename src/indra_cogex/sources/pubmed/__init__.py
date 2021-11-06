@@ -37,19 +37,26 @@ class PubmedProcessor(Processor):
             pmid_years = json.load(fh)
         logger.info("Loaded PMID year info from %s" % self.pmid_year_path)
 
+        def get_val(val):
+            # postgres exports \N for missing values
+            if val == "\\N":
+                return None
+            else:
+                return val
+
         with open(self.text_refs_path, "r") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
-                if not pmid:
+                if not get_val(pmid):
                     continue
                 year = pmid_years.get(pmid, None)
                 data = {
-                    "trid": trid,
-                    "pmcid": pmcid,
-                    "doi": doi,
-                    "pii": pii,
-                    "url": url,
-                    "manuscript_id": manuscript_id,
+                    "trid": get_val(trid),
+                    "pmcid": get_val(pmcid),
+                    "doi": get_val(doi),
+                    "pii": get_val(pii),
+                    "url": get_val(url),
+                    "manuscript_id": get_val(manuscript_id),
                     "year": year,
                 }
                 yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
