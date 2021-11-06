@@ -63,7 +63,8 @@ class PubmedProcessor(Processor):
 
     def get_relations(self):
         with open(self.mesh_pmid_path, "r") as fh:
-            reader = csv.reader(fh, delimiter="\t")
+            reader = csv.reader(fh)
+            next(reader)  # skip header
             for mesh_num, is_concept, major_topic, pmid in reader:
                 mesh_id = mesh_num_to_id(mesh_num, is_concept)
                 yield Relation(
