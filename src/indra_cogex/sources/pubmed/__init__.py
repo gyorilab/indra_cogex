@@ -66,14 +66,14 @@ class PubmedProcessor(Processor):
             reader = csv.reader(fh)
             next(reader)  # skip header
             for mesh_num, is_concept, major_topic, pmid in reader:
-                mesh_id = mesh_num_to_id(mesh_num, is_concept)
+                mesh_id = mesh_num_to_id(mesh_num, int(is_concept))
                 yield Relation(
                     "PUBMED",
                     pmid,
                     "MESH",
                     mesh_id,
                     "annotated_with",
-                    {"is_major_topic": True if major_topic == 1 else False},
+                    {"is_major_topic": True if major_topic == "1" else False},
                 )
 
 
