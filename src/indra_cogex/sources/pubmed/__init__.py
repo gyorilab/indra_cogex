@@ -29,8 +29,6 @@ class PubmedProcessor(Processor):
         self.text_refs_path = text_refs_path
 
     def get_nodes(self):
-        # We iterate over text refs to get the nodes and
-        # then look up the year to add as a property
         pmid_node_type = "Publication"
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
         with open(self.pmid_year_path, "r") as fh:
@@ -44,6 +42,8 @@ class PubmedProcessor(Processor):
             else:
                 return val
 
+        # We iterate over text refs to get the nodes and
+        # then look up the year to add as a property
         with open(self.text_refs_path, "r") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
