@@ -163,8 +163,11 @@ class Processor(ABC):
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
         try:
-            assert_valid_db_refs({node.db_ns: node.db_id})
-            yield node
+            if node.db_ns == "indra_evidence":
+                yield node
+            else:
+                assert_valid_db_refs({node.db_ns: node.db_id})
+                yield node
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
             continue
@@ -173,9 +176,13 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 def validate_relations(relations):
     for idx, rel in enumerate(relations):
         try:
-            assert_valid_db_refs({rel.source_ns: rel.source_id})
-            assert_valid_db_refs({rel.target_ns: rel.target_id})
-            yield rel
+            if rel.source_ns == "indra_evidence":
+                assert_valid_db_refs({rel.target_ns: rel.target_id})
+                yield rel
+            else:
+                assert_valid_db_refs({rel.source_ns: rel.source_id})
+                assert_valid_db_refs({rel.target_ns: rel.target_id})
+                yield rel
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
             continue
