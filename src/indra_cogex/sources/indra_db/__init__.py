@@ -264,7 +264,7 @@ class EvidenceProcessor(Processor):
                     else:
                         evidence["pmid"] = None
                 else:
-                    if evidence["pmid"]:
+                    if evidence.get("pmid"):
                         self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
                 yield Node(
                     "indra_evidence",
