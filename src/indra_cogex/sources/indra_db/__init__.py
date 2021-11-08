@@ -253,25 +253,28 @@ class EvidenceProcessor(Processor):
                 stmt_hash = int(stmt_hash)
                 if stmt_hash not in sif_hashes:
                     continue
-                raw_json = json.loads(raw_json_str)
-                evidence = raw_json["evidence"][0]
-                # Set text refs
-                if reading_id != "\\N":
-                    evidence["text_refs"] = text_refs[reading_id]
-                    if "PMID" in evidence["text_refs"]:
-                        evidence["pmid"] = evidence["text_refs"]["PMID"]
-                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                try:
+                    raw_json = json.loads(raw_json_str)
+                    evidence = raw_json["evidence"][0]
+                    # Set text refs
+                    if reading_id != "\\N":
+                        evidence["text_refs"] = text_refs[reading_id]
+                        if "PMID" in evidence["text_refs"]:
+                            evidence["pmid"] = evidence["text_refs"]["PMID"]
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                        else:
+                            evidence["pmid"] = None
                     else:
-                        evidence["pmid"] = None
-                else:
-                    if evidence.get("pmid"):
-                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                yield Node(
-                    "indra_evidence",
-                    raw_stmt_id,
-                    ["Evidence"],
-                    {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
-                )
+                        if evidence.get("pmid"):
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                    yield Node(
+                        "indra_evidence",
+                        raw_stmt_id,
+                        ["Evidence"],
+                        {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
+                    )
+                except Exception as e:
+                    logger.error(f"Error processing {raw_stmt_id}: {e}")
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
