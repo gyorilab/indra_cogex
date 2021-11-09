@@ -8,7 +8,7 @@ import logging
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar, Iterable
+from typing import ClassVar, Iterable, List, Tuple
 
 import click
 import pystow
@@ -80,21 +80,21 @@ class Processor(ABC):
         """Run the CLI for this processor."""
         cls.get_cli()()
 
-    def dump(self):
+    def dump(self) -> Tuple[Path, List[Node], Path]:
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
-        node_paths = self._dump_nodes()
+        node_paths, nodes = self._dump_nodes()
         edge_paths = self._dump_edges()
-        return node_paths, edge_paths
+        return node_paths, nodes, edge_paths
 
-    def _dump_nodes(self) -> Path:
+    def _dump_nodes(self) -> Tuple[Path, List[Node]]:
         sample_path = self.module.join(name="nodes_sample.tsv")
         nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
         with open(self.nodes_indra_path, "wb") as fh:
             pickle.dump(nodes, fh)
-        return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
+        return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path), nodes
 
     @staticmethod
-    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None):
+    def _dump_nodes_to_path(nodes: Iterable[Node], nodes_path, sample_path=None):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
@@ -159,7 +159,7 @@ class Processor(ABC):
         return self.edges_path
 
 
-def validate_nodes(nodes):
+def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
         try:
             assert_valid_db_refs({node.db_ns: node.db_id})
