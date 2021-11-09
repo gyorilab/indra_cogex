@@ -8,6 +8,7 @@ import json
 import logging
 import pickle
 import click
+import codecs
 from more_click import verbose_option
 from pathlib import Path
 from tqdm import tqdm
@@ -253,28 +254,27 @@ class EvidenceProcessor(Processor):
                 stmt_hash = int(stmt_hash)
                 if stmt_hash not in sif_hashes:
                     continue
-                try:
-                    raw_json = json.loads(raw_json_str)
-                    evidence = raw_json["evidence"][0]
-                    # Set text refs
-                    if reading_id != "\\N":
-                        evidence["text_refs"] = text_refs[reading_id]
-                        if "PMID" in evidence["text_refs"]:
-                            evidence["pmid"] = evidence["text_refs"]["PMID"]
-                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                        else:
-                            evidence["pmid"] = None
+                codecs.escape_decode(codecs.escape_decode(
+                    raw_json_str)[0].decode())[0].decode()
+                raw_json = json.loads(raw_json_str)
+                evidence = raw_json["evidence"][0]
+                # Set text refs
+                if reading_id != "\\N":
+                    evidence["text_refs"] = text_refs[reading_id]
+                    if "PMID" in evidence["text_refs"]:
+                        evidence["pmid"] = evidence["text_refs"]["PMID"]
+                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
                     else:
-                        if evidence.get("pmid"):
-                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                    yield Node(
-                        "indra_evidence",
-                        raw_stmt_id,
-                        ["Evidence"],
-                        {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
-                    )
-                except Exception as e:
-                    logger.error(f"Error processing {raw_stmt_id}: {e}")
+                        evidence["pmid"] = None
+                else:
+                    if evidence.get("pmid"):
+                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                yield Node(
+                    "indra_evidence",
+                    raw_stmt_id,
+                    ["Evidence"],
+                    {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
+                )
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
