@@ -56,6 +56,7 @@ def _iter_resolvers() -> Iterable[Type[Processor]]:
     "--nodes-path",
     default=DEFAULT_NODES_PATH,
 )
+@click.option('--allow-missing', is_flag=True, help="If true, doesn't explode on missing files")
 @verbose_option
 def main(
     load: bool,
@@ -64,6 +65,7 @@ def main(
     with_sudo: bool,
     config: Optional[TextIO],
     nodes_path,
+    allow_missing: bool,
 ):
     """Generate and import Neo4j nodes and edges tables."""
     nodes_path = Path(nodes_path)
@@ -81,11 +83,15 @@ def main(
                 or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
             ):
-                processor = processor_cls(**config.get(processor_cls.name, {}))
+                try:
+                    processor = processor_cls(**config.get(processor_cls.name, {}))
+                except FileNotFoundError as e:
+                    if not allow_missing:
+                        raise
+                    click.secho(f"Failed: {e}", fg="red")
+                    continue
                 click.secho("Processing...", fg="green")
-                # FIXME: this is redundant, we get nodes twice
-                nodes = list(processor.get_nodes())
-                processor.dump()
+                _, nodes, _ = processor.dump()
             else:
                 click.secho(
                     f"Loading cached nodes from {processor_cls.nodes_indra_path}",
