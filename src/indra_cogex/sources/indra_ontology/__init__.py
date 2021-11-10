@@ -18,6 +18,7 @@ class OntologyProcessor(Processor):
 
     name = "ontology"
     ontology: IndraOntology
+    node_type = "BioEntity"
 
     def __init__(self, ontology: Optional[IndraOntology] = None):
         """Initialize the INDRA ontology processor.

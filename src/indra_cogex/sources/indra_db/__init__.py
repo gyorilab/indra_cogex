@@ -20,6 +20,7 @@ import pystow
 
 from indra.ontology.bio import bio_ontology
 from indra.databases.identifiers import ensure_prefix_if_needed
+from indra.util import batch_iter
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -36,6 +37,7 @@ class DbProcessor(Processor):
 
     name = "database"
     df: pd.DataFrame
+    node_type = "BioEntity"
 
     def __init__(
         self, dir_path: Union[None, str, Path] = None, add_jsons: Optional[bool] = False
@@ -227,6 +229,7 @@ def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
 
 class EvidenceProcessor(Processor):
     name = "indra_db_evidence"
+    node_type = "Evidence"
 
     def __init__(self):
         base_path = pystow.module("indra", "cogex", "database")

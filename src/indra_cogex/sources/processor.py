@@ -42,6 +42,7 @@ class Processor(ABC):
     nodes_indra_path: ClassVar[Path]
     edges_path: ClassVar[Path]
     importable = True
+    node_type = ClassVar[str]
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""

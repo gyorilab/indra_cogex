@@ -35,6 +35,7 @@ class GoaProcessor(Processor):
 
     name = "goa"
     df: pd.DataFrame
+    node_type = "BioEntity"
 
     def __init__(self):
         """Initialize the GOA processor."""

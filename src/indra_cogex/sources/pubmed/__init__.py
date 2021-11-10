@@ -17,6 +17,7 @@ TEXT_REFS = resources.join(name="text_refs.tsv")
 
 class PubmedProcessor(Processor):
     name = "pubmed"
+    node_type = "Publication"
 
     def __init__(
         self,
