@@ -249,32 +249,39 @@ class EvidenceProcessor(Processor):
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
         with open(self.statements_path, "r") as fh:
+            batch_size = 100000
+            total = 352
             reader = csv.reader(fh, delimiter="\t")
-            for raw_stmt_id, reading_id, stmt_hash, raw_json_str in tqdm(reader):
-                stmt_hash = int(stmt_hash)
-                if stmt_hash not in sif_hashes:
-                    continue
-                codecs.escape_decode(codecs.escape_decode(
-                    raw_json_str)[0].decode())[0].decode()
-                raw_json = json.loads(raw_json_str)
-                evidence = raw_json["evidence"][0]
-                # Set text refs
-                if reading_id != "\\N":
-                    evidence["text_refs"] = text_refs[reading_id]
-                    if "PMID" in evidence["text_refs"]:
-                        evidence["pmid"] = evidence["text_refs"]["PMID"]
-                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+            for batch in tqdm(
+                    batch_iter(reader, batch_size=batch_size, return_func=list),
+                    total=total):
+                node_batch = []
+                for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
+                    stmt_hash = int(stmt_hash)
+                    if stmt_hash not in sif_hashes:
+                        continue
+                    codecs.escape_decode(codecs.escape_decode(
+                        raw_json_str)[0].decode())[0].decode()
+                    raw_json = json.loads(raw_json_str)
+                    evidence = raw_json["evidence"][0]
+                    # Set text refs
+                    if reading_id != "\\N":
+                        evidence["text_refs"] = text_refs[reading_id]
+                        if "PMID" in evidence["text_refs"]:
+                            evidence["pmid"] = evidence["text_refs"]["PMID"]
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                        else:
+                            evidence["pmid"] = None
                     else:
-                        evidence["pmid"] = None
-                else:
-                    if evidence.get("pmid"):
-                        self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                yield Node(
-                    "indra_evidence",
-                    raw_stmt_id,
-                    ["Evidence"],
-                    {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
-                )
+                        if evidence.get("pmid"):
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                    node_batch.append(Node(
+                        "indra_evidence",
+                        raw_stmt_id,
+                        ["Evidence"],
+                        {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
+                    ))
+                yield node_batch
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
