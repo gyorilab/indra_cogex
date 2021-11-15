@@ -308,4 +308,5 @@ class EvidenceProcessor(Processor):
                 write_mode = "wt"
             nodes_path = self._dump_nodes_to_path(batch, self.nodes_path,
                                                   sample_path, write_mode)
-        return nodes_path
+        # only the last batch is returned here
+        return nodes_path, batch
