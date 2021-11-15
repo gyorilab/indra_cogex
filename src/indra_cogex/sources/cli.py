@@ -69,6 +69,7 @@ def main(
 ):
     """Generate and import Neo4j nodes and edges tables."""
     nodes_path = Path(nodes_path)
+    preprocessed_nodes_paths = []
     config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
@@ -91,15 +92,29 @@ def main(
                     click.secho(f"Failed: {e}", fg="red")
                     continue
                 click.secho("Processing...", fg="green")
+                # First dump the nodes and edges for processor
                 _, nodes, _ = processor.dump()
+                # Only assemble BioEntity nodes
+                if processor_cls.node_type == "BioEntity":
+                    na.add_nodes(nodes)
+                else:
+                    # These nodes do not need to be assembled, we just need to
+                    # store the path to the file
+                    preprocessed_nodes_paths.append(processor_cls.nodes_path)
             else:
-                click.secho(
-                    f"Loading cached nodes from {processor_cls.nodes_indra_path}",
-                    fg="green",
-                )
-                with open(processor_cls.nodes_indra_path, "rb") as fh:
-                    nodes = pickle.load(fh)
-            na.add_nodes(nodes)
+                # Only assemble BioEntity nodes
+                if processor_cls.node_type == "BioEntity":
+                    click.secho(
+                        f"Loading cached nodes from {processor_cls.nodes_indra_path}",
+                        fg="green",
+                    )
+                    with open(processor_cls.nodes_indra_path, "rb") as fh:
+                        nodes = pickle.load(fh)
+                        na.add_nodes(nodes)
+                else:
+                    # These nodes do not need to be assembled, we just need to
+                    # store the path to the file
+                    preprocessed_nodes_paths.append(processor_cls.nodes_path)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
