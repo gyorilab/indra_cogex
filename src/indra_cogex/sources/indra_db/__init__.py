@@ -12,7 +12,7 @@ import codecs
 from more_click import verbose_option
 from pathlib import Path
 from tqdm import tqdm
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union, Optional, Iterable
 
 import humanize
 import pandas as pd
@@ -252,7 +252,10 @@ class EvidenceProcessor(Processor):
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
         with open(self.statements_path, "r") as fh:
+            # TODO test whether this is a reasonable size
             batch_size = 100000
+            # TODO get number of batches from the total number of statements
+            # rather than hardcoding
             total = 352
             reader = csv.reader(fh, delimiter="\t")
             for batch in tqdm(
@@ -289,3 +292,20 @@ class EvidenceProcessor(Processor):
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
             yield Relation("indra_evidence", stmt_id, "PUBMED", pmid, "has_citation")
+
+    def _dump_nodes(self) -> Path:
+        # Processing one batch at a time
+        for bidx, batch in enumerate(self.get_nodes()):
+            logger.info(f"Dumping batch {bidx}")
+            # This is not necessary since we are using the tsv files
+            with open(self.module.join(name=f"nodes_{bidx}.pkl"), "wb") as fh:
+                pickle.dump(batch, fh)
+            sample_path = None
+            # We'll append all batches to a single tsv file
+            write_mode = "a"
+            if bidx == 0:
+                sample_path = self.module.join(name="nodes_sample.tsv")
+                write_mode = "wt"
+            nodes_path = self._dump_nodes_to_path(batch, self.nodes_path,
+                                                  sample_path, write_mode)
+        return nodes_path
