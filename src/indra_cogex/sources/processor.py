@@ -96,7 +96,8 @@ class Processor(ABC):
         return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path), nodes
 
     @staticmethod
-    def _dump_nodes_to_path(nodes: Iterable[Node], nodes_path, sample_path=None):
+    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None,
+                            write_mode="wt"):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
@@ -110,9 +111,11 @@ class Processor(ABC):
         )
 
         header = "id:ID", ":LABEL", *metadata
-        with gzip.open(nodes_path, mode="wt") as node_file:
+        with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
-            node_writer.writerow(header)
+            # Only add header when writing to a new file
+            if write_mode == "wt":
+                node_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as node_sample_file:
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
