@@ -100,13 +100,6 @@ def main(
                     continue
                 click.secho("  Processing...", fg="green")
                 _, nodes, _, edge_counter = processor.dump()
-
-                click.echo(
-                    tabulate(
-                        Counter(node.db_ns for node in nodes).most_common(),
-                        headers=["Node Type", "Count"],
-                    )
-                )
             else:
                 click.secho(
                     f"  Loading cached nodes from {processor_cls.nodes_indra_path}",
@@ -122,12 +115,14 @@ def main(
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    click.echo(
-        tabulate(
-            ((*keys, count) for keys, count in global_edge_counter.most_common()),
-            headers=["Source Namespace", "Type", "Target Namespace"],
-        )
+    # TODO generate node summary file
+
+    edge_summary = tabulate(
+        ((*keys, count) for keys, count in global_edge_counter.most_common()),
+        headers=["Source Namespace", "Type", "Target Namespace", "Count"],
     )
+    click.echo(edge_summary)
+    EDGES_SUMMARY_PATH.write_text(edge_summary + "\n")
 
     if not load_only:
         if force or not nodes_path.is_file():
