@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 from collections import Counter
+from operator import itemgetter
 from pathlib import Path
 from textwrap import dedent
 from typing import Iterable, Optional, TextIO, Type
@@ -79,7 +80,7 @@ def main(
     config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
-    global_edge_counter = Counter()
+    global_edge_counter = {}
     for processor_cls in _iter_resolvers():
         if not processor_cls.importable:
             continue
@@ -116,16 +117,20 @@ def main(
                         *keys, count = line.strip().split("\t")
                         edge_counter[tuple(keys)] = int(count)
 
-            global_edge_counter += edge_counter
+            for rel, count in edge_counter.items():
+                global_edge_counter[processor_cls.name, rel, processor_cls.description[rel]] = count
             na.add_nodes(nodes)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
-    # TODO generate node summary file
-
+    edge_summary_rows = sorted(
+        global_edge_counter.items(),
+        key=itemgetter(1),
+    )
     edge_summary = tabulate(
-        ((*keys, count) for keys, count in global_edge_counter.most_common()),
-        headers=["Source Namespace", "Type", "Target Namespace", "Count"],
+        ((name, rel, desc, count) for (name, rel, desc), count in edge_summary_rows),
+        headers=["Processor", "Type", "Description", "Count"],
+        tablefmt="github",
     )
     click.echo(edge_summary)
     EDGES_SUMMARY_PATH.write_text(edge_summary + "\n")

@@ -38,6 +38,7 @@ class Processor(ABC):
     """A processor creates nodes and iterables to upload to Neo4j."""
 
     name: ClassVar[str]
+    description: ClassVar[typing.Mapping[str, str]]
     module: ClassVar[pystow.Module]
     directory: ClassVar[Path]
     nodes_path: ClassVar[Path]
@@ -48,6 +49,8 @@ class Processor(ABC):
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
+        if not getattr(cls, "description"):
+            raise TypeError("All processors need description dictionaries")
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
         # These are nodes directly in the neo4j encoding
@@ -158,20 +161,12 @@ class Processor(ABC):
                 for _, edge_row in zip(range(10), edge_rows):
                     edge_sample_writer.writerow(edge_row)
                     edge_writer.writerow(edge_row)
-                    counter[
-                        edge_row[0].split(":", 1)[0],
-                        edge_row[2],
-                        edge_row[1].split(":", 1)[0],
-                    ] += 1
+                    counter[edge_row[2]] += 1
 
             # Write remaining edges
             for edge_row in edge_rows:
                 edge_writer.writerow(edge_row)
-                counter[
-                    edge_row[0].split(":", 1)[0],
-                    edge_row[2],
-                    edge_row[1].split(":", 1)[0],
-                ] += 1
+                counter[edge_row[2]] += 1
 
         with self.edges_summary_path.open("w") as file:
             print("source_ns", "rel", "target_ns", "count", sep="\t", file=file)
