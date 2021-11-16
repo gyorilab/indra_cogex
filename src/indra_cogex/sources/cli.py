@@ -5,6 +5,7 @@
 import json
 import os
 import pickle
+from collections import Counter
 from pathlib import Path
 from textwrap import dedent
 from typing import Iterable, Optional, TextIO, Type
@@ -12,12 +13,16 @@ from typing import Iterable, Optional, TextIO, Type
 import click
 import pystow
 from more_click import verbose_option
+from tabulate import tabulate
 
 from . import processor_resolver
 from .processor import Processor
 from ..assembly import NodeAssembler
 
-DEFAULT_NODES_PATH = pystow.join("indra", "cogex", "assembled", name="nodes.tsv.gz")
+MODULE = pystow.module("indra", "cogex", "assembled")
+DEFAULT_NODES_PATH = MODULE.join(name="nodes.tsv.gz")
+NODES_SUMMARY_PATH = MODULE.join(name="nodes_summary.tsv")
+EDGES_SUMMARY_PATH = MODULE.join(name="edges_summary.tsv")
 
 
 def _iter_resolvers() -> Iterable[Type[Processor]]:
@@ -56,7 +61,9 @@ def _iter_resolvers() -> Iterable[Type[Processor]]:
     "--nodes-path",
     default=DEFAULT_NODES_PATH,
 )
-@click.option('--allow-missing', is_flag=True, help="If true, doesn't explode on missing files")
+@click.option(
+    "--allow-missing", is_flag=True, help="If true, doesn't explode on missing files"
+)
 @verbose_option
 def main(
     load: bool,
@@ -75,7 +82,7 @@ def main(
     for processor_cls in _iter_resolvers():
         if not processor_cls.importable:
             continue
-        click.secho(f"Checking {processor_cls.name}", fg="green", bold=True)
+        click.secho(processor_cls.name, bold=True)
         if not load_only:
             if (
                 force
@@ -88,13 +95,19 @@ def main(
                 except FileNotFoundError as e:
                     if not allow_missing:
                         raise
-                    click.secho(f"Failed: {e}", fg="red")
+                    click.secho(f"  Failed: {e}", fg="red")
                     continue
-                click.secho("Processing...", fg="green")
+                click.secho("  Processing...", fg="green")
                 _, nodes, _ = processor.dump()
+                click.echo(
+                    tabulate(
+                        Counter(node.db_ns for node in nodes).most_common(),
+                        headers=["Node Type", "Count"],
+                    )
+                )
             else:
                 click.secho(
-                    f"Loading cached nodes from {processor_cls.nodes_indra_path}",
+                    f"  Loading cached nodes from {processor_cls.nodes_indra_path}",
                     fg="green",
                 )
                 with open(processor_cls.nodes_indra_path, "rb") as fh:
