@@ -30,7 +30,6 @@ class PyoboProcessor(Processor):
     relation: ClassVar[Relation]
     relation_label: ClassVar[str]
     importable = False
-    descriptions = ...
 
     def get_nodes(self):  # noqa:D102
         # TODO add license

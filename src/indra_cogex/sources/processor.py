@@ -49,8 +49,6 @@ class Processor(ABC):
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
-        if not hasattr(cls, "descriptions"):
-            raise TypeError("All processors need description dictionaries")
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
         # These are nodes directly in the neo4j encoding

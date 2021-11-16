@@ -118,7 +118,11 @@ def main(
                         edge_counter[name] = int(count)
 
             for rel, count in edge_counter.items():
-                global_edge_counter[processor_cls.name, rel, processor_cls.descriptions[rel]] = count
+                global_edge_counter[
+                    processor_cls.name,
+                    rel,
+                    processor_cls.descriptions.get(rel, ""),
+                ] = count
             na.add_nodes(nodes)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
