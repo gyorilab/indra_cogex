@@ -20,7 +20,8 @@ class OntologyProcessor(Processor):
     descriptions = {
         "isa": "The source node is a subclass of the target node",
         "xref": "The source node is equivalent in an alternative"
-                " namespace as the target node."
+                " namespace as the target node.",
+        "partof": "The source node is a part of the target node.",
     }
     ontology: IndraOntology
 
