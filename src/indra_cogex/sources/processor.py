@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import ClassVar, Iterable, List, Tuple
 
 import click
+import typing
+
 import pystow
 from more_click import verbose_option
 from tqdm import tqdm
@@ -82,11 +84,11 @@ class Processor(ABC):
         """Run the CLI for this processor."""
         cls.get_cli()()
 
-    def dump(self) -> Tuple[Path, List[Node], Path]:
+    def dump(self) -> Tuple[Path, List[Node], Path, typing.Counter[Tuple[str, str, str]]]:
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
         node_paths, nodes = self._dump_nodes()
-        edge_paths = self._dump_edges()
-        return node_paths, nodes, edge_paths
+        edge_paths, counter = self._dump_edges()
+        return node_paths, nodes, edge_paths, counter
 
     def _dump_nodes(self) -> Tuple[Path, List[Node]]:
         sample_path = self.module.join(name="nodes_sample.tsv")
@@ -125,7 +127,7 @@ class Processor(ABC):
 
         return nodes_path
 
-    def _dump_edges(self) -> Path:
+    def _dump_edges(self) -> Tuple[Path, typing.Counter[Tuple[str, str, str]]]:
         sample_path = self.module.join(name="edges_sample.tsv")
         logger.info(f"Dumping into {self.edges_path}...")
         rels = self.get_relations()
@@ -176,7 +178,7 @@ class Processor(ABC):
             for row, count in counter.most_common():
                 print(*row, count, sep="\t", file=file)
 
-        return self.edges_path
+        return self.edges_path, counter
 
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:

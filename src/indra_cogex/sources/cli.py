@@ -79,6 +79,7 @@ def main(
     config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
+    global_edge_counter = Counter()
     for processor_cls in _iter_resolvers():
         if not processor_cls.importable:
             continue
@@ -98,7 +99,8 @@ def main(
                     click.secho(f"  Failed: {e}", fg="red")
                     continue
                 click.secho("  Processing...", fg="green")
-                _, nodes, _ = processor.dump()
+                _, nodes, _, edge_counter = processor.dump()
+
                 click.echo(
                     tabulate(
                         Counter(node.db_ns for node in nodes).most_common(),
@@ -112,9 +114,20 @@ def main(
                 )
                 with open(processor_cls.nodes_indra_path, "rb") as fh:
                     nodes = pickle.load(fh)
+                # TODO load up edge counter here
+                edge_counter = ...
+
+            global_edge_counter += edge_counter
             na.add_nodes(nodes)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
+
+    click.echo(
+        tabulate(
+            ((*keys, count) for keys, count in global_edge_counter.most_common()),
+            headers=["Source Namespace", "Type", "Target Namespace"],
+        )
+    )
 
     if not load_only:
         if force or not nodes_path.is_file():
