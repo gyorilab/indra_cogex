@@ -7,6 +7,7 @@ import gzip
 import logging
 import pickle
 from abc import ABC, abstractmethod
+from collections import Counter
 from pathlib import Path
 from typing import ClassVar, Iterable, List, Tuple
 
@@ -16,7 +17,6 @@ from more_click import verbose_option
 from tqdm import tqdm
 
 from indra.statements.validate import assert_valid_db_refs
-
 from indra_cogex.representation import Node, Relation, norm_id
 
 __all__ = [
@@ -41,6 +41,7 @@ class Processor(ABC):
     nodes_path: ClassVar[Path]
     nodes_indra_path: ClassVar[Path]
     edges_path: ClassVar[Path]
+    edges_summary_path: ClassVar[Path]
     importable = True
 
     def __init_subclass__(cls, **kwargs):
@@ -53,6 +54,7 @@ class Processor(ABC):
         # needed for assembly
         cls.nodes_indra_path = cls.module.join(name="nodes.pkl")
         cls.edges_path = cls.module.join(name="edges.tsv.gz")
+        cls.edges_summary_path = cls.module.join(name="edges_summary.tsv")
 
     @abstractmethod
     def get_nodes(self) -> Iterable[Node]:
@@ -142,6 +144,7 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
+        counter = Counter()
         with gzip.open(self.edges_path, "wt") as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
             with sample_path.open("w") as edge_sample_file:
@@ -153,9 +156,26 @@ class Processor(ABC):
                 for _, edge_row in zip(range(10), edge_rows):
                     edge_sample_writer.writerow(edge_row)
                     edge_writer.writerow(edge_row)
+                    counter[
+                        edge_row[0].split(":", 1)[0],
+                        edge_row[2],
+                        edge_row[1].split(":", 1)[0],
+                    ] += 1
 
             # Write remaining edges
-            edge_writer.writerows(edge_rows)
+            for edge_row in edge_rows:
+                edge_writer.writerow(edge_row)
+                counter[
+                    edge_row[0].split(":", 1)[0],
+                    edge_row[2],
+                    edge_row[1].split(":", 1)[0],
+                ] += 1
+
+        with self.edges_summary_path.open("w") as file:
+            print("source_ns", "rel", "target_ns", "count", sep="\t", file=file)
+            for row, count in counter.most_common():
+                print(*row, count, sep="\t", file=file)
+
         return self.edges_path
 
 
