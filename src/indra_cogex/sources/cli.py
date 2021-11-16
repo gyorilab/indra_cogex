@@ -114,11 +114,11 @@ def main(
                 with processor_cls.edges_summary_path.open() as file:
                     _ = next(file)
                     for line in file:
-                        *keys, count = line.strip().split("\t")
-                        edge_counter[tuple(keys)] = int(count)
+                        name, count = line.strip().split("\t")
+                        edge_counter[name] = int(count)
 
             for rel, count in edge_counter.items():
-                global_edge_counter[processor_cls.name, rel, processor_cls.description[rel]] = count
+                global_edge_counter[processor_cls.name, rel, processor_cls.descriptions[rel]] = count
             na.add_nodes(nodes)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
