@@ -38,7 +38,7 @@ class Processor(ABC):
     """A processor creates nodes and iterables to upload to Neo4j."""
 
     name: ClassVar[str]
-    description: ClassVar[typing.Mapping[str, str]]
+    descriptions: ClassVar[typing.Mapping[str, str]]
     module: ClassVar[pystow.Module]
     directory: ClassVar[Path]
     nodes_path: ClassVar[Path]
@@ -49,7 +49,7 @@ class Processor(ABC):
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
-        if not getattr(cls, "descriptions"):
+        if not hasattr(cls, "descriptions"):
             raise TypeError("All processors need description dictionaries")
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
