@@ -130,6 +130,7 @@ def main(
     edge_summary_rows = sorted(
         global_edge_counter.items(),
         key=itemgetter(1),
+        reverse=True,
     )
     edge_summary = tabulate(
         ((name, rel, desc, count) for (name, rel, desc), count in edge_summary_rows),
