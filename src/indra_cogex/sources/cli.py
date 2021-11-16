@@ -90,6 +90,7 @@ def main(
                 or not processor_cls.nodes_path.is_file()
                 or not processor_cls.nodes_indra_path.is_file()
                 or not processor_cls.edges_path.is_file()
+                or not processor_cls.edges_summary_path.is_file()
             ):
                 try:
                     processor = processor_cls(**config.get(processor_cls.name, {}))
@@ -107,8 +108,13 @@ def main(
                 )
                 with open(processor_cls.nodes_indra_path, "rb") as fh:
                     nodes = pickle.load(fh)
-                # TODO load up edge counter here
-                edge_counter = ...
+
+                edge_counter = Counter()
+                with processor_cls.edges_summary_path.open() as file:
+                    _ = next(file)
+                    for line in file:
+                        *keys, count = line.strip().split("\t")
+                        edge_counter[tuple(keys)] = int(count)
 
             global_edge_counter += edge_counter
             na.add_nodes(nodes)
