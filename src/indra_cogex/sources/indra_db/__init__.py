@@ -33,6 +33,9 @@ class DbProcessor(Processor):
     """Processor for the INDRA database."""
 
     name = "database"
+    descriptions = {
+        "indra_rel": "The source and target come from a variety of INDRA statements."
+    }
     df: pd.DataFrame
 
     def __init__(self, dir_path: Union[None, str, Path] = None,

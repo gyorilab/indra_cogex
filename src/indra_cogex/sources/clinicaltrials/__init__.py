@@ -10,6 +10,12 @@ from indra_cogex.representation import Node, Relation
 
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
+    descriptions = {
+        "has_trial": "The disease/disorder represented by the source has been"
+                     " tested in a clinical trial represented by the target",
+        "tested_in": "The chemical/drug represented by the source has been"
+                     " tested in a clinical trial represented by the target",
+    }
 
     def __init__(self, path: Union[str, Path, None] = None):
         default_path = pystow.join(

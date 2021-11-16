@@ -117,6 +117,10 @@ class SIDERSideEffectProcessor(Processor):
     """A processor for SIDER side effects."""
 
     name = "sider_side_effects"
+    descriptions = {
+        "has_side_effect": "The drug represented by the source node "
+                           "has the side effect represented by the target node",
+    }
 
     def __init__(self):
         self.df = SUBMODULE.ensure_csv(

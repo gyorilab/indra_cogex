@@ -90,6 +90,10 @@ class WikipathwaysProcessor(PyoboProcessor):
     relation = has_part
     relation_label = "haspart"
     importable = True
+    descriptions = {
+        "haspart": "The pathway represented by the source node "
+                   "contains the gene represented by the target node",
+    }
 
 
 class ReactomeProcessor(PyoboProcessor):
@@ -100,3 +104,8 @@ class ReactomeProcessor(PyoboProcessor):
     relation = has_part
     relation_label = "haspart"
     importable = True
+    descriptions = {
+        "haspart": "The pathway represented by the source node "
+                   "contains the gene represented by the target node",
+    }
+

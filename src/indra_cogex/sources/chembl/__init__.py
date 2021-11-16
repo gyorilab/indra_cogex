@@ -38,6 +38,11 @@ class ChemblIndicationsProcessor(Processor):
     """A processor for ChEMBL indications."""
 
     name = "chembl"
+    descriptions = {
+        "sensitive_to": "The chemical represented by the source has been"
+                        " studied for use against the indication"
+                        " represented by the target."
+    }
 
     def __init__(self, version: Optional[str] = None):
         self.version = version or bioversions.get_version("chembl")

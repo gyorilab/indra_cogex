@@ -34,6 +34,11 @@ class GoaProcessor(Processor):
     """Processor for the Gene Ontology Associations (GOA) database."""
 
     name = "goa"
+    descriptions = {
+        "associated_with": "The gene represented by the source is associated with"
+                           " the GO term represented by the target",
+    }
+
     df: pd.DataFrame
 
     def __init__(self):

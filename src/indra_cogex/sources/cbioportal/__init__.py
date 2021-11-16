@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 class CcleMutationsProcessor(Processor):
     name = "ccle_mutations"
+    descriptions = {
+        "mutated_in": "The gene represented by the source is mutated in the"
+                      " cell line represented by the target."
+    }
 
     def __init__(
         self,
@@ -67,6 +71,10 @@ class CcleMutationsProcessor(Processor):
 
 class CcleCnaProcessor(Processor):
     name = "ccle_cna"
+    descriptions = {
+        "copy_number_altered_in": "The gene represented by the source has a copy number alteration in the cell line "
+                                  "represented by the target."
+    }
 
     def __init__(
         self,
@@ -113,9 +121,13 @@ class CcleCnaProcessor(Processor):
 
 class CcleDrugResponseProcessor(Processor):
     name = "ccle_drug"
+    descriptions = {
+        "sensitive_to": "The cell line represented by the source is sensitive to treatment by the chemical/drug "
+                        "represented by the target."
+    }
+
 
     def __init__(self, path: Union[str, Path, None] = None):
-
         default_path = pystow.join(
             "indra",
             "cogex",

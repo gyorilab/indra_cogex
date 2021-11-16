@@ -17,6 +17,11 @@ class OntologyProcessor(Processor):
     """Processor for the INDRA ontology."""
 
     name = "ontology"
+    descriptions = {
+        "isa": "The source node is a subclass of the target node",
+        "xref": "The source node is equivalent in an alternative"
+                " namespace as the target node."
+    }
     ontology: IndraOntology
 
     def __init__(self, ontology: Optional[IndraOntology] = None):

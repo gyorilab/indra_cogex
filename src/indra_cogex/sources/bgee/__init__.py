@@ -17,6 +17,10 @@ class BgeeProcessor(Processor):
     """Processor for Bgee."""
 
     name = "bgee"
+    descriptions = {
+        "expressed_in": "The gene represented by the source is expressed in the tissue/cell type"
+                        " represented by the target."
+    }
 
     def __init__(self, path: Union[None, str, Path] = None):
         """Initialize the Bgee processor.
