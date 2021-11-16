@@ -69,7 +69,9 @@ def main(
 ):
     """Generate and import Neo4j nodes and edges tables."""
     nodes_path = Path(nodes_path)
-    preprocessed_nodes_paths = []
+    # Paths to files with preprocessed nodes (e.g. BioEntities assembled with
+    # NodeAssembler or other types of nodes that do not need to be assembled)
+    preprocessed_nodes_paths = [nodes_path]
     config = {} if config is None else json.load(config)
     paths = []
     na = NodeAssembler()
@@ -133,12 +135,13 @@ def main(
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
-          --skip-bad-relationships=true \\
-          --nodes {nodes_path}
+          --skip-bad-relationships=true
         """
         ).rstrip()
+        for node_path in preprocessed_nodes_paths:
+            command += f"\\\n --nodes {node_path}"
         for _, edge_path in paths:
-            command += f"\\\n  --relationships {edge_path}"
+            command += f"\\\n --relationships {edge_path}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
