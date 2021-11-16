@@ -49,7 +49,7 @@ class Processor(ABC):
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
-        if not getattr(cls, "description"):
+        if not getattr(cls, "descriptions"):
             raise TypeError("All processors need description dictionaries")
         cls.module = pystow.module("indra", "cogex", cls.name)
         cls.directory = cls.module.base
