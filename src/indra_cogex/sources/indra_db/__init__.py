@@ -303,7 +303,7 @@ class EvidenceProcessor(Processor):
                 pickle.dump(batch, fh)
             sample_path = None
             # We'll append all batches to a single tsv file
-            write_mode = "a"
+            write_mode = "at"
             if bidx == 0:
                 sample_path = self.module.join(name="nodes_sample.tsv")
                 write_mode = "wt"
