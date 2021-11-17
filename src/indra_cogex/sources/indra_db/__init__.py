@@ -251,6 +251,7 @@ class EvidenceProcessor(Processor):
         logger.info("Getting text refs from text refs file")
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
+        logger.info("Getting statements from statements file")  
         with open(self.statements_path, "r") as fh:
             # TODO test whether this is a reasonable size
             batch_size = 100000
