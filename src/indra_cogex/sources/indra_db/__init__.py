@@ -267,9 +267,10 @@ class EvidenceProcessor(Processor):
                     stmt_hash = int(stmt_hash)
                     if stmt_hash not in sif_hashes:
                         continue
-                    codecs.escape_decode(codecs.escape_decode(
-                        raw_json_str)[0].decode())[0].decode()
-                    raw_json = json.loads(raw_json_str)
+                    try:
+                        raw_json = load_statement_json(raw_json_str)
+                    except StatementJSONDecodeError as e:
+                        logger.warning(e)
                     evidence = raw_json["evidence"][0]
                     # Set text refs
                     if reading_id != "\\N":
@@ -311,3 +312,20 @@ class EvidenceProcessor(Processor):
                                                   sample_path, write_mode)
         # only the last batch is returned here
         return nodes_path, batch
+
+
+class StatementJSONDecodeError(Exception):
+    pass
+
+
+def load_statement_json(json_str: str, attempt: int = 1,
+                        max_attempts: int = 5) -> json:
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        if attempt < max_attempts:
+            json_str = codecs.escape_decode(json_str)[0].decode()
+            return load_statement_json(json_str, attempt=attempt+1,
+                                       max_attempts=max_attempts)
+    raise StatementJSONDecodeError(f"Could not decode statement JSON after "
+                                   f"{attempt} attempts: {json_str}")
