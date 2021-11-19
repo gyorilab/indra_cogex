@@ -118,7 +118,8 @@ class Processor(ABC):
                 node_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as node_sample_file:
-                    node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
+                    node_sample_writer = csv.writer(node_sample_file,
+                                                    delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
                         node_sample_writer.writerow(node_row)
@@ -132,6 +133,11 @@ class Processor(ABC):
         sample_path = self.module.join(name="edges_sample.tsv")
         logger.info(f"Dumping into {self.edges_path}...")
         rels = self.get_relations()
+        return self._dump_edges_to_path(rels, self.edges_path, sample_path)
+
+    def _dump_edges_to_path(self, rels, edges_path, sample_path=None,
+                            write_mode="wt"):
+        logger.info(f"Dumping into {edges_path}...")
         rels = validate_relations(rels)
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
@@ -147,22 +153,22 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(self.edges_path, "wt") as edge_file:
+        with gzip.open(self.edges_path, mode=write_mode) as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
-            with sample_path.open("w") as edge_sample_file:
-                edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
-                header = ":START_ID", ":END_ID", ":TYPE", *metadata
-                edge_sample_writer.writerow(header)
+            header = ":START_ID", ":END_ID", ":TYPE", *metadata
+            if write_mode == "wt":
                 edge_writer.writerow(header)
-
-                for _, edge_row in zip(range(10), edge_rows):
-                    edge_sample_writer.writerow(edge_row)
-                    edge_writer.writerow(edge_row)
-
+            if sample_path:
+                with sample_path.open("w") as edge_sample_file:
+                    edge_sample_writer = csv.writer(edge_sample_file,
+                                                    delimiter="\t")
+                    edge_sample_writer.writerow(header)
+                    for _, edge_row in zip(range(10), edge_rows):
+                        edge_sample_writer.writerow(edge_row)
+                        edge_writer.writerow(edge_row)
             # Write remaining edges
             edge_writer.writerows(edge_rows)
-        return self.edges_path
-
+        return edges_path
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
