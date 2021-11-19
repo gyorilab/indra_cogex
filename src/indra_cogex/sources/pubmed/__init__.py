@@ -69,6 +69,8 @@ class PubmedProcessor(Processor):
         with open(self.mesh_pmid_path, "r") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
+            # NOTE tested with 100000 batch size but given that total is ~290M
+            # and each line is lightweight, we could probably try larger batch
             batch_size = 100000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)):
