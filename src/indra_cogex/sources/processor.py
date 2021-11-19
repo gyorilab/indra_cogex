@@ -156,6 +156,7 @@ class Processor(ABC):
         with gzip.open(self.edges_path, mode=write_mode) as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
             header = ":START_ID", ":END_ID", ":TYPE", *metadata
+            # Only add header when writing to a new file
             if write_mode == "wt":
                 edge_writer.writerow(header)
             if sample_path:

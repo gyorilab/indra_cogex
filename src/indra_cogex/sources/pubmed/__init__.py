@@ -88,6 +88,8 @@ class PubmedProcessor(Processor):
                 yield relations_batch
 
     def _dump_edges(self) -> Path:
+        # This overrides the default implementation in Processor because
+        # we want to process relations in batches
         for bidx, batch in enumerate(self.get_relations()):
             logger.info(f"Dumping relations batch {bidx}")
             sample_path = None

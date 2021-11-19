@@ -296,6 +296,8 @@ class EvidenceProcessor(Processor):
             yield Relation("indra_evidence", stmt_id, "PUBMED", pmid, "has_citation")
 
     def _dump_nodes(self) -> Path:
+        # This overrides the default implementation in Processor because
+        # we want to process nodes in batches
         # Processing one batch at a time
         for bidx, batch in enumerate(self.get_nodes()):
             logger.info(f"Dumping batch {bidx}")
