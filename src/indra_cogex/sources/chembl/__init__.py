@@ -38,7 +38,7 @@ class ChemblIndicationsProcessor(Processor):
     """A processor for ChEMBL indications."""
 
     name = "chembl"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(self, version: Optional[str] = None):
         self.version = version or bioversions.get_version("chembl")

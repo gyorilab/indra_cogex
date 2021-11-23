@@ -17,7 +17,7 @@ class BgeeProcessor(Processor):
     """Processor for Bgee."""
 
     name = "bgee"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(self, path: Union[None, str, Path] = None):
         """Initialize the Bgee processor.

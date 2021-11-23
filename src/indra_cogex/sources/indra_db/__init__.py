@@ -37,7 +37,7 @@ class DbProcessor(Processor):
 
     name = "database"
     df: pd.DataFrame
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(
         self, dir_path: Union[None, str, Path] = None, add_jsons: Optional[bool] = False
@@ -229,7 +229,7 @@ def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
 
 class EvidenceProcessor(Processor):
     name = "indra_db_evidence"
-    node_type = "Evidence"
+    node_type = ["Evidence", "Publication"]
 
     def __init__(self):
         base_path = pystow.module("indra", "cogex", "database")
@@ -251,7 +251,7 @@ class EvidenceProcessor(Processor):
         logger.info("Getting text refs from text refs file")
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
-        logger.info("Getting statements from statements file")  
+        logger.info("Getting statements from statements file")
         with open(self.statements_path, "r") as fh:
             # TODO test whether this is a reasonable size
             batch_size = 100000
@@ -260,8 +260,8 @@ class EvidenceProcessor(Processor):
             total = 352
             reader = csv.reader(fh, delimiter="\t")
             for batch in tqdm(
-                    batch_iter(reader, batch_size=batch_size, return_func=list),
-                    total=total):
+                batch_iter(reader, batch_size=batch_size, return_func=list), total=total
+            ):
                 node_batch = []
                 for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
                     stmt_hash = int(stmt_hash)
@@ -283,12 +283,14 @@ class EvidenceProcessor(Processor):
                     else:
                         if evidence.get("pmid"):
                             self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                    node_batch.append(Node(
-                        "indra_evidence",
-                        raw_stmt_id,
-                        ["Evidence"],
-                        {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
-                    ))
+                    node_batch.append(
+                        Node(
+                            "indra_evidence",
+                            raw_stmt_id,
+                            ["Evidence"],
+                            {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
+                        )
+                    )
                 yield node_batch
 
     def get_relations(self):
@@ -310,8 +312,9 @@ class EvidenceProcessor(Processor):
             if bidx == 0:
                 sample_path = self.module.join(name="nodes_sample.tsv")
                 write_mode = "wt"
-            nodes_path = self._dump_nodes_to_path(batch, self.nodes_path,
-                                                  sample_path, write_mode)
+            nodes_path = self._dump_nodes_to_path(
+                batch, self.nodes_path, sample_path, write_mode
+            )
         # only the last batch is returned here
         return nodes_path, batch
 
@@ -320,14 +323,15 @@ class StatementJSONDecodeError(Exception):
     pass
 
 
-def load_statement_json(json_str: str, attempt: int = 1,
-                        max_attempts: int = 5) -> json:
+def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) -> json:
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
         if attempt < max_attempts:
             json_str = codecs.escape_decode(json_str)[0].decode()
-            return load_statement_json(json_str, attempt=attempt+1,
-                                       max_attempts=max_attempts)
-    raise StatementJSONDecodeError(f"Could not decode statement JSON after "
-                                   f"{attempt} attempts: {json_str}")
+            return load_statement_json(
+                json_str, attempt=attempt + 1, max_attempts=max_attempts
+            )
+    raise StatementJSONDecodeError(
+        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
+    )

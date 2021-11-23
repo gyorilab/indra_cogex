@@ -42,7 +42,7 @@ class Processor(ABC):
     nodes_indra_path: ClassVar[Path]
     edges_path: ClassVar[Path]
     importable = True
-    node_type = ClassVar[str]
+    node_types = ClassVar[Iterable[str]]
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
@@ -56,7 +56,7 @@ class Processor(ABC):
         cls.edges_path = cls.module.join(name="edges.tsv.gz")
 
     @abstractmethod
-    def get_nodes(self) -> Iterable[Node]:
+    def get_nodes(self, **kwargs) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
 
     @abstractmethod
@@ -89,15 +89,16 @@ class Processor(ABC):
 
     def _dump_nodes(self) -> Tuple[Path, List[Node]]:
         sample_path = self.module.join(name="nodes_sample.tsv")
-        nodes = tqdm(self.get_nodes(), desc="Node generation", unit_scale=True, unit="node")
+        nodes = tqdm(
+            self.get_nodes(), desc="Node generation", unit_scale=True, unit="node"
+        )
         nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
         with open(self.nodes_indra_path, "wb") as fh:
             pickle.dump(nodes, fh)
         return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path), nodes
 
     @staticmethod
-    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None,
-                            write_mode="wt"):
+    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
@@ -118,8 +119,7 @@ class Processor(ABC):
                 node_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as node_sample_file:
-                    node_sample_writer = csv.writer(node_sample_file,
-                                                    delimiter="\t")
+                    node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
                         node_sample_writer.writerow(node_row)
@@ -135,8 +135,7 @@ class Processor(ABC):
         rels = self.get_relations()
         return self._dump_edges_to_path(rels, self.edges_path, sample_path)
 
-    def _dump_edges_to_path(self, rels, edges_path, sample_path=None,
-                            write_mode="wt"):
+    def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {edges_path}...")
         rels = validate_relations(rels)
         rels = sorted(
@@ -161,8 +160,7 @@ class Processor(ABC):
                 edge_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as edge_sample_file:
-                    edge_sample_writer = csv.writer(edge_sample_file,
-                                                    delimiter="\t")
+                    edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
                     edge_sample_writer.writerow(header)
                     for _, edge_row in zip(range(10), edge_rows):
                         edge_sample_writer.writerow(edge_row)
@@ -170,6 +168,7 @@ class Processor(ABC):
             # Write remaining edges
             edge_writer.writerows(edge_rows)
         return edges_path
+
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):

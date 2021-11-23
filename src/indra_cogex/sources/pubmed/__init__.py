@@ -20,7 +20,7 @@ TEXT_REFS = resources.join(name="text_refs.tsv")
 
 class PubmedProcessor(Processor):
     name = "pubmed"
-    node_type = "Publication"
+    node_types = ["Publication"]
 
     def __init__(
         self,
@@ -73,18 +73,21 @@ class PubmedProcessor(Processor):
             # and each line is lightweight, we could probably try larger batch
             batch_size = 100000
             for batch in tqdm(
-                batch_iter(reader, batch_size=batch_size, return_func=list)):
+                batch_iter(reader, batch_size=batch_size, return_func=list)
+            ):
                 relations_batch = []
                 for mesh_num, is_concept, major_topic, pmid in batch:
                     mesh_id = mesh_num_to_id(mesh_num, int(is_concept))
-                    relations_batch.append(Relation(
-                        "PUBMED",
-                        pmid,
-                        "MESH",
-                        mesh_id,
-                        "annotated_with",
-                        {"is_major_topic": True if major_topic == "1" else False},
-                    ))
+                    relations_batch.append(
+                        Relation(
+                            "PUBMED",
+                            pmid,
+                            "MESH",
+                            mesh_id,
+                            "annotated_with",
+                            {"is_major_topic": True if major_topic == "1" else False},
+                        )
+                    )
                 yield relations_batch
 
     def _dump_edges(self) -> Path:
@@ -97,10 +100,10 @@ class PubmedProcessor(Processor):
             if bidx == 0:
                 sample_path = self.module.join(name="edges_sample.tsv")
                 write_mode = "wt"
-            edges_path = self._dump_edges_to_path(batch, self.edges_path,
-                                                  sample_path, write_mode)
+            edges_path = self._dump_edges_to_path(
+                batch, self.edges_path, sample_path, write_mode
+            )
         return edges_path
-
 
 
 def mesh_num_to_id(mesh_num, is_concept):

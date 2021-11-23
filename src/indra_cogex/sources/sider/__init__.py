@@ -117,7 +117,7 @@ class SIDERSideEffectProcessor(Processor):
     """A processor for SIDER side effects."""
 
     name = "sider_side_effects"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(self):
         self.df = SUBMODULE.ensure_csv(

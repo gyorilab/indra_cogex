@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class CcleMutationsProcessor(Processor):
     name = "ccle_mutations"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class CcleMutationsProcessor(Processor):
 
 class CcleCnaProcessor(Processor):
     name = "ccle_cna"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(
         self,
@@ -115,7 +115,7 @@ class CcleCnaProcessor(Processor):
 
 class CcleDrugResponseProcessor(Processor):
     name = "ccle_drug"
-    node_type = "BioEntity"
+    node_types = ["BioEntity"]
 
     def __init__(self, path: Union[str, Path, None] = None):
 
