@@ -87,6 +87,7 @@ class Processor(ABC):
         edge_paths = self._dump_edges()
         return node_paths, nodes, edge_paths
 
+    @staticmethod
     def _get_node_paths(self, node_type: str) -> Path:
         # If the processor returns multiple types of nodes, add node_type to the file name
         if len(self.node_types) > 1:
