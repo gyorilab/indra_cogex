@@ -238,60 +238,68 @@ class EvidenceProcessor(Processor):
         self.sif_path = pystow.join("indra", "db", name="sif.pkl")
         self._stmt_id_pmid_links = {}
 
-    def get_nodes(self, **kwargs):
+    def get_nodes(self, node_type: str) -> Iterable[Node]:
         """Get nodes from the SIF file."""
-        # Get a list of hashes from the SIF file so that we only
-        # add nodes/relations for statements that are in the SIF file
-        logger.info("Getting hashes from SIF file")
-        with open(self.sif_path, "rb") as fh:
-            sif = pickle.load(fh)
-        sif_hashes = set(sif["stmt_hash"])
         # Load the text ref lookup so that we can set text refs in
         # evidences
         logger.info("Getting text refs from text refs file")
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
-        logger.info("Getting statements from statements file")
-        with open(self.statements_path, "r") as fh:
-            # TODO test whether this is a reasonable size
-            batch_size = 100000
-            # TODO get number of batches from the total number of statements
-            # rather than hardcoding
-            total = 352
-            reader = csv.reader(fh, delimiter="\t")
-            for batch in tqdm(
-                batch_iter(reader, batch_size=batch_size, return_func=list), total=total
-            ):
-                node_batch = []
-                for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
-                    stmt_hash = int(stmt_hash)
-                    if stmt_hash not in sif_hashes:
-                        continue
-                    try:
-                        raw_json = load_statement_json(raw_json_str)
-                    except StatementJSONDecodeError as e:
-                        logger.warning(e)
-                    evidence = raw_json["evidence"][0]
-                    # Set text refs
-                    if reading_id != "\\N":
-                        evidence["text_refs"] = text_refs[reading_id]
-                        if "PMID" in evidence["text_refs"]:
-                            evidence["pmid"] = evidence["text_refs"]["PMID"]
-                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+        if node_type == "Evidence":
+            # Get a list of hashes from the SIF file so that we only
+            # add nodes/relations for statements that are in the SIF file
+            logger.info("Getting hashes from SIF file")
+            with open(self.sif_path, "rb") as fh:
+                sif = pickle.load(fh)
+            sif_hashes = set(sif["stmt_hash"])
+            logger.info("Getting statements from statements file")
+            with open(self.statements_path, "r") as fh:
+                # TODO test whether this is a reasonable size
+                batch_size = 100000
+                # TODO get number of batches from the total number of statements
+                # rather than hardcoding
+                total = 352
+                reader = csv.reader(fh, delimiter="\t")
+                for batch in tqdm(
+                    batch_iter(reader, batch_size=batch_size, return_func=list),
+                    total=total,
+                ):
+                    node_batch = []
+                    for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
+                        stmt_hash = int(stmt_hash)
+                        if stmt_hash not in sif_hashes:
+                            continue
+                        try:
+                            raw_json = load_statement_json(raw_json_str)
+                        except StatementJSONDecodeError as e:
+                            logger.warning(e)
+                        evidence = raw_json["evidence"][0]
+                        # Set text refs
+                        if reading_id != "\\N":
+                            evidence["text_refs"] = text_refs[reading_id]
+                            if "PMID" in evidence["text_refs"]:
+                                evidence["pmid"] = evidence["text_refs"]["PMID"]
+                                self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                            else:
+                                evidence["pmid"] = None
                         else:
-                            evidence["pmid"] = None
-                    else:
-                        if evidence.get("pmid"):
-                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                    node_batch.append(
-                        Node(
-                            "indra_evidence",
-                            raw_stmt_id,
-                            ["Evidence"],
-                            {"evidence": json.dumps(evidence), "stmt_hash": stmt_hash},
+                            if evidence.get("pmid"):
+                                self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                        node_batch.append(
+                            Node(
+                                "indra_evidence",
+                                raw_stmt_id,
+                                ["Evidence"],
+                                {
+                                    "evidence": json.dumps(evidence),
+                                    "stmt_hash": stmt_hash,
+                                },
+                            )
                         )
-                    )
-                yield node_batch
+                    yield node_batch
+        elif node_type == "Publication":
+            # TODO
+            pass
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
@@ -299,24 +307,40 @@ class EvidenceProcessor(Processor):
 
     def _dump_nodes(self) -> Path:
         # This overrides the default implementation in Processor because
-        # we want to process nodes in batches
-        # Processing one batch at a time
-        for bidx, batch in enumerate(self.get_nodes()):
-            logger.info(f"Dumping batch {bidx}")
-            # This is not necessary since we are using the tsv files
-            with open(self.module.join(name=f"nodes_{bidx}.pkl"), "wb") as fh:
-                pickle.dump(batch, fh)
-            sample_path = None
-            # We'll append all batches to a single tsv file
-            write_mode = "at"
-            if bidx == 0:
-                sample_path = self.module.join(name="nodes_sample.tsv")
-                write_mode = "wt"
-            nodes_path = self._dump_nodes_to_path(
-                batch, self.nodes_path, sample_path, write_mode
-            )
-        # only the last batch is returned here
-        return nodes_path, batch
+        # we want to process Evidence nodes in batches
+        paths_by_type = {}
+        nodes_by_type = {}
+        for node_type in self.node_types:
+            nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
+            if node_type == "Evidence":
+                # Processing one batch at a time
+                for bidx, nodes in enumerate(self.get_nodes(node_type=node_type)):
+                    logger.info(f"Dumping batch {bidx}")
+                    # NOTE This is not necessary since we are using the tsv files
+                    with open(self.module.join(name=f"nodes_{bidx}.pkl"), "wb") as fh:
+                        pickle.dump(nodes, fh)
+                    # We'll append all batches to a single tsv file
+                    write_mode = "wt"
+                    if bidx > 0:
+                        sample_path = None
+                        write_mode = "at"
+                    self._dump_nodes_to_path(
+                        nodes, self.nodes_path, sample_path, write_mode
+                    )
+            elif node_type == "Publication":
+                nodes = tqdm(
+                    self.get_nodes(node_type=node_type),
+                    desc="Node generation",
+                    unit_scale=True,
+                    unit="node",
+                )
+                nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
+                with open(nodes_indra_path, "wb") as fh:
+                    pickle.dump(nodes, fh)
+                self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+            paths_by_type[node_type] = nodes_path
+            nodes_by_type[node_type] = nodes
+        return paths_by_type, nodes_by_type
 
 
 class StatementJSONDecodeError(Exception):
