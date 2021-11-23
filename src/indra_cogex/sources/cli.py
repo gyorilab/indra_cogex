@@ -17,8 +17,6 @@ from . import processor_resolver
 from .processor import Processor
 from ..assembly import NodeAssembler
 
-DEFAULT_NODES_PATH = pystow.join("indra", "cogex", "assembled", name="nodes.tsv.gz")
-
 
 def _iter_resolvers() -> Iterable[Type[Processor]]:
     return iter(processor_resolver)
@@ -53,10 +51,8 @@ def _iter_resolvers() -> Iterable[Type[Processor]]:
     " and values are dictionaries matching the __init__ parameters for the processor",
 )
 @click.option(
-    "--nodes-path",
-    default=DEFAULT_NODES_PATH,
+    "--allow-missing", is_flag=True, help="If true, doesn't explode on missing files"
 )
-@click.option('--allow-missing', is_flag=True, help="If true, doesn't explode on missing files")
 @verbose_option
 def main(
     load: bool,
@@ -64,17 +60,15 @@ def main(
     force: bool,
     with_sudo: bool,
     config: Optional[TextIO],
-    nodes_path,
     allow_missing: bool,
 ):
     """Generate and import Neo4j nodes and edges tables."""
-    nodes_path = Path(nodes_path)
-    # Paths to files with preprocessed nodes (e.g. BioEntities assembled with
-    # NodeAssembler or other types of nodes that do not need to be assembled)
-    preprocessed_nodes_paths = [nodes_path]
+    # Paths to files with preprocessed nodes (e.g. assembled nodes or nodes that don't need to be assembled)
+    preprocessed_nodes_paths = []
+    to_assemble = ["BioEntity", "Publication"]
     config = {} if config is None else json.load(config)
     paths = []
-    na = NodeAssembler()
+    node_assemblers = {}
     for processor_cls in _iter_resolvers():
         if not processor_cls.importable:
             continue
@@ -95,37 +89,54 @@ def main(
                     continue
                 click.secho("Processing...", fg="green")
                 # First dump the nodes and edges for processor
-                _, nodes, _ = processor.dump()
-                # Only assemble BioEntity nodes
-                if processor_cls.node_type == "BioEntity":
-                    na.add_nodes(nodes)
-                else:
-                    # These nodes do not need to be assembled, we just need to
-                    # store the path to the file
-                    preprocessed_nodes_paths.append(processor_cls.nodes_path)
+                paths_by_type, nodes_by_type, _ = processor.dump()
+                # Assemble or store the paths to nodes depending on node type
+                for node_type, nodes in nodes_by_type.items():
+                    if node_type in to_assemble:
+                        if node_type not in node_assemblers:
+                            node_assemblers[node_type] = NodeAssembler()
+                        node_assemblers[node_type].add_nodes(nodes)
+                    else:
+                        preprocessed_nodes_paths.append(paths_by_type[node_type])
             else:
-                # Only assemble BioEntity nodes
-                if processor_cls.node_type == "BioEntity":
-                    click.secho(
-                        f"Loading cached nodes from {processor_cls.nodes_indra_path}",
-                        fg="green",
-                    )
-                    with open(processor_cls.nodes_indra_path, "rb") as fh:
-                        nodes = pickle.load(fh)
-                        na.add_nodes(nodes)
-                else:
-                    # These nodes do not need to be assembled, we just need to
-                    # store the path to the file
-                    preprocessed_nodes_paths.append(processor_cls.nodes_path)
+                # Get paths to the nodes by type
+                for node_type in processor_cls.nodes_types:
+                    (
+                        proc_nodes_path,
+                        nodes_indra_path,
+                        _,
+                    ) = processor_cls._get_node_paths(node_type)
+                    # Assemble or store the paths to nodes depending on node type
+                    if node_type in to_assemble:
+                        click.secho(
+                            f"Loading cached nodes from {nodes_indra_path}",
+                            fg="green",
+                        )
+                        with open(nodes_indra_path, "rb") as fh:
+                            nodes = pickle.load(fh)
+                            if node_type not in node_assemblers:
+                                node_assemblers[node_type] = NodeAssembler()
+                            node_assemblers[node_type].add_nodes(nodes)
+                    else:
+                        preprocessed_nodes_paths.append(proc_nodes_path)
 
         paths.append((processor_cls.nodes_path, processor_cls.edges_path))
 
     if not load_only:
-        if force or not nodes_path.is_file():
-            # Now create and dump the assembled nodes
-            assembled_nodes = na.assemble_nodes()
-            assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
-            Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
+        # if force or not nodes_path.is_file():  # Removing this since there are multiple nodes files
+        if force:
+            # Now create and dump the assembled nodes for each node type
+            for node_type, na in node_assemblers.items():
+                nodes_path = pystow.join(
+                    "indra", "cogex", "assembled", name=f"nodes_{node_type}.tsv.gz"
+                )
+                nodes_path = Path(nodes_path)
+                assembled_nodes = na.assemble_nodes()
+                assembled_nodes = sorted(
+                    assembled_nodes, key=lambda x: (x.db_ns, x.db_id)
+                )
+                Processor._dump_nodes_to_path(assembled_nodes, nodes_path)
+                preprocessed_nodes_paths.append(nodes_path)
 
     if load or load_only:
         sudo_prefix = "" if not with_sudo else "sudo"
