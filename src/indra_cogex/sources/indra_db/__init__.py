@@ -93,7 +93,7 @@ class DbProcessor(Processor):
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
         self.df = self.df.dropna(subset=["belief"])
 
-    def get_nodes(self):  # noqa:D102
+    def get_nodes(self, **kwargs):  # noqa:D102
         df = pd.concat(
             [
                 self.df[["agA_ns", "agA_id", "agA_name"]].rename(
@@ -238,7 +238,7 @@ class EvidenceProcessor(Processor):
         self.sif_path = pystow.join("indra", "db", name="sif.pkl")
         self._stmt_id_pmid_links = {}
 
-    def get_nodes(self):
+    def get_nodes(self, **kwargs):
         """Get nodes from the SIF file."""
         # Get a list of hashes from the SIF file so that we only
         # add nodes/relations for statements that are in the SIF file

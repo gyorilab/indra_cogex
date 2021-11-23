@@ -161,7 +161,7 @@ class SIDERSideEffectProcessor(Processor):
                 db_ns=db_ns, db_id=db_id, name=name, labels=["BioEntity"]
             )
 
-    def get_nodes(self) -> Iterable[Node]:
+    def get_nodes(self, **kwargs) -> Iterable[Node]:
         """Iterate over SIDER chemicals and side effects."""
         yield from self.chemicals.values()
         yield from self.side_effects.values()

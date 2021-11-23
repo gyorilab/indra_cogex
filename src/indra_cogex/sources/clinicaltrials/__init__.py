@@ -50,7 +50,7 @@ class ClinicaltrialsProcessor(Processor):
             return matches[0].term
         return None
 
-    def get_nodes(self):
+    def get_nodes(self, **kwargs):
         for index, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
             found_disease_gilda = False
             for condition in str(row["Condition"]).split("|"):

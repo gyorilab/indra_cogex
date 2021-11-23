@@ -41,7 +41,7 @@ class GoaProcessor(Processor):
         """Initialize the GOA processor."""
         self.df = load_goa(GOA_URL)
 
-    def get_nodes(self):  # noqa:D102
+    def get_nodes(self, **kwargs):  # noqa:D102
         for go_node in self.df["GO_ID"].unique():
             yield Node("GO", go_node, ["BioEntity"])
         for hgnc_id in self.df["HGNC_ID"].unique():

@@ -33,7 +33,7 @@ class OntologyProcessor(Processor):
             self.ontology = ontology
         self.ontology.initialize()
 
-    def get_nodes(self):  # noqa:D102
+    def get_nodes(self, **kwargs):  # noqa:D102
         for node, data in self.ontology.nodes(data=True):
             db_ns, db_id = self.ontology.get_ns_id(node)
             yield Node(db_ns, db_id, ["BioEntity"], data)
