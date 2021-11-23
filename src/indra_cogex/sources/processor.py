@@ -87,15 +87,38 @@ class Processor(ABC):
         edge_paths = self._dump_edges()
         return node_paths, nodes, edge_paths
 
-    def _dump_nodes(self) -> Tuple[Path, List[Node]]:
-        sample_path = self.module.join(name="nodes_sample.tsv")
-        nodes = tqdm(
-            self.get_nodes(), desc="Node generation", unit_scale=True, unit="node"
+    def _get_node_paths(self, node_type: str) -> Path:
+        # If the processor returns multiple types of nodes, add node_type to the file name
+        if len(self.node_types) > 1:
+            return (
+                self.module.join(name=f"nodes_{node_type}.tsv.gz"),
+                self.module.join(name=f"nodes_{node_type}.pkl"),
+                self.module.join(name=f"nodes_{node_type}_sample.tsv"),
+            )
+        return (
+            self.nodes_path,
+            self.nodes_indra_path,
+            self.module.join(name="nodes_sample.tsv"),
         )
-        nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
-        with open(self.nodes_indra_path, "wb") as fh:
-            pickle.dump(nodes, fh)
-        return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path), nodes
+
+    def _dump_nodes(self) -> Tuple[Path, List[Node]]:
+        paths_by_type = {}
+        nodes_by_type = {}
+        for node_type in self.node_types:
+            nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
+            nodes = tqdm(
+                self.get_nodes(node_type=node_type),
+                desc="Node generation",
+                unit_scale=True,
+                unit="node",
+            )
+            nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
+            with open(nodes_indra_path, "wb") as fh:
+                pickle.dump(nodes, fh)
+            self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+            paths_by_type[node_type] = nodes_path
+            nodes_by_type[node_type] = nodes
+        return paths_by_type, nodes_by_type
 
     @staticmethod
     def _dump_nodes_to_path(nodes, nodes_path, sample_path=None, write_mode="wt"):
