@@ -8,6 +8,7 @@ import json
 import logging
 import pickle
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from pathlib import Path
 from typing import ClassVar, Iterable, List, Tuple, Optional, Mapping, Any
 
@@ -106,22 +107,26 @@ class Processor(ABC):
 
     def _dump_nodes(self) -> Tuple[Path, List[Node]]:
         paths_by_type = {}
-        nodes_by_type = {}
-        for node_type in self.node_types:
+        nodes_by_type = defaultdict(list)
+        # Get all the nodes
+        nodes = tqdm(
+            self.get_nodes(),
+            desc="Node generation",
+            unit_scale=True,
+            unit="node",
+        )
+        # Map the nodes to their types
+        for node in nodes:
+            nodes_by_type[node.labels[0]].append(node)
+        # Get the paths for each type of node and dump the nodes
+        for node_type in nodes_by_type:
             nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
-            nodes = tqdm(
-                self.get_nodes(node_type=node_type),
-                desc="Node generation",
-                unit_scale=True,
-                unit="node",
-            )
-            nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
+            nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
             with open(nodes_indra_path, "wb") as fh:
                 pickle.dump(nodes, fh)
             self._dump_nodes_to_path(nodes, nodes_path, sample_path)
             paths_by_type[node_type] = nodes_path
-            nodes_by_type[node_type] = nodes
-        return paths_by_type, nodes_by_type
+        return paths_by_type, dict(nodes_by_type)
 
     @staticmethod
     def _dump_nodes_to_path(nodes, nodes_path, sample_path=None, write_mode="wt"):

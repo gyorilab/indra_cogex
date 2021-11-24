@@ -9,6 +9,7 @@ import logging
 import pickle
 import click
 import codecs
+from collections import defaultdict
 from more_click import verbose_option
 from pathlib import Path
 from tqdm import tqdm
@@ -317,38 +318,34 @@ class EvidenceProcessor(Processor):
         # This overrides the default implementation in Processor because
         # we want to process Evidence nodes in batches
         paths_by_type = {}
-        nodes_by_type = {}
-        for node_type in self.node_types:
-            nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
-            if node_type == "Evidence":
-                # Processing one batch at a time
-                for bidx, nodes in enumerate(self.get_nodes(node_type=node_type)):
-                    logger.info(f"Dumping batch {bidx}")
-                    # NOTE This is not necessary since we are using the tsv files
-                    with open(self.module.join(name=f"nodes_{bidx}.pkl"), "wb") as fh:
-                        pickle.dump(nodes, fh)
-                    # We'll append all batches to a single tsv file
-                    write_mode = "wt"
-                    if bidx > 0:
-                        sample_path = None
-                        write_mode = "at"
-                    self._dump_nodes_to_path(
-                        nodes, self.nodes_path, sample_path, write_mode
-                    )
-            elif node_type == "Publication":
-                nodes = tqdm(
-                    self.get_nodes(node_type=node_type),
-                    desc="Node generation",
-                    unit_scale=True,
-                    unit="node",
-                )
-                nodes = sorted(nodes, key=lambda x: (x.db_ns, x.db_id))
-                with open(nodes_indra_path, "wb") as fh:
-                    pickle.dump(nodes, fh)
-                self._dump_nodes_to_path(nodes, nodes_path, sample_path)
-            paths_by_type[node_type] = nodes_path
-            nodes_by_type[node_type] = nodes
-        return paths_by_type, nodes_by_type
+        nodes_by_type = defaultdict(list)
+        node_type = "Evidence"
+        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
+        paths_by_type[node_type] = nodes_path
+        # From each batch get the nodes by type but only process Evidence nodes at the moment
+        for bidx, nodes in enumerate(self.get_nodes()):
+            logger.info(f"Processing batch {bidx}")
+            for node in nodes:
+                nodes_by_type[node.labels[0]].append(node)
+            # We'll append all batches to a single tsv file
+            write_mode = "wt"
+            if bidx > 0:
+                sample_path = None
+                write_mode = "at"
+            nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
+            self._dump_nodes_to_path(nodes, nodes_path, sample_path, write_mode)
+            # Remove Evidence nodes batch because we don't need to keep them in memory, keep the Publiation nodes since we haven't processed them yet
+            nodes_by_type[node_type] = []
+        # Now process the Publication nodes
+        node_type = "Publication"
+        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
+        paths_by_type[node_type] = nodes_path
+        with open(nodes_indra_path, "wb") as fh:
+            pickle.dump(nodes, fh)
+        nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
+        nodes_by_type[node_type] = nodes
+        self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+        return paths_by_type, dict(nodes_by_type)
 
 
 class StatementJSONDecodeError(Exception):
