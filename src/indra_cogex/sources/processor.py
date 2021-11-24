@@ -4,18 +4,20 @@
 
 import csv
 import gzip
+import json
 import logging
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar, Iterable, List, Tuple
+from typing import ClassVar, Iterable, List, Tuple, Optional, Mapping, Any
 
 import click
 import pystow
 from more_click import verbose_option
 from tqdm import tqdm
 
-from indra.statements.validate import assert_valid_db_refs
+from indra.statements.validate import assert_valid_db_refs, assert_valid_evidence
+from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
 
@@ -194,14 +196,22 @@ class Processor(ABC):
         return edges_path
 
 
+def assert_valid_node(
+    db_ns: str, db_id: str, data: Optional[Mapping[str, Any]]
+) -> None:
+    if db_ns == "indra_evidence":
+        if data and data.get("evidence"):
+            ev = Evidence._from_json(json.loads(data["evidence"]))
+            assert_valid_evidence(ev)
+    else:
+        assert_valid_db_refs({db_ns: db_id})
+
+
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
         try:
-            if node.db_ns == "indra_evidence":
-                yield node
-            else:
-                assert_valid_db_refs({node.db_ns: node.db_id})
-                yield node
+            assert_valid_node(node.db_ns, node.db_id, node.data)
+            yield node
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
             continue
@@ -210,13 +220,9 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 def validate_relations(relations):
     for idx, rel in enumerate(relations):
         try:
-            if rel.source_ns == "indra_evidence":
-                assert_valid_db_refs({rel.target_ns: rel.target_id})
-                yield rel
-            else:
-                assert_valid_db_refs({rel.source_ns: rel.source_id})
-                assert_valid_db_refs({rel.target_ns: rel.target_id})
-                yield rel
+            assert_valid_node(rel.source_ns, rel.source_id)
+            assert_valid_node(rel.target_ns, rel.target_id)
+            yield rel
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
             continue
