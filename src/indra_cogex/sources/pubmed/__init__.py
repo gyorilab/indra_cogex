@@ -70,8 +70,8 @@ class PubmedProcessor(Processor):
             reader = csv.reader(fh)
             next(reader)  # skip header
             # NOTE tested with 100000 batch size but given that total is ~290M
-            # and each line is lightweight, we could probably try larger batch
-            batch_size = 100000
+            # and each line is lightweight, trying with larger batch here
+            batch_size = 1000000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
