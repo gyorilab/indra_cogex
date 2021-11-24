@@ -329,9 +329,11 @@ class EvidenceProcessor(Processor):
         # we want to process Evidence nodes in batches
         paths_by_type = {}
         nodes_by_type = defaultdict(list)
-        node_type = "Evidence"
-        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
-        paths_by_type[node_type] = nodes_path
+        # Process Evidence and Publication nodes differently
+        evid_node_type = "Evidence"
+        pmid_node_type = "Publication"
+        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(evid_node_type)
+        paths_by_type[evid_node_type] = nodes_path
         # From each batch get the nodes by type but only process Evidence nodes at the moment
         for bidx, nodes in enumerate(self.get_nodes()):
             logger.info(f"Processing batch {bidx}")
@@ -342,18 +344,20 @@ class EvidenceProcessor(Processor):
             if bidx > 0:
                 sample_path = None
                 write_mode = "at"
-            nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
+            nodes = sorted(
+                nodes_by_type[evid_node_type], key=lambda x: (x.db_ns, x.db_id)
+            )
             self._dump_nodes_to_path(nodes, nodes_path, sample_path, write_mode)
-            # Remove Evidence nodes batch because we don't need to keep them in memory, keep the Publiation nodes since we haven't processed them yet
-            nodes_by_type[node_type] = []
+            # Remove Evidence nodes batch because we don't need to keep them in memory,
+            # keep the Publication nodes since we haven't processed them yet
+            nodes_by_type[evid_node_type] = []
         # Now process the Publication nodes
-        node_type = "Publication"
-        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
-        paths_by_type[node_type] = nodes_path
+        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(pmid_node_type)
+        paths_by_type[pmid_node_type] = nodes_path
         with open(nodes_indra_path, "wb") as fh:
             pickle.dump(nodes, fh)
-        nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
-        nodes_by_type[node_type] = nodes
+        nodes = sorted(nodes_by_type[pmid_node_type], key=lambda x: (x.db_ns, x.db_id))
+        nodes_by_type[pmid_node_type] = nodes
         self._dump_nodes_to_path(nodes, nodes_path, sample_path)
         return paths_by_type, dict(nodes_by_type)
 
