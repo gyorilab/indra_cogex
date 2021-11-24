@@ -10,7 +10,7 @@ from indra_cogex.representation import Node, Relation
 
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
-    node_types = ["BioEntity"]
+    node_types = ["BioEntity", "ClinicalTrial"]
 
     def __init__(self, path: Union[str, Path, None] = None):
         default_path = pystow.join(
