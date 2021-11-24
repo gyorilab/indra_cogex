@@ -298,8 +298,16 @@ class EvidenceProcessor(Processor):
                         )
                     yield node_batch
         elif node_type == "Publication":
-            # TODO
-            pass
+            for text_ref in text_refs.values():
+                if "PMID" in text_ref:
+                    data = {
+                        "trid": text_ref.get("TRID"),
+                        "pmcid": text_ref.get("PMCID"),
+                        "doi": text_ref.get("DOI"),
+                        "pii": text_ref.get("PII"),
+                        "manuscript_id": text_ref.get("MANUSCRIPT_ID"),
+                    }
+                    yield Node("PUBMED", text_ref["PMID"], ["Publication"], data=data)
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
