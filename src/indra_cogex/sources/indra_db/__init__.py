@@ -239,76 +239,86 @@ class EvidenceProcessor(Processor):
         self.sif_path = pystow.join("indra", "db", name="sif.pkl")
         self._stmt_id_pmid_links = {}
 
-    def get_nodes(self, node_type: str) -> Iterable[Node]:
+    def get_nodes(self) -> Iterable[Node]:
         """Get nodes from the SIF file."""
         # Load the text ref lookup so that we can set text refs in
         # evidences
         logger.info("Getting text refs from text refs file")
         with open(self.text_refs_path, "r") as fh:
             text_refs = json.load(fh)
-        if node_type == "Evidence":
-            # Get a list of hashes from the SIF file so that we only
-            # add nodes/relations for statements that are in the SIF file
-            logger.info("Getting hashes from SIF file")
-            with open(self.sif_path, "rb") as fh:
-                sif = pickle.load(fh)
-            sif_hashes = set(sif["stmt_hash"])
-            logger.info("Getting statements from statements file")
-            with open(self.statements_path, "r") as fh:
-                # TODO test whether this is a reasonable size
-                batch_size = 100000
-                # TODO get number of batches from the total number of statements
-                # rather than hardcoding
-                total = 352
-                reader = csv.reader(fh, delimiter="\t")
-                for batch in tqdm(
-                    batch_iter(reader, batch_size=batch_size, return_func=list),
-                    total=total,
-                ):
-                    node_batch = []
-                    for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
-                        stmt_hash = int(stmt_hash)
-                        if stmt_hash not in sif_hashes:
-                            continue
-                        try:
-                            raw_json = load_statement_json(raw_json_str)
-                        except StatementJSONDecodeError as e:
-                            logger.warning(e)
-                        evidence = raw_json["evidence"][0]
-                        # Set text refs
-                        if reading_id != "\\N":
-                            evidence["text_refs"] = text_refs[reading_id]
-                            if "PMID" in evidence["text_refs"]:
-                                evidence["pmid"] = evidence["text_refs"]["PMID"]
-                                self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                            else:
-                                evidence["pmid"] = None
-                        else:
-                            if evidence.get("pmid"):
-                                self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
-                        node_batch.append(
-                            Node(
-                                "indra_evidence",
-                                raw_stmt_id,
-                                ["Evidence"],
+        # Get a list of hashes from the SIF file so that we only
+        # add nodes/relations for statements that are in the SIF file
+        logger.info("Getting hashes from SIF file")
+        with open(self.sif_path, "rb") as fh:
+            sif = pickle.load(fh)
+        sif_hashes = set(sif["stmt_hash"])
+        logger.info("Getting statements from statements file")
+        with open(self.statements_path, "r") as fh:
+            # TODO test whether this is a reasonable size
+            batch_size = 100000
+            # TODO get number of batches from the total number of statements
+            # rather than hardcoding
+            total = 352
+            reader = csv.reader(fh, delimiter="\t")
+            for batch in tqdm(
+                batch_iter(reader, batch_size=batch_size, return_func=list),
+                total=total,
+            ):
+                node_batch = []
+                for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
+                    stmt_hash = int(stmt_hash)
+                    if stmt_hash not in sif_hashes:
+                        continue
+                    try:
+                        raw_json = load_statement_json(raw_json_str)
+                    except StatementJSONDecodeError as e:
+                        logger.warning(e)
+                    evidence = raw_json["evidence"][0]
+                    # Set text refs and get Publication node
+                    pubmed_node = None
+                    if reading_id != "\\N":
+                        tr = text_refs[reading_id]
+                        evidence["text_refs"] = tr
+                        if "PMID" in evidence["text_refs"]:
+                            evidence["pmid"] = evidence["text_refs"]["PMID"]
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                            pubmed_node = Node(
+                                "PUBMED",
+                                evidence["pmid"],
+                                ["Publication"],
                                 {
-                                    "evidence": json.dumps(evidence),
-                                    "stmt_hash": stmt_hash,
+                                    "trid": tr["TRID"],
+                                    "pmcid": tr["PMCID"],
+                                    "doi": tr["DOI"],
+                                    "pii": tr["PII"],
+                                    "url": tr["URL"],
+                                    "manuscript_id": tr["ManuscriptID"],
                                 },
                             )
+                        else:
+                            evidence["pmid"] = None
+                    else:
+                        if evidence.get("pmid"):
+                            self._stmt_id_pmid_links[raw_stmt_id] = evidence["pmid"]
+                            pubmed_node = Node(
+                                "PUBMED",
+                                evidence["pmid"],
+                                ["Publication"],
+                            )
+                    node_batch.append(
+                        Node(
+                            "indra_evidence",
+                            raw_stmt_id,
+                            ["Evidence"],
+                            {
+                                "evidence": json.dumps(evidence),
+                                "stmt_hash": stmt_hash,
+                            },
                         )
-                    yield node_batch
-        elif node_type == "Publication":
-            for text_ref in text_refs.values():
-                if "PMID" in text_ref:
-                    data = {
-                        "trid": text_ref.get("TRID"),
-                        "pmcid": text_ref.get("PMCID"),
-                        "doi": text_ref.get("DOI"),
-                        "pii": text_ref.get("PII"),
-                        "manuscript_id": text_ref.get("MANUSCRIPT_ID"),
-                    }
-                    yield Node("PUBMED", text_ref["PMID"], ["Publication"], data=data)
+                    )
+                    if pubmed_node:
+                        node_batch.append(pubmed_node)
+                yield node_batch
 
     def get_relations(self):
         for stmt_id, pmid in self._stmt_id_pmid_links.items():
