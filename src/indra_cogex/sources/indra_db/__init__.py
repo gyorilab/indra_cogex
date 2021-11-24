@@ -94,7 +94,7 @@ class DbProcessor(Processor):
         self.df["source_counts"] = self.df["source_counts"].apply(json.dumps)
         self.df = self.df.dropna(subset=["belief"])
 
-    def get_nodes(self, **kwargs):  # noqa:D102
+    def get_nodes(self):  # noqa:D102
         df = pd.concat(
             [
                 self.df[["agA_ns", "agA_id", "agA_name"]].rename(

@@ -39,7 +39,7 @@ class CcleMutationsProcessor(Processor):
 
         self.df = pd.read_csv(path, sep="\t", comment="#")
 
-    def get_nodes(self, **kwargs):
+    def get_nodes(self):
         for hgnc_symbol in sorted(set(self.df["Hugo_Symbol"])):
             hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
             if not hgnc_id:
@@ -85,7 +85,7 @@ class CcleCnaProcessor(Processor):
 
         self.df = pd.read_csv(path, sep="\t")
 
-    def get_nodes(self, **kwargs):
+    def get_nodes(self):
         # Collect all gene symbols from both tables
         for hgnc_symbol in sorted(set(self.df["Hugo_Symbol"])):
             hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
@@ -135,7 +135,7 @@ class CcleDrugResponseProcessor(Processor):
         self.df = pd.read_csv(path, sep="\t")
         self.drug_mappings = {}
 
-    def get_nodes(self, **kwargs):
+    def get_nodes(self):
         drugs = self.get_drug_mappings()
         for db_ns, db_id in drugs.values():
             if db_ns and db_id:

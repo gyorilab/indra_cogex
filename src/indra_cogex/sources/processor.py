@@ -59,7 +59,7 @@ class Processor(ABC):
         cls.edges_path = cls.module.join(name="edges.tsv.gz")
 
     @abstractmethod
-    def get_nodes(self, **kwargs) -> Iterable[Node]:
+    def get_nodes(self) -> Iterable[Node]:
         """Iterate over the nodes to upload."""
 
     @abstractmethod

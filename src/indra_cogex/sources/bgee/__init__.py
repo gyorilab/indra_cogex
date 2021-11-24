@@ -32,7 +32,7 @@ class BgeeProcessor(Processor):
         with open(path, "rb") as fh:
             self.expressions = pickle.load(fh)
 
-    def get_nodes(self, **kwargs):  # noqa:D102
+    def get_nodes(self):  # noqa:D102
         for context in self.expressions:
             context_ns, context_id = get_context(context)
             yield Node(

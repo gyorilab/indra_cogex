@@ -32,7 +32,7 @@ class PyoboProcessor(Processor):
     importable = False
     node_types = ["BioEntity"]
 
-    def get_nodes(self, **kwargs):  # noqa:D102
+    def get_nodes(self):  # noqa:D102
         # TODO add license
         version = pyobo.api.utils.get_version(self.prefix)
         for identifier, name in pyobo.get_id_name_mapping(self.prefix).items():

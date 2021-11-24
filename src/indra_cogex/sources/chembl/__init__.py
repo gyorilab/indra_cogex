@@ -64,7 +64,7 @@ class ChemblIndicationsProcessor(Processor):
             )
         }
 
-    def get_nodes(self, **kwargs) -> Iterable[Node]:
+    def get_nodes(self) -> Iterable[Node]:
         """Iterate over ChEMBL chemicals and indications"""
         yield from self.chemicals.values()
         yield from self.indications.values()
