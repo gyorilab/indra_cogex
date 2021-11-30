@@ -24,7 +24,7 @@ class MockProcessor(Processor):
     """A mock processor."""
 
     name = "mock_processor"
-    node_type = "mock_node"
+    node_types = ["mock_node"]
 
     def __init__(self, key: Optional[str] = None):
         self.key = key or DEFAULT_KEY
