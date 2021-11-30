@@ -68,7 +68,9 @@ def is_gene_expressed_in_tissue(
 # GO
 
 
-def get_go_terms_for_gene(client: Neo4jClient, gene: Tuple[str, str]):
+def get_go_terms_for_gene(
+    client: Neo4jClient, gene: Tuple[str, str], include_indirect=False
+):
     """Return the GO terms for the given gene.
 
     Parameters
@@ -83,7 +85,17 @@ def get_go_terms_for_gene(client: Neo4jClient, gene: Tuple[str, str]):
     :
         The GO terms for the given gene.
     """
-    return client.get_targets(gene, relation="associated_with")
+    go_term_nodes = client.get_targets(gene, relation="associated_with")
+    if not include_indirect:
+        return go_term_nodes
+    go_terms = {gtn.grounding(): gtn for gtn in go_term_nodes}
+    for go_term_node in go_term_nodes:
+        go_child_terms = client.get_predecessors(
+            go_term_node.grounding(), relations=["isa"]
+        )
+        for term in go_child_terms:
+            go_terms[term.grounding()] = term
+    return list(go_terms.values())
 
 
 def get_genes_for_go_term(
@@ -106,16 +118,32 @@ def get_genes_for_go_term(
     go_children = get_ontology_child_terms(client, go_term) if include_indirect else []
     gene_nodes = {}
     for term in [go_term] + go_children:
-        genes = client.get_sources(go_term, relation="associated_with")
+        genes = client.get_sources(term, relation="associated_with")
         for gene in genes:
-            gene_nodes[(gene.db_ns, gene.db_id)] = gene
+            gene_nodes[gene.grounding()] = gene
     return list(gene_nodes.values())
 
 
 def is_go_term_for_gene(
     client: Neo4jClient, gene: Tuple[str, str], go_term: Tuple[str, str]
 ):
-    return client.is_connected(gene, go_term, relation="associated_with")
+    """Return True if the given GO term is associated with the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    gene :
+        The gene to query.
+    go_term :
+        The GO term to query.
+
+    Returns
+    -------
+    :
+        True if the given GO term is associated with the given gene.
+    """
+    return client.has_relation(gene, go_term, relation="associated_with")
 
 
 # Trials
@@ -175,11 +203,11 @@ def is_side_effect_for_drug(
 
 
 def get_ontology_child_terms(client: Neo4jClient, term: Tuple[str, str]):
-    return client.get_predecessors(term, relations={"is_a", "partof"})
+    return client.get_predecessors(term, relations={"isa", "partof"})
 
 
 def get_ontology_parent_terms(client: Neo4jClient, term: Tuple[str, str]):
-    return client.get_successors(term, relations={"is_a", "partof"})
+    return client.get_successors(term, relations={"isa", "partof"})
 
 
 def isa_or_partof(client: Neo4jClient, term: Tuple[str, str], parent: Tuple[str, str]):
