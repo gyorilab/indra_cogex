@@ -287,12 +287,12 @@ class EvidenceProcessor(Processor):
                                 evidence["pmid"],
                                 ["Publication"],
                                 {
-                                    "trid": tr["TRID"],
-                                    "pmcid": tr["PMCID"],
-                                    "doi": tr["DOI"],
-                                    "pii": tr["PII"],
-                                    "url": tr["URL"],
-                                    "manuscript_id": tr["ManuscriptID"],
+                                    "trid": tr.get("TRID"),
+                                    "pmcid": tr.get("PMCID"),
+                                    "doi": tr.get("DOI"),
+                                    "pii": tr.get("PII"),
+                                    "url": tr.get("URL"),
+                                    "manuscript_id": tr.get("ManuscriptID"),
                                 },
                             )
                         else:
