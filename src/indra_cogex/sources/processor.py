@@ -90,19 +90,19 @@ class Processor(ABC):
         edge_paths = self._dump_edges()
         return node_paths, nodes, edge_paths
 
-    @staticmethod
-    def _get_node_paths(self, node_type: str) -> Path:
+    @classmethod
+    def _get_node_paths(cls, node_type: str) -> Path:
         # If the processor returns multiple types of nodes, add node_type to the file name
-        if len(self.node_types) > 1:
+        if len(cls.node_types) > 1:
             return (
-                self.module.join(name=f"nodes_{node_type}.tsv.gz"),
-                self.module.join(name=f"nodes_{node_type}.pkl"),
-                self.module.join(name=f"nodes_{node_type}_sample.tsv"),
+                cls.module.join(name=f"nodes_{node_type}.tsv.gz"),
+                cls.module.join(name=f"nodes_{node_type}.pkl"),
+                cls.module.join(name=f"nodes_{node_type}_sample.tsv"),
             )
         return (
-            self.nodes_path,
-            self.nodes_indra_path,
-            self.module.join(name="nodes_sample.tsv"),
+            cls.nodes_path,
+            cls.nodes_indra_path,
+            cls.module.join(name="nodes_sample.tsv"),
         )
 
     def _dump_nodes(self) -> Tuple[Path, List[Node]]:
