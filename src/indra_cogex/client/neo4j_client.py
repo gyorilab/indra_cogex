@@ -1,7 +1,7 @@
 __all__ = ["Neo4jClient"]
 
 import logging
-from typing import Any, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j
 import neo4j.graph
@@ -400,6 +400,64 @@ class Neo4jClient:
         sources = self.get_sources(target, relation)
         agents = [self.node_to_agent(source) for source in sources]
         return agents
+
+    def get_predecessors(
+        self, target: Tuple[str, str], relations: Iterable[str]
+    ) -> List[Node]:
+        """Return the nodes that precede the given node via the given relation types.
+
+        Parameters
+        ----------
+        target :
+            The target node's ID.
+        relation :
+            The relation label to constrain to when finding predecessors.
+
+        Returns
+        -------
+        predecessors
+            A list of predecessor nodes.
+        """
+        rel_str = ":%s*1.." % "|".join(relations)
+        match = "(s)-[%s]->({id: '%s'})" % (rel_str, norm_id(*target))
+        query = (
+            """
+            MATCH %s
+            RETURN DISTINCT s
+        """
+            % match
+        )
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
+        return nodes
+
+    def get_successors(
+        self, source: Tuple[str, str], relations: Iterable[str]
+    ) -> List[Node]:
+        """Return the nodes that precede the given node via the given relation types.
+
+        Parameters
+        ----------
+        source :
+            The source node's ID.
+        relation :
+            The relation label to constrain to when finding successors.
+
+        Returns
+        -------
+        predecessors
+            A list of predecessor nodes.
+        """
+        rel_str = ":%s*1.." % "|".join(relations)
+        match = "({id: '%s'})-[%s]->(t)" % (norm_id(*source), rel_str)
+        query = (
+            """
+            MATCH %s
+            RETURN DISTINCT t
+        """
+            % match
+        )
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
+        return nodes
 
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
