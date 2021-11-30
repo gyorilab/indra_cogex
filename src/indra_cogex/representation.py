@@ -60,6 +60,10 @@ class Node:
             dict(name=name),
         )
 
+    def grounding(self):
+        """Get the grounding tuple for this node."""
+        return (self.db_ns, self.db_id)
+
     def to_json(self):
         """Serialize the node to JSON."""
         data = {k: v for k, v in self.data.items()}
