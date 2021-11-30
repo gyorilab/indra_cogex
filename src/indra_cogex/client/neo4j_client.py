@@ -36,6 +36,7 @@ class Neo4jClient:
         self.url = url
         self.driver = GraphDatabase.driver(self.url, auth=auth)
         self.session = None
+        print("hello")
 
     def create_tx(
         self,
