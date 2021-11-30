@@ -230,7 +230,7 @@ def fix_id(db_ns: str, db_id: str) -> Tuple[str, str]:
 
 class EvidenceProcessor(Processor):
     name = "indra_db_evidence"
-    node_type = ["Evidence", "Publication"]
+    node_types = ["Evidence", "Publication"]
 
     def __init__(self):
         base_path = pystow.module("indra", "cogex", "database")
