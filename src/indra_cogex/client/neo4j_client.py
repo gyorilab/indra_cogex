@@ -498,7 +498,7 @@ class Neo4jClient:
 
     @staticmethod
     def neo4j_to_relations(neo4j_path: neo4j.graph.Path) -> List[Relation]:
-        """Return a Relation from a neo4j internal single-relation path.
+        """Return a list of Relations from a neo4j internal multi-relation path.
 
         Parameters
         ----------
