@@ -5,9 +5,7 @@ from ..representation import Node
 # BGee
 
 
-def get_expressed_genes_in_tissue(
-    client: Neo4jClient, tissue: Tuple[str, str]
-) -> Iterable[Node]:
+def get_genes_in_tissue(client: Neo4jClient, tissue: Tuple[str, str]) -> Iterable[Node]:
     """Return the genes in the given tissue.
 
     Parameters
@@ -25,7 +23,7 @@ def get_expressed_genes_in_tissue(
     return client.get_sources(tissue, relation="expressed_in")
 
 
-def get_tissues_gene_expressed(client: Neo4jClient, gene: Tuple[str, str]):
+def get_tissues_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable[Node]:
     """Return the tissues the gene is expressed in.
 
     Parameters
@@ -43,9 +41,9 @@ def get_tissues_gene_expressed(client: Neo4jClient, gene: Tuple[str, str]):
     return client.get_targets(gene, relation="expressed_in")
 
 
-def is_gene_expressed_in_tissue(
+def is_gene_in_tissue(
     client: Neo4jClient, gene: Tuple[str, str], tissue: Tuple[str, str]
-):
+) -> bool:
     """Return True if the gene is expressed in the given tissue.
 
     Parameters
@@ -70,7 +68,7 @@ def is_gene_expressed_in_tissue(
 
 def get_go_terms_for_gene(
     client: Neo4jClient, gene: Tuple[str, str], include_indirect=False
-):
+) -> Iterable[Node]:
     """Return the GO terms for the given gene.
 
     Parameters
@@ -100,7 +98,7 @@ def get_go_terms_for_gene(
 
 def get_genes_for_go_term(
     client: Neo4jClient, go_term: Tuple[str, str], include_indirect=False
-):
+) -> Iterable[Node]:
     """Return the genes associated with the given GO term.
 
     Parameters
@@ -126,7 +124,7 @@ def get_genes_for_go_term(
 
 def is_go_term_for_gene(
     client: Neo4jClient, gene: Tuple[str, str], go_term: Tuple[str, str]
-):
+) -> bool:
     """Return True if the given GO term is associated with the given gene.
 
     Parameters
@@ -149,66 +147,271 @@ def is_go_term_for_gene(
 # Trials
 
 
-def get_trials_for_drug(client: Neo4jClient, drug: Tuple[str, str]):
+def get_trials_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[Node]:
+    """Return the trials for the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+
+    Returns
+    -------
+    :
+        The trials for the given drug.
+    """
     return client.get_targets(drug, relation="tested_in")
 
 
-def get_trials_for_disease(client: Neo4jClient, disease: Tuple[str, str]):
+def get_trials_for_disease(
+    client: Neo4jClient, disease: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the trials for the given disease.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    disease :
+        The disease to query.
+
+    Returns
+    -------
+    :
+        The trials for the given disease.
+    """
     return client.get_targets(disease, relation="has_trial")
 
 
-def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]):
+def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]) -> Iterable[Node]:
+    """Return the drugs for the given trial.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    trial :
+        The trial to query.
+
+    Returns
+    -------
+    :
+        The drugs for the given trial.
+    """
     return client.get_sources(trial, relation="tested_in")
 
 
-def get_diseases_for_trial(client: Neo4jClient, trial: Tuple[str, str]):
+def get_diseases_for_trial(
+    client: Neo4jClient, trial: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the diseases for the given trial.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    trial :
+        The trial to query.
+
+    Returns
+    -------
+    :
+        The diseases for the given trial.
+    """
     return client.get_sources(trial, relation="has_trial")
 
 
 # Pathways
 
 
-def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]):
-    return client.get_targets(gene, relation="has_pathway")
+def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable[Node]:
+    """Return the pathways for the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    gene :
+        The gene to query.
+
+    Returns
+    -------
+    :
+        The pathways for the given gene.
+    """
+    return client.get_targets(gene, relation="haspart")
 
 
-def get_genes_for_pathway(client: Neo4jClient, pathway: Tuple[str, str]):
+def get_genes_for_pathway(
+    client: Neo4jClient, pathway: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the genes for the given pathway.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pathway :
+        The pathway to query.
+
+    Returns
+    -------
+    :
+        The genes for the given pathway.
+    """
     return client.get_targets(pathway, relation="haspart")
 
 
 def is_gene_in_pathway(
     client: Neo4jClient, gene: Tuple[str, str], pathway: Tuple[str, str]
-):
+) -> bool:
+    """Return True if the gene is in the given pathway.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    gene :
+        The gene to query.
+    pathway :
+        The pathway to query.
+
+    Returns
+    -------
+    :
+        True if the gene is in the given pathway.
+    """
     return client.has_relation(gene, pathway, relation="haspart")
 
 
 # Side effects
 
 
-def get_side_effects_for_drug(client: Neo4jClient, drug: Tuple[str, str]):
+def get_side_effects_for_drug(
+    client: Neo4jClient, drug: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the side effects for the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+
+    Returns
+    -------
+    :
+        The side effects for the given drug.
+    """
     return client.get_targets(drug, relation="has_side_effect")
 
 
-def get_drugs_for_side_effect(client: Neo4jClient, side_effect: Tuple[str, str]):
+def get_drugs_for_side_effect(
+    client: Neo4jClient, side_effect: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the drugs for the given side effect.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    side_effect :
+        The side effect to query.
+
+    Returns
+    -------
+    :
+        The drugs for the given side effect.
+    """
     return client.get_sources(side_effect, relation="has_side_effect")
 
 
 def is_side_effect_for_drug(
     client: Neo4jClient, drug: Tuple[str, str], side_effect: Tuple[str, str]
-):
+) -> bool:
+    """Return True if the given side effect is associated with the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+    side_effect :
+        The side effect to query.
+
+    Returns
+    -------
+    :
+        True if the given side effect is associated with the given drug.
+    """
     return client.has_relation(drug, side_effect, relation="has_side_effect")
 
 
 # Ontology
 
 
-def get_ontology_child_terms(client: Neo4jClient, term: Tuple[str, str]):
+def get_ontology_child_terms(
+    client: Neo4jClient, term: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the child terms of the given term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    term :
+        The term to query.
+
+    Returns
+    -------
+    :
+        The child terms of the given term.
+    """
     return client.get_predecessors(term, relations={"isa", "partof"})
 
 
-def get_ontology_parent_terms(client: Neo4jClient, term: Tuple[str, str]):
+def get_ontology_parent_terms(
+    client: Neo4jClient, term: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the parent terms of the given term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    term :
+        The term to query.
+
+    Returns
+    -------
+    :
+        The parent terms of the given term.
+    """
     return client.get_successors(term, relations={"isa", "partof"})
 
 
-def isa_or_partof(client: Neo4jClient, term: Tuple[str, str], parent: Tuple[str, str]):
-    pass
+def isa_or_partof(
+    client: Neo4jClient, term: Tuple[str, str], parent: Tuple[str, str]
+) -> bool:
+    """Return True if the given term is a child of the given parent.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    term :
+        The term to query.
+    parent :
+        The parent to query.
+
+    Returns
+    -------
+    :
+        True if the given term is a child term of the given parent.
+    """
+    term_parents = get_ontology_parent_terms(client, term)
+    return any(parent == parent_term.grounding() for parent_term in term_parents)
