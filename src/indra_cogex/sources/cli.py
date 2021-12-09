@@ -89,9 +89,7 @@ def main(
     """Generate and import Neo4j nodes and edges tables."""
     to_assemble = ["BioEntity", "Publication"]
     # Paths to files with preprocessed nodes (e.g. assembled nodes or nodes that don't need to be assembled)
-    nodes_paths_for_import = [
-        _get_assembled_path(node_type) for node_type in to_assemble
-    ]
+    nodes_paths_for_import = []
     config = {} if config is None else json.load(config)
     edge_paths = []
     node_assemblers = {}
@@ -171,12 +169,13 @@ def main(
                     node_assemblers[node_type].add_nodes(nodes)
 
     # Assemble nodes if we got any node assemblers above
-    if node_assemblers:
-        for node_type, assembler in node_assemblers.items():
-            assembled_path = _get_assembled_path(node_type)
-            click.secho(f"Assembling {node_type}", fg="green")
-            # This path is already in the list of nodes to import
-            assembler.assemble(assembled_path)
+    for node_type, assembler in node_assemblers.items():
+        assembled_path = _get_assembled_path(node_type)
+        click.secho(f"Assembling {node_type}", fg="green")
+        assembled_nodes = assembler.assemble_nodes()
+        assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
+        Processor._dump_nodes_to_path(assembled_nodes, assembled_path)
+        nodes_paths_for_import.append(assembled_path)
 
     # Import the nodes
     if run_import:
