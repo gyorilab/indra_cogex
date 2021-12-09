@@ -138,7 +138,7 @@ def main(
             click.secho("Processing...", fg="green")
             # First dump the nodes and edges for processor
             _, nodes_by_type, _ = processor.dump()
-            # Add nodes to assembly or store as preprocessed depending on node type
+            # Add nodes to assembly if needed
             for node_type, nodes in nodes_by_type.items():
                 if node_type in to_assemble:
                     assembled_path = _get_assembled_path(node_type)
@@ -147,14 +147,18 @@ def main(
                         if node_type not in node_assemblers:
                             node_assemblers[node_type] = NodeAssembler()
                         node_assemblers[node_type].add_nodes(nodes)
-        elif processed:
-            # If we don't need to assemble, we'll just skip to importing
+        elif processed:  # force_process=False, process=True/False
+            # If we don't need to assemble, we'll just skip this
             for node_type, nodes_indra_path in processor_to_assemble_paths.items():
                 assembled_path = _get_assembled_path(node_type)
                 if force_assemble or (assemble and not assembled_path.exists()):
                     # Instantiate the assembler or add nodes to existing assembler
                     if node_type not in node_assemblers:
                         node_assemblers[node_type] = NodeAssembler()
+                        click.secho(
+                            f"Loading cached nodes from {nodes_indra_path}",
+                            fg="green",
+                        )
                     with open(nodes_indra_path, "rb") as fh:
                         nodes = pickle.load(fh)
                     node_assemblers[node_type].add_nodes(nodes)
