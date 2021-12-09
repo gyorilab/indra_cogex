@@ -121,7 +121,14 @@ def main(
         if not processor_cls.edges_path.exists():
             processed = False
         edge_paths.append(processor_cls.edges_path)
-
+        click.secho(
+            f"Identified node paths for assembly: {processor_to_assemble_paths}",
+            fg="blue",
+        )
+        click.secho(
+            f"Identified node paths for import: {processor_import_paths}",
+            fg="blue",
+        )
         # Run the processor if needed
         if force_process or (process and not processed):
             try:
