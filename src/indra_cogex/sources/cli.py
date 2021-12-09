@@ -31,25 +31,21 @@ def _get_assembled_path(node_type: str) -> Path:
 
 @click.command()
 @click.option(
-    "-f",
     "--process",
     is_flag=True,
     help="If true, builds all missing resouces.",
 )
 @click.option(
-    "-f",
     "--force_process",
     is_flag=True,
     help="If true, rebuilds all resources",
 )
 @click.option(
-    "-f",
     "--assemble",
     is_flag=True,
     help="If true, assembles all (not yet assembled) nodes.",
 )
 @click.option(
-    "-f",
     "--force_assemble",
     is_flag=True,
     help="If true, reassembles all nodes.",
