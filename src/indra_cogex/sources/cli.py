@@ -69,7 +69,7 @@ def _get_assembled_path(node_type: str) -> Path:
 @click.option(
     "--skip_failed_processors",
     is_flag=True,
-    help="If true, doesn't explode on missing files",
+    help="If true, skips processors that are missing required input files without erroring.",
 )
 @verbose_option
 def main(
@@ -130,7 +130,10 @@ def main(
             except FileNotFoundError as e:
                 if not skip_failed_processors:
                     raise
-                click.secho(f"Failed: {e}", fg="red")
+                click.secho(
+                    f"Failed: {e}, skipping corresponding nodes and relations from further processing and import",
+                    fg="red",
+                )
                 # Remove this processor's paths from the list of nodes/edges to import
                 for path in processor_import_paths:
                     nodes_paths_for_import.remove(path)
@@ -156,10 +159,10 @@ def main(
                     # Instantiate the assembler or add nodes to existing assembler
                     if node_type not in node_assemblers:
                         node_assemblers[node_type] = NodeAssembler()
-                        click.secho(
-                            f"Loading cached nodes from {nodes_indra_path}",
-                            fg="green",
-                        )
+                    click.secho(
+                        f"Loading cached nodes from {nodes_indra_path}",
+                        fg="green",
+                    )
                     with open(nodes_indra_path, "rb") as fh:
                         nodes = pickle.load(fh)
                     node_assemblers[node_type].add_nodes(nodes)
