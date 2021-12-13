@@ -239,12 +239,9 @@ class EvidenceProcessor(Processor):
         self.sif_path = pystow.join("indra", "db", name="sif.pkl")
         self._stmt_id_pmid_links = {}
         # Check if files exist without loading them
-        if not self.statements_path.exists():
-            raise FileNotFoundError(f"No such file: {self.statements_path}")
-        if not self.text_refs_path.exists():
-            raise FileNotFoundError(f"No such file: {self.text_refs_path}")
-        if not self.sif_path.exists():
-            raise FileNotFoundError(f"No such file: {self.sif_path}")
+        for path in [self.statements_path, self.text_refs_path, self.sif_path]:
+            if not path.exists():
+                raise FileNotFoundError(f"No such file: {path}")
 
     def get_nodes(self) -> Iterable[Node]:
         """Get nodes from the SIF file."""

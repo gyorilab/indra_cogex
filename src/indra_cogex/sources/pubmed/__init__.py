@@ -32,12 +32,9 @@ class PubmedProcessor(Processor):
         self.pmid_year_path = pmid_year_path
         self.text_refs_path = text_refs_path
         # Check if the files exist without loading them
-        if not self.mesh_pmid_path.exists():
-            raise FileNotFoundError(f"No such file: {self.mesh_pmid_path}")
-        if not self.pmid_year_path.exists():
-            raise FileNotFoundError(f"No such file: {self.pmid_year_path}")
-        if not self.text_refs_path.exists():
-            raise FileNotFoundError(f"No such file: {self.text_refs_path}")
+        for path in [mesh_pmid_path, pmid_year_path, text_refs_path]:
+            if not path.exists():
+                raise FileNotFoundError(f"No such file: {path}")
 
     def get_nodes(self):
         pmid_node_type = "Publication"
