@@ -69,9 +69,7 @@ class TestCLI(unittest.TestCase):
             MockProcessor.nodes_indra_path = directory / "nodes.pkl"
             MockProcessor.edges_path = directory / "edges.tsv.gz"
 
-            res = runner.invoke(
-                main, args=["--nodes-path", os.path.join(directory, "nodes.tsv")]
-            )
+            res = runner.invoke(main, args=["--process", "--assemble"])
             self.assertEqual(0, res.exit_code, msg=res.exception)
             self.assertIn(SUCCESS_TEXT, res.output)
             self.assertIn(DEFAULT_KEY, res.output)
@@ -101,8 +99,8 @@ class TestCLI(unittest.TestCase):
             res = runner.invoke(
                 main,
                 args=[
-                    "--nodes-path",
-                    os.path.join(directory, "nodes.tsv"),
+                    "--process",
+                    "--assemble",
                     "--config",
                     config_path,
                 ],
