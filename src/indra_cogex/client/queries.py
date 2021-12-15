@@ -88,7 +88,7 @@ def get_go_terms_for_gene(
         return go_term_nodes
     go_terms = {gtn.grounding(): gtn for gtn in go_term_nodes}
     for go_term_node in go_term_nodes:
-        go_child_terms = client.get_predecessors(
+        go_child_terms = client.get_successors(
             go_term_node.grounding(), relations=["isa"]
         )
         for term in go_child_terms:
