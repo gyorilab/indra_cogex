@@ -522,3 +522,21 @@ def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[N
         The PubMed IDs for the given MESH term.
     """
     return client.get_sources(mesh, relation="annotated_with")
+
+
+def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[Node]:
+    """Return the MESH terms for the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmid :
+        The PubMed ID to query.
+
+    Returns
+    -------
+    :
+        The MESH terms for the given PubMed ID.
+    """
+    return client.get_targets(pmid, relation="annotated_with")
