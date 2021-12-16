@@ -1,5 +1,6 @@
+import json
 from typing import Iterable, Tuple
-
+from indra.statements import Evidence
 from .neo4j_client import Neo4jClient
 from ..representation import Node
 
@@ -540,3 +541,31 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
         The MESH terms for the given PubMed ID.
     """
     return client.get_targets(pmid, relation="annotated_with")
+
+
+def get_evidence_obj_for_stmt_hash(
+    client: Neo4jClient, stmt_hash: str
+) -> Iterable[Evidence]:
+    """Return the matching evidence objects for the given statement hash.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hash :
+        The statement hash to query.
+
+    Returns
+    -------
+    :
+        The evidence object for the given statement hash.
+    """
+    query = """
+        MATCH (n:Evidence)
+        WHERE n.stmt_hash = '{stmt_hash}'
+        RETURN n.evidence
+    """
+    ev_jsons = [
+        json.loads(r[0]) for r in client.query_tx(query.format(stmt_hash=stmt_hash))
+    ]
+    return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
