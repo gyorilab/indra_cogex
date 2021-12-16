@@ -13,10 +13,11 @@ from .cbioportal import (
 from .chembl import ChemblIndicationsProcessor
 from .clinicaltrials import ClinicaltrialsProcessor
 from .goa import GoaProcessor
-from .indra_db import DbProcessor
+from .indra_db import DbProcessor, EvidenceProcessor
 from .indra_ontology import OntologyProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
+from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
 
 __all__ = [
@@ -34,6 +35,8 @@ __all__ = [
     "ClinicaltrialsProcessor",
     "ChemblIndicationsProcessor",
     "SIDERSideEffectProcessor",
+    "EvidenceProcessor",
+    "PubmedProcessor"
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)

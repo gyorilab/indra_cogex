@@ -10,6 +10,7 @@ from indra_cogex.representation import Node, Relation
 
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
+    node_types = ["BioEntity", "ClinicalTrial"]
 
     def __init__(self, path: Union[str, Path, None] = None):
         default_path = pystow.join(
@@ -95,7 +96,7 @@ class ClinicaltrialsProcessor(Processor):
                     yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
-            yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=[])
+            yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=["ClinicalTrial"])
 
     def get_relations(self):
         added = set()

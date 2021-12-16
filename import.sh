@@ -36,6 +36,6 @@ $NEO4J_PREFIX rm -rf $NEO4J_DATA/transactions/indra
 cat $NEO4J_CONFIG/neo4j.conf | grep "dbms\.default_database"
 
 
-python -m indra_cogex.sources --load $COGEX_SUDO_ARG
+python -m indra_cogex.sources --process --assemble --run_import $COGEX_SUDO_ARG
 
 $NEO4J_PREFIX neo4j start

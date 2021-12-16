@@ -4,18 +4,21 @@
 
 import csv
 import gzip
+import json
 import logging
 import pickle
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from pathlib import Path
-from typing import ClassVar, Iterable
+from typing import ClassVar, Iterable, List, Tuple, Optional, Mapping, Any
 
 import click
 import pystow
 from more_click import verbose_option
 from tqdm import tqdm
 
-from indra.statements.validate import assert_valid_db_refs
+from indra.statements.validate import assert_valid_db_refs, assert_valid_evidence
+from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
 
@@ -42,6 +45,7 @@ class Processor(ABC):
     nodes_indra_path: ClassVar[Path]
     edges_path: ClassVar[Path]
     importable = True
+    node_types = ClassVar[Iterable[str]]
 
     def __init_subclass__(cls, **kwargs):
         """Initialize the class attributes."""
@@ -80,21 +84,52 @@ class Processor(ABC):
         """Run the CLI for this processor."""
         cls.get_cli()()
 
-    def dump(self):
+    def dump(self) -> Tuple[Path, List[Node], Path]:
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
-        node_paths = self._dump_nodes()
+        node_paths, nodes = self._dump_nodes()
         edge_paths = self._dump_edges()
-        return node_paths, edge_paths
+        return node_paths, nodes, edge_paths
 
-    def _dump_nodes(self) -> Path:
-        sample_path = self.module.join(name="nodes_sample.tsv")
-        nodes = sorted(self.get_nodes(), key=lambda x: (x.db_ns, x.db_id))
-        with open(self.nodes_indra_path, "wb") as fh:
-            pickle.dump(nodes, fh)
-        return self._dump_nodes_to_path(nodes, self.nodes_path, sample_path)
+    @classmethod
+    def _get_node_paths(cls, node_type: str) -> Path:
+        # If the processor returns multiple types of nodes, add node_type to the file name
+        if len(cls.node_types) > 1:
+            return (
+                cls.module.join(name=f"nodes_{node_type}.tsv.gz"),
+                cls.module.join(name=f"nodes_{node_type}.pkl"),
+                cls.module.join(name=f"nodes_{node_type}_sample.tsv"),
+            )
+        return (
+            cls.nodes_path,
+            cls.nodes_indra_path,
+            cls.module.join(name="nodes_sample.tsv"),
+        )
+
+    def _dump_nodes(self) -> Tuple[Path, List[Node]]:
+        paths_by_type = {}
+        nodes_by_type = defaultdict(list)
+        # Get all the nodes
+        nodes = tqdm(
+            self.get_nodes(),
+            desc="Node generation",
+            unit_scale=True,
+            unit="node",
+        )
+        # Map the nodes to their types
+        for node in nodes:
+            nodes_by_type[node.labels[0]].append(node)
+        # Get the paths for each type of node and dump the nodes
+        for node_type in nodes_by_type:
+            nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
+            nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
+            with open(nodes_indra_path, "wb") as fh:
+                pickle.dump(nodes, fh)
+            self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+            paths_by_type[node_type] = nodes_path
+        return paths_by_type, dict(nodes_by_type)
 
     @staticmethod
-    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None):
+    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
@@ -104,13 +139,15 @@ class Processor(ABC):
                 ";".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
-            for node in tqdm(nodes, desc="Nodes", unit_scale=True)
+            for node in tqdm(nodes, desc="Node serialization", unit_scale=True)
         )
 
         header = "id:ID", ":LABEL", *metadata
-        with gzip.open(nodes_path, mode="wt") as node_file:
+        with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
-            node_writer.writerow(header)
+            # Only add header when writing to a new file
+            if write_mode == "wt":
+                node_writer.writerow(header)
             if sample_path:
                 with sample_path.open("w") as node_sample_file:
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
@@ -127,6 +164,10 @@ class Processor(ABC):
         sample_path = self.module.join(name="edges_sample.tsv")
         logger.info(f"Dumping into {self.edges_path}...")
         rels = self.get_relations()
+        return self._dump_edges_to_path(rels, self.edges_path, sample_path)
+
+    def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
+        logger.info(f"Dumping into {edges_path}...")
         rels = validate_relations(rels)
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
@@ -142,27 +183,39 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(self.edges_path, "wt") as edge_file:
+        with gzip.open(self.edges_path, mode=write_mode) as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
-            with sample_path.open("w") as edge_sample_file:
-                edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
-                header = ":START_ID", ":END_ID", ":TYPE", *metadata
-                edge_sample_writer.writerow(header)
+            header = ":START_ID", ":END_ID", ":TYPE", *metadata
+            # Only add header when writing to a new file
+            if write_mode == "wt":
                 edge_writer.writerow(header)
-
-                for _, edge_row in zip(range(10), edge_rows):
-                    edge_sample_writer.writerow(edge_row)
-                    edge_writer.writerow(edge_row)
-
+            if sample_path:
+                with sample_path.open("w") as edge_sample_file:
+                    edge_sample_writer = csv.writer(edge_sample_file, delimiter="\t")
+                    edge_sample_writer.writerow(header)
+                    for _, edge_row in zip(range(10), edge_rows):
+                        edge_sample_writer.writerow(edge_row)
+                        edge_writer.writerow(edge_row)
             # Write remaining edges
             edge_writer.writerows(edge_rows)
-        return self.edges_path
+        return edges_path
 
 
-def validate_nodes(nodes):
+def assert_valid_node(
+    db_ns: str, db_id: str, data: Optional[Mapping[str, Any]] = None
+) -> None:
+    if db_ns == "indra_evidence":
+        if data and data.get("evidence"):
+            ev = Evidence._from_json(json.loads(data["evidence"]))
+            assert_valid_evidence(ev)
+    else:
+        assert_valid_db_refs({db_ns: db_id})
+
+
+def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
         try:
-            assert_valid_db_refs({node.db_ns: node.db_id})
+            assert_valid_node(node.db_ns, node.db_id, node.data)
             yield node
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
@@ -172,8 +225,8 @@ def validate_nodes(nodes):
 def validate_relations(relations):
     for idx, rel in enumerate(relations):
         try:
-            assert_valid_db_refs({rel.source_ns: rel.source_id})
-            assert_valid_db_refs({rel.target_ns: rel.target_id})
+            assert_valid_node(rel.source_ns, rel.source_id)
+            assert_valid_node(rel.target_ns, rel.target_id)
             yield rel
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
