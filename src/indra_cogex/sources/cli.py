@@ -110,7 +110,9 @@ def main(
                 # These will be imported directly
                 nodes_paths_for_import.append(proc_nodes_path)
                 processor_import_paths.append(proc_nodes_path)
-            if not proc_nodes_path.exists() or not nodes_indra_path.exists():
+            if not proc_nodes_path.exists() or (
+                nodes_indra_path and not nodes_indra_path.exists()
+            ):
                 processed = False
         if not processor_cls.edges_path.exists():
             processed = False
