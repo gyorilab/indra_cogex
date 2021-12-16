@@ -176,7 +176,12 @@ def main(
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
         Processor._dump_nodes_to_path(assembled_nodes, assembled_path)
-        nodes_paths_for_import.append(assembled_path)
+
+    # The assembled paths are added to the list of nodes to import separately
+    for node_type in to_assemble:
+        assembled_path = _get_assembled_path(node_type)
+        if assembled_path.exists():
+            nodes_paths_for_import.append(assembled_path)
 
     # Import the nodes
     if run_import:
