@@ -365,6 +365,17 @@ class EvidenceProcessor(Processor):
         self._dump_nodes_to_path(nodes, nodes_path, sample_path)
         return paths_by_type, dict(nodes_by_type)
 
+    @classmethod
+    def _get_node_paths(cls, node_type: str) -> Path:
+        if node_type == "Publication":
+            return super()._get_node_paths(node_type)
+        elif node_type == "Evidence":
+            return (
+                cls.module.join(name=f"nodes_{node_type}.tsv.gz"),
+                None,
+                cls.module.join(name=f"nodes_{node_type}_sample.tsv"),
+            )
+
 
 class StatementJSONDecodeError(Exception):
     pass
