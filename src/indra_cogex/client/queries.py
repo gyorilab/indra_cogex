@@ -501,3 +501,24 @@ def isa_or_partof(
     """
     term_parents = get_ontology_parent_terms(client, term)
     return any(parent == parent_term.grounding() for parent_term in term_parents)
+
+
+# MESH / PMID
+
+
+def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[Node]:
+    """Return the PubMed IDs for the given MESH term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh :
+        The MESH term to query.
+
+    Returns
+    -------
+    :
+        The PubMed IDs for the given MESH term.
+    """
+    return client.get_sources(mesh, relation="annotated_with")
