@@ -7,14 +7,13 @@ import neo4j
 import neo4j.graph
 from neo4j import GraphDatabase
 
+from indra.config import get_config
 from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation, norm_id
 
 logger = logging.getLogger(__name__)
-
-NEO4J_URL = "bolt://localhost:7687"
 
 
 class Neo4jClient:
@@ -23,19 +22,38 @@ class Neo4jClient:
     Parameters
     ----------
     url :
-        The bolt URL to the neo4j instance.
+        The bolt URL to the neo4j instance to override INDRA_NEO4J_URL
+        set as an environment variable or set in the INDRA config file.
     auth :
-        A tuple consisting of the user name and password for the neo4j instance.
+        A tuple consisting of the user name and password for the neo4j instance to
+        override INDRA_NEO4J_USER and
+        INDRA_NEO4J_PASSWORD set as environment variables or set in the INDRA config file.
     """
 
     def __init__(
         self,
-        url: Optional[str] = NEO4J_URL,
+        url: Optional[str] = None,
         auth: Optional[Tuple[str, str]] = None,
     ):
-        self.url = url
-        self.driver = GraphDatabase.driver(self.url, auth=auth)
+        """Initialize the Neo4j client."""
+        self.driver = None
         self.session = None
+        if not url:
+            INDRA_NEO4J_URL = get_config("INDRA_NEO4J_URL")
+            if INDRA_NEO4J_URL:
+                url = INDRA_NEO4J_URL
+                logger.info("Using configured URL for INDRA neo4j connection")
+            else:
+                logger.info("INDRA_NEO4J_URL not configured")
+        if not auth:
+            INDRA_NEO4J_USER = get_config("INDRA_NEO4J_USER")
+            INDRA_NEO4J_PASSWORD = get_config("INDRA_NEO4J_PASSWORD")
+            if INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD:
+                auth = (INDRA_NEO4J_USER, INDRA_NEO4J_PASSWORD)
+                logger.info("Using configured credentials for INDRA neo4j connection")
+            else:
+                logger.info("INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD not configured")
+        self.driver = GraphDatabase.driver(url, auth=auth)
 
     def create_tx(
         self,
