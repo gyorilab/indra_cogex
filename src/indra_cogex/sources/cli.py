@@ -118,7 +118,7 @@ def main(
             processed = False
         edge_paths.append(processor_cls.edges_path)
         click.secho(
-            f"Identified node paths for assembly: {[str(p) for p in processor_to_assemble_paths]}",
+            f"Identified node paths for assembly: {[str(p) for p in processor_to_assemble_paths.values()]}",
             fg="blue",
         )
         click.secho(
