@@ -1,20 +1,19 @@
 __all__ = ["Neo4jClient"]
 
 import logging
-from typing import Any, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j
 import neo4j.graph
 from neo4j import GraphDatabase
 
+from indra.config import get_config
 from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
 from indra_cogex.representation import Node, Relation, norm_id
 
 logger = logging.getLogger(__name__)
-
-NEO4J_URL = "bolt://localhost:7687"
 
 
 class Neo4jClient:
@@ -23,19 +22,38 @@ class Neo4jClient:
     Parameters
     ----------
     url :
-        The bolt URL to the neo4j instance.
+        The bolt URL to the neo4j instance to override INDRA_NEO4J_URL
+        set as an environment variable or set in the INDRA config file.
     auth :
-        A tuple consisting of the user name and password for the neo4j instance.
+        A tuple consisting of the user name and password for the neo4j instance to
+        override INDRA_NEO4J_USER and
+        INDRA_NEO4J_PASSWORD set as environment variables or set in the INDRA config file.
     """
 
     def __init__(
         self,
-        url: Optional[str] = NEO4J_URL,
+        url: Optional[str] = None,
         auth: Optional[Tuple[str, str]] = None,
     ):
-        self.url = url
-        self.driver = GraphDatabase.driver(self.url, auth=auth)
+        """Initialize the Neo4j client."""
+        self.driver = None
         self.session = None
+        if not url:
+            INDRA_NEO4J_URL = get_config("INDRA_NEO4J_URL")
+            if INDRA_NEO4J_URL:
+                url = INDRA_NEO4J_URL
+                logger.info("Using configured URL for INDRA neo4j connection")
+            else:
+                logger.info("INDRA_NEO4J_URL not configured")
+        if not auth:
+            INDRA_NEO4J_USER = get_config("INDRA_NEO4J_USER")
+            INDRA_NEO4J_PASSWORD = get_config("INDRA_NEO4J_PASSWORD")
+            if INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD:
+                auth = (INDRA_NEO4J_USER, INDRA_NEO4J_PASSWORD)
+                logger.info("Using configured credentials for INDRA neo4j connection")
+            else:
+                logger.info("INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD not configured")
+        self.driver = GraphDatabase.driver(url, auth=auth)
 
     def create_tx(
         self,
@@ -400,6 +418,64 @@ class Neo4jClient:
         agents = [self.node_to_agent(source) for source in sources]
         return agents
 
+    def get_predecessors(
+        self, target: Tuple[str, str], relations: Iterable[str]
+    ) -> List[Node]:
+        """Return the nodes that precede the given node via the given relation types.
+
+        Parameters
+        ----------
+        target :
+            The target node's ID.
+        relation :
+            The relation label to constrain to when finding predecessors.
+
+        Returns
+        -------
+        predecessors
+            A list of predecessor nodes.
+        """
+        rel_str = ":%s*1.." % "|".join(relations)
+        match = "(s)-[%s]->({id: '%s'})" % (rel_str, norm_id(*target))
+        query = (
+            """
+            MATCH %s
+            RETURN DISTINCT s
+        """
+            % match
+        )
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
+        return nodes
+
+    def get_successors(
+        self, source: Tuple[str, str], relations: Iterable[str]
+    ) -> List[Node]:
+        """Return the nodes that precede the given node via the given relation types.
+
+        Parameters
+        ----------
+        source :
+            The source node's ID.
+        relation :
+            The relation label to constrain to when finding successors.
+
+        Returns
+        -------
+        predecessors
+            A list of predecessor nodes.
+        """
+        rel_str = ":%s*1.." % "|".join(relations)
+        match = "({id: '%s'})-[%s]->(t)" % (norm_id(*source), rel_str)
+        query = (
+            """
+            MATCH %s
+            RETURN DISTINCT t
+        """
+            % match
+        )
+        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
+        return nodes
+
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
         """Return a Node from a neo4j internal node.
@@ -439,7 +515,7 @@ class Neo4jClient:
 
     @staticmethod
     def neo4j_to_relations(neo4j_path: neo4j.graph.Path) -> List[Relation]:
-        """Return a Relation from a neo4j internal single-relation path.
+        """Return a list of Relations from a neo4j internal multi-relation path.
 
         Parameters
         ----------

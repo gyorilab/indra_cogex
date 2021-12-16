@@ -3,7 +3,7 @@ import pytest
 from indra.config import get_config
 from indra.statements import Agent
 
-from indra_cogex.neo4j_client import Neo4jClient, process_identifier
+from indra_cogex.client.neo4j_client import Neo4jClient, process_identifier
 
 
 def _get_client():

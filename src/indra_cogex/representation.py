@@ -2,13 +2,15 @@
 
 """Representations for nodes and relations to upload to Neo4j."""
 
-from typing import Any, Collection, Mapping, Optional, Tuple
+from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple
 
 __all__ = ["Node", "Relation"]
 
+import json
 from indra.databases import identifiers
 from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
+from indra.statements import stmts_from_json, Statement
 
 
 class Node:
@@ -59,6 +61,10 @@ class Node:
             labels,
             dict(name=name),
         )
+
+    def grounding(self):
+        """Get the grounding tuple for this node."""
+        return (self.db_ns, self.db_id)
 
     def to_json(self):
         """Serialize the node to JSON."""
@@ -162,3 +168,23 @@ def norm_id(db_ns, db_id):
         if ns_embedded:
             identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
     return f"{identifiers_ns}:{identifiers_id}"
+
+
+def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
+    """Convert a list of relations to INDRA Statements.
+
+    Any relations that aren't representing an INDRA Statement are skipped.
+
+    Parameters
+    ----------
+    rels :
+        A list of Relations.
+
+    Returns
+    -------
+    :
+        A list of INDRA Statements.
+    """
+    stmts_json = [json.loads(rel.data["stmt_json"]) for rel in rels]
+    stmts = stmts_from_json(stmts_json)
+    return stmts
