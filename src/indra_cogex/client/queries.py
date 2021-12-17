@@ -599,7 +599,7 @@ def get_stmts_for_pmid(
         WHERE n.id = 'pubmed:{pmid}'
         RETURN s.stmt_hash
     """
-    hashes = [r[0] for r in client.query_tx(hash_query.format(pmid=pmid))]
+    hashes = [r[0] for r in client.query_tx(hash_query.format(pmid=pmid[1]))]
 
     # Then, get the all statements for the given hashes
     stmt_hashes_str = ",".join(hashes)
