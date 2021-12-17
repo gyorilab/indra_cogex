@@ -1,6 +1,6 @@
 import json
 from typing import Iterable, Tuple
-from indra.statements import Evidence
+from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node
 
@@ -569,3 +569,47 @@ def get_evidence_obj_for_stmt_hash(
         json.loads(r[0]) for r in client.query_tx(query.format(stmt_hash=stmt_hash))
     ]
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
+
+
+def get_stmts_for_pmid(
+    client: Neo4jClient, pmid: Tuple[str, str]
+) -> Iterable[Statement]:
+    """Return the statements with evidence for the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmid :
+        The PubMed ID to query.
+
+    Returns
+    -------
+    :
+        The statements for the given PubMed ID.
+    """
+    # ToDo: Investigate if it's possible to do this in one query - see more
+    #  details in the Neo4j documentation:
+    #  https://neo4j.com/developer/cypher/subqueries/
+    # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
+    #  stmt type
+    # First, get the hashes for the given PubMed ID
+    hash_query = """
+        MATCH (s)-[r:has_citation]->(n:Publication)
+        WHERE n.id = 'pubmed:{pmid}'
+        RETURN s.stmt_hash
+    """
+    hashes = [r[0] for r in client.query_tx(hash_query.format(pmid=pmid))]
+
+    # Then, get the all statements for the given hashes
+    stmt_hashes_str = ",".join(hashes)
+    query = """
+        MATCH ()-[r:indra_rel]->()
+        WHERE r.stmt_hash IN [{stmt_hashes}]
+        RETURN r.stmt_json
+    """
+    stmt_jsons = [
+        json.loads(r[0])
+        for r in client.query_tx(query.format(stmt_hashes=stmt_hashes_str))
+    ]
+    return [Statement._from_json(stmt_json) for stmt_json in stmt_jsons]
