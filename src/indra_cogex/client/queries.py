@@ -2,7 +2,8 @@ import json
 from typing import Iterable, Tuple
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
-from ..representation import Node
+from ..representation import Node, indra_stmts_from_relations
+
 
 # BGee
 
@@ -595,21 +596,19 @@ def get_stmts_for_pmid(
     #  stmt type
     # First, get the hashes for the given PubMed ID
     hash_query = """
-        MATCH (s)-[r:has_citation]->(n:Publication)
+        MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
         WHERE n.id = 'pubmed:{pmid}'
-        RETURN s.stmt_hash
+        RETURN e.stmt_hash
     """
     hashes = [r[0] for r in client.query_tx(hash_query.format(pmid=pmid[1]))]
 
     # Then, get the all statements for the given hashes
     stmt_hashes_str = ",".join(hashes)
     query = """
-        MATCH ()-[r:indra_rel]->()
-        WHERE r.stmt_hash IN [{stmt_hashes}]
-        RETURN r.stmt_json
-    """
-    stmt_jsons = [
-        json.loads(r[0])
-        for r in client.query_tx(query.format(stmt_hashes=stmt_hashes_str))
-    ]
-    return [Statement._from_json(stmt_json) for stmt_json in stmt_jsons]
+        MATCH p=()-[r:indra_rel]->()
+        WHERE r.stmt_hash IN [%s]
+        RETURN p
+    """ % stmt_hashes_str
+    rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(query)]
+    return indra_stmts_from_relations(rels)
+
