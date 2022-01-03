@@ -535,7 +535,7 @@ def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[s
     return [r[0] for r in client.query_tx(query)]
 
 
-def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[Node]:
+def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[str]:
     """Return the MESH terms for the given PubMed ID.
 
     Parameters
@@ -550,7 +550,15 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     :
         The MESH terms for the given PubMed ID.
     """
-    return client.get_targets(pmid, relation="annotated_with")
+    if pmid[0].lower() != "pmid":
+        raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
+
+    query = """
+        MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
+        WHERE k.id = "%s" AND b.id CONTAINS "mesh"
+        RETURN b.id
+    """ % f"pubmed:{pmid[1]}"
+    return [r[0] for r in client.query_tx(query)]
 
 
 def get_evidence_obj_for_stmt_hash(
