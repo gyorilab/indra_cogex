@@ -84,7 +84,8 @@ Open files limit
 ----------------
 There is a persistent warning e.g., when starting the neo4j service saying
 ```
-WARNING: Max 1024 open files allowed, minimum of 40000 recommended. See the Neo4j manual.```
+WARNING: Max 1024 open files allowed, minimum of 40000 recommended. See the Neo4j manual.
+```
 
 Forum context: https://community.neo4j.com/t/warning-max-1024-open-files-allowed-minimum-of-40000-recommended-see-the-neo4j-manual/3679
 
