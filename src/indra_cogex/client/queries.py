@@ -508,7 +508,7 @@ def isa_or_partof(
 # MESH / PMID
 
 
-def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[Node]:
+def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[str]:
     """Return the PubMed IDs for the given MESH term.
 
     Parameters
@@ -523,7 +523,16 @@ def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[N
     :
         The PubMed IDs for the given MESH term.
     """
-    return client.get_sources(mesh, relation="annotated_with")
+    # FixMe:
+    #  - Add flag, with default 'True', for including child terms
+    if mesh[0].lower() != "mesh":
+        raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
+    query = """
+        MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
+        WHERE b.id = "{mesh}"
+        RETURN k.id
+    """
+    return [r[0] for r in client.query_tx(query.format(mesh=f"mesh:{mesh[1]}"))]
 
 
 def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[Node]:
