@@ -529,10 +529,10 @@ def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[s
         raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
     query = """
         MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
-        WHERE b.id = "{mesh}"
+        WHERE b.id = "%s"
         RETURN k.id
-    """
-    return [r[0] for r in client.query_tx(query.format(mesh=f"mesh:{mesh[1]}"))]
+    """ % f"mesh:{mesh[1]}"
+    return [r[0] for r in client.query_tx(query)]
 
 
 def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[Node]:
@@ -572,11 +572,11 @@ def get_evidence_obj_for_stmt_hash(
     """
     query = """
         MATCH (n:Evidence)
-        WHERE n.stmt_hash = '{stmt_hash}'
+        WHERE n.stmt_hash = "%s"
         RETURN n.evidence
-    """
+    """ % stmt_hash
     ev_jsons = [
-        json.loads(r[0]) for r in client.query_tx(query.format(stmt_hash=stmt_hash))
+        json.loads(r[0]) for r in client.query_tx(query)
     ]
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
 
