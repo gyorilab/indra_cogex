@@ -1,5 +1,6 @@
 import json
-from typing import Iterable, Tuple
+from collections import defaultdict
+from typing import Iterable, Tuple, Mapping
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations
@@ -620,6 +621,41 @@ def get_evidence_obj_for_stmt_hash(
     )
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
+
+
+def get_evidence_objects_for_stmt_hashes(
+    client: Neo4jClient, stmt_hashes: Iterable[int]
+) -> Mapping[int, Evidence]:
+    """Return the matching evidence objects for the given statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query.
+
+    Returns
+    -------
+    :
+        A tuple of the stmt hash and an evidence objects for the given
+        statement hashes.
+    """
+    stmt_hashes_str = ",".join(f'"{h}"' for h in stmt_hashes)
+    query = (
+        """
+        MATCH (n:Evidence)
+        WHERE n.stmt_hash IN [%s]
+        RETURN n.stmt_hash, n.evidence
+    """
+        % stmt_hashes_str
+    )
+    ev_dict = defaultdict(list)
+    for hash_str, ev_json_str in client.query_tx(query):
+        ev_json = json.loads(ev_json_str)
+        ev_dict[int(hash_str)].append(Evidence._from_json(ev_json))
+
+    return dict(ev_dict)
 
 
 def get_stmts_for_pmid(
