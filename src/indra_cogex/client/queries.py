@@ -640,22 +640,16 @@ def get_stmts_for_pmid(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
     # First, get the hashes for the given PubMed ID
-    hash_query = """
+    hash_query = (
+        """
         MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
-        WHERE n.id = 'pubmed:{pmid}'
+        WHERE n.id = "pubmed:%s"
         RETURN e.stmt_hash
     """
-    hashes = [r[0] for r in client.query_tx(hash_query.format(pmid=pmid[1]))]
-
-    # Then, get the all statements for the given hashes
-    stmt_hashes_str = ",".join(hashes)
-    query = """
-        MATCH p=()-[r:indra_rel]->()
-        WHERE r.stmt_hash IN [%s]
-        RETURN p
-    """ % stmt_hashes_str
-    rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(query)]
-    return indra_stmts_from_relations(rels)
+        % pmid[1]
+    )
+    hashes = [r[0] for r in client.query_tx(hash_query)]
+    return get_stmts_for_stmt_hashes(client, hashes)
 
 
 def get_stmts_for_mesh_id(
@@ -691,9 +685,27 @@ def get_stmts_for_mesh_id(
         % pubmed_str
     )
     hashes = [r[0] for r in client.query_tx(query)]
+    return get_stmts_for_stmt_hashes(client, hashes)
 
-    # Then, get the all statements for the given hashes
-    stmt_hashes_str = ",".join(hashes)
+
+def get_stmts_for_stmt_hashes(
+    client: Neo4jClient, stmt_hashes: Iterable[int]
+) -> Iterable[Statement]:
+    """Return the statements for the given statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query.
+
+    Returns
+    -------
+    :
+        The statements for the given statement hashes.
+    """
+    stmt_hashes_str = ",".join(map(str, stmt_hashes))
     stmts_query = (
         """
         MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
