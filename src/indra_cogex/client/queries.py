@@ -508,7 +508,9 @@ def isa_or_partof(
 # MESH / PMID
 
 
-def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[str]:
+def get_pmids_for_mesh(
+    client: Neo4jClient, mesh: Tuple[str, str], include_child_terms: bool = True
+) -> Iterable[str]:
     """Return the PubMed IDs for the given MESH term.
 
     Parameters
@@ -517,21 +519,47 @@ def get_pmids_for_mesh(client: Neo4jClient, mesh: Tuple[str, str]) -> Iterable[s
         The Neo4j client.
     mesh :
         The MESH term to query.
+    include_child_terms :
+        If True, the PubMed IDs for the given MESH term and its child terms
 
     Returns
     -------
     :
-        The PubMed IDs for the given MESH term.
+        The PubMed IDs for the given MESH term and, optionally, its child terms.
     """
-    # FixMe:
-    #  - Add flag, with default 'True', for including child terms
     if mesh[0].lower() != "mesh":
         raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
-    query = """
-        MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
-        WHERE b.id = "%s"
+
+    # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
+    # slower for this specific query, so we do an optimized query that is
+    # basically equivalent instead.
+    if include_child_terms:
+        child_query = (
+            """
+            MATCH (c:BioEntity)-[:isa|partf*1..]->(p:BioEntity)
+            WHERE p.id = "mesh:%s"
+            RETURN DISTINCT c.id
+            """
+            % mesh[1]
+        )
+        child_terms = {c[0] for c in client.query_tx(child_query)}
+    else:
+        child_terms = set()
+
+    if child_terms:
+        terms = set(mesh) | child_terms
+        terms_str = ",".join(f'"{c}"' for c in terms)
+        where_clause = "WHERE b.id IN [%s]" % terms_str
+    else:
+        where_clause = 'WHERE b.id = "mesh:%s"' % mesh[1]
+
+    query = (
+        """MATCH (k:Publication)-[r:annotated_with]->(b:BioEntity)
+        %s
         RETURN k.id
-    """ % f"mesh:{mesh[1]}"
+    """
+        % where_clause
+    )
     return [r[0] for r in client.query_tx(query)]
 
 
