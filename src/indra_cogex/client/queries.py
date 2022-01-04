@@ -658,7 +658,9 @@ def get_stmts_for_pmid(
     return indra_stmts_from_relations(rels)
 
 
-def get_stmts_for_mesh_id(client: Neo4jClient, meshid: Tuple[str, str]) -> Iterable[Statement]:
+def get_stmts_for_mesh_id(
+    client: Neo4jClient, meshid: Tuple[str, str], include_child_terms: bool = True
+) -> Iterable[Statement]:
     """Return the statements with evidence for the given MESH ID.
 
     Parameters
@@ -667,6 +669,8 @@ def get_stmts_for_mesh_id(client: Neo4jClient, meshid: Tuple[str, str]) -> Itera
         The Neo4j client.
     meshid :
         The MESH ID to query.
+    include_child_terms :
+        If True, also match against the children of the given MESH id.
 
     Returns
     -------
@@ -674,23 +678,29 @@ def get_stmts_for_mesh_id(client: Neo4jClient, meshid: Tuple[str, str]) -> Itera
         The statements for the given MESH ID.
     """
     # Get the publications annotated with the given MESH ID
-    pmids = get_pmids_for_mesh(client, meshid)
+    pmids = get_pmids_for_mesh(client, meshid, include_child_terms)
 
     # Get the all evidences for the given pmids
-    pubmed_str = '"' + '","'.join(pmids) + '"'
-    query = """
+    pubmed_str = ",".join(f'"{p}"' for p in pmids)
+    query = (
+        """
         MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
         WHERE n.id IN [%s]
-        RETURN e.stmt_hash
-    """ % pubmed_str
+        RETURN DISTINCT e.stmt_hash
+    """
+        % pubmed_str
+    )
     hashes = [r[0] for r in client.query_tx(query)]
 
     # Then, get the all statements for the given hashes
     stmt_hashes_str = ",".join(hashes)
-    stmts_query = """
-        MATCH p=()-[r:indra_rel]->()
+    stmts_query = (
+        """
+        MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
         WHERE r.stmt_hash IN [%s]
         RETURN p
-    """ % stmt_hashes_str
+    """
+        % stmt_hashes_str
+    )
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
     return indra_stmts_from_relations(rels)
