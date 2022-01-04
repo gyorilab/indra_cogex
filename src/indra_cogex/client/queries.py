@@ -1,9 +1,13 @@
 import json
+import logging
 from collections import defaultdict
 from typing import Iterable, Tuple, Mapping
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations
+
+
+logger = logging.getLogger(__name__)
 
 
 # BGee
@@ -756,4 +760,19 @@ def get_stmts_for_stmt_hashes(
         % stmt_hashes_str
     )
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
-    return indra_stmts_from_relations(rels)
+    stmts = {s.get_hash(): s for s in indra_stmts_from_relations(rels)}
+
+    # Get the evidence objects for the given statement hashes
+    evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
+
+    # Add the evidence objects to the statements, if no result, keep the
+    # original statement evidence
+    for stmt_hash, stmt in stmts.items():
+        ev_list = evidences.get(stmt_hash, [])
+        if ev_list:
+            stmt.evidence = ev_list
+        else:
+            logger.warning(f'No evidence for stmt hash {stmt_hash}, '
+                           f'keeping sample evidence')
+
+    return list(stmts.values())
