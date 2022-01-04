@@ -520,7 +520,8 @@ def get_pmids_for_mesh(
     mesh :
         The MESH term to query.
     include_child_terms :
-        If True, the PubMed IDs for the given MESH term and its child terms
+        If True, also match against the child MESH terms of the given MESH
+        term.
 
     Returns
     -------
@@ -581,11 +582,14 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     if pmid[0].lower() != "pmid":
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
 
-    query = """
+    query = (
+        """
         MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
         WHERE k.id = "%s" AND b.id CONTAINS "mesh"
         RETURN b.id
-    """ % f"pubmed:{pmid[1]}"
+    """
+        % f"pubmed:{pmid[1]}"
+    )
     return [r[0] for r in client.query_tx(query)]
 
 
@@ -606,14 +610,15 @@ def get_evidence_obj_for_stmt_hash(
     :
         The evidence object for the given statement hash.
     """
-    query = """
+    query = (
+        """
         MATCH (n:Evidence)
         WHERE n.stmt_hash = "%s"
         RETURN n.evidence
-    """ % stmt_hash
-    ev_jsons = [
-        json.loads(r[0]) for r in client.query_tx(query)
-    ]
+    """
+        % stmt_hash
+    )
+    ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
 
 
@@ -664,7 +669,7 @@ def get_stmts_for_mesh_id(
     meshid :
         The MESH ID to query.
     include_child_terms :
-        If True, also match against the children of the given MESH id.
+        If True, also match against the children of the given MESH ID.
 
     Returns
     -------
