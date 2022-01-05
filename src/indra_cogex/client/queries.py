@@ -659,12 +659,8 @@ def get_evidence_objects_for_stmt_hashes(
     """
         % stmt_hashes_str
     )
-    ev_dict = defaultdict(list)
-    for hash_str, ev_json_str in client.query_tx(query):
-        ev_json = json.loads(ev_json_str)
-        ev_dict[hash_str].append(Evidence._from_json(ev_json))
 
-    return dict(ev_dict)
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
 def get_stmts_for_pmid(
@@ -690,17 +686,19 @@ def get_stmts_for_pmid(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
     pmid_norm = norm_id(*pmid)
-    # First, get the hashes for the given PubMed ID
+    # First, get the hashes and evidences for the given PubMed ID
     hash_query = (
         """
         MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
         WHERE n.id = "%s"
-        RETURN e.stmt_hash
+        RETURN e.stmt_hash, e.evidence
     """
         % pmid_norm
     )
-    hashes = [r[0] for r in client.query_tx(hash_query)]
-    return get_stmts_for_stmt_hashes(client, hashes)
+    result = client.query_tx(hash_query)
+    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    stmt_hashes = set(ev_dict.keys())
+    return get_stmts_for_stmt_hashes(client, stmt_hashes, ev_dict)
 
 
 def get_stmts_for_mesh_id(
@@ -725,18 +723,20 @@ def get_stmts_for_mesh_id(
     # Get the publications annotated with the given MESH ID
     pmids = get_pmids_for_mesh(client, meshid, include_child_terms)
 
-    # Get the all evidences for the given pmids
+    # Get the all evidences with their hashes for the given pmids
     pubmed_str = ",".join(f'"{p}"' for p in pmids)
     query = (
         """
         MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
         WHERE n.id IN [%s]
-        RETURN DISTINCT e.stmt_hash
+        RETURN DISTINCT e.stmt_hash, e.evidence
     """
         % pubmed_str
     )
-    hashes = [r[0] for r in client.query_tx(query)]
-    return get_stmts_for_stmt_hashes(client, hashes)
+    result = client.query_tx(query)
+    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    hashes = list(ev_dict.keys())
+    return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
 
 
 def get_stmts_for_stmt_hashes(
