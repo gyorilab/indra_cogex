@@ -542,7 +542,7 @@ def get_pmids_for_mesh(
     if include_child_terms:
         child_query = (
             """
-            MATCH (c:BioEntity)-[:isa|partf*1..]->(p:BioEntity)
+            MATCH (c:BioEntity)-[:isa*1..]->(p:BioEntity)
             WHERE p.id = "mesh:%s"
             RETURN DISTINCT c.id
             """
