@@ -589,6 +589,9 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
     norm_pmid = norm_id(*pmid)
 
+    # NOTE: we don't need to filter the BioEntity nodes to mesh, since
+    # Publication nodes only have annotated_with relations to BioEntity
+    # nodes that are mesh terms.
     query = (
         """
         MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
@@ -597,7 +600,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     """
         % norm_pmid
     )
-    return [r[0] for r in client.query_tx(query) if r[0].startswith("mesh:")]
+    return [r[0] for r in client.query_tx(query)]
 
 
 def get_evidence_obj_for_stmt_hash(
