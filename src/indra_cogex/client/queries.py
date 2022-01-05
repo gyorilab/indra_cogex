@@ -590,12 +590,12 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     query = (
         """
         MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
-        WHERE k.id = "%s" AND b.id CONTAINS "mesh"
+        WHERE k.id = "%s"
         RETURN b.id
     """
         % f"pubmed:{pmid[1]}"
     )
-    return [r[0] for r in client.query_tx(query)]
+    return [r[0] for r in client.query_tx(query) if r[0].startswith("mesh:")]
 
 
 def get_evidence_obj_for_stmt_hash(
