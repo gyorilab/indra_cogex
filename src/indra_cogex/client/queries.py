@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from typing import Iterable, Tuple, Mapping
+from typing import Iterable, Tuple, Mapping, Dict, List, Optional
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations, norm_id
@@ -781,3 +781,16 @@ def get_stmts_for_stmt_hashes(
                            f'keeping sample evidence')
 
     return list(stmts.values())
+
+
+def _get_ev_dict_from_hash_ev_query(result: Optional[Iterable[List[str]]] = None) -> Dict[str, Evidence]:
+    """Assumes the result is an Iterable of pairs of [hash, evidence_json]"""
+    if result is None:
+        logger.warning('No result for hash, Evidence query, returning empty dict')
+        return {}
+
+    ev_dict = defaultdict(list)
+    for hash_str, ev_json_str in result:
+        ev_json = json.loads(ev_json_str)
+        ev_dict[hash_str].append(Evidence._from_json(ev_json))
+    return dict(ev_dict)
