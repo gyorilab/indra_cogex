@@ -797,7 +797,7 @@ def get_stmts_for_stmt_hashes(
 
 
 def _get_ev_dict_from_hash_ev_query(result: Optional[Iterable[List[str]]] = None) -> Dict[str, Evidence]:
-    """Assumes the result is an Iterable of pairs of [hash, evidence_json]"""
+    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning('No result for hash, Evidence query, returning empty dict')
         return {}
