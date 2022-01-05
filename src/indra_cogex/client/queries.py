@@ -628,8 +628,8 @@ def get_evidence_obj_for_stmt_hash(
 
 
 def get_evidence_objects_for_stmt_hashes(
-    client: Neo4jClient, stmt_hashes: Iterable[int]
-) -> Mapping[int, Evidence]:
+    client: Neo4jClient, stmt_hashes: Iterable[str]
+) -> Mapping[str, Evidence]:
     """Return the matching evidence objects for the given statement hashes.
 
     Parameters
@@ -657,7 +657,7 @@ def get_evidence_objects_for_stmt_hashes(
     ev_dict = defaultdict(list)
     for hash_str, ev_json_str in client.query_tx(query):
         ev_json = json.loads(ev_json_str)
-        ev_dict[int(hash_str)].append(Evidence._from_json(ev_json))
+        ev_dict[hash_str].append(Evidence._from_json(ev_json))
 
     return dict(ev_dict)
 
@@ -734,7 +734,7 @@ def get_stmts_for_mesh_id(
 
 
 def get_stmts_for_stmt_hashes(
-    client: Neo4jClient, stmt_hashes: Iterable[int]
+    client: Neo4jClient, stmt_hashes: Iterable[str]
 ) -> Iterable[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -750,7 +750,9 @@ def get_stmts_for_stmt_hashes(
     :
         The statements for the given statement hashes.
     """
-    stmt_hashes_str = ",".join(map(str, stmt_hashes))
+    stmt_hashes_str = ",".join(stmt_hashes)
+    # NOTE: for indra_rel Relationships, stmt_hash is an int, in Evidence
+    # nodes stmt_hash is a string
     stmts_query = (
         """
         MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
@@ -760,7 +762,7 @@ def get_stmts_for_stmt_hashes(
         % stmt_hashes_str
     )
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
-    stmts = {s.get_hash(): s for s in indra_stmts_from_relations(rels)}
+    stmts = {str(s.get_hash()): s for s in indra_stmts_from_relations(rels)}
 
     # Get the evidence objects for the given statement hashes
     evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
