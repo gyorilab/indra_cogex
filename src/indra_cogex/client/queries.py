@@ -640,6 +640,9 @@ def get_evidence_objects_for_stmt_hashes(
         The Neo4j client.
     stmt_hashes :
         The statement hashes to query.
+    evidence_map :
+        Optionally provide a mapping of stmt hash to a list of evidence
+        objects that can be used to skip querying for evidence objects.
 
     Returns
     -------
@@ -737,7 +740,7 @@ def get_stmts_for_mesh_id(
 
 
 def get_stmts_for_stmt_hashes(
-    client: Neo4jClient, stmt_hashes: Iterable[str]
+    client: Neo4jClient, stmt_hashes: Iterable[str], evidence_map: Dict[str, Evidence] = None
 ) -> Iterable[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -767,13 +770,23 @@ def get_stmts_for_stmt_hashes(
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
     stmts = {str(s.get_hash()): s for s in indra_stmts_from_relations(rels)}
 
+    # If the evidence_map is provided, check if it covers all the hashes
+    # and if not, query for the evidence objects
+    if evidence_map is not None:
+        missing_hashes = list(set(stmt_hashes) - set(evidence_map.keys()))
+    else:
+        missing_hashes = stmt_hashes
+
     # Get the evidence objects for the given statement hashes
-    evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
+    if missing_hashes:
+        new_evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
+        if evidence_map is not None:
+            evidence_map.update(new_evidences)
 
     # Add the evidence objects to the statements, if no result, keep the
     # original statement evidence
     for stmt_hash, stmt in stmts.items():
-        ev_list = evidences.get(stmt_hash, [])
+        ev_list = evidence_map.get(stmt_hash, [])
         if ev_list:
             stmt.evidence = ev_list
         else:
