@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Iterable, Tuple, Mapping
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
-from ..representation import Node, indra_stmts_from_relations
+from ..representation import Node, indra_stmts_from_relations, norm_id
 
 
 logger = logging.getLogger(__name__)
@@ -535,6 +535,7 @@ def get_pmids_for_mesh(
     """
     if mesh[0].lower() != "mesh":
         raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
+    norm_mesh = norm_id(*mesh)
 
     # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
     # slower for this specific query, so we do an optimized query that is
@@ -543,21 +544,21 @@ def get_pmids_for_mesh(
         child_query = (
             """
             MATCH (c:BioEntity)-[:isa*1..]->(p:BioEntity)
-            WHERE p.id = "mesh:%s"
+            WHERE p.id = "%s"
             RETURN DISTINCT c.id
             """
-            % mesh[1]
+            % norm_mesh
         )
         child_terms = {c[0] for c in client.query_tx(child_query)}
     else:
         child_terms = set()
 
     if child_terms:
-        terms = set(mesh) | child_terms
+        terms = {norm_mesh} | child_terms
         terms_str = ",".join(f'"{c}"' for c in terms)
         where_clause = "WHERE b.id IN [%s]" % terms_str
     else:
-        where_clause = 'WHERE b.id = "mesh:%s"' % mesh[1]
+        where_clause = 'WHERE b.id = "%s"' % norm_mesh
 
     query = (
         """MATCH (k:Publication)-[r:annotated_with]->(b:BioEntity)
@@ -586,6 +587,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     """
     if pmid[0].lower() != "pmid":
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
+    norm_pmid = norm_id(*pmid)
 
     query = (
         """
@@ -593,7 +595,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
         WHERE k.id = "%s"
         RETURN b.id
     """
-        % f"pubmed:{pmid[1]}"
+        % norm_pmid
     )
     return [r[0] for r in client.query_tx(query) if r[0].startswith("mesh:")]
 
@@ -684,14 +686,15 @@ def get_stmts_for_pmid(
     #  https://neo4j.com/developer/cypher/subqueries/
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
+    pmid_norm = norm_id(*pmid)
     # First, get the hashes for the given PubMed ID
     hash_query = (
         """
         MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
-        WHERE n.id = "pubmed:%s"
+        WHERE n.id = "%s"
         RETURN e.stmt_hash
     """
-        % pmid[1]
+        % pmid_norm
     )
     hashes = [r[0] for r in client.query_tx(hash_query)]
     return get_stmts_for_stmt_hashes(client, hashes)
