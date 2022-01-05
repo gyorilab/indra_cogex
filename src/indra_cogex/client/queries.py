@@ -644,7 +644,7 @@ def get_evidence_objects_for_stmt_hashes(
     Returns
     -------
     :
-        A tuple of the stmt hash and an evidence objects for the given
+        A mapping of stmt hash to a list of evidence objects for the given
         statement hashes.
     """
     stmt_hashes_str = ",".join(f'"{h}"' for h in stmt_hashes)
