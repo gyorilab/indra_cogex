@@ -322,7 +322,7 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_name="n",
+                source_name="s",
                 relation_type=relation,
                 target_id=norm_id(*target)
             )
