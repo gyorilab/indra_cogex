@@ -573,8 +573,7 @@ def get_pmids_for_mesh(
     if include_child_terms:
         child_query = (
             """
-            MATCH (c:BioEntity)-[:isa*1..]->(p:BioEntity)
-            WHERE p.id = "%s"
+            MATCH (c:BioEntity)-[:isa*1..]->(p:BioEntity {id: "%s"})
             RETURN DISTINCT c.id
             """
             % norm_mesh
@@ -586,17 +585,12 @@ def get_pmids_for_mesh(
     if child_terms:
         terms = {norm_mesh} | child_terms
         terms_str = ",".join(f'"{c}"' for c in terms)
+        match_clause = f"MATCH c.id IN [{terms_str}]"
         where_clause = "WHERE b.id IN [%s]" % terms_str
     else:
-        where_clause = 'WHERE b.id = "%s"' % norm_mesh
+        match_clause = 'MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity {id: "%s"})' % norm_mesh
+        query = "%s RETURN k.id" % match_clause
 
-    query = (
-        """MATCH (k:Publication)-[r:annotated_with]->(b:BioEntity)
-        %s
-        RETURN k.id
-    """
-        % where_clause
-    )
     return [r[0] for r in client.query_tx(query)]
 
 
