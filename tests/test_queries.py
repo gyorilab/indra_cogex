@@ -15,6 +15,15 @@ def test_get_pmids_for_mesh():
 
 
 @pytest.mark.nonpublic
+def test_get_mesh_ids_for_pmid():
+    client = _get_client()
+    pmid = ("PUBMED", "27890007")
+    mesh_ids = get_mesh_ids_for_pmid(client, pmid)
+    assert len(mesh_ids) == 4
+    assert mesh_ids[0].startswith('mesh:')
+
+
+@pytest.mark.nonpublic
 def test_get_stmts_by_hashes():
     # Note This statement has a 100s of evidences
     # Two queries: first statements, then all the evidence for the statements
@@ -23,4 +32,3 @@ def test_get_stmts_by_hashes():
     stmts = get_stmts_for_stmt_hashes(client, stmt_hashes)
     assert len(stmts) == 1
     assert isinstance(stmts[0], Inhibition)
-
