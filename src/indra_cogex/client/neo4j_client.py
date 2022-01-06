@@ -180,7 +180,7 @@ class Neo4jClient:
         source = norm_id(*source) if source else None
         target = norm_id(*target) if target else None
         match = triple_query(
-            source_name="s" if target is None else None,
+            source_name="s" if source is None else None,
             source_id=source,
             relation_type=relation,
             target_name="t" if target is None else None,
