@@ -12,8 +12,8 @@ import pandas as pd
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 
-from ..client.neo4j_client import Neo4jClient
-from ..client.queries import get_genes_for_go_term
+from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.queries import get_genes_for_go_term
 
 
 def _prepare_hypergeometric_test(
@@ -46,8 +46,9 @@ def _prepare_hypergeometric_test(
 def count_human_genes(client: Neo4jClient) -> int:
     """Count the number of HGNC genes in neo4j."""
     query = dedent(f"""\
-    MATCH (n:BioEntity {"db": "hgnc"})
-    RETURN count(n) as count
+        MATCH (n:BioEntity)
+        WHERE n.id STARTS WITH 'hgnc'
+        RETURN count(n) as count
     """)
     results = client.query_tx(query)
     return results[0][0]
@@ -85,8 +86,9 @@ def _get_go(client: Neo4jClient) -> Mapping[str, Set[str]]:
     2. Run ORA and return results
     """
     query = dedent("""\
-        MATCH (term:BioEntity {})-[:associated_with]-(gene:BioEntity {})
-        RETURN DISTINCT s
+        MATCH (term:BioEntity)-[:associated_with]-(gene:BioEntity)
+        WHERE term.id START WITH "go" and gene.id STARTS WITH "hgnc"
+        RETURN term.id as go_curie, collect(gene.id) as gene_curies;
     """)
     go_term_to_genes = defaultdict(set)
     for result in client.query_tx(query):
@@ -122,3 +124,15 @@ def gene_ontology_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
     count = count_human_genes(client)
     go_term_to_genes = _get_go(client)
     return _do_ora(go_term_to_genes, gene_ids=gene_ids, count=count)
+
+
+def main():
+    from indra_cogex.client.queries import get_genes_for_go_term
+    client = Neo4jClient(
+        # url="bolt://localhost"
+    )
+    print(get_genes_for_go_term(client, ("GO", "0032571")))
+
+
+if __name__ == '__main__':
+    main()
