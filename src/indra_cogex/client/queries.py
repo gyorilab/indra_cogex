@@ -269,7 +269,12 @@ def get_genes_for_pathway(
     :
         The genes for the given pathway.
     """
-    return client.get_targets(pathway, relation="haspart", source_type="BioEntity", target_type="BioEntity")
+    return client.get_targets(
+        pathway,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def is_gene_in_pathway(
