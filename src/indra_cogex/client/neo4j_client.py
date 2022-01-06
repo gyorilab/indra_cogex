@@ -354,7 +354,11 @@ class Neo4jClient:
         return nodes
 
     def get_targets(
-        self, source: Tuple[str, str], relation: Optional[str] = None
+        self,
+        source: Tuple[str, str],
+        relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes related to the source via a given relation type.
 
@@ -364,18 +368,29 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         targets
             A list of target nodes.
         """
-        return self.get_common_targets([source], relation)
+        return self.get_common_targets(
+            [source],
+            relation,
+            source_type=source_type,
+            target_type=target_type,
+        )
 
     def get_common_targets(
         self,
         sources: List[Tuple[str, str]],
         relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the common target nodes related to all the given sources
         via a given relation type.
@@ -386,6 +401,10 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
