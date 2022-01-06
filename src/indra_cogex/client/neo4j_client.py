@@ -315,7 +315,9 @@ class Neo4jClient:
         )
 
     def get_common_sources(
-        self, targets: List[Tuple[str, str]], relation: str,
+        self,
+        targets: List[Tuple[str, str]],
+        relation: str,
         source_type: Optional[str] = None,
         target_type: Optional[str] = None,
     ) -> List[Node]:
@@ -460,7 +462,12 @@ class Neo4jClient:
         sources
             A list of source nodes as INDRA Agents.
         """
-        sources = self.get_sources(target, relation)
+        sources = self.get_sources(
+            target,
+            relation,
+            source_type="BioEntity",
+            target_type="BioEntity",
+        )
         agents = [self.node_to_agent(source) for source in sources]
         return agents
 
