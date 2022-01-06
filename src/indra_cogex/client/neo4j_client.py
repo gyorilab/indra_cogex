@@ -180,10 +180,10 @@ class Neo4jClient:
         source = norm_id(*source) if source else None
         target = norm_id(*target) if target else None
         match = triple_query(
-            source_name="s",
+            source_name="s" if target is None else None,
             source_id=source,
             relation_type=relation,
-            target_name="t",  # TODO is there a bad thing if you have t + target?
+            target_name="t" if target is None else None,
             target_id=target,
         )
         query = """
