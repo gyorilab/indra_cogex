@@ -179,9 +179,10 @@ def triple_query(
     target_name: Optional[str] = None,
     target_type: Optional[str] = None,
     target_id: Optional[str] = None,
-):
+) -> str:
     """Create a Cypher triple query part."""
     source = node_query(node_name=source_name, node_type=source_type, node_id=source_id)
+    # TODO could later make an alternate function for the relation
     relation = node_query(node_name=relation_name, node_type=relation_type)
     target = node_query(node_name=target_name, node_type=target_type, node_id=target_id)
     return f"({source})-[{relation}]->({target})"
@@ -195,11 +196,14 @@ def node_query(
     """Create a Cypher node query part."""
     if node_name is None:
         node_name = ""
-    spacer = " " if node_id is not None and (node_name is not None or node_type is not None) else ""
-    node_type = "" if node_type is None else f":{node_type}"
-    id = "" if node_id is None else f"{{id: '{node_id}'}}"
-    return f"{node_name}{node_type}{spacer}{id}"
-
+    rv = node_name or ""
+    if node_type:
+        rv += f":{node_type}"
+    if node_id:
+        if rv:
+            rv += " "
+        rv += f"{{id: '{node_id}'}}"
+    return rv
 
 def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     """Convert a list of relations to INDRA Statements.

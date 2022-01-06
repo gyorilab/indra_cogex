@@ -12,10 +12,10 @@ def test_node_query():
     assert node_query(node_name="s") == "s"
     assert node_query(node_type="Type") == ":Type"
     assert node_query(node_id="1234") == "{id: '1234'}"
-    assert node_query(node_name="s") == "(s)"
+    assert node_query(node_name="s") == "s"
     assert node_query(node_name="s", node_type="Type") == "s:Type"
     assert node_query(node_name="s", node_id='1234') == "s {id: '1234'}"
-    assert node_query(node_type="Type", node_id='1234') == "s {:Type '1234'}"
+    assert node_query(node_type="Type", node_id='1234') == ":Type {id: '1234'}"
     assert node_query(node_name="s", node_type="Type", node_id="1234") == "s:Type {id: '1234'}"
 
 
@@ -41,5 +41,5 @@ def test_triple_query():
     assert triple_query(
         source_id=norm_id("UP", "P12345"),
         relation_type="relation",
-        target_type="t"
+        target_name="t"
     ) == "({id: 'uniprot:P12345'})-[:relation]->(t)"
