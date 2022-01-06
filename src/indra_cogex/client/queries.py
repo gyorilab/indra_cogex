@@ -33,7 +33,7 @@ __all__ = [
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
     "get_evidence_obj_for_stmt_hash",
-    "get_evidence_objects_for_stmt_hashes",
+    "get_evidence_obj_for_stmt_hashes",
     "get_stmts_for_pmid",
     "get_stmts_for_mesh_id",
     "get_stmts_for_stmt_hashes",
@@ -662,7 +662,7 @@ def get_evidence_obj_for_stmt_hash(
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
 
 
-def get_evidence_objects_for_stmt_hashes(
+def get_evidence_obj_for_stmt_hashes(
     client: Neo4jClient, stmt_hashes: Iterable[str]
 ) -> Mapping[str, Evidence]:
     """Return the matching evidence objects for the given statement hashes.
@@ -815,7 +815,7 @@ def get_stmts_for_stmt_hashes(
 
     # Get the evidence objects for the given statement hashes
     if missing_hashes:
-        new_evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
+        new_evidences = get_evidence_obj_for_stmt_hashes(client, stmt_hashes)
         if evidence_map:
             evidence_map.update(new_evidences)
         else:
