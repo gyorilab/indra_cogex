@@ -10,6 +10,36 @@ from ..representation import Node, indra_stmts_from_relations, norm_id
 logger = logging.getLogger(__name__)
 
 
+__all__ = [
+    "get_genes_in_tissue",
+    "get_tissues_for_gene",
+    "is_gene_in_tissue",
+    "get_go_terms_for_gene",
+    "get_genes_for_go_term",
+    "is_go_term_for_gene",
+    "get_trials_for_drug",
+    "get_trials_for_disease",
+    "get_drugs_for_trial",
+    "get_diseases_for_trial",
+    "get_pathways_for_gene",
+    "get_genes_for_pathway",
+    "is_gene_in_pathway",
+    "get_side_effects_for_drug",
+    "get_drugs_for_side_effect",
+    "is_side_effect_for_drug",
+    "get_ontology_child_terms",
+    "get_ontology_parent_terms",
+    "isa_or_partof",
+    "get_pmids_for_mesh",
+    "get_mesh_ids_for_pmid",
+    "get_evidence_obj_for_stmt_hash",
+    "get_evidence_objects_for_stmt_hashes",
+    "get_stmts_for_pmid",
+    "get_stmts_for_mesh_id",
+    "get_stmts_for_stmt_hashes",
+]
+
+
 # BGee
 
 
