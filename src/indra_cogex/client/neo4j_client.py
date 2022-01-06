@@ -380,7 +380,7 @@ class Neo4jClient:
             triple_query(
                 source_id=norm_id(*source),
                 relation_type=relation,
-                target_type="t"
+                target_name="t"
             )
             for source in sources
         ]
