@@ -777,7 +777,8 @@ def get_stmts_for_stmt_hashes(
 
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
-    if evidence_map is not None:
+    evidence_map = evidence_map or {}
+    if evidence_map:
         missing_hashes = list(set(stmt_hashes) - set(evidence_map.keys()))
     else:
         missing_hashes = stmt_hashes
@@ -785,8 +786,10 @@ def get_stmts_for_stmt_hashes(
     # Get the evidence objects for the given statement hashes
     if missing_hashes:
         new_evidences = get_evidence_objects_for_stmt_hashes(client, stmt_hashes)
-        if evidence_map is not None:
+        if evidence_map:
             evidence_map.update(new_evidences)
+        else:
+            evidence_map = new_evidences
 
     # Add the evidence objects to the statements, if no result, keep the
     # original statement evidence
