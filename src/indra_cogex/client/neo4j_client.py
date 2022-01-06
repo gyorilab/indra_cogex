@@ -282,7 +282,13 @@ class Neo4jClient:
         props = {rel.data[prop] for rel in relations if prop in rel.data}
         return props
 
-    def get_sources(self, target: Tuple[str, str], relation: str = None) -> List[Node]:
+    def get_sources(
+        self,
+        target: Tuple[str, str],
+        relation: str = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
+    ) -> List[Node]:
         """Return the nodes related to the target via a given relation type.
 
         Parameters
@@ -291,16 +297,27 @@ class Neo4jClient:
             The target node's ID.
         relation :
             The relation label to constrain to when finding sources.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         sources
             A list of source nodes.
         """
-        return self.get_common_sources([target], relation)
+        return self.get_common_sources(
+            [target],
+            relation,
+            source_type=source_type,
+            target_type=target_type,
+        )
 
     def get_common_sources(
-        self, targets: List[Tuple[str, str]], relation: str
+        self, targets: List[Tuple[str, str]], relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the common source nodes related to all the given targets
         via a given relation type.
@@ -311,6 +328,10 @@ class Neo4jClient:
             The target nodes' IDs.
         relation :
             The relation label to constrain to when finding sources.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------

@@ -107,6 +107,9 @@ def get_genes_for_go_term(
         The Neo4j client.
     go_term :
         The GO term to query.
+    include_indirect :
+        Should ontological children of the given GO term
+        be queried as well? Defaults to False.
 
     Returns
     -------
@@ -116,7 +119,12 @@ def get_genes_for_go_term(
     go_children = get_ontology_child_terms(client, go_term) if include_indirect else []
     gene_nodes = {}
     for term in [go_term] + go_children:
-        genes = client.get_sources(term, relation="associated_with")
+        genes = client.get_sources(
+            term,
+            relation="associated_with",
+            source_type="BioEntity",
+            target_type="BioEntity",
+        )
         for gene in genes:
             gene_nodes[gene.grounding()] = gene
     return list(gene_nodes.values())
