@@ -585,7 +585,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     :
         The MESH terms for the given PubMed ID.
     """
-    if pmid[0].lower() != "pmid":
+    if pmid[0].lower() != "pubmed":
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
     norm_pmid = norm_id(*pmid)
 
