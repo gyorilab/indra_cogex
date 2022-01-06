@@ -664,7 +664,7 @@ def get_evidence_obj_for_stmt_hash(
 
 def get_evidence_obj_for_stmt_hashes(
     client: Neo4jClient, stmt_hashes: Iterable[str]
-) -> Mapping[str, Evidence]:
+) -> Dict[str, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
     Parameters
@@ -775,7 +775,7 @@ def get_stmts_for_mesh_id(
 def get_stmts_for_stmt_hashes(
     client: Neo4jClient,
     stmt_hashes: Iterable[str],
-    evidence_map: Dict[str, Evidence] = None,
+    evidence_map: Dict[str, List[Evidence]] = None,
 ) -> Iterable[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -837,7 +837,7 @@ def get_stmts_for_stmt_hashes(
 
 def _get_ev_dict_from_hash_ev_query(
     result: Optional[Iterable[List[str]]] = None,
-) -> Dict[str, Evidence]:
+) -> Dict[str, List[Evidence]]:
     """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning("No result for hash, Evidence query, returning empty dict")
