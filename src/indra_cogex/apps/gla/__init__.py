@@ -8,13 +8,14 @@ from typing import List, Mapping, Tuple
 import flask
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
-from more_click import make_web_command
-from wtforms import FloatField, RadioField, SubmitField, TextAreaField
-
 from indra.databases import hgnc_client
+from more_click import make_web_command
+from wtforms import BooleanField, FloatField, RadioField, SubmitField, TextAreaField
+
 from indra_cogex.client.gene_list import (
     EXAMPLE_GENE_IDS,
     go_ora,
+    indra_upstream_ora,
     reactome_ora,
     wikipathways_ora,
 )
@@ -39,15 +40,16 @@ class GeneForm(FlaskForm):
     genes = TextAreaField(
         "Genes",
         description="Paste your list of gene symbols, HGNC gene identifiers, or"
-        ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
-        " example list of human genes</a> related to COVID-19.",
+                    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+                    " example list of human genes</a> related to COVID-19.",
     )
+    indra_path_analyis = BooleanField("Include INDRA path-based analysis (slow)")
     alpha = FloatField(
         "Alpha",
         default=0.05,
         description="The alpha is the threshold for significance in the"
-        " Fisher's exact test with which multiple hypothesis"
-        " testing correction will be executed.",
+                    " Fisher's exact test with which multiple hypothesis"
+                    " testing correction will be executed.",
     )
     correction = RadioField(
         "Multiple Hypothesis Test Correction",
@@ -121,6 +123,22 @@ def home():
             method=method,
             alpha=alpha,
         )
+        if form.indra_path_analyis.data:
+            indra_upstream_results = indra_upstream_ora(
+                client,
+                gene_set,
+                method=method,
+                alpha=alpha,
+            )
+            indra_downstream_results = indra_upstream_ora(
+                client,
+                gene_set,
+                method=method,
+                alpha=alpha,
+            )
+        else:
+            indra_upstream_results = None
+            indra_downstream_results = None
 
         return flask.render_template(
             "results.html",
@@ -131,6 +149,8 @@ def home():
             go_results=go_results,
             wikipathways_results=wikipathways_results,
             reactome_results=reactome_results,
+            indra_downstream_results=indra_downstream_results,
+            indra_upstream_results=indra_upstream_results,
         )
 
     return flask.render_template(

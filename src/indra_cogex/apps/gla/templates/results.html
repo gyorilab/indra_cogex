@@ -25,6 +25,10 @@
             $("#table-go").DataTable(datatablesConf);
             $("#table-reactome").DataTable(datatablesConf);
             $("#table-wikipathways").DataTable(datatablesConf);
+            {% if indra_downstream_results is not none %}
+            $("#table-downstream").DataTable(datatablesConf);
+            $("#table-upstream").DataTable(datatablesConf);
+            {% endif %}
         });
     </script>
 {% endblock %}
@@ -93,6 +97,20 @@
                             WikiPathways
                         </a>
                     </li>
+                    {% if indra_downstream_results is not none %}
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="downstream-tab" data-toggle="tab" href="#downstream" role="tab"
+                               aria-controls="downstream" aria-selected="false">
+                                INDRA Downstream
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="upstream-tab" data-toggle="tab" href="#upstream" role="tab"
+                               aria-controls="upstream" aria-selected="false">
+                                INDRA Upstream
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
 
                 <!-- Tab panes -->
@@ -125,6 +143,24 @@
                         </p>
                         {{ render_table(wikipathways_results, "table-wikipathways") }}
                     </div>
+                    {% if indra_downstream_results is not none %}
+                        <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
+                            <p>
+                                These results are acquired by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
+                                one step from all entities in the INDRA Database.
+                            </p>
+                            {{ render_table(wikipathways_results, "table-downstream") }}
+                        </div>
+                        <div class="tab-pane" id="upstream" role="tabpanel" aria-labelledby="upstream-tab">
+                            <p>
+                                These results are acquired by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
+                                one step from all entities in the INDRA Database.
+                            </p>
+                            {{ render_table(wikipathways_results, "table-upstream") }}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
