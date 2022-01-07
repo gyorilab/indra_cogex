@@ -332,7 +332,7 @@ def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterabl
     :
         The pathways for the given gene.
     """
-    return client.get_targets(
+    return client.get_sources(
         gene,
         relation="haspart",
         source_type="BioEntity",
