@@ -12,7 +12,6 @@ def test_node_query():
     assert node_query(node_name="s") == "s"
     assert node_query(node_type="Type") == ":Type"
     assert node_query(node_id="1234") == "{id: '1234'}"
-    assert node_query(node_name="s") == "s"
     assert node_query(node_name="s", node_type="Type") == "s:Type"
     assert node_query(node_name="s", node_id="1234") == "s {id: '1234'}"
     assert node_query(node_type="Type", node_id="1234") == ":Type {id: '1234'}"

@@ -180,10 +180,8 @@ class Neo4jClient:
         source = norm_id(*source) if source else None
         target = norm_id(*target) if target else None
         match = triple_query(
-            source_name="s" if source is None else None,
             source_id=source,
             relation_type=relation,
-            target_name="t" if target is None else None,
             target_id=target,
         )
         query = """
@@ -263,9 +261,8 @@ class Neo4jClient:
         all_rels = source_rels + target_rels
         return all_rels
 
-    def get_property_from_relations(
-        self, relations: List[Relation], prop: str
-    ) -> Set[str]:
+    @staticmethod
+    def get_property_from_relations(relations: List[Relation], prop: str) -> Set[str]:
         """Return the set of property values on given relations.
 
         Parameters
@@ -322,9 +319,7 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_name="s",
-                relation_type=relation,
-                target_id=norm_id(*target)
+                source_name="s", relation_type=relation, target_id=norm_id(*target)
             )
             for target in targets
         ]
@@ -378,9 +373,7 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_id=norm_id(*source),
-                relation_type=relation,
-                target_name="t"
+                source_id=norm_id(*source), relation_type=relation, target_name="t"
             )
             for source in sources
         ]
@@ -440,8 +433,8 @@ class Neo4jClient:
         ----------
         target :
             The target node's ID.
-        relation :
-            The relation label to constrain to when finding predecessors.
+        relations :
+            The relation labels to constrain to when finding predecessors.
 
         Returns
         -------
@@ -472,8 +465,8 @@ class Neo4jClient:
         ----------
         source :
             The source node's ID.
-        relation :
-            The relation label to constrain to when finding successors.
+        relations :
+            The relation labels to constrain to when finding successors.
 
         Returns
         -------
