@@ -9,8 +9,8 @@ from neo4j import GraphDatabase
 
 from indra.config import get_config
 from indra.databases import identifiers
-from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
+from indra.statements import Agent
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
 
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ class Neo4jClient:
         tx.close()
         return values
 
-    def get_session(self, renew: Optional[bool] = False) -> neo4j.work.simple.Session:
+    def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
         """Return an existing session or create one if needed.
 
         Parameters
@@ -123,7 +123,12 @@ class Neo4jClient:
         return self.session
 
     def has_relation(
-        self, source: Tuple[str, str], target: Tuple[str, str], relation: str
+        self,
+        source: Tuple[str, str],
+        target: Tuple[str, str],
+        relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> bool:
         """Return True if there is a relation between the source and the target.
 
@@ -135,13 +140,24 @@ class Neo4jClient:
             Target namespace and identifier.
         relation :
             Relation type.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         related :
             True if there is a relation of the given type, otherwise False.
         """
-        res = self.get_relations(source, target, relation, limit=1)
+        res = self.get_relations(
+            source,
+            target,
+            relation,
+            limit=1,
+            source_type=source_type,
+            target_type=target_type,
+        )
         if res:
             return True
         else:
@@ -152,6 +168,8 @@ class Neo4jClient:
         source: Optional[Tuple[str, str]] = None,
         target: Optional[Tuple[str, str]] = None,
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Relation]:
         """Return relations based on source, target and type constraints.
@@ -167,6 +185,10 @@ class Neo4jClient:
             Target namespace and ID.
         relation :
             Relation type.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
         limit :
             A limit on the number of relations returned.
 
@@ -181,8 +203,10 @@ class Neo4jClient:
         target = norm_id(*target) if target else None
         match = triple_query(
             source_id=source,
+            source_type=source_type,
             relation_type=relation,
             target_id=target,
+            target_type=target_type,
         )
         query = """
             MATCH p=%s
@@ -199,6 +223,7 @@ class Neo4jClient:
         self,
         target: Tuple[str, str],
         relation: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources to the given target.
 
@@ -214,12 +239,15 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=None, target=target, relation=relation)
+        return self.get_relations(
+            source=None, target=target, relation=relation, target_type=target_type
+        )
 
     def get_target_relations(
         self,
         source: Tuple[str, str],
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect targets from the given source.
 
@@ -235,12 +263,16 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=source, target=None, relation=relation)
+        return self.get_relations(
+            source=source, target=None, relation=relation, source_type=source_type
+        )
 
     def get_all_relations(
         self,
         node: Tuple[str, str],
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources and targets with the given node.
 
@@ -250,14 +282,22 @@ class Neo4jClient:
             Node namespace and identifier.
         relation :
             Relation type.
+        source_type :
+            Type constraint on the sources for in-edges
+        target_type :
+            Type constraint on te targets for out-edges
 
         Returns
         -------
         rels :
             A list of relations matching the constraints.
         """
-        source_rels = self.get_source_relations(target=node, relation=relation)
-        target_rels = self.get_target_relations(source=node, relation=relation)
+        source_rels = self.get_source_relations(
+            target=node, relation=relation, source_type=source_type
+        )
+        target_rels = self.get_target_relations(
+            source=node, relation=relation, target_type=target_type
+        )
         all_rels = source_rels + target_rels
         return all_rels
 
@@ -282,7 +322,13 @@ class Neo4jClient:
         props = {rel.data[prop] for rel in relations if prop in rel.data}
         return props
 
-    def get_sources(self, target: Tuple[str, str], relation: str = None) -> List[Node]:
+    def get_sources(
+        self,
+        target: Tuple[str, str],
+        relation: str = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
+    ) -> List[Node]:
         """Return the nodes related to the target via a given relation type.
 
         Parameters
@@ -291,16 +337,29 @@ class Neo4jClient:
             The target node's ID.
         relation :
             The relation label to constrain to when finding sources.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         sources
             A list of source nodes.
         """
-        return self.get_common_sources([target], relation)
+        return self.get_common_sources(
+            [target],
+            relation,
+            source_type=source_type,
+            target_type=target_type,
+        )
 
     def get_common_sources(
-        self, targets: List[Tuple[str, str]], relation: str
+        self,
+        targets: List[Tuple[str, str]],
+        relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the common source nodes related to all the given targets
         via a given relation type.
@@ -311,6 +370,10 @@ class Neo4jClient:
             The target nodes' IDs.
         relation :
             The relation label to constrain to when finding sources.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -319,7 +382,11 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_name="s", relation_type=relation, target_id=norm_id(*target)
+                source_name="s",
+                source_type=source_type,
+                relation_type=relation,
+                target_id=norm_id(*target),
+                target_type=target_type,
             )
             for target in targets
         ]
@@ -333,7 +400,11 @@ class Neo4jClient:
         return nodes
 
     def get_targets(
-        self, source: Tuple[str, str], relation: Optional[str] = None
+        self,
+        source: Tuple[str, str],
+        relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes related to the source via a given relation type.
 
@@ -343,18 +414,29 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         targets
             A list of target nodes.
         """
-        return self.get_common_targets([source], relation)
+        return self.get_common_targets(
+            [source],
+            relation,
+            source_type=source_type,
+            target_type=target_type,
+        )
 
     def get_common_targets(
         self,
         sources: List[Tuple[str, str]],
         relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the common target nodes related to all the given sources
         via a given relation type.
@@ -365,6 +447,10 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -373,7 +459,11 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_id=norm_id(*source), relation_type=relation, target_name="t"
+                source_id=norm_id(*source),
+                source_type=source_type,
+                relation_type=relation,
+                target_name="t",
+                target_type=target_type,
             )
             for source in sources
         ]
@@ -386,7 +476,12 @@ class Neo4jClient:
         nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
         return nodes
 
-    def get_target_agents(self, source: Tuple[str, str], relation: str) -> List[Agent]:
+    def get_target_agents(
+        self,
+        source: Tuple[str, str],
+        relation: str,
+        source_type: Optional[str] = None,
+    ) -> List[Agent]:
         """Return the nodes related to the source via a given relation type as INDRA Agents.
 
         Parameters
@@ -395,13 +490,15 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
 
         Returns
         -------
         targets
             A list of target nodes as INDRA Agents.
         """
-        targets = self.get_targets(source, relation)
+        targets = self.get_targets(source, relation, source_type=source_type)
         agents = [self.node_to_agent(target) for target in targets]
         return agents
 
@@ -420,12 +517,21 @@ class Neo4jClient:
         sources
             A list of source nodes as INDRA Agents.
         """
-        sources = self.get_sources(target, relation)
+        sources = self.get_sources(
+            target,
+            relation,
+            source_type="BioEntity",
+            target_type="BioEntity",
+        )
         agents = [self.node_to_agent(source) for source in sources]
         return agents
 
     def get_predecessors(
-        self, target: Tuple[str, str], relations: Iterable[str]
+        self,
+        target: Tuple[str, str],
+        relations: Iterable[str],
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes that precede the given node via the given relation types.
 
@@ -435,6 +541,10 @@ class Neo4jClient:
             The target node's ID.
         relations :
             The relation labels to constrain to when finding predecessors.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -443,8 +553,10 @@ class Neo4jClient:
         """
         match = triple_query(
             source_name="s",
+            source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_id=norm_id(*target),
+            target_type=target_type,
         )
         query = (
             """
@@ -457,7 +569,11 @@ class Neo4jClient:
         return nodes
 
     def get_successors(
-        self, source: Tuple[str, str], relations: Iterable[str]
+        self,
+        source: Tuple[str, str],
+        relations: Iterable[str],
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes that precede the given node via the given relation types.
 
@@ -467,6 +583,10 @@ class Neo4jClient:
             The source node's ID.
         relations :
             The relation labels to constrain to when finding successors.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -475,8 +595,10 @@ class Neo4jClient:
         """
         match = triple_query(
             source_id=norm_id(*source),
+            source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_name="t",
+            target_type=target_type,
         )
         query = (
             """

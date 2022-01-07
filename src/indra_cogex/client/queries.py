@@ -1,4 +1,5 @@
 from typing import Iterable, Tuple
+
 from .neo4j_client import Neo4jClient
 from ..representation import Node
 
@@ -20,7 +21,12 @@ def get_genes_in_tissue(client: Neo4jClient, tissue: Tuple[str, str]) -> Iterabl
     :
         The genes expressed in the given tissue.
     """
-    return client.get_sources(tissue, relation="expressed_in")
+    return client.get_sources(
+        tissue,
+        relation="expressed_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def get_tissues_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable[Node]:
@@ -38,7 +44,12 @@ def get_tissues_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable
     :
         The tissues the gene is expressed in.
     """
-    return client.get_targets(gene, relation="expressed_in")
+    return client.get_targets(
+        gene,
+        relation="expressed_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def is_gene_in_tissue(
@@ -60,7 +71,13 @@ def is_gene_in_tissue(
     :
         True if the gene is expressed in the given tissue.
     """
-    return client.has_relation(gene, tissue, relation="expressed_in")
+    return client.has_relation(
+        gene,
+        tissue,
+        relation="expressed_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 # GO
@@ -89,7 +106,10 @@ def get_go_terms_for_gene(
     go_terms = {gtn.grounding(): gtn for gtn in go_term_nodes}
     for go_term_node in go_term_nodes:
         go_child_terms = client.get_successors(
-            go_term_node.grounding(), relations=["isa"]
+            go_term_node.grounding(),
+            relations=["isa"],
+            source_type="BioEntity",
+            target_type="BioEntity",
         )
         for term in go_child_terms:
             go_terms[term.grounding()] = term
@@ -107,6 +127,9 @@ def get_genes_for_go_term(
         The Neo4j client.
     go_term :
         The GO term to query.
+    include_indirect :
+        Should ontological children of the given GO term
+        be queried as well? Defaults to False.
 
     Returns
     -------
@@ -116,7 +139,12 @@ def get_genes_for_go_term(
     go_children = get_ontology_child_terms(client, go_term) if include_indirect else []
     gene_nodes = {}
     for term in [go_term] + go_children:
-        genes = client.get_sources(term, relation="associated_with")
+        genes = client.get_sources(
+            term,
+            relation="associated_with",
+            source_type="BioEntity",
+            target_type="BioEntity",
+        )
         for gene in genes:
             gene_nodes[gene.grounding()] = gene
     return list(gene_nodes.values())
@@ -141,7 +169,13 @@ def is_go_term_for_gene(
     :
         True if the given GO term is associated with the given gene.
     """
-    return client.has_relation(gene, go_term, relation="associated_with")
+    return client.has_relation(
+        gene,
+        go_term,
+        relation="associated_with",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 # Trials
@@ -162,7 +196,12 @@ def get_trials_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[
     :
         The trials for the given drug.
     """
-    return client.get_targets(drug, relation="tested_in")
+    return client.get_targets(
+        drug,
+        relation="tested_in",
+        source_type="BioEntity",
+        target_type="ClinicalTrial",
+    )
 
 
 def get_trials_for_disease(
@@ -182,7 +221,12 @@ def get_trials_for_disease(
     :
         The trials for the given disease.
     """
-    return client.get_targets(disease, relation="has_trial")
+    return client.get_targets(
+        disease,
+        relation="has_trial",
+        source_type="BioEntity",
+        target_type="ClinicalTrial",
+    )
 
 
 def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]) -> Iterable[Node]:
@@ -200,7 +244,12 @@ def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]) -> Iterable
     :
         The drugs for the given trial.
     """
-    return client.get_sources(trial, relation="tested_in")
+    return client.get_sources(
+        trial,
+        relation="tested_in",
+        source_type="BioEntity",
+        target_type="ClinicalTrial",
+    )
 
 
 def get_diseases_for_trial(
@@ -220,7 +269,12 @@ def get_diseases_for_trial(
     :
         The diseases for the given trial.
     """
-    return client.get_sources(trial, relation="has_trial")
+    return client.get_sources(
+        trial,
+        relation="has_trial",
+        source_type="BioEntity",
+        target_type="ClinicalTrial",
+    )
 
 
 # Pathways
@@ -241,7 +295,12 @@ def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterabl
     :
         The pathways for the given gene.
     """
-    return client.get_targets(gene, relation="haspart")
+    return client.get_targets(
+        gene,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def get_genes_for_pathway(
@@ -261,7 +320,12 @@ def get_genes_for_pathway(
     :
         The genes for the given pathway.
     """
-    return client.get_targets(pathway, relation="haspart")
+    return client.get_targets(
+        pathway,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def is_gene_in_pathway(
@@ -283,7 +347,13 @@ def is_gene_in_pathway(
     :
         True if the gene is in the given pathway.
     """
-    return client.has_relation(gene, pathway, relation="haspart")
+    return client.has_relation(
+        gene,
+        pathway,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 # Side effects
@@ -306,7 +376,12 @@ def get_side_effects_for_drug(
     :
         The side effects for the given drug.
     """
-    return client.get_targets(drug, relation="has_side_effect")
+    return client.get_targets(
+        drug,
+        relation="has_side_effect",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def get_drugs_for_side_effect(
@@ -326,7 +401,12 @@ def get_drugs_for_side_effect(
     :
         The drugs for the given side effect.
     """
-    return client.get_sources(side_effect, relation="has_side_effect")
+    return client.get_sources(
+        side_effect,
+        relation="has_side_effect",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 def is_side_effect_for_drug(
@@ -348,7 +428,13 @@ def is_side_effect_for_drug(
     :
         True if the given side effect is associated with the given drug.
     """
-    return client.has_relation(drug, side_effect, relation="has_side_effect")
+    return client.has_relation(
+        drug,
+        side_effect,
+        relation="has_side_effect",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 # Ontology
