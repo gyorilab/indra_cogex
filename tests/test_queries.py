@@ -11,7 +11,7 @@ def test_get_genes_in_tissue():
     # Single query
     client = _get_client()
     genes = get_genes_in_tissue(client, ("UBERON", "UBERON:0002349"))
-    assert len(genes) == 10213
+    assert len(genes)
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == 'HGNC'
@@ -22,7 +22,7 @@ def test_get_tissues_for_gene():
     # Single query
     client = _get_client()
     tissues = get_tissues_for_gene(client, ("HGNC", "9896"))
-    assert len(tissues) == 274
+    assert len(tissues)
     node0 = tissues[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == 'UBERON'
@@ -41,7 +41,7 @@ def test_get_go_terms_for_gene():
     client = _get_client()
     gene = ("HGNC", "16813")  # PPP1R27
     go_terms = get_go_terms_for_gene(client, gene)
-    assert len(go_terms) == 2
+    assert len(go_terms)
     node0 = go_terms[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == 'GO'
@@ -53,7 +53,7 @@ def test_get_genes_for_go_term():
     client = _get_client()
     go_term = ("GO", "GO:0000978")
     genes = get_genes_for_go_term(client, go_term)
-    assert len(genes) == 1146
+    assert len(genes)
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == 'HGNC'
@@ -73,7 +73,7 @@ def test_get_trials_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:27690")
     trials = get_trials_for_drug(client, drug)
-    assert len(trials) == 80
+    assert len(trials)
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == 'CLINICALTRIALS'
 
@@ -83,7 +83,7 @@ def test_get_trials_for_disease():
     client = _get_client()
     disease = ("MESH", "D007855")
     trials = get_trials_for_disease(client, disease)
-    assert len(trials) == 22
+    assert len(trials)
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == 'CLINICALTRIALS'
 
@@ -93,7 +93,8 @@ def test_get_drugs_for_trial():
     client = _get_client()
     trial = ("CLINICALTRIALS", "NCT00000114")
     drugs = get_drugs_for_trial(client, trial)
-    assert len(drugs) == 2
+    assert len(drugs)
+    assert drugs[0].db_ns in ['CHEBI', 'MESH']
 
 
 @pytest.mark.nonpublic
@@ -101,7 +102,7 @@ def test_get_diseases_for_trial():
     client = _get_client()
     trial = ("CLINICALTRIALS", "NCT00000114")
     diseases = get_diseases_for_trial(client, trial)
-    assert len(diseases) == 1
+    assert len(diseases)
     assert isinstance(diseases[0], Node)
     assert diseases[0].db_ns == 'MESH'
 
