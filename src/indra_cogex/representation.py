@@ -205,6 +205,7 @@ def node_query(
         rv += f"{{id: '{node_id}'}}"
     return rv
 
+
 def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     """Convert a list of relations to INDRA Statements.
 
