@@ -170,6 +170,42 @@ def norm_id(db_ns, db_id):
     return f"{identifiers_ns}:{identifiers_id}"
 
 
+def triple_query(
+    source_name: Optional[str] = None,
+    source_type: Optional[str] = None,
+    source_id: Optional[str] = None,
+    relation_name: Optional[str] = None,
+    relation_type: Optional[str] = None,
+    target_name: Optional[str] = None,
+    target_type: Optional[str] = None,
+    target_id: Optional[str] = None,
+) -> str:
+    """Create a Cypher triple query part."""
+    source = node_query(node_name=source_name, node_type=source_type, node_id=source_id)
+    # TODO could later make an alternate function for the relation
+    relation = node_query(node_name=relation_name, node_type=relation_type)
+    target = node_query(node_name=target_name, node_type=target_type, node_id=target_id)
+    return f"({source})-[{relation}]->({target})"
+
+
+def node_query(
+    node_name: Optional[str] = None,
+    node_type: Optional[str] = None,
+    node_id: Optional[str] = None,
+) -> str:
+    """Create a Cypher node query part."""
+    if node_name is None:
+        node_name = ""
+    rv = node_name or ""
+    if node_type:
+        rv += f":{node_type}"
+    if node_id:
+        if rv:
+            rv += " "
+        rv += f"{{id: '{node_id}'}}"
+    return rv
+
+
 def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     """Convert a list of relations to INDRA Statements.
 

@@ -11,7 +11,7 @@ from indra.config import get_config
 from indra.databases import identifiers
 from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
-from indra_cogex.representation import Node, Relation, norm_id
+from indra_cogex.representation import Node, Relation, norm_id, triple_query
 
 logger = logging.getLogger(__name__)
 
@@ -179,14 +179,17 @@ class Neo4jClient:
             raise ValueError("source or target should be specified")
         source = norm_id(*source) if source else None
         target = norm_id(*target) if target else None
+        match = triple_query(
+            source_id=source,
+            relation_type=relation,
+            target_id=target,
+        )
         query = """
-            MATCH p=(%s)-[%s]->(%s)
+            MATCH p=%s
             RETURN DISTINCT p
             %s
         """ % (
-            "{id: '%s'}" % source if source else "s",
-            "" if not relation else ":%s" % relation,
-            "{id: '%s'}" % target if target else "t",
+            match,
             "" if not limit else "LIMIT %s" % limit,
         )
         rels = [self.neo4j_to_relation(res[0]) for res in self.query_tx(query)]
@@ -258,9 +261,8 @@ class Neo4jClient:
         all_rels = source_rels + target_rels
         return all_rels
 
-    def get_property_from_relations(
-        self, relations: List[Relation], prop: str
-    ) -> Set[str]:
+    @staticmethod
+    def get_property_from_relations(relations: List[Relation], prop: str) -> Set[str]:
         """Return the set of property values on given relations.
 
         Parameters
@@ -315,9 +317,11 @@ class Neo4jClient:
         sources
             A list of source nodes.
         """
-        rel_str = ":%s" % relation if relation else ""
         parts = [
-            "(s)-[%s]->({id: '%s'})" % (rel_str, norm_id(*target)) for target in targets
+            triple_query(
+                source_name="s", relation_type=relation, target_id=norm_id(*target)
+            )
+            for target in targets
         ]
         query = """
             MATCH %s
@@ -367,9 +371,11 @@ class Neo4jClient:
         targets
             A list of target nodes.
         """
-        rel_str = ":%s" % relation if relation else ""
         parts = [
-            "({id: '%s'})-[%s]->(t)" % (norm_id(*source), rel_str) for source in sources
+            triple_query(
+                source_id=norm_id(*source), relation_type=relation, target_name="t"
+            )
+            for source in sources
         ]
         query = """
             MATCH %s
@@ -427,16 +433,19 @@ class Neo4jClient:
         ----------
         target :
             The target node's ID.
-        relation :
-            The relation label to constrain to when finding predecessors.
+        relations :
+            The relation labels to constrain to when finding predecessors.
 
         Returns
         -------
         predecessors
             A list of predecessor nodes.
         """
-        rel_str = ":%s*1.." % "|".join(relations)
-        match = "(s)-[%s]->({id: '%s'})" % (rel_str, norm_id(*target))
+        match = triple_query(
+            source_name="s",
+            relation_type="%s*1.." % "|".join(relations),
+            target_id=norm_id(*target),
+        )
         query = (
             """
             MATCH %s
@@ -456,16 +465,19 @@ class Neo4jClient:
         ----------
         source :
             The source node's ID.
-        relation :
-            The relation label to constrain to when finding successors.
+        relations :
+            The relation labels to constrain to when finding successors.
 
         Returns
         -------
         predecessors
             A list of predecessor nodes.
         """
-        rel_str = ":%s*1.." % "|".join(relations)
-        match = "({id: '%s'})-[%s]->(t)" % (norm_id(*source), rel_str)
+        match = triple_query(
+            source_id=norm_id(*source),
+            relation_type="%s*1.." % "|".join(relations),
+            target_name="t",
+        )
         query = (
             """
             MATCH %s
