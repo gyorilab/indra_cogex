@@ -23,6 +23,8 @@ def indra_subnetwork(
         The subnetwork induced by the given nodes.
     """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+    # TODO add BioEntity constraint to source and target,
+    #  since all INDRA-like entities should be BioEntities?
     query = """MATCH p=(n1)-[r:indra_rel]->(n2)
             WHERE n1.id IN [%s]
             AND n2.id IN [%s]
