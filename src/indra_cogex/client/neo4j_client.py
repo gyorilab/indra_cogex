@@ -4,6 +4,7 @@ import logging
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j.graph
+import neo4j.work.simple
 from neo4j import GraphDatabase
 
 from indra.config import get_config
