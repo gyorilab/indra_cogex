@@ -545,7 +545,7 @@ def isa_or_partof(
 
 def get_pmids_for_mesh(
     client: Neo4jClient, mesh: Tuple[str, str], include_child_terms: bool = True
-) -> Iterable[str]:
+) -> Iterable[Node]:
     """Return the PubMed IDs for the given MESH term.
 
     Parameters
@@ -588,7 +588,7 @@ def get_pmids_for_mesh(
         query = (
             """MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity)
                    WHERE b.id IN [%s]
-                   RETURN DISTINCT k.id"""
+                   RETURN DISTINCT k"""
             % terms_str
         )
     else:
@@ -596,12 +596,12 @@ def get_pmids_for_mesh(
             'MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity {id: "%s"})'
             % norm_mesh
         )
-        query = "%s RETURN k.id" % match_clause
+        query = "%s RETURN k" % match_clause
 
-    return [r[0] for r in client.query_tx(query)]
+    return [client.neo4j_to_node(r[0]) for r in client.query_tx(query)]
 
 
-def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[str]:
+def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterable[Node]:
     """Return the MESH terms for the given PubMed ID.
 
     Parameters
@@ -618,20 +618,16 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     """
     if pmid[0].lower() != "pubmed":
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
-    norm_pmid = norm_id(*pmid)
 
     # NOTE: we don't need to filter the BioEntity nodes to mesh, since
     # Publication nodes only have annotated_with relations to BioEntity
     # nodes that are mesh terms.
-    query = (
-        """
-        MATCH p=(k:Publication)-[r:annotated_with]->(b:BioEntity)
-        WHERE k.id = "%s"
-        RETURN b.id
-    """
-        % norm_pmid
+    return client.get_targets(
+        source=pmid,
+        relation="annotated_with",
+        source_type="Publication",
+        target_type="BioEntity",
     )
-    return [r[0] for r in client.query_tx(query)]
 
 
 def get_evidence_obj_for_stmt_hash(
