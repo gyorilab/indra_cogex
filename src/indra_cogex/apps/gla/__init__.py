@@ -38,9 +38,9 @@ class GeneForm(FlaskForm):
 
     genes = TextAreaField(
         "Genes",
-        description="Paste your list of gene symbol, HGNC gene identifiers, or"
-        ' CURIEs here. Use <a href="#" onClick="exampleGenes()">an example'
-        " list of human genes</a> related to COVID-19.",
+        description="Paste your list of gene symbols, HGNC gene identifiers, or"
+        ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+        " example list of human genes</a> related to COVID-19.",
     )
     alpha = FloatField(
         "Alpha",
