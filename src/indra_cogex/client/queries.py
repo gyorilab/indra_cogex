@@ -385,8 +385,8 @@ def is_gene_in_pathway(
         True if the gene is in the given pathway.
     """
     return client.has_relation(
-        gene,
         pathway,
+        gene,
         relation="haspart",
         source_type="BioEntity",
         target_type="BioEntity",
