@@ -5,7 +5,7 @@
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
-from typing import List, Mapping, Set
+from typing import List, Mapping, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -45,37 +45,37 @@ def _prepare_hypergeometric_test(
 @lru_cache(maxsize=1)
 def count_human_genes(client: Neo4jClient) -> int:
     """Count the number of HGNC genes in neo4j."""
-    query = dedent(f"""\
+    query = f"""\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
         RETURN count(n) as count
-    """)
+    """
     results = client.query_tx(query)
     return results[0][0]
 
 
 def gene_ontology_single_ora(
-    client: Neo4jClient, go_id: str, gene_ids: List[str]
-) -> float:
-    """Get a p-value for a given GO term.
+    client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
+) -> Tuple[float, float]:
+    """Get a a pair of odds ratio and p-value for the Fisher exact test a given GO term.
 
     1. Look up genes associated with GO term
     2. Run ORA and return results
+
     """
+    count = count_human_genes(client)
     go_gene_ids = {
         gene.db_id
         for gene in get_genes_for_go_term(
-            client=client, go_term=("GO", go_id), include_indirect=False
+            client=client, go_term=go_term, include_indirect=False
         )
     }
-    count = count_human_genes(client)
     table = _prepare_hypergeometric_test(
         query_gene_set=set(gene_ids),
         pathway_gene_set=go_gene_ids,
         gene_universe=count,
     )
-    _oddsratio, pvalue = fisher_exact(table, alternative="greater")
-    return pvalue
+    return fisher_exact(table, alternative="greater")
 
 
 @lru_cache(maxsize=1)
@@ -85,33 +85,42 @@ def _get_go(client: Neo4jClient) -> Mapping[str, Set[str]]:
     1. Look up genes associated with GO identifier
     2. Run ORA and return results
     """
-    query = dedent("""\
+    query = dedent(
+        """\
         MATCH (term:BioEntity)-[:associated_with]-(gene:BioEntity)
-        WHERE term.id START WITH "go" and gene.id STARTS WITH "hgnc"
+        WHERE term.id STARTS WITH "go" and gene.id STARTS WITH "hgnc"
         RETURN term.id as go_curie, collect(gene.id) as gene_curies;
-    """)
-    go_term_to_genes = defaultdict(set)
+    """
+    )
+    curie_to_hgnc_ids = defaultdict(set)
     for result in client.query_tx(query):
-        go_id = result[0]
-        hgnc_id = result[1]
-        go_term_to_genes[go_id].add(hgnc_id)
-    return dict(go_term_to_genes)
+        go_curie = result[0]
+        hgnc_ids = {
+            hgnc_curie.lower().removeprefix("hgnc:") for hgnc_curie in result[1]
+        }
+        curie_to_hgnc_ids[go_curie].update(hgnc_ids)
+    return dict(curie_to_hgnc_ids)
 
 
-def _do_ora(pathway_to_genes: Mapping[str, Set[str]], gene_ids: List[str], count: int) -> pd.DataFrame:
+def _do_ora(
+    curie_to_hgnc_ids: Mapping[str, Set[str]], gene_ids: List[str], count: int
+) -> pd.DataFrame:
     query_gene_set = set(gene_ids)
     rows = []
-    for go_id, go_gene_ids in pathway_to_genes.items():
+    for curie, pathway_hgnc_ids in curie_to_hgnc_ids.items():
         table = _prepare_hypergeometric_test(
             query_gene_set=query_gene_set,
-            pathway_gene_set=go_gene_ids,
+            pathway_gene_set=pathway_hgnc_ids,
             gene_universe=count,
         )
         oddsratio, pvalue = fisher_exact(table, alternative="greater")
-        rows.append((go_id, oddsratio, pvalue))
-    df = pd.DataFrame(rows)
+        rows.append((curie, oddsratio, pvalue))
+    df = pd.DataFrame(rows, columns=["curie", "oddsratio", "p"])
+    df["mlp"] = -np.log10(df["p"])
     correction_test = multipletests(df["p"], method="fdr_bh")
     df["q"] = correction_test[1]
+    df["mlq"] = -np.log10(df["q"])
+    df = df.sort_values("q", ascending=True)
     return df
 
 
@@ -122,17 +131,15 @@ def gene_ontology_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
     2. Run ORA and return results
     """
     count = count_human_genes(client)
-    go_term_to_genes = _get_go(client)
-    return _do_ora(go_term_to_genes, gene_ids=gene_ids, count=count)
+    curie_to_hgnc_ids = _get_go(client)
+    return _do_ora(curie_to_hgnc_ids, gene_ids=gene_ids, count=count)
 
 
 def main():
-    from indra_cogex.client.queries import get_genes_for_go_term
-    client = Neo4jClient(
-        # url="bolt://localhost"
-    )
-    print(get_genes_for_go_term(client, ("GO", "0032571")))
+    client = Neo4jClient()
+    go_term = ("GO", "GO:0000978")
+    print(gene_ontology_ora(client, ["2916", "29147", "11197"]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
