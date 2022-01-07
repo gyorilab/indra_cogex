@@ -15,6 +15,7 @@ from wtforms import BooleanField, FloatField, RadioField, SubmitField, TextAreaF
 from indra_cogex.client.gene_list import (
     EXAMPLE_GENE_IDS,
     go_ora,
+    indra_downstream_ora,
     indra_upstream_ora,
     reactome_ora,
     wikipathways_ora,
@@ -130,7 +131,7 @@ def home():
                 method=method,
                 alpha=alpha,
             )
-            indra_downstream_results = indra_upstream_ora(
+            indra_downstream_results = indra_downstream_ora(
                 client,
                 gene_set,
                 method=method,
