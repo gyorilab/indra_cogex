@@ -4,12 +4,14 @@ import logging
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j.graph
+from neo4j import GraphDatabase
+
 from indra.config import get_config
 from indra.databases import identifiers
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
-from neo4j import GraphDatabase
+
 
 logger = logging.getLogger(__name__)
 
@@ -202,8 +204,10 @@ class Neo4jClient:
         target = norm_id(*target) if target else None
         match = triple_query(
             source_id=source,
+            source_type=source_type,
             relation_type=relation,
             target_id=target,
+            target_type=target_type,
         )
         query = """
             MATCH p=%s
@@ -367,7 +371,11 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_name="s", relation_type=relation, target_id=norm_id(*target)
+                source_name="s",
+                source_type=source_type,
+                relation_type=relation,
+                target_id=norm_id(*target),
+                target_type=target_type,
             )
             for target in targets
         ]
@@ -440,7 +448,11 @@ class Neo4jClient:
         """
         parts = [
             triple_query(
-                source_id=norm_id(*source), relation_type=relation, target_name="t"
+                source_id=norm_id(*source),
+                source_type=source_type,
+                relation_type=relation,
+                target_name="t",
+                target_type=target_type,
             )
             for source in sources
         ]
@@ -504,7 +516,11 @@ class Neo4jClient:
         return agents
 
     def get_predecessors(
-        self, target: Tuple[str, str], relations: Iterable[str]
+        self,
+        target: Tuple[str, str],
+        relations: Iterable[str],
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes that precede the given node via the given relation types.
 
@@ -514,6 +530,10 @@ class Neo4jClient:
             The target node's ID.
         relations :
             The relation labels to constrain to when finding predecessors.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -522,8 +542,10 @@ class Neo4jClient:
         """
         match = triple_query(
             source_name="s",
+            source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_id=norm_id(*target),
+            target_type=target_type,
         )
         query = (
             """
@@ -536,7 +558,11 @@ class Neo4jClient:
         return nodes
 
     def get_successors(
-        self, source: Tuple[str, str], relations: Iterable[str]
+        self,
+        source: Tuple[str, str],
+        relations: Iterable[str],
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Node]:
         """Return the nodes that precede the given node via the given relation types.
 
@@ -546,6 +572,10 @@ class Neo4jClient:
             The source node's ID.
         relations :
             The relation labels to constrain to when finding successors.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
@@ -554,8 +584,10 @@ class Neo4jClient:
         """
         match = triple_query(
             source_id=norm_id(*source),
+            source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_name="t",
+            target_type=target_type,
         )
         query = (
             """
