@@ -3,15 +3,13 @@ __all__ = ["Neo4jClient"]
 import logging
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
-import neo4j
 import neo4j.graph
-from neo4j import GraphDatabase
-
 from indra.config import get_config
 from indra.databases import identifiers
-from indra.statements import Agent
 from indra.ontology.standardize import get_standard_agent
+from indra.statements import Agent
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
+from neo4j import GraphDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +92,7 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         tx = self.get_session().begin_transaction()
+        print(query)
         try:
             res = tx.run(query)
         except Exception as e:
@@ -123,7 +122,12 @@ class Neo4jClient:
         return self.session
 
     def has_relation(
-        self, source: Tuple[str, str], target: Tuple[str, str], relation: str
+        self,
+        source: Tuple[str, str],
+        target: Tuple[str, str],
+        relation: str,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> bool:
         """Return True if there is a relation between the source and the target.
 
@@ -135,13 +139,24 @@ class Neo4jClient:
             Target namespace and identifier.
         relation :
             Relation type.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
 
         Returns
         -------
         related :
             True if there is a relation of the given type, otherwise False.
         """
-        res = self.get_relations(source, target, relation, limit=1)
+        res = self.get_relations(
+            source,
+            target,
+            relation,
+            limit=1,
+            source_type=source_type,
+            target_type=target_type,
+        )
         if res:
             return True
         else:
@@ -152,6 +167,8 @@ class Neo4jClient:
         source: Optional[Tuple[str, str]] = None,
         target: Optional[Tuple[str, str]] = None,
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Relation]:
         """Return relations based on source, target and type constraints.
@@ -167,6 +184,10 @@ class Neo4jClient:
             Target namespace and ID.
         relation :
             Relation type.
+        source_type :
+            A constraint on the source type
+        target_type :
+            A constraint on the target type
         limit :
             A limit on the number of relations returned.
 
@@ -199,6 +220,7 @@ class Neo4jClient:
         self,
         target: Tuple[str, str],
         relation: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources to the given target.
 
@@ -214,12 +236,13 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=None, target=target, relation=relation)
+        return self.get_relations(source=None, target=target, relation=relation, target_type=target_type)
 
     def get_target_relations(
         self,
         source: Tuple[str, str],
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect targets from the given source.
 
@@ -235,12 +258,14 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=source, target=None, relation=relation)
+        return self.get_relations(source=source, target=None, relation=relation, source_type=source_type)
 
     def get_all_relations(
         self,
         node: Tuple[str, str],
         relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources and targets with the given node.
 
@@ -256,8 +281,8 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        source_rels = self.get_source_relations(target=node, relation=relation)
-        target_rels = self.get_target_relations(source=node, relation=relation)
+        source_rels = self.get_source_relations(target=node, relation=relation, target_type=target_type)
+        target_rels = self.get_target_relations(source=node, relation=relation, source_type=source_type)
         all_rels = source_rels + target_rels
         return all_rels
 
@@ -428,7 +453,12 @@ class Neo4jClient:
         nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
         return nodes
 
-    def get_target_agents(self, source: Tuple[str, str], relation: str) -> List[Agent]:
+    def get_target_agents(
+        self,
+        source: Tuple[str, str],
+        relation: str,
+        source_type: Optional[str] = None,
+    ) -> List[Agent]:
         """Return the nodes related to the source via a given relation type as INDRA Agents.
 
         Parameters
@@ -437,13 +467,15 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             The relation label to constrain to when finding targets.
+        source_type :
+            A constraint on the source type
 
         Returns
         -------
         targets
             A list of target nodes as INDRA Agents.
         """
-        targets = self.get_targets(source, relation)
+        targets = self.get_targets(source, relation, source_type=source_type)
         agents = [self.node_to_agent(target) for target in targets]
         return agents
 
