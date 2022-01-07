@@ -108,6 +108,16 @@ def test_get_diseases_for_trial():
 
 
 @pytest.mark.nonpublic
+def test_get_pathways_for_gene():
+    client = _get_client()
+    gene = ("HGNC", "16812")
+    pathways = get_pathways_for_gene(client, gene)
+    assert len(pathways)
+    assert isinstance(pathways[0], Node)
+    assert pathways[0].db_ns == 'WIKIPATHWAYS'
+
+
+@pytest.mark.nonpublic
 def test_get_pmids_for_mesh():
     # Single query
     client = _get_client()
