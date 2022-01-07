@@ -150,7 +150,7 @@
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
                                 one step from all entities in the INDRA Database.
                             </p>
-                            {{ render_table(wikipathways_results, "table-downstream") }}
+                            {{ render_table(indra_downstream_results, "table-downstream") }}
                         </div>
                         <div class="tab-pane" id="upstream" role="tabpanel" aria-labelledby="upstream-tab">
                             <p>
@@ -158,7 +158,7 @@
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
                                 one step from all entities in the INDRA Database.
                             </p>
-                            {{ render_table(wikipathways_results, "table-upstream") }}
+                            {{ render_table(indra_upstream_results, "table-upstream") }}
                         </div>
                     {% endif %}
                 </div>
