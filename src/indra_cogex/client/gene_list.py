@@ -5,7 +5,7 @@
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
-from typing import List, Mapping, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -164,7 +164,7 @@ def _collect_pathways(client, query):
 
 def _do_ora(
     curie_to_hgnc_ids: Mapping[tuple[str, str], Set[str]],
-    gene_ids: List[str],
+    gene_ids: Iterable[str],
     count: int,
     correction: bool = True,
     correction_method: Optional[str] = None,
@@ -193,31 +193,31 @@ def _do_ora(
     return df
 
 
-def go_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+def go_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
     """Calculate over-representation on all GO terms."""
     count = count_human_genes(client)
     return _do_ora(_get_go(client), gene_ids=gene_ids, count=count)
 
 
-def wikipathways_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+def wikipathways_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways."""
     count = count_human_genes(client)
     return _do_ora(_get_wikipathways(client), gene_ids=gene_ids, count=count)
 
 
-def reactome_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+def reactome_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways."""
     count = count_human_genes(client)
     return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count)
 
 
-def indra_upstream_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+def indra_upstream_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
     """Calculate over-representation on INDRA in-edges."""
     count = count_human_genes(client)
     return _do_ora(_get_indra_upstream(client), gene_ids=gene_ids, count=count)
 
 
-def indra_downstream_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+def indra_downstream_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
     """Calculate over-representation on INDRA out-edges."""
     count = count_human_genes(client)
     return _do_ora(_get_indra_downstream(client), gene_ids=gene_ids, count=count)

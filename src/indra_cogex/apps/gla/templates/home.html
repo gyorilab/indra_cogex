@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% import "bootstrap/form.html" as wtf %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block title %}Gene List Analysis{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Gene List Analysis</h1>
+        <p class="lead">
+            This page helps do gene list analysis.
+        </p>
+        {{ wtf.render_form(form) }}
+    </div>
+{% endblock %}
