@@ -786,6 +786,8 @@ def get_stmts_for_stmt_hashes(
         The Neo4j client.
     stmt_hashes :
         The statement hashes to query.
+    evidence_map :
+        Optionally provide a mapping of stmt hash to a list of evidence objects
 
     Returns
     -------
