@@ -12,7 +12,6 @@ from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -94,7 +93,6 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         tx = self.get_session().begin_transaction()
-        print(query)
         try:
             res = tx.run(query)
         except Exception as e:
