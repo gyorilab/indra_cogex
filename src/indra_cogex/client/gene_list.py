@@ -24,6 +24,19 @@ __all__ = [
 ]
 
 
+# fmt: off
+#: This example list comes from human genes associated with COVID-19
+#: (https://bgee.org/?page=top_anat#/result/9bbddda9dea22c21edcada56ad552a35cb8e29a7/)
+EXAMPLE_GENE_IDS = [
+    "613", "1116", "1119", "1697", "7067", "2537", "2734", "29517", "8568", "4910", "4931", "4932", "4962", "4983",
+    "18873", "5432", "5433", "5981", "16404", "5985", "18358", "6018", "6019", "6021", "6118", "6120", "6122",
+    "6148", "6374", "6378", "6395", "6727", "14374", "8004", "18669", "8912", "30306", "23785", "9253", "9788",
+    "10498", "10819", "6769", "11120", "11133", "11432", "11584", "18348", "11849", "28948", "11876", "11878",
+    "11985", "20820", "12647", "20593", "12713"
+]
+# fmt: on
+
+
 def _prepare_hypergeometric_test(
     query_gene_set: set[str],
     pathway_gene_set: set[str],
@@ -243,31 +256,19 @@ def indra_downstream_ora(
 
 def main():
     client = Neo4jClient()
-
-    # fmt: off
-    #: This example list comes from human genes associated with COVID-19 (https://bgee.org/?page=top_anat#/result/9bbddda9dea22c21edcada56ad552a35cb8e29a7/)
-    example_gene_ids = [
-        "613", "1116", "1119", "1697", "7067", "2537", "2734", "29517", "8568", "4910", "4931", "4932", "4962", "4983",
-        "18873", "5432", "5433", "5981", "16404", "5985", "18358", "6018", "6019", "6021", "6118", "6120", "6122",
-        "6148", "6374", "6378", "6395", "6727", "14374", "8004", "18669", "8912", "30306", "23785", "9253", "9788",
-        "10498", "10819", "6769", "11120", "11133", "11432", "11584", "18348", "11849", "28948", "11876", "11878",
-        "11985", "20820", "12647", "20593", "12713"
-    ]
-    # fmt: on
-
     print("\nGO Enrichment\n")
-    print(go_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print(go_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
     print("\n## WikiPathways Enrichment\n")
-    print(wikipathways_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print(wikipathways_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
     print("\n## Reactome Enrichment\n")
-    print(reactome_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print(reactome_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
     print("\n## INDRA Upstream Enrichment\n")
     print(
-        indra_upstream_ora(client, example_gene_ids).head(15).to_markdown(index=False)
+        indra_upstream_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False)
     )
     print("\n## INDRA Downstream Enrichment\n")
     print(
-        indra_downstream_ora(client, example_gene_ids).head(15).to_markdown(index=False)
+        indra_downstream_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False)
     )
 
 

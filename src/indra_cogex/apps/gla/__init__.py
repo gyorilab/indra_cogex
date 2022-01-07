@@ -12,7 +12,12 @@ from more_click import make_web_command
 from wtforms import FloatField, RadioField, SubmitField, TextAreaField
 
 from indra.databases import hgnc_client
-from indra_cogex.client.gene_list import go_ora, reactome_ora, wikipathways_ora
+from indra_cogex.client.gene_list import (
+    EXAMPLE_GENE_IDS,
+    go_ora,
+    reactome_ora,
+    wikipathways_ora,
+)
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 app = flask.Flask(__name__)
@@ -34,7 +39,8 @@ class GeneForm(FlaskForm):
     genes = TextAreaField(
         "Genes",
         description="Paste your list of gene symbol, HGNC gene identifiers, or"
-        " CURIEs here.",
+        ' CURIEs here. Use <a href="#" onClick="exampleGenes()">an example'
+        " list of human genes</a> related to COVID-19.",
     )
     alpha = FloatField(
         "Alpha",
@@ -130,6 +136,7 @@ def home():
     return flask.render_template(
         "home.html",
         form=GeneForm(),
+        example_hgnc_ids=", ".join(EXAMPLE_GENE_IDS),
     )
 
 
