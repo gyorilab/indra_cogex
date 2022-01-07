@@ -9,11 +9,19 @@ from typing import List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
-from indra_cogex.client.neo4j_client import Neo4jClient
-from indra_cogex.client.queries import get_genes_for_go_term
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 
+from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.queries import get_genes_for_go_term
+
+__all__ = [
+    "go_ora",
+    "wikipathways_ora",
+    "reactome_ora",
+    "indra_downstream_ora",
+    "indra_upstream_ora",
+]
 
 def _prepare_hypergeometric_test(
     query_gene_set: Set[str],
@@ -204,7 +212,7 @@ def reactome_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
 
 
 def indra_upstream_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
-    """Calculate over-representation on INDRA out-edges."""
+    """Calculate over-representation on INDRA in-edges."""
     count = count_human_genes(client)
     return _do_ora(_get_indra_upstream(client), gene_ids=gene_ids, count=count)
 
@@ -231,13 +239,13 @@ def main():
 
     print("\nGO Enrichment\n")
     print(go_ora(client, example_gene_ids).head(15).to_markdown(index=False))
-    print("\nWikiPathways Enrichment\n")
+    print("\n## WikiPathways Enrichment\n")
     print(wikipathways_ora(client, example_gene_ids).head(15).to_markdown(index=False))
-    print("\nReactome Enrichment\n")
+    print("\n## Reactome Enrichment\n")
     print(reactome_ora(client, example_gene_ids).head(15).to_markdown(index=False))
-    print("\nINDRA Upstream Enrichment\n")
+    print("\n## INDRA Upstream Enrichment\n")
     print(indra_upstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
-    print("\nINDRA Downstream Enrichment\n")
+    print("\n## INDRA Downstream Enrichment\n")
     print(indra_downstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
 
 
