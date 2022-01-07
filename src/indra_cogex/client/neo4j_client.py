@@ -3,8 +3,8 @@ __all__ = ["Neo4jClient"]
 import logging
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
+import neo4j
 import neo4j.graph
-import neo4j.work.simple
 from neo4j import GraphDatabase
 
 from indra.config import get_config
@@ -104,7 +104,7 @@ class Neo4jClient:
         tx.close()
         return values
 
-    def get_session(self, renew: Optional[bool] = False) -> neo4j.work.simple.Session:
+    def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
         """Return an existing session or create one if needed.
 
         Parameters
