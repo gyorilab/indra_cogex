@@ -1,9 +1,9 @@
 from typing import List, Tuple
 
+from indra.statements import Statement
 from .neo4j_client import Neo4jClient
 from .queries import get_expressed_genes_in_tissue
 from ..representation import Node, indra_stmts_from_relations, norm_id
-from indra.statements import Statement
 
 
 def indra_subnetwork(
