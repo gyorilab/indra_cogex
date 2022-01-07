@@ -619,9 +619,6 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
     if pmid[0].lower() != "pubmed":
         raise ValueError(f"Expected pmid term, got {':'.join(pmid)}")
 
-    # NOTE: we don't need to filter the BioEntity nodes to mesh, since
-    # Publication nodes only have annotated_with relations to BioEntity
-    # nodes that are mesh terms.
     return client.get_targets(
         source=pmid,
         relation="annotated_with",
@@ -747,7 +744,7 @@ def get_stmts_for_mesh_id(
     pmid_nodes = get_pmids_for_mesh(client, meshid, include_child_terms)
 
     # Get the all evidences with their hashes for the given pmids
-    pubmed_str = ",".join(f'"{norm_id(p.db_ns, p.db_id)}"' for p in pmid_nodes)
+    pubmed_str = ",".join(f'"{norm_id(*p.grounding())}"' for p in pmid_nodes)
     query = (
         """
         MATCH (e:Evidence)-[:has_citation]->(n:Publication)
