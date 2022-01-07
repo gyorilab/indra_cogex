@@ -5,7 +5,7 @@
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -23,9 +23,10 @@ __all__ = [
     "indra_upstream_ora",
 ]
 
+
 def _prepare_hypergeometric_test(
-    query_gene_set: Set[str],
-    pathway_gene_set: Set[str],
+    query_gene_set: set[str],
+    pathway_gene_set: set[str],
     gene_universe: int,
 ) -> np.ndarray:
     """Prepare the matrix for hypergeometric test calculations.
@@ -62,7 +63,7 @@ def count_human_genes(client: Neo4jClient) -> int:
 
 
 def gene_ontology_single_ora(
-    client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
+    client: Neo4jClient, go_term: tuple[str, str], gene_ids: list[str]
 ) -> float:
     """Get the p-value for the Fisher exact test a given GO term.
 
@@ -86,7 +87,7 @@ def gene_ontology_single_ora(
 
 
 @lru_cache(maxsize=1)
-def _get_go(client: Neo4jClient) -> Mapping[str, Set[str]]:
+def _get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get GO gene sets."""
     query = dedent(
         """\
@@ -99,7 +100,7 @@ def _get_go(client: Neo4jClient) -> Mapping[str, Set[str]]:
 
 
 @lru_cache(maxsize=1)
-def _get_wikipathways(client: Neo4jClient) -> Mapping[str, Set[str]]:
+def _get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get WikiPathways gene sets."""
     query = dedent(
         """\
@@ -112,7 +113,7 @@ def _get_wikipathways(client: Neo4jClient) -> Mapping[str, Set[str]]:
 
 
 @lru_cache(maxsize=1)
-def _get_reactome(client: Neo4jClient) -> Mapping[str, Set[str]]:
+def _get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get Reactome gene sets."""
     query = dedent(
         """\
@@ -125,7 +126,7 @@ def _get_reactome(client: Neo4jClient) -> Mapping[str, Set[str]]:
 
 
 @lru_cache(maxsize=1)
-def _get_indra_downstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
+def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get gene sets for each entity in INDRA based on the genes that it regulates/has statements to."""
     query = dedent(
         """\
@@ -138,7 +139,7 @@ def _get_indra_downstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
 
 
 @lru_cache(maxsize=1)
-def _get_indra_upstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
+def _get_indra_upstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get gene sets for each entity in INDRA based on what entities regulate it."""
     query = dedent(
         """\
@@ -150,7 +151,9 @@ def _get_indra_upstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
     return _collect_pathways(client, query)
 
 
-def _collect_pathways(client, query):
+def _collect_pathways(
+    client: Neo4jClient, query: str
+) -> dict[tuple[str, str], set[str]]:
     curie_to_hgnc_ids = defaultdict(set)
     for result in client.query_tx(query):
         curie = result[0]
@@ -163,11 +166,11 @@ def _collect_pathways(client, query):
 
 
 def _do_ora(
-    curie_to_hgnc_ids: Mapping[tuple[str, str], Set[str]],
+    curie_to_hgnc_ids: dict[tuple[str, str], set[str]],
     gene_ids: Iterable[str],
     count: int,
-    correction: bool = True,
-    correction_method: Optional[str] = None,
+    method: Optional[str] = "fdr_bh",
+    alpha: Optional[float] = None,
 ) -> pd.DataFrame:
     query_gene_set = set(gene_ids)
     rows = []
@@ -183,9 +186,12 @@ def _do_ora(
         "p", ascending=True
     )
     df["mlp"] = -np.log10(df["p"])
-    if correction:
+    if method:
         correction_results = multipletests(
-            df["p"], method=correction_method or "fdr_bh", is_sorted=True
+            df["p"],
+            method=method,
+            is_sorted=True,
+            alpha=alpha or 0.05,
         )
         df["q"] = correction_results[1]
         df["mlq"] = -np.log10(df["q"])
@@ -193,34 +199,46 @@ def _do_ora(
     return df
 
 
-def go_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
+def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFrame:
     """Calculate over-representation on all GO terms."""
     count = count_human_genes(client)
-    return _do_ora(_get_go(client), gene_ids=gene_ids, count=count)
+    return _do_ora(_get_go(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
-def wikipathways_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
+def wikipathways_ora(
+    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways."""
     count = count_human_genes(client)
-    return _do_ora(_get_wikipathways(client), gene_ids=gene_ids, count=count)
+    return _do_ora(_get_wikipathways(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
-def reactome_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
+def reactome_ora(
+    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways."""
     count = count_human_genes(client)
-    return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count)
+    return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
-def indra_upstream_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
+def indra_upstream_ora(
+    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
     """Calculate over-representation on INDRA in-edges."""
     count = count_human_genes(client)
-    return _do_ora(_get_indra_upstream(client), gene_ids=gene_ids, count=count)
+    return _do_ora(
+        _get_indra_upstream(client), gene_ids=gene_ids, count=count, **kwargs
+    )
 
 
-def indra_downstream_ora(client: Neo4jClient, gene_ids: Iterable[str]) -> pd.DataFrame:
+def indra_downstream_ora(
+    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
     """Calculate over-representation on INDRA out-edges."""
     count = count_human_genes(client)
-    return _do_ora(_get_indra_downstream(client), gene_ids=gene_ids, count=count)
+    return _do_ora(
+        _get_indra_downstream(client), gene_ids=gene_ids, count=count, **kwargs
+    )
 
 
 def main():
@@ -244,9 +262,13 @@ def main():
     print("\n## Reactome Enrichment\n")
     print(reactome_ora(client, example_gene_ids).head(15).to_markdown(index=False))
     print("\n## INDRA Upstream Enrichment\n")
-    print(indra_upstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print(
+        indra_upstream_ora(client, example_gene_ids).head(15).to_markdown(index=False)
+    )
     print("\n## INDRA Downstream Enrichment\n")
-    print(indra_downstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print(
+        indra_downstream_ora(client, example_gene_ids).head(15).to_markdown(index=False)
+    )
 
 
 if __name__ == "__main__":

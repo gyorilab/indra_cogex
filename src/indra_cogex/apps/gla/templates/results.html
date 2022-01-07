@@ -98,17 +98,34 @@
                 <!-- Tab panes -->
                 <div class="tab-content" style="margin-top:1em;">
                     <div class="tab-pane active" id="go" role="tabpanel" aria-labelledby="go-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to terms in the
+                            <a href="http://geneontology.org/docs/go-annotations/">Gene Ontology</a>
+                            via the <a href="http://geneontology.org/docs/go-annotations/">Gene
+                            Ontology Annotations Database</a>.
+                        </p>
                         {{ render_table(go_results, "table-go") }}
                     </div>
                     <div class="tab-pane" id="reactome" role="tabpanel" aria-labelledby="reactome-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
+                            the <a href="https://reactome.org/">Reactome</a>
+                            pathway database.
+                        </p>
                         {{ render_table(reactome_results, "table-reactome") }}
                     </div>
                     <div class="tab-pane" id="wikipathways" role="tabpanel" aria-labelledby="wikipathways-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
+                            the <a href="https://www.wikipathways.org/">WikiPathways</a>
+                            pathway database.
+                        </p>
                         {{ render_table(wikipathways_results, "table-wikipathways") }}
                     </div>
                 </div>
-
-
             </div>
         </div>
     </div>

@@ -9,7 +9,7 @@ import flask
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from more_click import make_web_command
-from wtforms import SubmitField, TextAreaField
+from wtforms import FloatField, RadioField, SubmitField, TextAreaField
 
 from indra.databases import hgnc_client
 from indra_cogex.client.gene_list import go_ora, reactome_ora, wikipathways_ora
@@ -31,7 +31,34 @@ client = Neo4jClient()
 class GeneForm(FlaskForm):
     """A form for gene lists"""
 
-    genes = TextAreaField("Genes")
+    genes = TextAreaField(
+        "Genes",
+        description="Paste your list of gene symbol, HGNC gene identifiers, or"
+        " CURIEs here.",
+    )
+    alpha = FloatField(
+        "Alpha",
+        default=0.05,
+        description="The alpha is the threshold for significance in the"
+        " Fisher's exact test with which multiple hypothesis"
+        " testing correction will be executed.",
+    )
+    correction = RadioField(
+        "Multiple Hypothesis Test Correction",
+        choices=[
+            ("fdr_bh", "Family-wise Correction with Benjamini/Hochberg"),
+            ("bonferroni", "Bonferroni (one-step correction)"),
+            ("sidak", "Sidak (one-step correction)"),
+            ("holm-sidak", "Holm-Sidak (step down method using Sidak adjustments)"),
+            ("holm", "Holm (step-down method using Bonferroni adjustments)"),
+            ("fdr_tsbh", "Two step Benjamini and Hochberg procedure"),
+            (
+                "fdr_tsbky",
+                "Two step estimation method of Benjamini, Krieger, and Yekutieli",
+            ),
+        ],
+        default="fdr_bh",
+    )
     submit = SubmitField("Submit")
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -65,17 +92,36 @@ def home():
     """Render the home page."""
     form = GeneForm()
     if form.validate_on_submit():
+        method = form.correction.data
+        alpha = form.alpha.data
         genes, errors = form.parse_genes()
         gene_set = set(genes)
 
-        go_results = go_ora(client, gene_set)
-        wikipathways_results = wikipathways_ora(client, gene_set)
-        reactome_results = reactome_ora(client, gene_set)
+        go_results = go_ora(
+            client,
+            gene_set,
+            method=method,
+            alpha=alpha,
+        )
+        wikipathways_results = wikipathways_ora(
+            client,
+            gene_set,
+            method=method,
+            alpha=alpha,
+        )
+        reactome_results = reactome_ora(
+            client,
+            gene_set,
+            method=method,
+            alpha=alpha,
+        )
 
         return flask.render_template(
             "results.html",
             genes=genes,
             errors=errors,
+            method=method,
+            alpha=alpha,
             go_results=go_results,
             wikipathways_results=wikipathways_results,
             reactome_results=reactome_results,
