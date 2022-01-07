@@ -55,7 +55,7 @@ def count_human_genes(client: Neo4jClient) -> int:
 
 def gene_ontology_single_ora(
     client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
-) -> Tuple[float, float]:
+) -> float:
     """Get the p-value for the Fisher exact test a given GO term.
 
     1. Look up genes associated with GO term
@@ -132,7 +132,7 @@ def _do_ora(
     curie_to_hgnc_ids: Mapping[tuple[str, str], Set[str]],
     gene_ids: List[str],
     count: int,
-    correction: bool = False,
+    correction: bool = True,
     correction_method: Optional[str] = None,
 ) -> pd.DataFrame:
     query_gene_set = set(gene_ids)
@@ -143,7 +143,7 @@ def _do_ora(
             pathway_gene_set=pathway_hgnc_ids,
             gene_universe=count,
         )
-        pvalue = fisher_exact(table, alternative="greater")
+        _, pvalue = fisher_exact(table, alternative="greater")
         rows.append((curie, name, pvalue))
     df = pd.DataFrame(rows, columns=["curie", "name", "p"]).sort_values(
         "p", ascending=True
