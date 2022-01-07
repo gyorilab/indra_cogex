@@ -80,7 +80,7 @@ def gene_ontology_single_ora(
 ) -> float:
     """Get the p-value for the Fisher exact test a given GO term.
 
-    1. Look up genes associated with GO term
+    1. Look up genes associated with GO term or child terms
     2. Run ORA and return results
 
     """
@@ -88,7 +88,7 @@ def gene_ontology_single_ora(
     go_gene_ids = {
         gene.db_id
         for gene in get_genes_for_go_term(
-            client=client, go_term=go_term, include_indirect=False
+            client=client, go_term=go_term, include_indirect=True
         )
     }
     table = _prepare_hypergeometric_test(
