@@ -648,11 +648,8 @@ def get_evidence_obj_for_stmt_hash(
         The evidence object for the given statement hash.
     """
     query = (
-        """
-        MATCH (n:Evidence)
-        WHERE n.stmt_hash = "%s"
-        RETURN n.evidence
-    """
+        """MATCH (n:Evidence {stmt_hash: "%s"})
+               RETURN n.evidence"""
         % stmt_hash
     )
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
@@ -719,8 +716,7 @@ def get_stmts_for_pmid(
     # First, get the hashes and evidences for the given PubMed ID
     hash_query = (
         """
-        MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
-        WHERE n.id = "%s"
+        MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "%s"})
         RETURN e.stmt_hash, e.evidence
     """
         % pmid_norm
@@ -751,13 +747,13 @@ def get_stmts_for_mesh_id(
         The statements for the given MESH ID.
     """
     # Get the publications annotated with the given MESH ID
-    pmids = get_pmids_for_mesh(client, meshid, include_child_terms)
+    pmid_nodes = get_pmids_for_mesh(client, meshid, include_child_terms)
 
     # Get the all evidences with their hashes for the given pmids
-    pubmed_str = ",".join(f'"{p}"' for p in pmids)
+    pubmed_str = ",".join(f'"{norm_id(p.db_ns, p.db_id)}"' for p in pmid_nodes)
     query = (
         """
-        MATCH (e:Evidence)-[r:has_citation]->(n:Publication)
+        MATCH (e:Evidence)-[:has_citation]->(n:Publication)
         WHERE n.id IN [%s]
         RETURN DISTINCT e.stmt_hash, e.evidence
     """
