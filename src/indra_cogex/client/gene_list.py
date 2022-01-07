@@ -56,7 +56,7 @@ def count_human_genes(client: Neo4jClient) -> int:
 def gene_ontology_single_ora(
     client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
 ) -> Tuple[float, float]:
-    """Get a a pair of odds ratio and p-value for the Fisher exact test a given GO term.
+    """Get the p-value for the Fisher exact test a given GO term.
 
     1. Look up genes associated with GO term
     2. Run ORA and return results
@@ -74,7 +74,7 @@ def gene_ontology_single_ora(
         pathway_gene_set=go_gene_ids,
         gene_universe=count,
     )
-    return fisher_exact(table, alternative="greater")
+    return fisher_exact(table, alternative="greater")[1]
 
 
 @lru_cache(maxsize=1)
@@ -143,9 +143,9 @@ def _do_ora(
             pathway_gene_set=pathway_hgnc_ids,
             gene_universe=count,
         )
-        oddsratio, pvalue = fisher_exact(table, alternative="greater")
-        rows.append((curie, name, oddsratio, pvalue))
-    df = pd.DataFrame(rows, columns=["curie", "name", "oddsratio", "p"]).sort_values(
+        pvalue = fisher_exact(table, alternative="greater")
+        rows.append((curie, name, pvalue))
+    df = pd.DataFrame(rows, columns=["curie", "name", "p"]).sort_values(
         "p", ascending=True
     )
     df["mlp"] = -np.log10(df["p"])
