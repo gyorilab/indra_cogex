@@ -214,9 +214,9 @@ def test_get_mesh_ids_for_pmid():
 
 @pytest.mark.nonpublic
 def test_get_evidence_obj_for_stmt_hash():
-    # Note: This statement has a ~500 evidences
+    # Note: This statement has 3 evidences
     # Single query
-    stmt_hash = "35279776755000170"
+    stmt_hash = "12198579805553967"
     client = _get_client()
     ev_objs = get_evidence_obj_for_stmt_hash(client, stmt_hash)
     assert len(ev_objs)
@@ -225,15 +225,17 @@ def test_get_evidence_obj_for_stmt_hash():
 
 @pytest.mark.nonpublic
 def test_get_evidence_obj_for_stmt_hashes():
-    # Note: This statement has ~500 of evidences
+    # Note: These statements have 3+5 evidences
     # Single query
-    stmt_hashes = ["35279776755000170"]
+    stmt_hashes = ["12198579805553967", "30651649296901235"]
     client = _get_client()
     ev_dict = get_evidence_obj_for_stmt_hashes(client, stmt_hashes)
     assert len(ev_dict)
-    assert list(ev_dict.keys())[0] == "35279776755000170"
-    assert len(ev_dict["35279776755000170"])
-    assert isinstance(ev_dict["35279776755000170"][0], Evidence)
+    assert set(ev_dict.keys()) == {"12198579805553967", "30651649296901235"}
+    assert len(ev_dict["12198579805553967"])
+    assert len(ev_dict["30651649296901235"])
+    assert isinstance(ev_dict["12198579805553967"][0], Evidence)
+    assert isinstance(ev_dict["30651649296901235"][0], Evidence)
 
 
 @pytest.mark.nonpublic
