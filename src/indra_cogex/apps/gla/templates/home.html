@@ -12,9 +12,24 @@
         }
     </script>
     <div class="card card-body bg-light">
-        <h1 class="display-3">Gene List Analysis</h1>
+        <h1 class="display-2">Gene Set Analysis</h1>
         <p class="lead">
-            This page helps do gene list analysis.
+            This application performs gene set enrichment analysis using
+            INDRA CoGEx, an automatically assembled biomedical knowledge graph
+            consisting of causal, ontological, and property relationships,
+            as well as relationships representing data. Given a list of genes
+            as input the application ranks and lists GO terms, Reactome
+            pathways, WitkiPathway pathways, as well as upstream or downstream
+            biological
+            entities (e.g., genes/proteins, small molecules, biological
+            processes) with respect to the input genes. Ranking
+            is based on the overlap between the input genes and the gene sets
+            corresponding to each listed term (e.g., the genes annotated
+            with a given GO term or the genes that are part of a given
+            Reactome pathway). p-values are calculated using Fisher's exact
+            test with different options available to adjust for multiple
+            hypothesis
+            testing.
         </p>
         {{ wtf.render_form(form) }}
     </div>
