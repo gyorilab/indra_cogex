@@ -238,7 +238,9 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=None, target=target, relation=relation, target_type=target_type)
+        return self.get_relations(
+            source=None, target=target, relation=relation, target_type=target_type
+        )
 
     def get_target_relations(
         self,
@@ -260,7 +262,9 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        return self.get_relations(source=source, target=None, relation=relation, source_type=source_type)
+        return self.get_relations(
+            source=source, target=None, relation=relation, source_type=source_type
+        )
 
     def get_all_relations(
         self,
@@ -287,8 +291,12 @@ class Neo4jClient:
         rels :
             A list of relations matching the constraints.
         """
-        source_rels = self.get_source_relations(target=node, relation=relation, source_type=source_type)
-        target_rels = self.get_target_relations(source=node, relation=relation, target_type=target_type)
+        source_rels = self.get_source_relations(
+            target=node, relation=relation, source_type=source_type
+        )
+        target_rels = self.get_target_relations(
+            source=node, relation=relation, target_type=target_type
+        )
         all_rels = source_rels + target_rels
         return all_rels
 
