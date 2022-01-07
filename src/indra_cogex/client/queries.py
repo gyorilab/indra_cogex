@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from typing import Iterable, Tuple, Mapping, Dict, List, Optional
+from typing import Iterable, Tuple, Dict, List, Optional
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations, norm_id
