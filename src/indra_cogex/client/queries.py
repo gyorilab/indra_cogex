@@ -585,8 +585,9 @@ def get_pmids_for_mesh(
     if child_terms:
         terms = {norm_mesh} | child_terms
         terms_str = ",".join(f'"{c}"' for c in terms)
-        match_clause = f"MATCH c.id IN [{terms_str}]"
-        where_clause = "WHERE b.id IN [%s]" % terms_str
+        query = """MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity)
+                   WHERE b.id IN [%s]
+                   RETURN DISTINCT k.id""" % terms_str
     else:
         match_clause = 'MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity {id: "%s"})' % norm_mesh
         query = "%s RETURN k.id" % match_clause
