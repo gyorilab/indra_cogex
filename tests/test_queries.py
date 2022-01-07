@@ -197,7 +197,8 @@ def test_get_pmids_for_mesh():
     client = _get_client()
     pmids = get_pmids_for_mesh(client, ("MESH", "D015002"))
     assert len(pmids)
-    assert pmids[0].startswith("pubmed:")
+    assert isinstance(pmids[0], Node)
+    assert pmids[0].db_ns == "PUBMED"
 
 
 @pytest.mark.nonpublic
@@ -207,7 +208,8 @@ def test_get_mesh_ids_for_pmid():
     pmid = ("PUBMED", "27890007")
     mesh_ids = get_mesh_ids_for_pmid(client, pmid)
     assert len(mesh_ids)
-    assert mesh_ids[0].startswith("mesh:")
+    assert isinstance(mesh_ids[0], Node)
+    assert mesh_ids[0].db_ns == "MESH"
 
 
 @pytest.mark.nonpublic
