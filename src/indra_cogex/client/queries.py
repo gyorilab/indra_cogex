@@ -1,4 +1,5 @@
 from typing import Iterable, Tuple
+
 from .neo4j_client import Neo4jClient
 from ..representation import Node
 
