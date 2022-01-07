@@ -196,7 +196,7 @@ def test_get_pmids_for_mesh():
     # Single query
     client = _get_client()
     pmids = get_pmids_for_mesh(client, ('MESH', 'D015002'))
-    assert len(pmids) == 1591
+    assert len(pmids)
     assert pmids[0].startswith('pubmed:')
 
 
@@ -206,7 +206,7 @@ def test_get_mesh_ids_for_pmid():
     client = _get_client()
     pmid = ("PUBMED", "27890007")
     mesh_ids = get_mesh_ids_for_pmid(client, pmid)
-    assert len(mesh_ids) == 4
+    assert len(mesh_ids)
     assert mesh_ids[0].startswith('mesh:')
 
 
@@ -217,7 +217,7 @@ def test_get_evidence_obj_for_stmt_hash():
     stmt_hash = '35279776755000170'
     client = _get_client()
     ev_objs = get_evidence_obj_for_stmt_hash(client, stmt_hash)
-    assert len(ev_objs) == 529
+    assert len(ev_objs)
     assert isinstance(ev_objs[0], Evidence)
 
 
@@ -228,9 +228,9 @@ def test_get_evidence_obj_for_stmt_hashes():
     stmt_hashes = ['35279776755000170']
     client = _get_client()
     ev_dict = get_evidence_obj_for_stmt_hashes(client, stmt_hashes)
-    assert len(ev_dict) == 1
+    assert len(ev_dict)
     assert list(ev_dict.keys())[0] == '35279776755000170'
-    assert len(ev_dict['35279776755000170']) == 529
+    assert len(ev_dict['35279776755000170'])
     assert isinstance(ev_dict['35279776755000170'][0], Evidence)
 
 
@@ -240,7 +240,7 @@ def test_get_stmts_for_pmid():
     client = _get_client()
     pmid = ("PUBMED", "14898026")
     stmts = get_stmts_for_pmid(client, pmid)
-    assert len(stmts) == 1
+    assert len(stmts)
     assert isinstance(stmts[0], Inhibition)
 
 
@@ -253,7 +253,7 @@ def test_get_stmts_for_mesh_id():
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh_id(client, mesh_id)
-    assert len(stmts) == 1
+    assert len(stmts)
     assert isinstance(stmts[0], Activation)
 
 
@@ -264,5 +264,5 @@ def test_get_stmts_by_hashes():
     stmt_hashes = ['35279776755000170']
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(client, stmt_hashes)
-    assert len(stmts) == 1
+    assert len(stmts)
     assert isinstance(stmts[0], Inhibition)
