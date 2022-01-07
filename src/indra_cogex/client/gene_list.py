@@ -116,6 +116,32 @@ def _get_reactome(client: Neo4jClient) -> Mapping[str, Set[str]]:
     return _collect_pathways(client, query)
 
 
+@lru_cache(maxsize=1)
+def _get_indra_downstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
+    """Get gene sets for each entity in INDRA based on the genes that it regulates/has statements to."""
+    query = dedent(
+        """\
+        MATCH (regulator:BioEntity)-[:indra_rel]->(gene:BioEntity)
+        WHERE gene.id STARTS WITH "hgnc"
+        RETURN regulator.id, regulator.name, collect(gene.id);
+    """
+    )
+    return _collect_pathways(client, query)
+
+
+@lru_cache(maxsize=1)
+def _get_indra_upstream(client: Neo4jClient) -> Mapping[str, Set[str]]:
+    """Get gene sets for each entity in INDRA based on what entities regulate it."""
+    query = dedent(
+        """\
+        MATCH (gene:BioEntity)-[:indra_rel]->(regulator:BioEntity)
+        WHERE gene.id STARTS WITH "hgnc"
+        RETURN regulator.id, regulator.name, collect(gene.id);
+    """
+    )
+    return _collect_pathways(client, query)
+
+
 def _collect_pathways(client, query):
     curie_to_hgnc_ids = defaultdict(set)
     for result in client.query_tx(query):
@@ -177,6 +203,18 @@ def reactome_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
     return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count)
 
 
+def indra_upstream_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+    """Calculate over-representation on INDRA out-edges."""
+    count = count_human_genes(client)
+    return _do_ora(_get_indra_upstream(client), gene_ids=gene_ids, count=count)
+
+
+def indra_downstream_ora(client: Neo4jClient, gene_ids: List[str]) -> pd.DataFrame:
+    """Calculate over-representation on INDRA out-edges."""
+    count = count_human_genes(client)
+    return _do_ora(_get_indra_downstream(client), gene_ids=gene_ids, count=count)
+
+
 def main():
     client = Neo4jClient()
 
@@ -197,6 +235,10 @@ def main():
     print(wikipathways_ora(client, example_gene_ids).head(15).to_markdown(index=False))
     print("\nReactome Enrichment\n")
     print(reactome_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print("\nINDRA Upstream Enrichment\n")
+    print(indra_upstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
+    print("\nINDRA Downstream Enrichment\n")
+    print(indra_downstream_ora(client, example_gene_ids).head(15).to_markdown(index=False))
 
 
 if __name__ == "__main__":
