@@ -277,14 +277,18 @@ class Neo4jClient:
             Node namespace and identifier.
         relation :
             Relation type.
+        source_type :
+            Type constraint on the sources for in-edges
+        target_type :
+            Type constraint on te targets for out-edges
 
         Returns
         -------
         rels :
             A list of relations matching the constraints.
         """
-        source_rels = self.get_source_relations(target=node, relation=relation, target_type=target_type)
-        target_rels = self.get_target_relations(source=node, relation=relation, source_type=source_type)
+        source_rels = self.get_source_relations(target=node, relation=relation, source_type=source_type)
+        target_rels = self.get_target_relations(source=node, relation=relation, target_type=target_type)
         all_rels = source_rels + target_rels
         return all_rels
 
