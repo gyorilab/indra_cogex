@@ -118,6 +118,80 @@ def test_get_pathways_for_gene():
 
 
 @pytest.mark.nonpublic
+def test_get_genes_for_pathway():
+    client = _get_client()
+    pathway = ("WIKIPATHWAYS", "WP5037")
+    genes = get_genes_for_pathway(client, pathway)
+    assert len(genes)
+    assert isinstance(genes[0], Node)
+    assert genes[0].db_ns == 'HGNC'
+
+
+@pytest.mark.nonpublic
+def test_is_gene_in_pathway():
+    client = _get_client()
+    gene = ("HGNC", "16812")
+    pathway = ("WIKIPATHWAYS", "WP5037")
+    assert is_gene_in_pathway(client, gene, pathway)
+
+
+@pytest.mark.nonpublic
+def test_get_side_effects_for_drug():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:29108")
+    side_effects = get_side_effects_for_drug(client, drug)
+    assert len(side_effects)
+    assert isinstance(side_effects[0], Node)
+    assert side_effects[0].db_ns in ['GO', 'UMLS', 'MESH', 'HP']
+
+
+@pytest.mark.nonpublic
+def test_get_drugs_for_side_effect():
+    client = _get_client()
+    side_effect = ("UMLS", "C3267206")
+    drugs = get_drugs_for_side_effect(client, side_effect)
+    assert len(drugs)
+    assert isinstance(drugs[0], Node)
+    assert drugs[0].db_ns in ['CHEBI', 'MESH']
+
+
+@pytest.mark.nonpublic
+def test_is_side_effect_for_drug():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:29108")
+    side_effect = ("UMLS", "C3267206")
+    assert is_side_effect_for_drug(client, drug, side_effect)
+
+
+@pytest.mark.nonpublic
+def test_get_ontology_child_terms():
+    client = _get_client()
+    term = ("MESH", "D007855")
+    children = get_ontology_child_terms(client, term)
+    assert len(children)
+    assert isinstance(children[0], Node)
+    assert children[0].db_ns == 'MESH'
+
+
+@pytest.mark.nonpublic
+def test_get_ontology_parent_terms():
+    client = _get_client()
+    term = ("MESH", "D020263")
+    parents = get_ontology_parent_terms(client, term)
+    assert len(parents)
+    assert isinstance(parents[0], Node)
+    assert parents[0].db_ns == 'MESH'
+
+
+@pytest.mark.nonpublic
+def test_isa_or_partof():
+    client = _get_client()
+    term = ("MESH", "D020263")
+    parent = ("MESH", "D007855")
+    assert isa_or_partof(client, term, parent)
+
+
+@pytest.mark.nonpublic
 def test_get_pmids_for_mesh():
     # Single query
     client = _get_client()
