@@ -770,21 +770,7 @@ def get_stmts_for_mesh_id(
     :
         The statements for the given MESH ID.
     """
-    # Get the publications annotated with the given MESH ID
-    pmid_nodes = get_pmids_for_mesh(client, meshid, include_child_terms)
-
-    # Get the all evidences with their hashes for the given pmids
-    pubmed_str = ",".join(f'"{norm_id(*p.grounding())}"' for p in pmid_nodes)
-    query = (
-        """
-        MATCH (e:Evidence)-[:has_citation]->(n:Publication)
-        WHERE n.id IN [%s]
-        RETURN DISTINCT e.stmt_hash, e.evidence
-    """
-        % pubmed_str
-    )
-    result = client.query_tx(query)
-    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    ev_dict = get_evidence_obj_for_mesh_id(client, meshid)
     hashes = list(ev_dict.keys())
     return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
 
