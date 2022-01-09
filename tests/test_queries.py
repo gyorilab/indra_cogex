@@ -213,6 +213,15 @@ def test_get_mesh_ids_for_pmid():
 
 
 @pytest.mark.nonpublic
+def test_get_evidence_obj_for_mesh_id():
+    client = _get_client()
+    mesh_id = ("MESH", "D015002")
+    evidence_dict = get_evidence_obj_for_mesh_id(client, mesh_id)
+    assert len(evidence_dict)
+    assert isinstance(list(evidence_dict.values())[0][0], Evidence)
+
+
+@pytest.mark.nonpublic
 def test_get_evidence_obj_for_stmt_hash():
     # Note: This statement has 3 evidences
     # Single query
