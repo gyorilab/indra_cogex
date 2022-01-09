@@ -259,10 +259,9 @@ def test_get_stmts_for_pmid():
 
 @pytest.mark.nonpublic
 def test_get_stmts_for_mesh_id():
-    # Three queries:
-    # 1. pmids with annotation
-    # 2. evidences for publications with pmid in pmids from 1
-    # 3. statements for the evidences in 2
+    # Two queries:
+    # 1. evidences for publications with pmid having mesh annotation
+    # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh_id(client, mesh_id)
