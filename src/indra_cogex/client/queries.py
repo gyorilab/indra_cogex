@@ -32,6 +32,7 @@ __all__ = [
     "isa_or_partof",
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
+    "get_evidence_obj_for_mesh_id",
     "get_evidence_obj_for_stmt_hash",
     "get_evidence_obj_for_stmt_hashes",
     "get_stmts_for_pmid",
@@ -625,6 +626,35 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
         source_type="Publication",
         target_type="BioEntity",
     )
+
+
+def get_evidence_obj_for_mesh_id(
+        client: Neo4jClient, mesh: Tuple[str, str]
+) -> Dict[str, List[Evidence]]:
+    """Return the evidence objects for the given MESH term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh :
+        The MESH term to query.
+
+    Returns
+    -------
+    :
+        The evidence objects for the given MESH term.
+    """
+    if mesh[0].lower() != "mesh":
+        raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
+
+    norm_mesh = norm_id(*mesh)
+    query = (
+        """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity {id: "%s"})
+           RETURN e.stmt_hash, e.evidence"""
+        % norm_mesh
+    )
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
 def get_evidence_obj_for_stmt_hash(
