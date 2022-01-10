@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from typing import Iterable, Tuple, Dict, List, Optional
+from typing import Iterable, Tuple, Dict, List, Optional, Set
 from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations, norm_id
@@ -572,14 +572,7 @@ def get_pmids_for_mesh(
     # slower for this specific query, so we do an optimized query that is
     # basically equivalent instead.
     if include_child_terms:
-        child_query = (
-            """
-            MATCH (c:BioEntity)-[:isa*1..]->(p:BioEntity {id: "%s"})
-            RETURN DISTINCT c.id
-            """
-            % norm_mesh
-        )
-        child_terms = {c[0] for c in client.query_tx(child_query)}
+        child_terms = _get_mesh_child_terms(client, mesh)
     else:
         child_terms = set()
 
@@ -588,8 +581,8 @@ def get_pmids_for_mesh(
         terms_str = ",".join(f'"{c}"' for c in terms)
         query = (
             """MATCH (k: Publication)-[r: annotated_with]->(b:BioEntity)
-                   WHERE b.id IN [%s]
-                   RETURN DISTINCT k"""
+               WHERE b.id IN [%s]
+               RETURN DISTINCT k"""
             % terms_str
         )
     else:
@@ -629,7 +622,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
 
 
 def get_evidence_obj_for_mesh_id(
-        client: Neo4jClient, mesh: Tuple[str, str]
+    client: Neo4jClient, mesh: Tuple[str, str], include_child_terms: bool = True
 ) -> Dict[str, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -638,21 +631,38 @@ def get_evidence_obj_for_mesh_id(
     client :
         The Neo4j client.
     mesh :
-        The MESH term to query.
+        The MESH ID to query.
+    include_child_terms :
+        If True, also match against the child MESH terms of the given MESH ID
 
     Returns
     -------
     :
-        The evidence objects for the given MESH term.
+        The evidence objects for the given MESH ID.
     """
     if mesh[0].lower() != "mesh":
         raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
 
     norm_mesh = norm_id(*mesh)
-    query = (
-        """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity {id: "%s"})
-           RETURN e.stmt_hash, e.evidence"""
-        % norm_mesh
+    if include_child_terms:
+        child_terms = _get_mesh_child_terms(client, mesh)
+    else:
+        child_terms = set()
+
+    if child_terms:
+        terms = {norm_mesh} | child_terms
+        terms_str = ",".join(f'"{c}"' for c in terms)
+        where_clause = "WHERE b.id IN [%s]" % terms_str
+        single_mesh_match = ""
+    else:
+        single_mesh_match = ' {id: "%s"}' % norm_mesh
+        where_clause = ""
+
+    query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
+           %s
+           RETURN e.stmt_hash, e.evidence""" % (
+        single_mesh_match,
+        where_clause,
     )
     return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
@@ -770,7 +780,7 @@ def get_stmts_for_mesh_id(
     :
         The statements for the given MESH ID.
     """
-    ev_dict = get_evidence_obj_for_mesh_id(client, meshid)
+    ev_dict = get_evidence_obj_for_mesh_id(client, meshid, include_child_terms)
     hashes = list(ev_dict.keys())
     return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
 
@@ -838,6 +848,32 @@ def get_stmts_for_stmt_hashes(
             )
 
     return list(stmts.values())
+
+
+def _get_mesh_child_terms(client: Neo4jClient, meshid: Tuple[str, str]) -> Set[str]:
+    """Return the children of the given MESH ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    meshid :
+        The MESH ID to query.
+
+    Returns
+    -------
+    :
+        The children of the given MESH ID.
+    """
+    meshid_norm = norm_id(*meshid)
+    query = (
+        """
+        MATCH (c:BioEntity)-[:isa*1..]->(:BioEntity {id: "%s"})
+        RETURN DISTINCT c.id
+    """
+        % meshid_norm
+    )
+    return {c[0] for c in client.query_tx(query)}
 
 
 def _get_ev_dict_from_hash_ev_query(
