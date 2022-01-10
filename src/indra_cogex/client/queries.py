@@ -545,7 +545,7 @@ def isa_or_partof(
 
 
 def get_pmids_for_mesh(
-    client: Neo4jClient, mesh: Tuple[str, str], include_child_terms: bool = True
+    client: Neo4jClient, meshid: Tuple[str, str], include_child_terms: bool = True
 ) -> Iterable[Node]:
     """Return the PubMed IDs for the given MESH term.
 
@@ -553,7 +553,7 @@ def get_pmids_for_mesh(
     ----------
     client :
         The Neo4j client.
-    mesh :
+    meshid :
         The MESH term to query.
     include_child_terms :
         If True, also match against the child MESH terms of the given MESH
@@ -564,15 +564,15 @@ def get_pmids_for_mesh(
     :
         The PubMed IDs for the given MESH term and, optionally, its child terms.
     """
-    if mesh[0].lower() != "mesh":
-        raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
-    norm_mesh = norm_id(*mesh)
+    if meshid[0].lower() != "mesh":
+        raise ValueError(f"Expected mesh term, got {':'.join(meshid)}")
+    norm_mesh = norm_id(*meshid)
 
     # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
     # slower for this specific query, so we do an optimized query that is
     # basically equivalent instead.
     if include_child_terms:
-        child_terms = _get_mesh_child_terms(client, mesh)
+        child_terms = _get_mesh_child_terms(client, meshid)
     else:
         child_terms = set()
 
@@ -622,7 +622,7 @@ def get_mesh_ids_for_pmid(client: Neo4jClient, pmid: Tuple[str, str]) -> Iterabl
 
 
 def get_evidence_obj_for_mesh_id(
-    client: Neo4jClient, mesh: Tuple[str, str], include_child_terms: bool = True
+    client: Neo4jClient, meshid: Tuple[str, str], include_child_terms: bool = True
 ) -> Dict[str, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -630,7 +630,7 @@ def get_evidence_obj_for_mesh_id(
     ----------
     client :
         The Neo4j client.
-    mesh :
+    meshid :
         The MESH ID to query.
     include_child_terms :
         If True, also match against the child MESH terms of the given MESH ID
@@ -640,12 +640,12 @@ def get_evidence_obj_for_mesh_id(
     :
         The evidence objects for the given MESH ID.
     """
-    if mesh[0].lower() != "mesh":
-        raise ValueError(f"Expected mesh term, got {':'.join(mesh)}")
+    if meshid[0].lower() != "mesh":
+        raise ValueError(f"Expected mesh term, got {':'.join(meshid)}")
 
-    norm_mesh = norm_id(*mesh)
+    norm_mesh = norm_id(*meshid)
     if include_child_terms:
-        child_terms = _get_mesh_child_terms(client, mesh)
+        child_terms = _get_mesh_child_terms(client, meshid)
     else:
         child_terms = set()
 
