@@ -33,6 +33,9 @@
         <tr>
             <th scope="col">CURIE</th>
             <th scope="col">Name</th>
+            <th scope="col">✓</th>
+            <th scope="col">✗</th>
+            <th scope="col">🤷</th>
             <th scope="col"><i>p</i>-value</th>
         </tr>
         </thead>
@@ -41,6 +44,9 @@
             <tr>
                 <td><a href="https://bioregistry.io/{{ curie }}">{{ curie }}</a></td>
                 <td>{{ name }}</td>
+                <td>{{ correct }}</td>
+                <td>{{ incorrect }}</td>
+                <td>{{ ambig }}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
             </tr>
         {% endfor %}
