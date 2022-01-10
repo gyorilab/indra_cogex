@@ -28,6 +28,16 @@ from indra_cogex.client.enrichment.utils import (
 )
 from indra_cogex.client.neo4j_client import Neo4jClient
 
+__all__ = [
+    "get_rat_scores",
+    "go_gsea",
+    "wikipathways_gsea",
+    "reactome_gsea",
+    "indra_upstream_gsea",
+    "indra_downstream_gsea",
+    "gsea",
+]
+
 GENE_SYMBOL_COLUMN_GUESSES = [
     "gene_name",
 ]
@@ -51,7 +61,7 @@ def _guess_score_col(df: pd.DataFrame) -> str:
 
 
 def get_rat_scores(
-    path: Union[Path, str],
+    path: Union[Path, str, pd.DataFrame],
     read_csv_kwargs: Optional[dict[str, any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
@@ -81,7 +91,10 @@ def get_rat_scores(
         A dictionary of mapped orthologus human gene HGNC IDs to
         scores.
     """
-    df = pd.read_csv(path, **(read_csv_kwargs or {}))
+    if isinstance(path, pd.DataFrame):
+        df = path
+    else:
+        df = pd.read_csv(path, **(read_csv_kwargs or {}))
     if gene_symbol_column_name is None:
         gene_symbol_column_name = _guess_symbol_col(df)
     elif gene_symbol_column_name not in df.columns:
@@ -100,7 +113,7 @@ def get_rat_scores(
 def wikipathways_gsea(
     client: Neo4jClient,
     scores: dict[str, float],
-    directory: Union[Path, str],
+    directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with WikiPathways gene sets.
@@ -123,12 +136,8 @@ def wikipathways_gsea(
     :
         A pandas dataframe with the GSEA results
     """
-    gene_sets = {
-        curie: hgnc_gene_ids
-        for (curie, _), hgnc_gene_ids in get_wikipathways(client).items()
-    }
     return gsea(
-        gene_sets=gene_sets,
+        gene_sets=get_wikipathways(client),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -138,7 +147,7 @@ def wikipathways_gsea(
 def reactome_gsea(
     client: Neo4jClient,
     scores: dict[str, float],
-    directory: Union[Path, str],
+    directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with Reactome gene sets.
@@ -161,12 +170,8 @@ def reactome_gsea(
     :
         A pandas dataframe with the GSEA results
     """
-    gene_sets = {
-        curie: hgnc_gene_ids
-        for (curie, _), hgnc_gene_ids in get_reactome(client).items()
-    }
     return gsea(
-        gene_sets=gene_sets,
+        gene_sets=get_reactome(client),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -176,7 +181,7 @@ def reactome_gsea(
 def go_gsea(
     client: Neo4jClient,
     scores: dict[str, float],
-    directory: Union[Path, str],
+    directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with gene sets for each Gene Ontolgy term.
@@ -199,11 +204,8 @@ def go_gsea(
     :
         A pandas dataframe with the GSEA results
     """
-    gene_sets = {
-        curie: hgnc_gene_ids for (curie, _), hgnc_gene_ids in get_go(client).items()
-    }
     return gsea(
-        gene_sets=gene_sets,
+        gene_sets=get_go(client),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -213,7 +215,7 @@ def go_gsea(
 def indra_upstream_gsea(
     client: Neo4jClient,
     scores: dict[str, float],
-    directory: Union[Path, str],
+    directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -237,12 +239,8 @@ def indra_upstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
-    gene_sets = {
-        curie: hgnc_gene_ids
-        for (curie, _), hgnc_gene_ids in get_entity_to_targets(client).items()
-    }
     return gsea(
-        gene_sets=gene_sets,
+        gene_sets=get_entity_to_targets(client),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -252,7 +250,7 @@ def indra_upstream_gsea(
 def indra_downstream_gsea(
     client: Neo4jClient,
     scores: dict[str, float],
-    directory: Union[Path, str],
+    directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -276,12 +274,8 @@ def indra_downstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
-    gene_sets = {
-        curie: hgnc_gene_ids
-        for (curie, _), hgnc_gene_ids in get_entity_to_regulators(client).items()
-    }
     return gsea(
-        gene_sets=gene_sets,
+        gene_sets=get_entity_to_regulators(client),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -290,7 +284,7 @@ def indra_downstream_gsea(
 
 def gsea(
     scores: dict[str, float],
-    gene_sets: dict[str, set[str]],
+    gene_sets: dict[tuple[str, str], set[str]],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -320,12 +314,22 @@ def gsea(
         directory.mkdir(exist_ok=True, parents=True)
         directory = directory.as_posix()
 
+    curie_to_name = dict(gene_sets.keys())
+    curie_to_gene_sets = {
+        curie: hgnc_gene_ids for (curie, _), hgnc_gene_ids in gene_sets.items()
+    }
+
     kwargs.setdefault("permutation_num", 100)
     kwargs.setdefault("format", "svg")
     res = gseapy.prerank(
         rnk=pd.Series(scores),
-        gene_sets=gene_sets,
+        gene_sets=curie_to_gene_sets,
         outdir=directory,
         **kwargs,
     )
-    return res.res2d
+    res.res2d.index.name = "term"
+    rv = res.res2d.reset_index()
+    rv["name"] = rv["term"].map(curie_to_name)
+    return rv[
+        ["term", "name", "es", "nes", "pval", "fdr", "geneset_size", "matched_size"]
+    ]

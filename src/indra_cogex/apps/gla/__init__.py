@@ -3,16 +3,27 @@
 """An app for gene list analysis."""
 
 import os
+from io import StringIO
 from typing import List, Mapping, Tuple
 
 import flask
-from flask import flash, redirect, url_for
+import pandas as pd
+from flask import redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
 from more_click import make_web_command
-from wtforms import BooleanField, FloatField, RadioField, SubmitField, TextAreaField
+from wtforms import (
+    BooleanField,
+    FileField,
+    FloatField,
+    RadioField,
+    SubmitField,
+    TextAreaField,
+)
+from wtforms.validators import DataRequired
 
+from indra_cogex.client.enrichment.continuous import get_rat_scores, go_gsea
 from indra_cogex.client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
@@ -45,21 +56,25 @@ genes_field = TextAreaField(
     description="Paste your list of gene symbols, HGNC gene identifiers, or"
     ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
     " example list of human genes</a> related to COVID-19.",
+    validators=[DataRequired()],
 )
 positive_genes_field = TextAreaField(
     "Positive Genes",
     description="Paste your list of gene symbols, HGNC gene identifiers, or CURIEs here",
+    validators=[DataRequired()],
 )
 negative_genes_field = TextAreaField(
     "Negative Genes",
     description="Paste your list of gene symbols, HGNC gene identifiers, or"
     ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
     " example list</a> related to prostate cancer.",
+    validators=[DataRequired()],
 )
 indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
 alpha_field = FloatField(
     "Alpha",
     default=0.05,
+    validators=[DataRequired()],
     description="The alpha is the threshold for significance in the"
     " Fisher's exact test with which multiple hypothesis"
     " testing correction will be executed.",
@@ -79,6 +94,17 @@ correction_field = RadioField(
         ),
     ],
     default="fdr_bh",
+)
+
+file_field = FileField("File", validators=[DataRequired()])
+species_field = RadioField(
+    "Species",
+    choices=[
+        ("human", "Human"),
+        ("rat", "Rat"),
+        ("mouse", "Mous"),
+    ],
+    default="human",
 )
 
 
@@ -138,6 +164,29 @@ class SignedForm(FlaskForm):
     def parse_negative_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
         return parse_genes_field(self.negative_genes.data)
+
+
+class ContinuousForm(FlaskForm):
+    """A form for continuous gene set enrichment analysis."""
+
+    file = file_field
+    species = species_field
+    submit = SubmitField("Submit")
+
+    def get_scores(self) -> dict[str, float]:
+        """Get scores dictionary."""
+        name = self.file.data.filename
+        sep = "," if name.endswith("csv") else "\t"
+        df = pd.read_csv(self.file.data, sep=sep)
+        if self.species.data == "rat":
+            scores = get_rat_scores(df)
+        elif self.species.data == "mouse":
+            raise NotImplementedError
+        elif self.species.data == "human":
+            raise NotImplementedError
+        else:
+            raise ValueError
+        return scores
 
 
 @app.route("/discrete", methods=["GET", "POST"])
@@ -237,17 +286,28 @@ def signed_analysis():
     )
 
 
+@app.route("/continuous", methods=["GET", "POST"])
+def continuous_analysis():
+    """Render the continuous analysis form."""
+    form = ContinuousForm()
+    if form.validate_on_submit():
+        scores = form.get_scores()
+        go_results = go_gsea(client=client, scores=scores, permutation_num=5)
+        print(go_results.columns)
+        return flask.render_template(
+            "continuous_results.html",
+            go_results=go_results,
+        )
+    return flask.render_template(
+        "continuous_form.html",
+        form=form,
+    )
+
+
 @app.route("/")
 def home():
     """Render the home page."""
     return redirect(url_for(discretize_analysis.__name__))
-
-
-@app.route("/continuous", methods=["GET", "POST"])
-def continuous_analysis():
-    """Render the scored analysis form."""
-    flash("Scored analysis endpoint has not yet been implemented")
-    return redirect(url_for(home.__name__))
 
 
 cli = make_web_command(app=app)
