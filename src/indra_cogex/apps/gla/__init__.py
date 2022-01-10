@@ -12,7 +12,7 @@ from indra.databases import hgnc_client
 from more_click import make_web_command
 from wtforms import BooleanField, FloatField, RadioField, SubmitField, TextAreaField
 
-from indra_cogex.client.gene_list import (
+from indra_cogex.client.enrichment.gene_list import (
     EXAMPLE_GENE_IDS,
     go_ora,
     indra_downstream_ora,

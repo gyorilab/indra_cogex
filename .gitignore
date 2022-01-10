@@ -131,3 +131,4 @@ import.report
 
 .idea
 .idea/*
+src/indra_cogex/client/enrichment/results/
