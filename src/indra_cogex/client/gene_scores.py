@@ -54,7 +54,7 @@ def gsea(
         gene_sets=gene_sets,
         permutation_num=permutations,
         outdir=directory.as_posix(),
-        format='svg',
+        format="svg",
         seed=seed,
     )
 
