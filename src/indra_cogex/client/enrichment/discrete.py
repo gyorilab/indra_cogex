@@ -138,8 +138,8 @@ def _get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
 
 
 @lru_cache(maxsize=1)
-def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """For each entity, find the list of human genes that it regulates."""
+def _get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of human genes that it regulates."""
     query = dedent(
         """\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
@@ -156,8 +156,8 @@ def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]
 
 
 @lru_cache(maxsize=1)
-def _get_indra_upstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """For each entity, find the list of human genes that regulate it"""
+def _get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of human genes are causally upstream of it."""
     query = dedent(
         """\
         MATCH (gene:BioEntity)-[:indra_rel]->(target:BioEntity)
@@ -243,23 +243,31 @@ def reactome_ora(
     return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
-def indra_upstream_ora(
-    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
-) -> pd.DataFrame:
-    """Calculate over-representation on INDRA in-edges."""
-    count = count_human_genes(client)
-    return _do_ora(
-        _get_indra_upstream(client), gene_ids=gene_ids, count=count, **kwargs
-    )
-
-
 def indra_downstream_ora(
     client: Neo4jClient, gene_ids: Iterable[str], **kwargs
 ) -> pd.DataFrame:
-    """Calculate over-representation on INDRA out-edges."""
+    """
+    Calculate a p-value for each entity in the INDRA database
+    based on the genes that are causally upstream of it and how
+    they compare to the query gene set.
+    """
     count = count_human_genes(client)
     return _do_ora(
-        _get_indra_downstream(client), gene_ids=gene_ids, count=count, **kwargs
+        _get_entity_to_regulators(client), gene_ids=gene_ids, count=count, **kwargs
+    )
+
+
+def indra_upstream_ora(
+    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
+    """
+    Calculate a p-value for each entity in the INDRA database
+    based on the set of genes that it regulates and how
+    they compare to the query gene set.
+    """
+    count = count_human_genes(client)
+    return _do_ora(
+        _get_entity_to_targets(client), gene_ids=gene_ids, count=count, **kwargs
     )
 
 

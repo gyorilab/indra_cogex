@@ -149,6 +149,7 @@
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
                                 one step from all entities in the INDRA Database.
+                                <img class="float-right" alt="Visual description of downstream analysis" src="{{ url_for("static", filename="indra_downstream.png") }}" />
                             </p>
                             {{ render_table(indra_downstream_results, "table-downstream") }}
                         </div>
@@ -157,6 +158,7 @@
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
                                 one step from all entities in the INDRA Database.
+                                <img class="float-right" alt="Visual description of upstream analysis" src="{{ url_for("static", filename="indra_upstream.png") }}" />
                             </p>
                             {{ render_table(indra_upstream_results, "table-upstream") }}
                         </div>
