@@ -4,6 +4,7 @@
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Iterable
 
 import pandas as pd
 import pystow
@@ -37,7 +38,7 @@ DOWN_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
 def reverse_causal_reasoning(
-    client: Neo4jClient, up: set[str], down: set[str], minimum_size: int = 4
+    client: Neo4jClient, up: Iterable[str], down: Iterable[str], minimum_size: int = 4
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
@@ -55,6 +56,8 @@ def reverse_causal_reasoning(
        qualitative causal knowledge to the interpretation of high-throughput data
        <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14**(1), 340.
     """
+    up = set(up)
+    down = set(down)
     database_up = _collect_pathways(client, _query(UP_STMTS))
     database_down = _collect_pathways(client, _query(DOWN_STMTS))
     entities = set(database_up).union(database_down)
@@ -113,22 +116,22 @@ def reverse_causal_reasoning(
     return df
 
 
-# Examples taken as top 20 up and down
+# Examples taken as top 40 up and down
 # genes from dz:135 in CREEDS (prostate cancer)
 # fmt: off
-EXAMPLE_UP_SYMBOLS = [
-    "RPL41", "GAPDH", "CD63", "TGFBI", "HLA-B", "VIM", "LGALS1", "FTL",
-    "TUBA1C", "RPL23A", "IGFBP3", "RPLP1" "UBC", "ACTB", "SPON2", "COL1A2",
-    "RPL13A", "RPS10", "MT2A", "RPS18", "RPS15", "RPS13", "MEST", "RPS23",
-    "HLA-C", "RPL30", "GSTO1", "DCN", "RPL32", "CCL11", "EEF1A1", "ALDH1A1",
-    "TMSB10", "PENK", "RPLP0",
+EXAMPLE_UP_HGNC_IDS = [
+    "10354", "4141", "1692", "11771", "4932", "12692", "6561", "3999",
+    "20768", "10317", "5472", "10372", "12468", "132", "11253", "2198",
+    "10304", "10383", "7406", "10401", "10388", "10386", "7028", "10410",
+    "4933", "10333", "13312", "2705", "10336", "10610", "3189", "402",
+    "11879", "8831", "10371", "2528", "17194", "12458", "11553", "11820",
 ]
-EXAMPLE_DOWN_SYMBOLS = [
-    "IGFBP2", "TFRC", "COL15A1", "GREM1", "SMPDL3A", "FSTL1", "RPL19",
-    "PABPC3", "RPS2", "MFAP4", "MMP2", "RLIM", "CEMIP", "LGALS3BP", "RPSA",
-    "DYNLL1", "LXN", "TUBA1A", "EEF2", "NGFRAP1", "FTH1P5", "MXRA7", "RPS27A",
-    "HIF1A", "CTSB", "RHOA", "RPL26", "LOC728825", "SERPINH1", "LAMC1",
-    "A2M", "ACTN1", "EIF4A2", "FMOD", "TXNRD1",
+EXAMPLE_DOWN_HGNC_IDS = [
+    "5471", "11763", "2192", "2001", "17389", "3972", "10312", "8556",
+    "10404", "7035", "7166", "13429", "29213", "6564", "6502", "15476",
+    "13347", "20766", "3214", "13388", "3996", "7541", "10417", "4910",
+    "2527", "667", "10327", "1546", "6492", "7", "163", "3284", "3774",
+    "12437", "8547", "6908", "3218", "10424", "10496", "1595",
 ]
 
 
@@ -137,20 +140,10 @@ EXAMPLE_DOWN_SYMBOLS = [
 
 def main():
     """Demonstrate signed gene list functions."""
-    from indra.databases import hgnc_client
-
-    up = {
-        hgnc_id
-        for symbol in EXAMPLE_UP_SYMBOLS
-        if (hgnc_id := hgnc_client.get_current_hgnc_id(symbol)) is not None
-    }
-    down = {
-        hgnc_id
-        for symbol in EXAMPLE_DOWN_SYMBOLS
-        if (hgnc_id := hgnc_client.get_current_hgnc_id(symbol)) is not None
-    }
     client = Neo4jClient()
-    df = reverse_causal_reasoning(client, up=up, down=down)
+    df = reverse_causal_reasoning(
+        client, up=EXAMPLE_UP_HGNC_IDS, down=EXAMPLE_DOWN_HGNC_IDS
+    )
     path = pystow.join("indra", "cogex", "demos", name="rcr_test.tsv")
     df.to_csv(path, sep="\t", index=False)
 
