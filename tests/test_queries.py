@@ -258,13 +258,25 @@ def test_get_stmts_for_pmid():
 
 
 @pytest.mark.nonpublic
-def test_get_stmts_for_mesh_id():
+def test_get_stmts_for_mesh_id_w_children():
     # Two queries:
     # 1. evidences for publications with pmid having mesh annotation
     # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh_id(client, mesh_id)
+    assert len(stmts)
+    assert isinstance(stmts[0], Activation)
+
+
+@pytest.mark.nonpublic
+def test_get_stmts_for_mesh_id_wo_children():
+    # Two queries:
+    # 1. evidences for publications with pmid having mesh annotation
+    # 2. statements for the evidences in 2
+    client = _get_client()
+    mesh_id = ("MESH", "D000068236")
+    stmts = get_stmts_for_mesh_id(client, mesh_id, include_child_terms=False)
     assert len(stmts)
     assert isinstance(stmts[0], Activation)
 
