@@ -148,7 +148,7 @@ def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]
         // Ignore complexes since they are non-directional
         AND r.stmt_type <> "Complex"
         // This is a simple way to ignore non-human proteins
-        AND NOT target.id STARTS WITH "uniprot"
+        AND NOT regulator.id STARTS WITH "uniprot"
         RETURN regulator.id, regulator.name, collect(gene.id);
     """
     )
