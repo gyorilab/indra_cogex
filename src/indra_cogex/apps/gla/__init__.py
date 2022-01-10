@@ -22,8 +22,8 @@ from indra_cogex.client.enrichment.discrete import (
     wikipathways_ora,
 )
 from indra_cogex.client.enrichment.signed import (
-    EXAMPLE_DOWN_HGNC_IDS,
-    EXAMPLE_UP_HGNC_IDS,
+    EXAMPLE_NEGATIVE_HGNC_IDS,
+    EXAMPLE_POSITIVE_HGNC_IDS,
     reverse_causal_reasoning,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -215,7 +215,9 @@ def signed_analysis():
         positive_genes, positive_errors = form.parse_positive_genes()
         negative_genes, negative_errors = form.parse_negative_genes()
         results = reverse_causal_reasoning(
-            client=client, up=positive_genes, down=negative_genes
+            client=client,
+            positive_hgnc_ids=positive_genes,
+            negative_hgnc_ids=negative_genes,
         )
         return flask.render_template(
             "signed_results.html",
@@ -230,8 +232,8 @@ def signed_analysis():
     return flask.render_template(
         "signed_form.html",
         form=form,
-        example_positive_hgnc_ids=", ".join(EXAMPLE_UP_HGNC_IDS),
-        example_negative_hgnc_ids=", ".join(EXAMPLE_DOWN_HGNC_IDS),
+        example_positive_hgnc_ids=", ".join(EXAMPLE_POSITIVE_HGNC_IDS),
+        example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
     )
 
 

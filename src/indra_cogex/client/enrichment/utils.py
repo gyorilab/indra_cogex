@@ -21,7 +21,21 @@ __all__ = [
 def collect_gene_sets(
     client: Neo4jClient, query: str
 ) -> dict[tuple[str, str], set[str]]:
-    """Collect gene sets based on the given query."""
+    """Collect gene sets based on the given query.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    query:
+        A cypher query
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each queried
+        item and whose values are sets of HGNC gene identifiers (as strings)
+    """
     curie_to_hgnc_ids = defaultdict(set)
     for result in client.query_tx(query):
         curie = result[0]

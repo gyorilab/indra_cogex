@@ -329,24 +329,3 @@ def gsea(
         **kwargs,
     )
     return res.res2d
-
-
-def main():
-    """Run an example dataset from Sam."""
-    import pystow
-
-    RESULTS = pystow.join("indra", "cogex", "demos", "gsea_demo")
-    HERE = Path(__file__).parent.resolve()
-    TEST = HERE.joinpath("CS_ipsilateral_14D_vs_CS_contralateral_14D.csv")
-    client = Neo4jClient()
-    scores = get_rat_scores(path=TEST)
-    wikipathways_gsea(
-        client=client,
-        scores=scores,
-        directory=RESULTS,
-        permutations=100,
-    )
-
-
-if __name__ == "__main__":
-    main()

@@ -4,7 +4,7 @@
 
 from pathlib import Path
 from textwrap import dedent
-from typing import Iterable
+from typing import Iterable, Optional
 
 import pandas as pd
 import pystow
@@ -20,7 +20,7 @@ HERE = Path(__file__).parent.resolve()
 #  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
 
 
-def _query(stmt_types: list[str]) -> str:
+def _query(stmt_types: Iterable[str]) -> str:
     """Return a query over INDRA relations f the given statement types."""
     query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
     return dedent(
@@ -40,8 +40,8 @@ def _query(stmt_types: list[str]) -> str:
 # TODO should this include other statement types? is the mechanism linker applied before
 #  importing the database into CoGEx?
 
-UP_STMTS = ["Activation", "IncreaseAmount"]
-DOWN_STMTS = ["Inhibition", "DecreaseAmount"]
+POSITIVE_STMTS = ["Activation", "IncreaseAmount"]
+NEGATIVE_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
 def reverse_causal_reasoning(
@@ -49,6 +49,8 @@ def reverse_causal_reasoning(
     positive_hgnc_ids: Iterable[str],
     negative_hgnc_ids: Iterable[str],
     minimum_size: int = 4,
+    positive_stmts: Optional[Iterable[str]] = None,
+    negative_stmts: Optional[Iterable[str]] = None,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
@@ -65,6 +67,10 @@ def reverse_causal_reasoning(
     minimum_size :
         The minimum number of entities marked as downstream
         of an entity for it to be usable as a hyp
+    positive_stmts :
+        A list of statement types for identifying positive genes
+    negative_stmts :
+        A list of statement types for identifying negative genes
 
     Returns
     -------
@@ -77,32 +83,36 @@ def reverse_causal_reasoning(
     """
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
-    database_up = collect_gene_sets(client, _query(UP_STMTS))
-    database_down = collect_gene_sets(client, _query(DOWN_STMTS))
-    entities = set(database_up).union(database_down)
+    database_positive = collect_gene_sets(
+        client, _query(positive_stmts or POSITIVE_STMTS)
+    )
+    database_negative = collect_gene_sets(
+        client, _query(negative_stmts or NEGATIVE_STMTS)
+    )
+    entities = set(database_positive).union(database_negative)
 
     rows = []
     for entity in entities:
-        entity_up: set[str] = database_up.get(entity, set())
-        entity_down: set[str] = database_down.get(entity, set())
-        if len(entity_up) + len(entity_down) < minimum_size:
+        entity_positive: set[str] = database_positive.get(entity, set())
+        entity_negative: set[str] = database_negative.get(entity, set())
+        if len(entity_positive) + len(entity_negative) < minimum_size:
             continue  # skip this hypothesis
         correct, incorrect, ambiguous = 0, 0, 0
         for hgnc_id in positive_hgnc_ids:
-            if hgnc_id in entity_up and hgnc_id in entity_down:
+            if hgnc_id in entity_positive and hgnc_id in entity_negative:
                 ambiguous += 1
-            elif hgnc_id in entity_up:
+            elif hgnc_id in entity_positive:
                 correct += 1
-            elif hgnc_id in entity_down:
+            elif hgnc_id in entity_negative:
                 incorrect += 1
             else:
                 ambiguous += 1
         for hgnc_id in negative_hgnc_ids:
-            if hgnc_id in entity_up and hgnc_id in entity_down:
+            if hgnc_id in entity_positive and hgnc_id in entity_negative:
                 ambiguous += 1
-            elif hgnc_id in entity_up:
+            elif hgnc_id in entity_positive:
                 incorrect += 1
-            elif hgnc_id in entity_down:
+            elif hgnc_id in entity_negative:
                 correct += 1
             else:
                 ambiguous += 1
@@ -138,14 +148,14 @@ def reverse_causal_reasoning(
 # Examples taken as top 40 up and down
 # genes from dz:135 in CREEDS (prostate cancer)
 # fmt: off
-EXAMPLE_UP_HGNC_IDS = [
+EXAMPLE_POSITIVE_HGNC_IDS = [
     "10354", "4141", "1692", "11771", "4932", "12692", "6561", "3999",
     "20768", "10317", "5472", "10372", "12468", "132", "11253", "2198",
     "10304", "10383", "7406", "10401", "10388", "10386", "7028", "10410",
     "4933", "10333", "13312", "2705", "10336", "10610", "3189", "402",
     "11879", "8831", "10371", "2528", "17194", "12458", "11553", "11820",
 ]
-EXAMPLE_DOWN_HGNC_IDS = [
+EXAMPLE_NEGATIVE_HGNC_IDS = [
     "5471", "11763", "2192", "2001", "17389", "3972", "10312", "8556",
     "10404", "7035", "7166", "13429", "29213", "6564", "6502", "15476",
     "13347", "20766", "3214", "13388", "3996", "7541", "10417", "4910",
@@ -162,8 +172,8 @@ def main():
     client = Neo4jClient()
     df = reverse_causal_reasoning(
         client,
-        positive_hgnc_ids=EXAMPLE_UP_HGNC_IDS,
-        negative_hgnc_ids=EXAMPLE_DOWN_HGNC_IDS,
+        positive_hgnc_ids=EXAMPLE_POSITIVE_HGNC_IDS,
+        negative_hgnc_ids=EXAMPLE_NEGATIVE_HGNC_IDS,
     )
     path = pystow.join("indra", "cogex", "demos", name="rcr_test.tsv")
     df.to_csv(path, sep="\t", index=False)
