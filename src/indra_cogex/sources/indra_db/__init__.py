@@ -315,8 +315,8 @@ class EvidenceProcessor(Processor):
                             raw_stmt_id,
                             ["Evidence"],
                             {
-                                "evidence": json.dumps(evidence),
-                                "stmt_hash": stmt_hash,
+                                "evidence:string": json.dumps(evidence),
+                                "stmt_hash:long": stmt_hash,
                             },
                         )
                     )
