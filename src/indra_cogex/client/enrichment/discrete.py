@@ -2,9 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from collections import defaultdict
 from functools import lru_cache
-from textwrap import dedent
 from typing import Iterable, Optional
 
 import numpy as np
@@ -12,6 +10,13 @@ import pandas as pd
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 
+from indra_cogex.client.enrichment.utils import (
+    get_entity_to_regulators,
+    get_entity_to_targets,
+    get_go,
+    get_reactome,
+    get_wikipathways,
+)
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client.queries import get_genes_for_go_term
 
@@ -44,10 +49,19 @@ def _prepare_hypergeometric_test(
 ) -> np.ndarray:
     """Prepare the matrix for hypergeometric test calculations.
 
-    :param query_gene_set: gene set to test against pathway
-    :param pathway_gene_set: pathway gene set
-    :param gene_universe: number of HGNC symbols
-    :return: 2x2 matrix
+    Parameters
+    ----------
+    query_gene_set:
+        gene set to test against pathway
+    pathway_gene_set:
+        pathway gene set
+    gene_universe:
+        number of HGNC symbols
+
+    Returns
+    -------
+    :
+        A 2x2 matrix
     """
     return np.array(
         [
@@ -78,11 +92,10 @@ def count_human_genes(client: Neo4jClient) -> int:
 def gene_ontology_single_ora(
     client: Neo4jClient, go_term: tuple[str, str], gene_ids: list[str]
 ) -> float:
-    """Get the p-value for the Fisher exact test a given GO term.
+    """Get the *p*-value for the Fisher exact test a given GO term.
 
     1. Look up genes associated with GO term or child terms
     2. Run ORA and return results
-
     """
     count = count_human_genes(client)
     go_gene_ids = {
@@ -97,94 +110,6 @@ def gene_ontology_single_ora(
         gene_universe=count,
     )
     return fisher_exact(table, alternative="greater")[1]
-
-
-@lru_cache(maxsize=1)
-def _get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get GO gene sets."""
-    query = dedent(
-        """\
-        MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
-        RETURN term.id, term.name, collect(gene.id) as gene_curies;
-    """
-    )
-    return _collect_pathways(client, query)
-
-
-@lru_cache(maxsize=1)
-def _get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get WikiPathways gene sets."""
-    query = dedent(
-        """\
-        MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
-        WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
-        RETURN pathway.id, pathway.name, collect(gene.id);
-    """
-    )
-    return _collect_pathways(client, query)
-
-
-@lru_cache(maxsize=1)
-def _get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get Reactome gene sets."""
-    query = dedent(
-        """\
-        MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
-        WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
-        RETURN pathway.id, pathway.name, collect(gene.id);
-    """
-    )
-    return _collect_pathways(client, query)
-
-
-@lru_cache(maxsize=1)
-def _get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get a mapping from each entity in the INDRA database to the set of human genes that it regulates."""
-    query = dedent(
-        """\
-        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        // Collecting human genes only
-        WHERE gene.id STARTS WITH "hgnc"
-        // Ignore complexes since they are non-directional
-        AND r.stmt_type <> "Complex"
-        // This is a simple way to ignore non-human proteins
-        AND NOT regulator.id STARTS WITH "uniprot"
-        RETURN regulator.id, regulator.name, collect(gene.id);
-    """
-    )
-    return _collect_pathways(client, query)
-
-
-@lru_cache(maxsize=1)
-def _get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get a mapping from each entity in the INDRA database to the set of human genes are causally upstream of it."""
-    query = dedent(
-        """\
-        MATCH (gene:BioEntity)-[:indra_rel]->(target:BioEntity)
-        // Collecting human genes only
-        WHERE gene.id STARTS WITH "hgnc"
-        // Ignore complexes since they are non-directional
-        AND r.stmt_type <> "Complex"
-        // This is a simple way to ignore non-human proteins
-        AND NOT regulator.id STARTS WITH "uniprot"
-        RETURN target.id, target.name, collect(gene.id);
-    """
-    )
-    return _collect_pathways(client, query)
-
-
-def _collect_pathways(
-    client: Neo4jClient, query: str
-) -> dict[tuple[str, str], set[str]]:
-    curie_to_hgnc_ids = defaultdict(set)
-    for result in client.query_tx(query):
-        curie = result[0]
-        name = result[1]
-        hgnc_ids = {
-            hgnc_curie.lower().removeprefix("hgnc:") for hgnc_curie in result[2]
-        }
-        curie_to_hgnc_ids[curie, name].update(hgnc_ids)
-    return dict(curie_to_hgnc_ids)
 
 
 def _do_ora(
@@ -224,7 +149,7 @@ def _do_ora(
 def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFrame:
     """Calculate over-representation on all GO terms."""
     count = count_human_genes(client)
-    return _do_ora(_get_go(client), gene_ids=gene_ids, count=count, **kwargs)
+    return _do_ora(get_go(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
 def wikipathways_ora(
@@ -232,7 +157,7 @@ def wikipathways_ora(
 ) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways."""
     count = count_human_genes(client)
-    return _do_ora(_get_wikipathways(client), gene_ids=gene_ids, count=count, **kwargs)
+    return _do_ora(get_wikipathways(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
 def reactome_ora(
@@ -240,7 +165,7 @@ def reactome_ora(
 ) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways."""
     count = count_human_genes(client)
-    return _do_ora(_get_reactome(client), gene_ids=gene_ids, count=count, **kwargs)
+    return _do_ora(get_reactome(client), gene_ids=gene_ids, count=count, **kwargs)
 
 
 def indra_downstream_ora(
@@ -253,7 +178,7 @@ def indra_downstream_ora(
     """
     count = count_human_genes(client)
     return _do_ora(
-        _get_entity_to_regulators(client), gene_ids=gene_ids, count=count, **kwargs
+        get_entity_to_regulators(client), gene_ids=gene_ids, count=count, **kwargs
     )
 
 
@@ -267,7 +192,7 @@ def indra_upstream_ora(
     """
     count = count_human_genes(client)
     return _do_ora(
-        _get_entity_to_targets(client), gene_ids=gene_ids, count=count, **kwargs
+        get_entity_to_targets(client), gene_ids=gene_ids, count=count, **kwargs
     )
 
 

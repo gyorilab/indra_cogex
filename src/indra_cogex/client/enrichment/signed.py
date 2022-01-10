@@ -10,7 +10,7 @@ import pandas as pd
 import pystow
 import scipy.stats
 
-from indra_cogex.client.enrichment.discrete import _collect_pathways
+from indra_cogex.client.enrichment.utils import collect_gene_sets
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 HERE = Path(__file__).parent.resolve()
@@ -18,6 +18,7 @@ HERE = Path(__file__).parent.resolve()
 
 # FIXME should we further limit this query to only a certain type of entities,
 #  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
+
 
 def _query(stmt_types: list[str]) -> str:
     """Return a query over INDRA relations f the given statement types."""
@@ -44,28 +45,40 @@ DOWN_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
 def reverse_causal_reasoning(
-    client: Neo4jClient, up: Iterable[str], down: Iterable[str], minimum_size: int = 4
+    client: Neo4jClient,
+    positive_hgnc_ids: Iterable[str],
+    negative_hgnc_ids: Iterable[str],
+    minimum_size: int = 4,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
-    :param client: A neo4j client
-    :param up: A list of positive-signed HGNC gene identifiers
+    Parameters
+    ----------
+    client :
+        A neo4j client
+    positive_hgnc_ids :
+        A list of positive-signed HGNC gene identifiers
         (e.g., up-regulated genes in a differential gene expression analysis)
-    :param down: A list of negative-signed HGNC gene identifiers
+    negative_hgnc_ids :
+        A list of negative-signed HGNC gene identifiers
         (e.g., down-regulated genes in a differential gene expression analysis)
-    :param minimum_size: The minimum number of entities marked as downstream
+    minimum_size :
+        The minimum number of entities marked as downstream
         of an entity for it to be usable as a hyp
-    :returns: A pandas DataFrame with results for each entity in the graph
-        database
+
+    Returns
+    -------
+    :
+        A pandas DataFrame with results for each entity in the graph database
 
     .. [catlett2013] Catlett, N. L., *et al* (2013). `Reverse causal reasoning: applying
        qualitative causal knowledge to the interpretation of high-throughput data
        <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14**(1), 340.
     """
-    up = set(up)
-    down = set(down)
-    database_up = _collect_pathways(client, _query(UP_STMTS))
-    database_down = _collect_pathways(client, _query(DOWN_STMTS))
+    positive_hgnc_ids = set(positive_hgnc_ids)
+    negative_hgnc_ids = set(negative_hgnc_ids)
+    database_up = collect_gene_sets(client, _query(UP_STMTS))
+    database_down = collect_gene_sets(client, _query(DOWN_STMTS))
     entities = set(database_up).union(database_down)
 
     rows = []
@@ -75,7 +88,7 @@ def reverse_causal_reasoning(
         if len(entity_up) + len(entity_down) < minimum_size:
             continue  # skip this hypothesis
         correct, incorrect, ambiguous = 0, 0, 0
-        for hgnc_id in up:
+        for hgnc_id in positive_hgnc_ids:
             if hgnc_id in entity_up and hgnc_id in entity_down:
                 ambiguous += 1
             elif hgnc_id in entity_up:
@@ -84,7 +97,7 @@ def reverse_causal_reasoning(
                 incorrect += 1
             else:
                 ambiguous += 1
-        for hgnc_id in down:
+        for hgnc_id in negative_hgnc_ids:
             if hgnc_id in entity_up and hgnc_id in entity_down:
                 ambiguous += 1
             elif hgnc_id in entity_up:
@@ -148,7 +161,9 @@ def main():
     """Demonstrate signed gene list functions."""
     client = Neo4jClient()
     df = reverse_causal_reasoning(
-        client, up=EXAMPLE_UP_HGNC_IDS, down=EXAMPLE_DOWN_HGNC_IDS
+        client,
+        positive_hgnc_ids=EXAMPLE_UP_HGNC_IDS,
+        negative_hgnc_ids=EXAMPLE_DOWN_HGNC_IDS,
     )
     path = pystow.join("indra", "cogex", "demos", name="rcr_test.tsv")
     df.to_csv(path, sep="\t", index=False)
