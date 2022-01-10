@@ -9,9 +9,8 @@ import pandas as pd
 import pystow
 import scipy.stats
 
+from indra_cogex.client.enrichment.gene_list import _collect_pathways
 from indra_cogex.client.neo4j_client import Neo4jClient
-
-from .gene_list import _collect_pathways
 
 HERE = Path(__file__).parent.resolve()
 

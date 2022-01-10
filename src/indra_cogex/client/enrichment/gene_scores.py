@@ -4,6 +4,11 @@
 
 For example, this could be applied to the log_2 fold scores from differential gene
 expression experiments.
+
+.. warning::
+
+    This module requires the optional dependency ``gseapy``. Install with
+    ``pip install gseapy``.
 """
 
 from pathlib import Path
