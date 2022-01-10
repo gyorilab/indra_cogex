@@ -140,7 +140,7 @@ def _get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
 
 @lru_cache(maxsize=1)
 def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get gene sets for each entity in INDRA based on the genes that it regulates/has statements to."""
+    """For each entity, find the list of human genes that it regulates."""
     query = dedent(
         """\
         MATCH (regulator:BioEntity)-[:indra_rel]->(gene:BioEntity)
@@ -153,12 +153,12 @@ def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]
 
 @lru_cache(maxsize=1)
 def _get_indra_upstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
-    """Get gene sets for each entity in INDRA based on what entities regulate it."""
+    """For each entity, find the list of human genes that regulate it"""
     query = dedent(
         """\
-        MATCH (gene:BioEntity)-[:indra_rel]->(regulator:BioEntity)
+        MATCH (gene:BioEntity)-[:indra_rel]->(target:BioEntity)
         WHERE gene.id STARTS WITH "hgnc"
-        RETURN regulator.id, regulator.name, collect(gene.id);
+        RETURN target.id, target.name, collect(gene.id);
     """
     )
     return _collect_pathways(client, query)
