@@ -143,8 +143,13 @@ def _get_indra_downstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]
     """For each entity, find the list of human genes that it regulates."""
     query = dedent(
         """\
-        MATCH (regulator:BioEntity)-[:indra_rel]->(gene:BioEntity)
+        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
+        // Collecting human genes only
         WHERE gene.id STARTS WITH "hgnc"
+        // Ignore complexes since they are non-directional
+        AND r.stmt_type <> "Complex"
+        // This is a simple way to ignore non-human proteins
+        AND NOT target.id STARTS WITH "uniprot"
         RETURN regulator.id, regulator.name, collect(gene.id);
     """
     )
@@ -157,7 +162,12 @@ def _get_indra_upstream(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     query = dedent(
         """\
         MATCH (gene:BioEntity)-[:indra_rel]->(target:BioEntity)
+        // Collecting human genes only
         WHERE gene.id STARTS WITH "hgnc"
+        // Ignore complexes since they are non-directional
+        AND r.stmt_type <> "Complex"
+        // This is a simple way to ignore non-human proteins
+        AND NOT regulator.id STARTS WITH "uniprot"
         RETURN target.id, target.name, collect(gene.id);
     """
     )
