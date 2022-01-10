@@ -781,6 +781,36 @@ class Neo4jClient:
         )
         return self.create_tx(query)
 
+    def create_single_property_node_index(
+        self, index_name: str, label: str, property_name: str, raise_err: bool = False
+    ):
+        """Create a single property node index.
+
+        Following example here: https://neo4j.com/docs/cypher-manual/4.1/administration/indexes-for-search-performance/#administration-indexes-create-a-single-property-index-only-if-it-does-not-already-exist
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        label :
+            The label of the node.
+        property_name :
+            The property name to index.
+        raise_err :
+            Whether to raise an error if the index already exists.
+        """
+        logger.info(
+            f"Creating index '{index_name}' for label '{label}' on property "
+            f"'{property_name}'. Index is created in background and may not "
+            f"be available immediately."
+        )
+        if_not = " IF NOT EXISTS" if not raise_err else ""
+        create_query = (
+            f"CREATE INDEX {index_name}{if_not} FOR (n:{label}) ON (n.{property_name})"
+        )
+
+        self.create_tx(create_query)
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.
