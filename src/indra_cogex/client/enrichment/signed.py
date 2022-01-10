@@ -16,6 +16,9 @@ from indra_cogex.client.neo4j_client import Neo4jClient
 HERE = Path(__file__).parent.resolve()
 
 
+# FIXME should we further limit this query to only a certain type of entities,
+#  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
+
 def _query(stmt_types: list[str]) -> str:
     """Return a query over INDRA relations f the given statement types."""
     query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
@@ -32,6 +35,9 @@ def _query(stmt_types: list[str]) -> str:
     """
     )
 
+
+# TODO should this include other statement types? is the mechanism linker applied before
+#  importing the database into CoGEx?
 
 UP_STMTS = ["Activation", "IncreaseAmount"]
 DOWN_STMTS = ["Inhibition", "DecreaseAmount"]
