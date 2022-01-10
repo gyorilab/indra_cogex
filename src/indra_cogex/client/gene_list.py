@@ -104,8 +104,7 @@ def _get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get GO gene sets."""
     query = dedent(
         """\
-        MATCH (term:BioEntity)-[:associated_with]-(gene:BioEntity)
-        WHERE term.id STARTS WITH "go" and gene.id STARTS WITH "hgnc"
+        MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
@@ -117,7 +116,7 @@ def _get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get WikiPathways gene sets."""
     query = dedent(
         """\
-        MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
+        MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
         WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
