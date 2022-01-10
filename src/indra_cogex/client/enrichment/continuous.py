@@ -21,7 +21,7 @@ import pystow
 from gseapy.gsea import Prerank
 from indra.databases import hgnc_client
 
-from indra_cogex.client.enrichment.gene_list import _get_wikipathways
+from indra_cogex.client.enrichment.discrete import _get_wikipathways
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 HERE = Path(__file__).parent.resolve()

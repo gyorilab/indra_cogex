@@ -13,7 +13,7 @@ from indra.databases import hgnc_client
 from more_click import make_web_command
 from wtforms import BooleanField, FloatField, RadioField, SubmitField, TextAreaField
 
-from indra_cogex.client.enrichment.gene_list import (
+from indra_cogex.client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
     indra_downstream_ora,
@@ -21,7 +21,7 @@ from indra_cogex.client.enrichment.gene_list import (
     reactome_ora,
     wikipathways_ora,
 )
-from indra_cogex.client.enrichment.signed_gene_list import (
+from indra_cogex.client.enrichment.signed import (
     EXAMPLE_DOWN_HGNC_IDS,
     EXAMPLE_UP_HGNC_IDS,
     reverse_causal_reasoning,
@@ -210,8 +210,8 @@ def signed_analysis():
     """Render the signed gene set enrichment analysis form."""
     form = SignedForm()
     if form.validate_on_submit():
-        #method = form.correction.data
-        #alpha = form.alpha.data
+        # method = form.correction.data
+        # alpha = form.alpha.data
         positive_genes, positive_errors = form.parse_positive_genes()
         negative_genes, negative_errors = form.parse_negative_genes()
         results = reverse_causal_reasoning(
@@ -224,8 +224,8 @@ def signed_analysis():
             negative_genes=negative_genes,
             negative_errors=negative_errors,
             results=results,
-            #method=method,
-            #alpha=alpha,
+            # method=method,
+            # alpha=alpha,
         )
     return flask.render_template(
         "signed_form.html",
