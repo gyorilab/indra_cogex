@@ -6,10 +6,11 @@ from pathlib import Path
 from textwrap import dedent
 
 import pandas as pd
+import pystow
 import scipy.stats
-from tqdm import tqdm
 
 from indra_cogex.client.neo4j_client import Neo4jClient
+
 from .gene_list import _collect_pathways
 
 HERE = Path(__file__).parent.resolve()
@@ -86,7 +87,9 @@ def reverse_causal_reasoning(
                 ambiguous += 1
 
         if correct + incorrect:
-            res = scipy.stats.binomtest(correct, correct + incorrect, alternative="greater")
+            res = scipy.stats.binomtest(
+                correct, correct + incorrect, alternative="greater"
+            )
             res_p = res.pvalue
             res_ambig = scipy.stats.binomtest(
                 correct, correct + incorrect + ambiguous, alternative="greater"
@@ -117,17 +120,19 @@ def reverse_causal_reasoning(
 EXAMPLE_UP_SYMBOLS = [
     "RPL41", "GAPDH", "CD63", "TGFBI", "HLA-B", "VIM", "LGALS1", "FTL",
     "TUBA1C", "RPL23A", "IGFBP3", "RPLP1" "UBC", "ACTB", "SPON2", "COL1A2",
-    "RPL13A", "RPS10", "MT2A", "RPS18","RPS15", "RPS13", "MEST", "RPS23",
-    "HLA-C", "RPL30", "GSTO1", "DCN", "RPL32",  "CCL11",  "EEF1A1", "ALDH1A1",
+    "RPL13A", "RPS10", "MT2A", "RPS18", "RPS15", "RPS13", "MEST", "RPS23",
+    "HLA-C", "RPL30", "GSTO1", "DCN", "RPL32", "CCL11", "EEF1A1", "ALDH1A1",
     "TMSB10", "PENK", "RPLP0",
 ]
 EXAMPLE_DOWN_SYMBOLS = [
     "IGFBP2", "TFRC", "COL15A1", "GREM1", "SMPDL3A", "FSTL1", "RPL19",
     "PABPC3", "RPS2", "MFAP4", "MMP2", "RLIM", "CEMIP", "LGALS3BP", "RPSA",
     "DYNLL1", "LXN", "TUBA1A", "EEF2", "NGFRAP1", "FTH1P5", "MXRA7", "RPS27A",
-    "HIF1A",  "CTSB", "RHOA", "RPL26",  "LOC728825", "SERPINH1", "LAMC1",
-    "A2M", "ACTN1",  "EIF4A2", "FMOD", "TXNRD1",
+    "HIF1A", "CTSB", "RHOA", "RPL26", "LOC728825", "SERPINH1", "LAMC1",
+    "A2M", "ACTN1", "EIF4A2", "FMOD", "TXNRD1",
 ]
+
+
 # fmt: on
 
 
@@ -147,7 +152,8 @@ def main():
     }
     client = Neo4jClient()
     df = reverse_causal_reasoning(client, up=up, down=down)
-    df.to_csv(HERE.joinpath("rcr_test.tsv"), sep="\t", index=False)
+    path = pystow.join("indra", "cogex", "demos", name="rcr_test.tsv")
+    df.to_csv(path, sep="\t", index=False)
 
 
 if __name__ == "__main__":

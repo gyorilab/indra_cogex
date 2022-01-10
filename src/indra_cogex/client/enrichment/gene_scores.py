@@ -11,16 +11,16 @@ from typing import Union
 
 import gseapy
 import pandas as pd
-from gseapy.gsea import Prerank
-
 import pyobo
+import pystow
+from gseapy.gsea import Prerank
 from indra.databases import hgnc_client
-from indra_cogex.client.gene_list import _get_wikipathways
+
+from indra_cogex.client.enrichment.gene_list import _get_wikipathways
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 HERE = Path(__file__).parent.resolve()
-RESULTS = HERE.joinpath("results")
-RESULTS.mkdir(exist_ok=True)
+RESULTS = pystow.join("indra", "cogex", "demos", "gsea_demo")
 TEST = HERE.joinpath("CS_ipsilateral_14D_vs_CS_contralateral_14D.csv")
 
 
