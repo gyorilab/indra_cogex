@@ -812,6 +812,36 @@ class Neo4jClient:
 
         self.create_tx(create_query)
 
+    def create_single_property_relationship_index(
+        self, index_name: str, rel_type: str, property_name: str
+    ):
+        """Create a single property relationship index.
+
+        NOTE: Relationship indexes can only be created once, and there is no
+        IF NOT EXISTS option to silently ignore if the index already exists.
+
+        Reference:
+        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-for-relationships
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        rel_type :
+            The relationship type to index a property on
+        property_name :
+            The property name to index.
+        """
+        logger.info(
+            f"Creating index '{index_name}' for relationship type '{rel_type}' on "
+            f"property '{property_name}'. Index is created in background and may not "
+            f"be available immediately."
+        )
+        create_query = (
+            f"CREATE INDEX {index_name} FOR ()-[r:{rel_type}]-() ON (r.{property_name})"
+        )
+        self.create_tx(create_query)
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.
