@@ -36,6 +36,9 @@ the service with
 sudo neo4j start
 ```
 
+Once the service has started and accepts connections, indexes can be built 
+by running `build_extra_indexes.sh`.
+
 In terms of authentication, one simple way to set up a custom password
 initially is to connect to the neo4j browser and do it via the web UI.
 
