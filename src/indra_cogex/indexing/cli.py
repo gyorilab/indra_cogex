@@ -9,7 +9,7 @@ from . import index_evidence_on_stmt_hash
 
 @click.command(name="Build extra indexes")
 @click.option(
-    "--index_evidence_nodes",
+    "--index-evidence-nodes",
     is_flag=True,
     help="Index the Evidence nodes on the stmt_hash property."
 )
