@@ -15,7 +15,10 @@ def index_evidence_on_stmt_hash(exist_ok: bool = False):
     """
     client = Neo4jClient()
     client.create_single_property_node_index(
-        "ev_hash", "Evidence", "stmt_hash", exist_ok=exist_ok
+        index_name="ev_hash",
+        label="Evidence",
+        property_name="stmt_hash",
+        exist_ok=exist_ok,
     )
 
 
