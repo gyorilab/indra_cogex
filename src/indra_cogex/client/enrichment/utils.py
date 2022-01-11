@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+
+"""Utilities for getting gene sets."""
+
+from collections import defaultdict
+from functools import lru_cache
+from textwrap import dedent
+
+from indra_cogex.client.neo4j_client import Neo4jClient
+
+__all__ = [
+    "collect_gene_sets",
+    "get_go",
+    "get_wikipathways",
+    "get_reactome",
+    "get_entity_to_targets",
+    "get_entity_to_regulators",
+]
+
+
+def collect_gene_sets(
+    client: Neo4jClient, query: str
+) -> dict[tuple[str, str], set[str]]:
+    """Collect gene sets based on the given query.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    query:
+        A cypher query
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each queried
+        item and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    curie_to_hgnc_ids = defaultdict(set)
+    for result in client.query_tx(query):
+        curie = result[0]
+        name = result[1]
+        hgnc_ids = {
+            hgnc_curie.lower().removeprefix("hgnc:") for hgnc_curie in result[2]
+        }
+        curie_to_hgnc_ids[curie, name].update(hgnc_ids)
+    return dict(curie_to_hgnc_ids)
+
+
+@lru_cache(maxsize=1)
+def get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get GO gene sets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each GO term
+        and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    query = dedent(
+        """\
+        MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
+        RETURN term.id, term.name, collect(gene.id) as gene_curies;
+    """
+    )
+    return collect_gene_sets(client, query)
+
+
+@lru_cache(maxsize=1)
+def get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get WikiPathways gene sets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each WikiPathway
+        pathway and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    query = dedent(
+        """\
+        MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
+        WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
+        RETURN pathway.id, pathway.name, collect(gene.id);
+    """
+    )
+    return collect_gene_sets(client, query)
+
+
+@lru_cache(maxsize=1)
+def get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get Reactome gene sets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each Reactome
+        pathway and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    query = dedent(
+        """\
+        MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
+        WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
+        RETURN pathway.id, pathway.name, collect(gene.id);
+    """
+    )
+    return collect_gene_sets(client, query)
+
+
+@lru_cache(maxsize=1)
+def get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of
+    human genes that it regulates.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    query = dedent(
+        """\
+        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
+        // Collecting human genes only
+        WHERE gene.id STARTS WITH "hgnc"
+        // Ignore complexes since they are non-directional
+        AND r.stmt_type <> "Complex"
+        // This is a simple way to ignore non-human proteins
+        AND NOT regulator.id STARTS WITH "uniprot"
+        RETURN regulator.id, regulator.name, collect(gene.id);
+    """
+    )
+    return collect_gene_sets(client, query)
+
+
+@lru_cache(maxsize=1)
+def get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of
+    human genes are causally upstream of it.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    query = dedent(
+        """\
+        MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
+        // Collecting human genes only
+        WHERE gene.id STARTS WITH "hgnc"
+        // Ignore complexes since they are non-directional
+        AND r.stmt_type <> "Complex"
+        // This is a simple way to ignore non-human proteins
+        AND NOT regulator.id STARTS WITH "uniprot"
+        RETURN target.id, target.name, collect(gene.id);
+    """
+    )
+    return collect_gene_sets(client, query)

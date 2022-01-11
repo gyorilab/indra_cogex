@@ -117,7 +117,7 @@ def get_go_terms_for_gene(
 
 
 def get_genes_for_go_term(
-    client: Neo4jClient, go_term: Tuple[str, str], include_indirect=False
+    client: Neo4jClient, go_term: Tuple[str, str], include_indirect: bool = False
 ) -> Iterable[Node]:
     """Return the genes associated with the given GO term.
 

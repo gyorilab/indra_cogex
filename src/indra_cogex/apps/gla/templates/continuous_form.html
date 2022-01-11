@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% import "bootstrap/form.html" as wtf %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block title %}Continuous Gene Set Analysis{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-4">Continuous Gene Set Analysis</h1>
+        <p class="lead">
+            This application performs GSEA on continuous data using INDRA CoGEx.
+        </p>
+        {{ wtf.render_form(form) }}
+    </div>
+{% endblock %}

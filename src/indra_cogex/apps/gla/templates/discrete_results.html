@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% import "bootstrap/form.html" as wtf %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block title %}Discrete Gene Set Analysis{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <link
+            rel="stylesheet"
+            href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
+    />
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        const datatablesConf = {"order": [[2, "asc"]]};
+        $(document).ready(function () {
+            $("#table-go").DataTable(datatablesConf);
+            $("#table-reactome").DataTable(datatablesConf);
+            $("#table-wikipathways").DataTable(datatablesConf);
+            {% if indra_downstream_results is not none %}
+            $("#table-downstream").DataTable(datatablesConf);
+            $("#table-upstream").DataTable(datatablesConf);
+            {% endif %}
+        });
+    </script>
+{% endblock %}
+
+{% macro render_table(df, table_id) -%}
+    <table class="table table-hover table-striped table-ora" id="{{ table_id }}">
+        <thead>
+        <tr>
+            <th scope="col">CURIE</th>
+            <th scope="col">Name</th>
+            <th scope="col"><i>p</i>-value</th>
+            <th scope="col"><i>q</i>-value</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for curie, name, p, mlp, q, mlq in df.values %}
+            <tr>
+                <td><a href="https://bioregistry.io/{{ curie }}">{{ curie }}</a></td>
+                <td>{{ name }}</td>
+                <td>{{ "{:.2e}".format(p) }}</td>
+                <td>{{ "{:.2e}".format(q) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Gene List Analysis</h1>
+        <div>
+            {% if errors %}
+                <h2>Errors</h2>
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <h3>Query</h3>
+            <p>
+                {% for hgnc_id, name in genes.items() %}
+                    <a class="badge badge-info" href="https://bioregistry.io/hgnc:{{ hgnc_id }}">HGNC:{{ hgnc_id }}
+                        ({{ name }})</a>
+                {% endfor %}
+            </p>
+            <h3>Over-Representation Analysis</h3>
+            <div>
+                <!-- Nav tabs -->
+                <ul class="nav nav-pills" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#go" role="tab"
+                           aria-controls="go" aria-selected="true">
+                            GO
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="reactome-tab" data-toggle="tab" href="#reactome" role="tab"
+                           aria-controls="reactome" aria-selected="false">
+                            Reactome
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="wikipathways-tab" data-toggle="tab" href="#wikipathways" role="tab"
+                           aria-controls="wikipathways" aria-selected="false">
+                            WikiPathways
+                        </a>
+                    </li>
+                    {% if indra_downstream_results is not none %}
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="downstream-tab" data-toggle="tab" href="#downstream" role="tab"
+                               aria-controls="downstream" aria-selected="false">
+                                INDRA Downstream
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="upstream-tab" data-toggle="tab" href="#upstream" role="tab"
+                               aria-controls="upstream" aria-selected="false">
+                                INDRA Upstream
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content" style="margin-top:1em;">
+                    <div class="tab-pane active" id="go" role="tabpanel" aria-labelledby="go-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to terms in the
+                            <a href="http://geneontology.org/docs/go-annotations/">Gene Ontology</a>
+                            via the <a href="http://geneontology.org/docs/go-annotations/">Gene
+                            Ontology Annotations Database</a>.
+                        </p>
+                        {{ render_table(go_results, "table-go") }}
+                    </div>
+                    <div class="tab-pane" id="reactome" role="tabpanel" aria-labelledby="reactome-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
+                            the <a href="https://reactome.org/">Reactome</a>
+                            pathway database.
+                        </p>
+                        {{ render_table(reactome_results, "table-reactome") }}
+                    </div>
+                    <div class="tab-pane" id="wikipathways" role="tabpanel" aria-labelledby="wikipathways-tab">
+                        <p>
+                            These results are acquired by running over-representation analysis using Fisher's exact test
+                            and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
+                            the <a href="https://www.wikipathways.org/">WikiPathways</a>
+                            pathway database.
+                        </p>
+                        {{ render_table(wikipathways_results, "table-wikipathways") }}
+                    </div>
+                    {% if indra_downstream_results is not none %}
+                        <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
+                            <p>
+                                These results are acquired by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
+                                one step from all entities in the INDRA Database.
+                                <img class="float-right" alt="Visual description of downstream analysis" src="{{ url_for("static", filename="indra_downstream.png") }}" />
+                            </p>
+                            {{ render_table(indra_downstream_results, "table-downstream") }}
+                        </div>
+                        <div class="tab-pane" id="upstream" role="tabpanel" aria-labelledby="upstream-tab">
+                            <p>
+                                These results are acquired by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
+                                one step from all entities in the INDRA Database.
+                                <img class="float-right" alt="Visual description of upstream analysis" src="{{ url_for("static", filename="indra_upstream.png") }}" />
+                            </p>
+                            {{ render_table(indra_upstream_results, "table-upstream") }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
