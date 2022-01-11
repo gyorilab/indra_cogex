@@ -170,7 +170,7 @@ def get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[s
     """
     query = dedent(
         """\
-        MATCH (gene:BioEntity)-[:indra_rel]->(target:BioEntity)
+        MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
         // Collecting human genes only
         WHERE gene.id STARTS WITH "hgnc"
         // Ignore complexes since they are non-directional

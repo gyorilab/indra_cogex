@@ -102,7 +102,7 @@ species_field = RadioField(
     choices=[
         ("human", "Human"),
         ("rat", "Rat"),
-        ("mouse", "Mous"),
+        ("mouse", "Mouse"),
     ],
     default="human",
 )
