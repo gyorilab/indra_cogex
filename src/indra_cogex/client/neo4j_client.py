@@ -782,7 +782,7 @@ class Neo4jClient:
         return self.create_tx(query)
 
     def create_single_property_node_index(
-        self, index_name: str, label: str, property_name: str, exist_ok: bool = True
+        self, index_name: str, label: str, property_name: str, exist_ok: bool = False
     ):
         """Create a single property node index.
 
@@ -797,7 +797,8 @@ class Neo4jClient:
         property_name :
             The property name to index.
         exist_ok :
-            If False, raise an error if the index already exists. Default: True.
+            If True, ignore the indexes that already exist. If False,
+            raise error if index already exists. Default: False.
         """
         logger.info(
             f"Creating index '{index_name}' for label '{label}' on property "

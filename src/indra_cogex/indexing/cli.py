@@ -13,7 +13,13 @@ from . import index_evidence_on_stmt_hash
     is_flag=True,
     help="Index the Evidence nodes on the stmt_hash property."
 )
-def main(index_evidence_nodes: bool = False, exist_ok: bool = True):
+@click.option(
+    "--exist-ok",
+    is_flag=True,
+    help="If set, skip already set indices silently, otherwise an exception "
+         "is raised if attempting to set an index that already exists."
+)
+def main(index_evidence_nodes: bool = False, exist_ok: bool = False):
     """Build indexes on the database."""
     if index_evidence_nodes:
         index_evidence_on_stmt_hash(exist_ok=exist_ok)
