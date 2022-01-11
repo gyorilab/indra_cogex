@@ -3,7 +3,6 @@
 """An app for gene list analysis."""
 
 import os
-from io import StringIO
 from typing import List, Mapping, Tuple
 
 import flask
@@ -17,6 +16,7 @@ from wtforms import (
     BooleanField,
     FileField,
     FloatField,
+    IntegerField,
     RadioField,
     SubmitField,
     TextAreaField,
@@ -106,6 +106,12 @@ species_field = RadioField(
     ],
     default="human",
 )
+permutations_field = IntegerField(
+    "Permutations",
+    default=100,
+    validators=[DataRequired()],
+    description="The number of permutations used with GSEA",
+)
 
 
 def parse_genes_field(s: str) -> tuple[dict[str, str], list[str]]:
@@ -171,6 +177,7 @@ class ContinuousForm(FlaskForm):
 
     file = file_field
     species = species_field
+    permutations = permutations_field
     submit = SubmitField("Submit")
 
     def get_scores(self) -> dict[str, float]:
@@ -292,8 +299,9 @@ def continuous_analysis():
     form = ContinuousForm()
     if form.validate_on_submit():
         scores = form.get_scores()
-        go_results = go_gsea(client=client, scores=scores, permutation_num=5)
-        print(go_results.columns)
+        go_results = go_gsea(
+            client=client, scores=scores, permutation_num=form.permutations.data
+        )
         return flask.render_template(
             "continuous_results.html",
             go_results=go_results,
