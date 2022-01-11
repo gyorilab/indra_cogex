@@ -17,3 +17,11 @@ def index_evidence_on_stmt_hash(exist_ok: bool = False):
     client.create_single_property_node_index(
         "ev_hash", "Evidence", "stmt_hash", exist_ok=exist_ok
     )
+
+
+def index_indra_rel_on_stmt_hash():
+    """Index all indra_rel relationships on stmt_hash"""
+    client = Neo4jClient()
+    client.create_single_property_node_index(
+        index_name="indra_rel_hash", label="indra_rel", property_name="stmt_hash"
+    )
