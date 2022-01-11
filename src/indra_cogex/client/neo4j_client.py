@@ -786,7 +786,8 @@ class Neo4jClient:
     ):
         """Create a single property node index.
 
-        Following example here: https://neo4j.com/docs/cypher-manual/4.1/administration/indexes-for-search-performance/#administration-indexes-create-a-single-property-index-only-if-it-does-not-already-exist
+        Reference:
+        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-only-if-it-does-not-already-exist
 
         Parameters
         ----------
