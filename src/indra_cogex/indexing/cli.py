@@ -4,8 +4,6 @@
 
 import click
 
-from . import index_evidence_on_stmt_hash
-
 
 @click.command(name="Build extra indexes")
 @click.option(
@@ -22,5 +20,7 @@ from . import index_evidence_on_stmt_hash
 def main(index_evidence_nodes: bool = False, exist_ok: bool = False):
     """Build indexes on the database."""
     if index_evidence_nodes:
+        from . import index_evidence_on_stmt_hash
+        click.secho("Indexing Evidence nodes on the stmt_hash property.", fg="green")
         index_evidence_on_stmt_hash(exist_ok=exist_ok)
     click.secho("Started all requested indexing.", fg="green")
