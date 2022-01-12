@@ -11,7 +11,7 @@ def test_get_genes_in_tissue():
     # Single query
     client = _get_client()
     genes = get_genes_in_tissue(client, ("UBERON", "UBERON:0002349"))
-    assert len(genes)
+    assert genes
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "HGNC"
@@ -22,10 +22,10 @@ def test_get_tissues_for_gene():
     # Single query
     client = _get_client()
     tissues = get_tissues_for_gene(client, ("HGNC", "9896"))
-    assert len(tissues)
+    assert tissues
     node0 = tissues[0]
     assert isinstance(node0, Node)
-    assert node0.db_ns == "UBERON"
+    assert node0.db_ns in {"UBERON", "CL"}
 
 
 @pytest.mark.nonpublic
@@ -41,7 +41,7 @@ def test_get_go_terms_for_gene():
     client = _get_client()
     gene = ("HGNC", "16813")  # PPP1R27
     go_terms = get_go_terms_for_gene(client, gene)
-    assert len(go_terms)
+    assert go_terms
     node0 = go_terms[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "GO"
@@ -53,7 +53,7 @@ def test_get_genes_for_go_term():
     client = _get_client()
     go_term = ("GO", "GO:0000978")
     genes = get_genes_for_go_term(client, go_term)
-    assert len(genes)
+    assert genes
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "HGNC"
@@ -73,7 +73,7 @@ def test_get_trials_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:27690")
     trials = get_trials_for_drug(client, drug)
-    assert len(trials)
+    assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
 
@@ -83,7 +83,7 @@ def test_get_trials_for_disease():
     client = _get_client()
     disease = ("MESH", "D007855")
     trials = get_trials_for_disease(client, disease)
-    assert len(trials)
+    assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
 
@@ -93,7 +93,7 @@ def test_get_drugs_for_trial():
     client = _get_client()
     trial = ("CLINICALTRIALS", "NCT00000114")
     drugs = get_drugs_for_trial(client, trial)
-    assert len(drugs)
+    assert drugs
     assert drugs[0].db_ns in ["CHEBI", "MESH"]
 
 
@@ -102,7 +102,7 @@ def test_get_diseases_for_trial():
     client = _get_client()
     trial = ("CLINICALTRIALS", "NCT00000114")
     diseases = get_diseases_for_trial(client, trial)
-    assert len(diseases)
+    assert diseases
     assert isinstance(diseases[0], Node)
     assert diseases[0].db_ns == "MESH"
 
@@ -112,9 +112,9 @@ def test_get_pathways_for_gene():
     client = _get_client()
     gene = ("HGNC", "16812")
     pathways = get_pathways_for_gene(client, gene)
-    assert len(pathways)
+    assert pathways
     assert isinstance(pathways[0], Node)
-    assert pathways[0].db_ns == "WIKIPATHWAYS"
+    assert pathways[0].db_ns in {"WIKIPATHWAYS", "REACTOME"}
 
 
 @pytest.mark.nonpublic
@@ -122,7 +122,7 @@ def test_get_genes_for_pathway():
     client = _get_client()
     pathway = ("WIKIPATHWAYS", "WP5037")
     genes = get_genes_for_pathway(client, pathway)
-    assert len(genes)
+    assert genes
     assert isinstance(genes[0], Node)
     assert genes[0].db_ns == "HGNC"
 
@@ -140,7 +140,7 @@ def test_get_side_effects_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:29108")
     side_effects = get_side_effects_for_drug(client, drug)
-    assert len(side_effects)
+    assert side_effects
     assert isinstance(side_effects[0], Node)
     assert side_effects[0].db_ns in ["GO", "UMLS", "MESH", "HP"]
 
@@ -150,7 +150,7 @@ def test_get_drugs_for_side_effect():
     client = _get_client()
     side_effect = ("UMLS", "C3267206")
     drugs = get_drugs_for_side_effect(client, side_effect)
-    assert len(drugs)
+    assert drugs
     assert isinstance(drugs[0], Node)
     assert drugs[0].db_ns in ["CHEBI", "MESH"]
 
@@ -168,7 +168,7 @@ def test_get_ontology_child_terms():
     client = _get_client()
     term = ("MESH", "D007855")
     children = get_ontology_child_terms(client, term)
-    assert len(children)
+    assert children
     assert isinstance(children[0], Node)
     assert children[0].db_ns == "MESH"
 
@@ -178,7 +178,7 @@ def test_get_ontology_parent_terms():
     client = _get_client()
     term = ("MESH", "D020263")
     parents = get_ontology_parent_terms(client, term)
-    assert len(parents)
+    assert parents
     assert isinstance(parents[0], Node)
     assert parents[0].db_ns == "MESH"
 
@@ -196,7 +196,7 @@ def test_get_pmids_for_mesh():
     # Single query
     client = _get_client()
     pmids = get_pmids_for_mesh(client, ("MESH", "D015002"))
-    assert len(pmids)
+    assert pmids
     assert isinstance(pmids[0], Node)
     assert pmids[0].db_ns == "PUBMED"
 
@@ -207,7 +207,7 @@ def test_get_mesh_ids_for_pmid():
     client = _get_client()
     pmid = ("PUBMED", "27890007")
     mesh_ids = get_mesh_ids_for_pmid(client, pmid)
-    assert len(mesh_ids)
+    assert mesh_ids
     assert isinstance(mesh_ids[0], Node)
     assert mesh_ids[0].db_ns == "MESH"
 
@@ -216,7 +216,7 @@ def test_get_mesh_ids_for_pmid():
 def test_get_evidence_obj_for_mesh_id():
     client = _get_client()
     mesh_id = ("MESH", "D015002")
-    evidence_dict = get_evidence_obj_for_mesh_id(client, mesh_id)
+    evidence_dict = get_evidences_for_mesh(client, mesh_id)
     assert len(evidence_dict)
     assert isinstance(list(evidence_dict.values())[0][0], Evidence)
 
@@ -227,8 +227,8 @@ def test_get_evidence_obj_for_stmt_hash():
     # Single query
     stmt_hash = "12198579805553967"
     client = _get_client()
-    ev_objs = get_evidence_obj_for_stmt_hash(client, stmt_hash)
-    assert len(ev_objs)
+    ev_objs = get_evidences_for_stmt_hash(client, stmt_hash)
+    assert ev_objs
     assert isinstance(ev_objs[0], Evidence)
 
 
@@ -238,11 +238,11 @@ def test_get_evidence_obj_for_stmt_hashes():
     # Single query
     stmt_hashes = ["12198579805553967", "30651649296901235"]
     client = _get_client()
-    ev_dict = get_evidence_obj_for_stmt_hashes(client, stmt_hashes)
-    assert len(ev_dict)
+    ev_dict = get_evidences_for_stmt_hashes(client, stmt_hashes)
+    assert ev_dict
     assert set(ev_dict.keys()) == {"12198579805553967", "30651649296901235"}
-    assert len(ev_dict["12198579805553967"])
-    assert len(ev_dict["30651649296901235"])
+    assert ev_dict["12198579805553967"]
+    assert ev_dict["30651649296901235"]
     assert isinstance(ev_dict["12198579805553967"][0], Evidence)
     assert isinstance(ev_dict["30651649296901235"][0], Evidence)
 
@@ -253,7 +253,7 @@ def test_get_stmts_for_pmid():
     client = _get_client()
     pmid = ("PUBMED", "14898026")
     stmts = get_stmts_for_pmid(client, pmid)
-    assert len(stmts)
+    assert stmts
     assert isinstance(stmts[0], Inhibition)
 
 
@@ -264,8 +264,8 @@ def test_get_stmts_for_mesh_id_w_children():
     # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
-    stmts = get_stmts_for_mesh_id(client, mesh_id)
-    assert len(stmts)
+    stmts = get_stmts_for_mesh(client, mesh_id)
+    assert stmts
     assert isinstance(stmts[0], Activation)
 
 
@@ -276,8 +276,8 @@ def test_get_stmts_for_mesh_id_wo_children():
     # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
-    stmts = get_stmts_for_mesh_id(client, mesh_id, include_child_terms=False)
-    assert len(stmts)
+    stmts = get_stmts_for_mesh(client, mesh_id, include_child_terms=False)
+    assert stmts
     assert isinstance(stmts[0], Activation)
 
 
@@ -288,5 +288,5 @@ def test_get_stmts_by_hashes():
     stmt_hashes = ["35279776755000170"]
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(client, stmt_hashes)
-    assert len(stmts)
+    assert stmts
     assert isinstance(stmts[0], Inhibition)

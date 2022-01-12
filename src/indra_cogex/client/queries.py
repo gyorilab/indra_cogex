@@ -32,11 +32,11 @@ __all__ = [
     "isa_or_partof",
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
-    "get_evidence_obj_for_mesh_id",
-    "get_evidence_obj_for_stmt_hash",
-    "get_evidence_obj_for_stmt_hashes",
+    "get_evidences_for_mesh",
+    "get_evidences_for_stmt_hash",
+    "get_evidences_for_stmt_hashes",
     "get_stmts_for_pmid",
-    "get_stmts_for_mesh_id",
+    "get_stmts_for_mesh",
     "get_stmts_for_stmt_hashes",
 ]
 
