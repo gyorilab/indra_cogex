@@ -612,7 +612,7 @@ def get_mesh_ids_for_pmid(
     :
         The MESH terms for the given PubMed ID.
     """
-    if pmid_term[0] == "PUBMED":
+    if pmid_term[0] != "PUBMED":
         raise ValueError(f"Expected PUBMED term, got %s" % str(pmid_term))
 
     return client.get_targets(
