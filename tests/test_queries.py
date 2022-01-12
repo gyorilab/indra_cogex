@@ -15,6 +15,7 @@ def test_get_genes_in_tissue():
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "HGNC"
+    assert ("HGNC", "9891") in {g.grounding() for g in genes}
 
 
 @pytest.mark.nonpublic
@@ -26,6 +27,7 @@ def test_get_tissues_for_gene():
     node0 = tissues[0]
     assert isinstance(node0, Node)
     assert node0.db_ns in {"UBERON", "CL"}
+    assert ("UBERON", "UBERON:0002349") in {g.grounding() for g in tissues}
 
 
 @pytest.mark.nonpublic
@@ -39,12 +41,13 @@ def test_is_gene_in_tissue():
 @pytest.mark.nonpublic
 def test_get_go_terms_for_gene():
     client = _get_client()
-    gene = ("HGNC", "16813")  # PPP1R27
+    gene = ("HGNC", "2697")  # DBP
     go_terms = get_go_terms_for_gene(client, gene)
     assert go_terms
     node0 = go_terms[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "GO"
+    assert ("GO", "GO:0000978") in {g.grounding() for g in go_terms}
 
 
 @pytest.mark.nonpublic
@@ -57,6 +60,7 @@ def test_get_genes_for_go_term():
     node0 = genes[0]
     assert isinstance(node0, Node)
     assert node0.db_ns == "HGNC"
+    assert ("HGNC", "2697") in {g.grounding() for g in genes}
 
 
 @pytest.mark.nonpublic
@@ -76,6 +80,7 @@ def test_get_trials_for_drug():
     assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
+    assert ("CLINICALTRIALS", "NCT02703220") in {t.grounding() for t in trials}
 
 
 @pytest.mark.nonpublic
@@ -86,6 +91,7 @@ def test_get_trials_for_disease():
     assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
+    assert ("CLINICALTRIALS", "NCT00011661") in {t.grounding() for t in trials}
 
 
 @pytest.mark.nonpublic
@@ -95,6 +101,7 @@ def test_get_drugs_for_trial():
     drugs = get_drugs_for_trial(client, trial)
     assert drugs
     assert drugs[0].db_ns in ["CHEBI", "MESH"]
+    assert ("MESH", "D014810") in {d.grounding() for d in drugs}
 
 
 @pytest.mark.nonpublic
@@ -105,6 +112,7 @@ def test_get_diseases_for_trial():
     assert diseases
     assert isinstance(diseases[0], Node)
     assert diseases[0].db_ns == "MESH"
+    assert ("MESH", "D012174") in {d.grounding() for d in diseases}
 
 
 @pytest.mark.nonpublic
@@ -115,6 +123,7 @@ def test_get_pathways_for_gene():
     assert pathways
     assert isinstance(pathways[0], Node)
     assert pathways[0].db_ns in {"WIKIPATHWAYS", "REACTOME"}
+    assert ("WIKIPATHWAYS", "WP5037") in {p.grounding() for p in pathways}
 
 
 @pytest.mark.nonpublic
@@ -125,6 +134,7 @@ def test_get_genes_for_pathway():
     assert genes
     assert isinstance(genes[0], Node)
     assert genes[0].db_ns == "HGNC"
+    assert ("HGNC", "16812") in {g.grounding() for g in genes}
 
 
 @pytest.mark.nonpublic
@@ -143,6 +153,7 @@ def test_get_side_effects_for_drug():
     assert side_effects
     assert isinstance(side_effects[0], Node)
     assert side_effects[0].db_ns in ["GO", "UMLS", "MESH", "HP"]
+    assert ("UMLS", "C3267206") in {s.grounding() for s in side_effects}
 
 
 @pytest.mark.nonpublic
@@ -153,6 +164,7 @@ def test_get_drugs_for_side_effect():
     assert drugs
     assert isinstance(drugs[0], Node)
     assert drugs[0].db_ns in ["CHEBI", "MESH"]
+    assert ("CHEBI", "CHEBI:29108") in {d.grounding() for d in drugs}
 
 
 @pytest.mark.nonpublic
@@ -171,6 +183,7 @@ def test_get_ontology_child_terms():
     assert children
     assert isinstance(children[0], Node)
     assert children[0].db_ns == "MESH"
+    assert ("MESH", "D020264") in {c.grounding() for c in children}
 
 
 @pytest.mark.nonpublic
@@ -181,6 +194,7 @@ def test_get_ontology_parent_terms():
     assert parents
     assert isinstance(parents[0], Node)
     assert parents[0].db_ns == "MESH"
+    assert ("MESH", "D007855") in {p.grounding() for p in parents}
 
 
 @pytest.mark.nonpublic
@@ -199,6 +213,7 @@ def test_get_pmids_for_mesh():
     assert pmids
     assert isinstance(pmids[0], Node)
     assert pmids[0].db_ns == "PUBMED"
+    assert ("PUBMED", "14915949") in {p.grounding() for p in pmids}
 
 
 @pytest.mark.nonpublic
@@ -210,6 +225,7 @@ def test_get_mesh_ids_for_pmid():
     assert mesh_ids
     assert isinstance(mesh_ids[0], Node)
     assert mesh_ids[0].db_ns == "MESH"
+    assert ("MESH", "D000544") in {m.grounding() for m in mesh_ids}
 
 
 @pytest.mark.nonpublic
