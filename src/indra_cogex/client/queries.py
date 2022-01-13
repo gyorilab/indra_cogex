@@ -1,7 +1,45 @@
-from typing import Iterable, Tuple
-
+import json
+import logging
+from collections import defaultdict
+from typing import Iterable, Tuple, Dict, List, Optional, Set, Union
+from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
-from ..representation import Node
+from ..representation import Node, indra_stmts_from_relations, norm_id
+
+
+logger = logging.getLogger(__name__)
+
+
+__all__ = [
+    "get_genes_in_tissue",
+    "get_tissues_for_gene",
+    "is_gene_in_tissue",
+    "get_go_terms_for_gene",
+    "get_genes_for_go_term",
+    "is_go_term_for_gene",
+    "get_trials_for_drug",
+    "get_trials_for_disease",
+    "get_drugs_for_trial",
+    "get_diseases_for_trial",
+    "get_pathways_for_gene",
+    "get_genes_for_pathway",
+    "is_gene_in_pathway",
+    "get_side_effects_for_drug",
+    "get_drugs_for_side_effect",
+    "is_side_effect_for_drug",
+    "get_ontology_child_terms",
+    "get_ontology_parent_terms",
+    "isa_or_partof",
+    "get_pmids_for_mesh",
+    "get_mesh_ids_for_pmid",
+    "get_evidences_for_mesh",
+    "get_evidences_for_stmt_hash",
+    "get_evidences_for_stmt_hashes",
+    "get_stmts_for_pmid",
+    "get_stmts_for_mesh",
+    "get_stmts_for_stmt_hashes",
+]
+
 
 # BGee
 
@@ -295,7 +333,7 @@ def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterabl
     :
         The pathways for the given gene.
     """
-    return client.get_targets(
+    return client.get_sources(
         gene,
         relation="haspart",
         source_type="BioEntity",
@@ -348,8 +386,8 @@ def is_gene_in_pathway(
         True if the gene is in the given pathway.
     """
     return client.has_relation(
-        gene,
         pathway,
+        gene,
         relation="haspart",
         source_type="BioEntity",
         target_type="BioEntity",
@@ -501,3 +539,360 @@ def isa_or_partof(
     """
     term_parents = get_ontology_parent_terms(client, term)
     return any(parent == parent_term.grounding() for parent_term in term_parents)
+
+
+# MESH / PMID
+
+
+def get_pmids_for_mesh(
+    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+) -> Iterable[Node]:
+    """Return the PubMed IDs for the given MESH term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh_term :
+        The MESH term to query.
+    include_child_terms :
+        If True, also match against the child MESH terms of the given MESH
+        term.
+
+    Returns
+    -------
+    :
+        The PubMed IDs for the given MESH term and, optionally, its child terms.
+    """
+    if mesh_term[0] != "MESH":
+        raise ValueError(f"Expected MESH term, got %s" % str(mesh_term))
+    norm_mesh = norm_id(*mesh_term)
+
+    # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
+    # slower for this specific query, so we do an optimized query that is
+    # basically equivalent instead.
+    if include_child_terms:
+        child_terms = _get_mesh_child_terms(client, mesh_term)
+    else:
+        child_terms = set()
+
+    if child_terms:
+        terms = {norm_mesh} | child_terms
+        terms_str = ",".join(f'"{c}"' for c in terms)
+        query = (
+            """MATCH (k:Publication)-[:annotated_with]->(b:BioEntity)
+               WHERE b.id IN [%s]
+               RETURN DISTINCT k"""
+            % terms_str
+        )
+    else:
+        match_clause = (
+            'MATCH (k:Publication)-[:annotated_with]->(b:BioEntity {id: "%s"})'
+            % norm_mesh
+        )
+        query = "%s RETURN k" % match_clause
+
+    return [client.neo4j_to_node(r[0]) for r in client.query_tx(query)]
+
+
+def get_mesh_ids_for_pmid(
+    client: Neo4jClient, pmid_term: Tuple[str, str]
+) -> Iterable[Node]:
+    """Return the MESH terms for the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmid_term :
+        The PubMed ID to query.
+
+    Returns
+    -------
+    :
+        The MESH terms for the given PubMed ID.
+    """
+    if pmid_term[0] != "PUBMED":
+        raise ValueError(f"Expected PUBMED term, got %s" % str(pmid_term))
+
+    return client.get_targets(
+        source=pmid_term,
+        relation="annotated_with",
+        source_type="Publication",
+        target_type="BioEntity",
+    )
+
+
+def get_evidences_for_mesh(
+    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+) -> Dict[str, List[Evidence]]:
+    """Return the evidence objects for the given MESH term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh_term :
+        The MESH ID to query.
+    include_child_terms :
+        If True, also match against the child MESH terms of the given MESH ID
+
+    Returns
+    -------
+    :
+        The evidence objects for the given MESH ID grouped into a dict
+        by statement hash.
+    """
+    if mesh_term[0] != "MESH":
+        raise ValueError(f"Expected MESH term, got %s" % str(mesh_term))
+
+    norm_mesh = norm_id(*mesh_term)
+    if include_child_terms:
+        child_terms = _get_mesh_child_terms(client, mesh_term)
+    else:
+        child_terms = set()
+
+    if child_terms:
+        terms = {norm_mesh} | child_terms
+        terms_str = ",".join(f'"{c}"' for c in terms)
+        where_clause = "WHERE b.id IN [%s]" % terms_str
+        single_mesh_match = ""
+    else:
+        single_mesh_match = ' {id: "%s"}' % norm_mesh
+        where_clause = ""
+
+    query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
+           %s
+           RETURN e.stmt_hash, e.evidence""" % (
+        single_mesh_match,
+        where_clause,
+    )
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+
+
+def get_evidences_for_stmt_hash(
+    client: Neo4jClient, stmt_hash: Union[str, int]
+) -> Iterable[Evidence]:
+    """Return the matching evidence objects for the given statement hash.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hash :
+        The statement hash to query, accepts both string and integer.
+
+    Returns
+    -------
+    :
+        The evidence objects for the given statement hash.
+    """
+    query = (
+        """MATCH (n:Evidence {stmt_hash: "%s"})
+               RETURN n.evidence"""
+        % stmt_hash
+    )
+    ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
+    return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
+
+
+def get_evidences_for_stmt_hashes(
+    client: Neo4jClient, stmt_hashes: Iterable[Union[str, int]]
+) -> Dict[str, List[Evidence]]:
+    """Return the matching evidence objects for the given statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query, accepts integers and strings.
+
+    Returns
+    -------
+    :
+        A mapping of stmt hash to a list of evidence objects for the given
+        statement hashes.
+    """
+    stmt_hashes_str = ",".join(f'"{h}"' for h in stmt_hashes)
+    query = (
+        """
+        MATCH (n:Evidence)
+        WHERE n.stmt_hash IN [%s]
+        RETURN n.stmt_hash, n.evidence
+    """
+        % stmt_hashes_str
+    )
+
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+
+
+def get_stmts_for_pmid(
+    client: Neo4jClient, pmid_term: Tuple[str, str]
+) -> Iterable[Statement]:
+    """Return the statements with evidence from the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmid_term :
+        The PubMed ID to query.
+
+    Returns
+    -------
+    :
+        The statements for the given PubMed ID.
+    """
+    # Todo: Investigate if it's possible to do this in one query like
+    # MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "pubmed:14898026"})
+    # MATCH (:BioEntity)-[r:indra_rel {stmt_hash: toInteger(e.stmt_hash)}]->(:BioEntity)
+    # RETURN r, e
+    # note that the hash str/int conversion is done as part of the query.
+
+    # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
+    #  stmt type
+    pmid_norm = norm_id(*pmid_term)
+    # First, get the hashes and evidences for the given PubMed ID
+    hash_query = (
+        """
+        MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "%s"})
+        RETURN e.stmt_hash, e.evidence
+    """
+        % pmid_norm
+    )
+    result = client.query_tx(hash_query)
+    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    stmt_hashes = set(ev_dict.keys())
+    return get_stmts_for_stmt_hashes(client, stmt_hashes, ev_dict)
+
+
+def get_stmts_for_mesh(
+    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+) -> Iterable[Statement]:
+    """Return the statements with evidence for the given MESH ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh_term :
+        The MESH ID to query.
+    include_child_terms :
+        If True, also match against the children of the given MESH ID.
+
+    Returns
+    -------
+    :
+        The statements for the given MESH ID.
+    """
+    ev_dict = get_evidences_for_mesh(client, mesh_term, include_child_terms)
+    hashes = list(ev_dict.keys())
+    return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
+
+
+def get_stmts_for_stmt_hashes(
+    client: Neo4jClient,
+    stmt_hashes: Iterable[str],
+    evidence_map: Optional[Dict[str, List[Evidence]]] = None,
+) -> Iterable[Statement]:
+    """Return the statements for the given statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query.
+    evidence_map :
+        Optionally provide a mapping of stmt hash to a list of evidence objects
+
+    Returns
+    -------
+    :
+        The statements for the given statement hashes.
+    """
+    stmt_hashes_str = ",".join(stmt_hashes)
+    # NOTE: for indra_rel Relationships, stmt_hash is an int, in Evidence
+    # nodes stmt_hash is a string
+    stmts_query = (
+        """
+        MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
+        WHERE r.stmt_hash IN [%s]
+        RETURN p
+    """
+        % stmt_hashes_str
+    )
+    rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
+    stmts = {str(s.get_hash()): s for s in indra_stmts_from_relations(rels)}
+
+    # If the evidence_map is provided, check if it covers all the hashes
+    # and if not, query for the evidence objects
+    evidence_map = evidence_map or {}
+    if evidence_map:
+        missing_hashes = list(set(stmt_hashes) - set(evidence_map.keys()))
+    else:
+        missing_hashes = stmt_hashes
+
+    # Get the evidence objects for the given statement hashes
+    if missing_hashes:
+        new_evidences = get_evidences_for_stmt_hashes(client, stmt_hashes)
+        if evidence_map:
+            evidence_map.update(new_evidences)
+        else:
+            evidence_map = new_evidences
+
+    # Add the evidence objects to the statements, if no result, keep the
+    # original statement evidence
+    for stmt_hash, stmt in stmts.items():
+        ev_list = evidence_map.get(stmt_hash, [])
+        if ev_list:
+            stmt.evidence = ev_list
+        else:
+            logger.warning(
+                f"No evidence for stmt hash {stmt_hash}, keeping sample evidence"
+            )
+
+    return list(stmts.values())
+
+
+def _get_mesh_child_terms(client: Neo4jClient, mesh_term: Tuple[str, str]) -> Set[str]:
+    """Return the children of the given MESH ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    mesh_term :
+        The MESH ID to query.
+
+    Returns
+    -------
+    :
+        The children of the given MESH ID using the ID standard internal
+        to the graph.
+    """
+    meshid_norm = norm_id(*mesh_term)
+    query = (
+        """
+        MATCH (c:BioEntity)-[:isa*1..]->(:BioEntity {id: "%s"})
+        RETURN DISTINCT c.id
+    """
+        % meshid_norm
+    )
+    return {c[0] for c in client.query_tx(query)}
+
+
+def _get_ev_dict_from_hash_ev_query(
+    result: Optional[Iterable[List[str]]] = None,
+) -> Dict[str, List[Evidence]]:
+    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    if result is None:
+        logger.warning("No result for hash, Evidence query, returning empty dict")
+        return {}
+
+    ev_dict = defaultdict(list)
+    for stmt_hash, ev_json_str in result:
+        ev_json = json.loads(ev_json_str)
+        ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
+    return dict(ev_dict)
