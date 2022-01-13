@@ -104,7 +104,8 @@ class Node:
         data = {k: v for k, v in self.data.items()}
         data["db_ns"] = self.db_ns
         data["db_id"] = self.db_id
-        return {"labels": self.labels, "data": data}
+        # Fixme: how to properly serialize labels?
+        return {"labels": [lb for lb in self.labels], "data": data}
 
     def _get_data_str(self) -> str:
         pieces = ["id:'%s:%s'" % (self.db_ns, self.db_id)]
