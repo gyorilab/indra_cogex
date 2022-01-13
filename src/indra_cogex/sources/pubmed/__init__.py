@@ -65,7 +65,7 @@ class PubmedProcessor(Processor):
                     "pii": get_val(pii),
                     "url": get_val(url),
                     "manuscript_id": get_val(manuscript_id),
-                    "year": year,
+                    "year:int": year,
                 }
                 yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
 
