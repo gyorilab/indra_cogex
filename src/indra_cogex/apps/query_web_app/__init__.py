@@ -40,13 +40,8 @@ def _post_request_preproc(*keys) -> Union[TupOfTups, Tup]:
 @app.route("/get_genes_in_tissue", methods=["POST"])
 def genes_in_tissue():
     """Get genes for a disease."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    disease_name = request.json.get("disease_name")
-    if disease_name is None:
-        abort(Response("Parameter 'disease_name' not provided", 415))
-    genes = get_genes_in_tissue(client, disease_name)
+    tissue_name = _post_request_preproc("tissue_name")
+    genes = get_genes_in_tissue(client, tissue_name)
     return jsonify([g.to_json() for g in genes])
 
 
