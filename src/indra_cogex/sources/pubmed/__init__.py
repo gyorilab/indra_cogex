@@ -89,7 +89,11 @@ class PubmedProcessor(Processor):
                             "MESH",
                             mesh_id,
                             "annotated_with",
-                            {"is_major_topic:boolean": major_topic == "1"},
+                            {
+                                "is_major_topic:boolean": "true"
+                                if major_topic == "1"
+                                else "false"
+                            },
                         )
                     )
                 yield relations_batch
