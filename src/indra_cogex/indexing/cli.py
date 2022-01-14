@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 import click
 
 
-@click.command(name="Build extra indexes")
+@click.command(name="extra_indexing")
 @click.option(
     "--all",
     "all_",
