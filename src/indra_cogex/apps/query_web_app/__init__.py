@@ -2,6 +2,7 @@
 
 """An app wrapping the query module of indra_cogex."""
 import logging
+from typing import Tuple, Union
 
 import flask
 from flask import request, abort, Response, jsonify
@@ -16,6 +17,24 @@ client = Neo4jClient()
 
 
 logger = logging.getLogger(__name__)
+
+Tup = Tuple[str, str]
+TupOfTups = Tuple[Tup, ...]
+
+
+def _post_request_preproc(*keys) -> Union[TupOfTups, Tup]:
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+    tups = []
+    for key in keys:
+        if key not in request.json:
+            abort(Response("Parameter '%s' not provided" % key, 415))
+        tups.append(tuple(request.json[key]))
+
+    if len(tups) == 1:
+        return tups[0]
+
+    return tuple(tups)
 
 
 @app.route("/get_genes_in_tissue", methods=["POST"])
