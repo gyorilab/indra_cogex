@@ -2,16 +2,32 @@
 
 """An app wrapping the query module of indra_cogex."""
 import logging
-from typing import Tuple, Union
+from typing import Dict, Callable, Tuple, Union
 
 import flask
-from flask import request, abort, Response, jsonify
+from docstring_parser import parse
+from flask import request, Response, jsonify
+from flask_restx import Api, Resource, fields, abort
 from more_click import make_web_command
 
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client.queries import *
+from indra_cogex.client import queries
+
+from .query_models import query_model_map
 
 app = flask.Flask(__name__)
+api = Api(
+    app,
+    title='INDRA CoGEx Query API',
+    description='REST API for INDRA CoGEx queries'
+)
+
+query_ns = api.namespace('CoGEx Queries', 'Queries for INDRA CoGEx', path='/api/')
+query_model = api.model('Query', {
+    "client": "Neo4jClient",
+    "term": fields.List[fields.String, fields.String]
+})
 
 client = Neo4jClient()
 
@@ -77,6 +93,68 @@ def genes_for_go_term():
     genes = get_genes_for_go_term(go_term=go_term, client=client)
     return jsonify([g.to_json() for g in genes])
 
+
+class QueryResource(Resource):
+    """A resource for a query."""
+    func_name = NotImplemented
+
+    def __init__(self, query_func: Callable):
+        """Initialize the resource."""
+        super().__init__()
+        self.query_func = query_func
+
+    def post(self):
+        """Get a query."""
+        args = request.json
+        logger.info('Getting query %s' % self.query_func.__name__)
+        result = self.query_func(client, args)
+        logger.info('Found %d results' % len(result))
+        return jsonify(result)
+
+
+def _name_func_map() -> Dict[str, Callable]:
+    func_map = {}
+    for func_name in queries.__all__:
+        func = getattr(queries, func_name)
+        func_map[func_name] = func
+    return func_map
+
+
+query_func_map = _name_func_map()
+
+
+def get_docstring(fun: Callable) -> Tuple[str, str]:
+    parsed_doc = parse(fun.__doc__)
+
+    long = parsed_doc.short_description + '\n\n'
+
+    if parsed_doc.long_description:
+        long += (parsed_doc.long_description + '\n\n')
+
+    long += 'Parameters\n----------\n'
+    for param in parsed_doc.params:
+        long += param.arg_name + ': ' + param.description + '\n'
+    long += '\n'
+    long += ('Returns\n-------\n')
+    long += parsed_doc.returns.description
+
+    return parsed_doc.short_description, parsed_doc.long_description
+
+
+# Create resource for each query function
+for func_name, func in query_func_map.items():
+    short_doc, doc = get_docstring(func)
+
+    @query_ns.expect(query_model)
+    @query_ns.route('/' + func_name,
+                    doc={'summary': short_doc})
+    class NewQueryResource(QueryResource):
+        func_name = func_name
+
+        def post(self):
+            return super().post()
+
+        post.__doc__ = doc
 
 @app.route("/is_go_term_for_gene", methods=["POST"])
 def go_term_for_gene():
