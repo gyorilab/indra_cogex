@@ -315,8 +315,8 @@ def evidences_for_mesh():
     mesh_term_name = request.json.get("mesh_term_name")
     if mesh_term_name is None:
         abort(Response("Parameter 'mesh_term_name' not provided", 415))
-    evidences = get_evidences_for_mesh(client, mesh_term_name)
-    return jsonify({h: [e.to_json() for e in el] for h, el in evidences.items()})
+    evidence_dict = get_evidences_for_mesh(client, mesh_term_name)
+    return jsonify({h: [e.to_json() for e in el] for h, el in evidence_dict.items()})
 
 
 @app.route("/get_evidences_for_stmt_hash", methods=["POST"])
@@ -341,8 +341,8 @@ def evidences_for_stmt_hashes():
     stmt_hashes = request.json.get("stmt_hashes")
     if stmt_hashes is None:
         abort(Response("Parameter 'stmt_hashes' not provided", 415))
-    evidences = get_evidences_for_stmt_hashes(client, stmt_hashes)
-    return jsonify({h: [e.to_json() for e in el] for h, el in evidences.items()})
+    evidence_dict = get_evidences_for_stmt_hashes(client, stmt_hashes)
+    return jsonify({h: [e.to_json() for e in el] for h, el in evidence_dict.items()})
 
 
 @app.route("/get_stmts_for_pmid", methods=["POST"])
