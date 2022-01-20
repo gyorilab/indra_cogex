@@ -53,7 +53,8 @@ class Neo4jClient:
                 logger.info("Using configured credentials for INDRA neo4j connection")
             else:
                 logger.info("INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD not configured")
-        self.driver = GraphDatabase.driver(url, auth=auth)
+        self.driver = GraphDatabase.driver(url, auth=auth,
+                                           max_connection_lifetime=3*60,)
 
     def create_tx(
         self,
@@ -71,7 +72,6 @@ class Neo4jClient:
         """
         tx = self.get_session().begin_transaction()
         try:
-            # logger.info(query)
             tx.run(query, parameters=query_params)
             tx.commit()
         except Exception as e:
