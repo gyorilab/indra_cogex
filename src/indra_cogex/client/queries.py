@@ -4,13 +4,12 @@ from collections import Counter, defaultdict
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
-from indra.statements import Evidence, Statement
 
+from indra.statements import Evidence, Statement
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
-
 
 __all__ = [
     "get_genes_in_tissue",
@@ -905,18 +904,28 @@ def _get_ev_dict_from_hash_ev_query(
 
 
 def get_node_counter(client: Neo4jClient) -> Counter:
-    """Get a count of each entity type."""
-    node_count_query = f"""MATCH (n) RETURN distinct labels(n), count(*)"""
-    return Counter(client.query_tx(node_count_query)[0])
+    """Get a count of each entity type.
 
-
-def get_edge_counter(client: Neo4jClient):
-    """Get a count of each edge type.
-
-    .. warning:: This is very slow and could cause timeouts
+    .. warning:: this code assumes all nodes only have one label, as in``label[0]``
     """
-    edge_count_query = f"""MATCH ()-[r]->() RETURN distinct type(r), count(*)"""
-    return Counter(client.query_tx(edge_count_query)[0])
+    return Counter(
+        {
+            label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
+            for label in client.query_tx("call db.labels();")
+        }
+    )
+
+
+def get_edge_counter(client: Neo4jClient) -> Counter:
+    """Get a count of each edge type."""
+    return Counter(
+        {
+            relation[0]: client.query_tx(
+                f"MATCH ()-[r:{relation[0]}]->() RETURN count(*)"
+            )[0][0]
+            for relation in client.query_tx("call db.relationshipTypes();")
+        }
+    )
 
 
 def get_schema_graph(client: Neo4jClient) -> nx.MultiDiGraph:

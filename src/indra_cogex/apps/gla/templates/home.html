@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% import "bootstrap/form.html" as wtf %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block title %}INDRA CoGEx{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-4">INDRA CoGEx</h1>
+        <p class="lead">
+            A graph database
+        </p>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <td>Edge Type</td>
+                <td>Count</td>
+            </tr>
+            </thead>
+            <tbody>
+            {% for edge_type, count in edge_counter.most_common() %}
+                <tr>
+                    <td>{{ edge_type|replace("_", " ") }}</td>
+                    <td>{{ format_number(count) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

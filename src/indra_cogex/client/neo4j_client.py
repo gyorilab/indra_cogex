@@ -56,8 +56,11 @@ class Neo4jClient:
         # Set max_connection_lifetime to something smaller than the timeouts
         # on the server or on the way to the server. See
         # https://github.com/neo4j/neo4j-python-driver/issues/316#issuecomment-564020680
-        self.driver = GraphDatabase.driver(url, auth=auth,
-                                           max_connection_lifetime=3*60,)
+        self.driver = GraphDatabase.driver(
+            url,
+            auth=auth,
+            max_connection_lifetime=3 * 60,
+        )
 
     def create_tx(
         self,

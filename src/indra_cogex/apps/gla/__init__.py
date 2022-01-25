@@ -3,11 +3,12 @@
 """An app for gene list analysis."""
 
 import os
+from collections import Counter
+from functools import lru_cache
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
-from flask import redirect, url_for
 from flask_bootstrap import Bootstrap4
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
@@ -38,6 +39,7 @@ from indra_cogex.client.enrichment.signed import (
     reverse_causal_reasoning,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.queries import get_edge_counter, get_node_counter
 
 app = flask.Flask(__name__)
 
@@ -53,8 +55,8 @@ client = Neo4jClient()
 genes_field = TextAreaField(
     "Genes",
     description="Paste your list of gene symbols, HGNC gene identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
-    " example list of human genes</a> related to COVID-19.",
+                ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+                " example list of human genes</a> related to COVID-19.",
     validators=[DataRequired()],
 )
 positive_genes_field = TextAreaField(
@@ -65,8 +67,8 @@ positive_genes_field = TextAreaField(
 negative_genes_field = TextAreaField(
     "Negative Genes",
     description="Paste your list of gene symbols, HGNC gene identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
-    " example list</a> related to prostate cancer.",
+                ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+                " example list</a> related to prostate cancer.",
     validators=[DataRequired()],
 )
 indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
@@ -75,8 +77,8 @@ alpha_field = FloatField(
     default=0.05,
     validators=[DataRequired()],
     description="The alpha is the threshold for significance in the"
-    " Fisher's exact test with which multiple hypothesis"
-    " testing correction will be executed.",
+                " Fisher's exact test with which multiple hypothesis"
+                " testing correction will be executed.",
 )
 correction_field = RadioField(
     "Multiple Hypothesis Test Correction",
@@ -311,10 +313,71 @@ def continuous_analysis():
     )
 
 
+@lru_cache(1)
+def _get_counters() -> Tuple[Counter, Counter]:
+    prod = False
+    if prod:
+        node_counter = get_node_counter(client)
+        edge_counter = get_edge_counter(client)
+    else:
+        node_counter = Counter(
+            {
+                "ClinicalTrial": 364_937,
+                "Evidence": 18_326_675,
+                "BioEntity": 2_612_711,
+                "Publication": 33_369_469,
+            }
+        )
+        edge_counter = Counter(
+            {
+                "expressed_in": 4_725_039,
+                "copy_number_altered_in": 1_422_111,
+                "sensitive_to": 69_271,
+                "mutated_in": 1_140_475,
+                "has_indication": 45_902,
+                "tested_in": 253_578,
+                "has_trial": 536_104,
+                "indra_rel": 6_268_226,
+                "has_citation": 17_975_205,
+                "associated_with": 158_648,
+                "isa": 534_776,
+                "xref": 1_129_208,
+                "partof": 619_379,
+                "annotated_with": 290_131_450,
+                "haspart": 428_980,
+                "has_side_effect": 308_948,
+            }
+        )
+    return node_counter, edge_counter
+
+
+def _figure_number(n: int) -> str:
+    if n > 1_000_000:
+        lead = n / 1_000_000
+        if lead < 10:
+            return f"{round(lead, 1)}M"
+        else:
+            return f"{round(lead)}M"
+    if n > 1_000:
+        lead = n / 1_000
+        if lead < 10:
+            return f"{round(lead, 1)}K"
+        else:
+            return f"{round(lead)}K"
+    else:
+        return str(n)
+
+
 @app.route("/")
 def home():
     """Render the home page."""
-    return redirect(url_for(discretize_analysis.__name__))
+    node_counter, edge_counter = _get_counters()
+    return flask.render_template(
+        "home.html",
+        format_number=_figure_number,
+        node_counter=node_counter,
+        edge_counter=edge_counter,
+    )
 
 
 cli = make_web_command(app=app)
