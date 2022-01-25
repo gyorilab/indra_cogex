@@ -23,6 +23,7 @@ __all__ = [
     "get_drugs_for_trial",
     "get_diseases_for_trial",
     "get_pathways_for_gene",
+    "get_shared_pathways_for_genes",
     "get_genes_for_pathway",
     "is_gene_in_pathway",
     "get_side_effects_for_drug",
@@ -43,6 +44,7 @@ __all__ = [
     "get_node_counter",
     "get_edge_counter",
     "get_schema_graph",
+    "is_gene_mutated",
 ]
 
 
@@ -368,6 +370,31 @@ def get_pathways_for_gene(
 
 
 @autoclient()
+def get_shared_pathways_for_genes(
+    client: Neo4jClient, genes: Iterable[Tuple[str, str]]
+) -> Iterable[Node]:
+    """Return the shared pathways for the given list of genes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    genes :
+        The list of genes to query.
+
+    Returns
+    -------
+    :
+        The pathways for the given gene.
+    """
+    return client.get_common_sources(
+        genes,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
 def get_genes_for_pathway(
     pathway: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
@@ -996,3 +1023,34 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
             label=edge.type,
         )
     return graph
+
+
+# CCLE
+
+
+def is_gene_mutated(
+    client: Neo4jClient, gene: Tuple[str, str], cell_line: Tuple[str, str]
+) -> bool:
+    """Return True if the gene is mutated in the given cell line.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    gene :
+        The gene to query.
+    cell_line :
+        The cell line to query.
+
+    Returns
+    -------
+    :
+        True if the gene is mutated in the given cell line.
+    """
+    return client.has_relation(
+        gene,
+        cell_line,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
