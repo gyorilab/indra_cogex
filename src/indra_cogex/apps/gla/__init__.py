@@ -8,7 +8,7 @@ from typing import List, Mapping, Tuple
 import flask
 import pandas as pd
 from flask import redirect, url_for
-from flask_bootstrap import Bootstrap
+from flask_bootstrap import Bootstrap4
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
 from more_click import make_web_command
@@ -46,8 +46,7 @@ app = flask.Flask(__name__)
 app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(8)
 
-bootstrap = Bootstrap()
-bootstrap.init_app(app)
+bootstrap = Bootstrap4(app)
 
 client = Neo4jClient()
 

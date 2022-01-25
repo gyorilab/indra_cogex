@@ -155,7 +155,7 @@ def get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]
 @lru_cache(maxsize=1)
 def get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
-    human genes are causally upstream of it.
+    human genes that are causally upstream of it.
 
     Parameters
     ----------
@@ -176,7 +176,7 @@ def get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[s
         // Ignore complexes since they are non-directional
         AND r.stmt_type <> "Complex"
         // This is a simple way to ignore non-human proteins
-        AND NOT regulator.id STARTS WITH "uniprot"
+        AND NOT target.id STARTS WITH "uniprot"
         RETURN target.id, target.name, collect(gene.id);
     """
     )

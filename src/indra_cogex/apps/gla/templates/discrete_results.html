@@ -1,8 +1,5 @@
 {% extends "base.html" %}
 
-{% import "bootstrap/form.html" as wtf %}
-{% import "bootstrap/utils.html" as util %}
-
 {% block title %}Discrete Gene Set Analysis{% endblock %}
 
 {% block styles %}
@@ -146,19 +143,23 @@
                     {% if indra_downstream_results is not none %}
                         <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
                             <p>
+                                <img class="d-block" style="max-height: 150px;" alt="Visual description of downstream analysis" src="{{ url_for("static", filename="indra_downstream.png") }}" />
+                            </p>
+                            <p>
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
                                 one step from all entities in the INDRA Database.
-                                <img class="float-right" alt="Visual description of downstream analysis" src="{{ url_for("static", filename="indra_downstream.png") }}" />
                             </p>
                             {{ render_table(indra_downstream_results, "table-downstream") }}
                         </div>
                         <div class="tab-pane" id="upstream" role="tabpanel" aria-labelledby="upstream-tab">
                             <p>
+                                <img style="display: block; max-height: 150px" alt="Visual description of upstream analysis" src="{{ url_for("static", filename="indra_upstream.png") }}" />
+                            </p>
+                            <p>
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
                                 one step from all entities in the INDRA Database.
-                                <img class="float-right" alt="Visual description of upstream analysis" src="{{ url_for("static", filename="indra_upstream.png") }}" />
                             </p>
                             {{ render_table(indra_upstream_results, "table-upstream") }}
                         </div>
