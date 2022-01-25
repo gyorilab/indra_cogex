@@ -351,21 +351,41 @@ def _get_counters() -> Tuple[Counter, Counter]:
     return node_counter, edge_counter
 
 
-def _figure_number(n: int) -> str:
+def _figure_number(n: int):
     if n > 1_000_000:
         lead = n / 1_000_000
         if lead < 10:
-            return f"{round(lead, 1)}M"
+            return round(lead, 1), "M"
         else:
-            return f"{round(lead)}M"
+            return round(lead), "M"
     if n > 1_000:
         lead = n / 1_000
         if lead < 10:
-            return f"{round(lead, 1)}K"
+            return round(lead, 1), "K"
         else:
-            return f"{round(lead)}K"
+            return round(lead), "K"
     else:
-        return str(n)
+        return n, ""
+
+
+edge_labels = {
+    "annotated_with": "MeSH Annotations",
+    "associated_with": "GO Annotations",
+    "has_citation": "Citations",
+    "indra_rel": "Causal Relations",
+    "expressed_in": "Gene Expressions",
+    "copy_number_altered_in": "CNVs",
+    "mutated_in": "Mutations",
+    "xref": "Xrefs",
+    "partof": "Part Of",
+    "has_trial": "Disease Trials",
+    "isa": "Subclasses",
+    "haspart": "Has Part",
+    "has_side_effect": "Side Effects",
+    "tested_in": "Drug Trials",
+    "sensitive_to": "Sensitivities",
+    "has_indication": "Drug Indications",
+}
 
 
 @app.route("/")
@@ -377,6 +397,7 @@ def home():
         format_number=_figure_number,
         node_counter=node_counter,
         edge_counter=edge_counter,
+        edge_labels=edge_labels,
     )
 
 
