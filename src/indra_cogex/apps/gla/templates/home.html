@@ -30,10 +30,10 @@
             A graph database integrating causal relations, ontological relations, properties, and data.
         </p>
         <div class="row text-center stats">
-            {{ count_column(node_counter, "BioEntity", "Biological Entities", "database") }}
-            {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "database") }}
-            {{ count_column(node_counter, "Publication", "Publications", "database") }}
-            {{ count_column(node_counter, "Evidence", "Evidences", "database") }}
+            {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
+            {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
+            {{ count_column(node_counter, "Publication", "Publications", "book") }}
+            {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
         </div>
         <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
             {% for edge_type, _ in edge_counter.most_common() %}
