@@ -4,10 +4,10 @@ from collections import Counter, defaultdict
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
-from indra.statements import Evidence, Statement
+from indra.statements import Evidence, Statement, stmts_from_json, Agent
 
 from .neo4j_client import Neo4jClient, autoclient
-from ..representation import Node, indra_stmts_from_relations, norm_id
+from ..representation import Node,Relation,  indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,9 @@ __all__ = [
     "get_edge_counter",
     "get_schema_graph",
     "is_gene_mutated",
+    "get_drugs_for_target",
+    "get_targets_for_drug",
+    "is_drug_target",
 ]
 
 
@@ -1054,3 +1057,47 @@ def is_gene_mutated(
         source_type="BioEntity",
         target_type="BioEntity",
     )
+
+
+# Indra DB
+
+
+def get_drugs_for_target(
+    client: Neo4jClient, target: Tuple[str, str]
+) -> Iterable[Agent]:
+    """Return the drugs targetting the given protein."""
+    rels = client.get_source_relations(
+        target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    drug_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in drug_rels]
+    stmts = stmts_from_json(stmt_jsons)
+    drugs = [stmt.subj for stmt in stmts]
+    return drugs
+
+
+def get_targets_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[Agent]:
+    """Return the proteins targetted by the given drug."""
+    rels = client.get_target_relations(
+        drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    target_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in target_rels]
+    stmts = stmts_from_json(stmt_jsons)
+    targets = [stmt.obj for stmt in stmts]
+    return targets
+
+
+def is_drug_target(
+    client: Neo4jClient, drug: Tuple[str, str], target: Tuple[str, str]
+) -> bool:
+    """Return True if the drug targets the given protein."""
+    rels = client.get_relations(
+        drug, target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    return any(_is_drug_relation(rel) for rel in rels)
+
+
+def _is_drug_relation(rel: Relation) -> bool:
+    """Return True if the relation is a drug-target relation."""
+    return rel.data["stmt_type"] == "Inhibition" and "tas" in rel.data["source_counts"]
