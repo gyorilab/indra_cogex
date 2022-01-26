@@ -241,6 +241,7 @@ class Neo4jClient:
         target: Tuple[str, str],
         relation: Optional[str] = None,
         target_type: Optional[str] = None,
+        source_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources to the given target.
 
@@ -257,7 +258,11 @@ class Neo4jClient:
             A list of relations matching the constraints.
         """
         return self.get_relations(
-            source=None, target=target, relation=relation, target_type=target_type
+            source=None,
+            target=target,
+            relation=relation,
+            target_type=target_type,
+            source_type=source_type,
         )
 
     def get_target_relations(
@@ -265,6 +270,7 @@ class Neo4jClient:
         source: Tuple[str, str],
         relation: Optional[str] = None,
         source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect targets from the given source.
 
@@ -281,7 +287,11 @@ class Neo4jClient:
             A list of relations matching the constraints.
         """
         return self.get_relations(
-            source=source, target=None, relation=relation, source_type=source_type
+            source=source,
+            target=None,
+            relation=relation,
+            source_type=source_type,
+            target_type=target_type,
         )
 
     def get_all_relations(
