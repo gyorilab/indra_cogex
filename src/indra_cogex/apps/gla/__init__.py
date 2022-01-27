@@ -179,7 +179,7 @@ class ContinuousForm(FlaskForm):
     permutations = permutations_field
     submit = SubmitField("Submit")
 
-    def get_scores(self) -> dict[str, float]:
+    def get_scores(self) -> Dict[str, float]:
         """Get scores dictionary."""
         name = self.file.data.filename
         sep = "," if name.endswith("csv") else "\t"
