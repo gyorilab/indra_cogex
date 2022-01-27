@@ -3,7 +3,7 @@
 """An app for gene list analysis."""
 
 import os
-from typing import List, Mapping, Tuple
+from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
@@ -113,7 +113,7 @@ permutations_field = IntegerField(
 )
 
 
-def parse_genes_field(s: str) -> tuple[dict[str, str], list[str]]:
+def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     """Parse a genes field string."""
     records = {
         record.strip().strip('"').strip("'").strip()
