@@ -42,7 +42,9 @@ def collect_gene_sets(
         curie = result[0]
         name = result[1]
         hgnc_ids = {
-            hgnc_curie.lower().removeprefix("hgnc:") for hgnc_curie in result[2]
+            hgnc_curie.lower().replace("hgnc:", "")
+            if hgnc_curie.lower().startswith("hgnc:") else hgnc_curie.lower()
+            for hgnc_curie in result[2]
         }
         curie_to_hgnc_ids[curie, name].update(hgnc_ids)
     return dict(curie_to_hgnc_ids)
