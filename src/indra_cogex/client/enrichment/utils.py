@@ -2,6 +2,7 @@
 
 """Utilities for getting gene sets."""
 
+from typing import Dict, List, Mapping, Tuple, Set
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
@@ -20,7 +21,7 @@ __all__ = [
 
 def collect_gene_sets(
     client: Neo4jClient, query: str
-) -> dict[tuple[str, str], set[str]]:
+) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
     Parameters
@@ -48,12 +49,12 @@ def collect_gene_sets(
 
 
 @lru_cache(maxsize=1)
-def get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+def get_go(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
     Parameters
     ----------
-    client :
+    client :object
         The Neo4j client.
 
     Returns
@@ -72,7 +73,7 @@ def get_go(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
 
 
 @lru_cache(maxsize=1)
-def get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+def get_wikipathways(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
     Parameters
@@ -97,7 +98,7 @@ def get_wikipathways(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
 
 
 @lru_cache(maxsize=1)
-def get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+def get_reactome(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
     Parameters
@@ -122,7 +123,7 @@ def get_reactome(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
 
 
 @lru_cache(maxsize=1)
-def get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+def get_entity_to_targets(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
 
@@ -153,7 +154,7 @@ def get_entity_to_targets(client: Neo4jClient) -> dict[tuple[str, str], set[str]
 
 
 @lru_cache(maxsize=1)
-def get_entity_to_regulators(client: Neo4jClient) -> dict[tuple[str, str], set[str]]:
+def get_entity_to_regulators(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
 
