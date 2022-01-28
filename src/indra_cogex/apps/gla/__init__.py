@@ -211,6 +211,7 @@ def discretize_analysis():
     if form.validate_on_submit():
         method = form.correction.data
         alpha = form.alpha.data
+        keep_insignificant = form.keep_insignificant.data
         genes, errors = form.parse_genes()
         gene_set = set(genes)
 
@@ -219,21 +220,21 @@ def discretize_analysis():
             gene_set,
             method=method,
             alpha=alpha,
-            keep_insignificant=form.keep_insignificant.data,
+            keep_insignificant=keep_insignificant,
         )
         wikipathways_results = wikipathways_ora(
             client,
             gene_set,
             method=method,
             alpha=alpha,
-            keep_insignificant=form.keep_insignificant.data,
+            keep_insignificant=keep_insignificant,
         )
         reactome_results = reactome_ora(
             client,
             gene_set,
             method=method,
             alpha=alpha,
-            keep_insignificant=form.keep_insignificant.data,
+            keep_insignificant=keep_insignificant,
         )
         if form.indra_path_analysis.data:
             indra_upstream_results = indra_upstream_ora(
@@ -241,14 +242,14 @@ def discretize_analysis():
                 gene_set,
                 method=method,
                 alpha=alpha,
-                keep_insignificant=form.keep_insignificant.data,
+                keep_insignificant=keep_insignificant,
             )
             indra_downstream_results = indra_downstream_ora(
                 client,
                 gene_set,
                 method=method,
                 alpha=alpha,
-                keep_insignificant=form.keep_insignificant.data,
+                keep_insignificant=keep_insignificant,
             )
         else:
             indra_upstream_results = None
@@ -318,6 +319,8 @@ def continuous_analysis():
             client=client,
             scores=scores,
             permutation_num=form.permutations.data,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
         )
         return flask.render_template(
             "continuous_results.html",
