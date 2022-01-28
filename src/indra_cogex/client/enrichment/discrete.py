@@ -3,8 +3,8 @@
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
 from functools import lru_cache
-from typing import Iterable, Optional
-from typing import Dict, List, Mapping, Tuple, Set
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
+
 import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact

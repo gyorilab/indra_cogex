@@ -12,7 +12,8 @@ expression experiments.
 """
 
 from pathlib import Path
-from typing import Optional, Union, Dict, List, Mapping, Tuple, Set
+from typing import Dict, List, Mapping, Optional, Set, Tuple, Union
+
 import gseapy
 import pandas as pd
 import pyobo

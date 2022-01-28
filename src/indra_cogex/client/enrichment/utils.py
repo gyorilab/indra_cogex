@@ -2,10 +2,10 @@
 
 """Utilities for getting gene sets."""
 
-from typing import Dict, List, Mapping, Tuple, Set
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
+from typing import Dict, List, Mapping, Set, Tuple
 
 from indra_cogex.client.neo4j_client import Neo4jClient
 
