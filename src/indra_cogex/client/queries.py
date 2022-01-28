@@ -40,14 +40,14 @@ __all__ = [
     "get_stmts_for_pmid",
     "get_stmts_for_mesh",
     "get_stmts_for_stmt_hashes",
-    # Summary functions
-    "get_node_counter",
-    "get_edge_counter",
-    "get_schema_graph",
     "is_gene_mutated",
     "get_drugs_for_target",
     "get_targets_for_drug",
     "is_drug_target",
+    # Summary functions
+    "get_node_counter",
+    "get_edge_counter",
+    "get_schema_graph",
 ]
 
 
