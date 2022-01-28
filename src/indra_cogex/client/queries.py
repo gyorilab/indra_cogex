@@ -1,14 +1,15 @@
 import json
 import logging
-from collections import defaultdict
-from typing import Iterable, Tuple, Dict, List, Optional, Set, Union
+from collections import Counter, defaultdict
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+
+import networkx as nx
 from indra.statements import Evidence, Statement
+
 from .neo4j_client import Neo4jClient
 from ..representation import Node, indra_stmts_from_relations, norm_id
 
-
 logger = logging.getLogger(__name__)
-
 
 __all__ = [
     "get_genes_in_tissue",
@@ -38,6 +39,10 @@ __all__ = [
     "get_stmts_for_pmid",
     "get_stmts_for_mesh",
     "get_stmts_for_stmt_hashes",
+    # Summary functions
+    "get_node_counter",
+    "get_edge_counter",
+    "get_schema_graph",
 ]
 
 
@@ -896,3 +901,54 @@ def _get_ev_dict_from_hash_ev_query(
         ev_json = json.loads(ev_json_str)
         ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
     return dict(ev_dict)
+
+
+def get_node_counter(client: Neo4jClient) -> Counter:
+    """Get a count of each entity type.
+
+    .. warning:: this code assumes all nodes only have one label, as in``label[0]``
+    """
+    return Counter(
+        {
+            label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
+            for label in client.query_tx("call db.labels();")
+        }
+    )
+
+
+def get_edge_counter(client: Neo4jClient) -> Counter:
+    """Get a count of each edge type."""
+    return Counter(
+        {
+            relation[0]: client.query_tx(
+                f"MATCH ()-[r:{relation[0]}]->() RETURN count(*)"
+            )[0][0]
+            for relation in client.query_tx("call db.relationshipTypes();")
+        }
+    )
+
+
+def get_schema_graph(client: Neo4jClient) -> nx.MultiDiGraph:
+    """Get a NetworkX graph reflecting the schema of the Neo4j graph.
+
+    Generate a PDF diagram (works with PNG and SVG too) with the following::
+
+    >>> from networkx.drawing.nx_agraph import to_agraph
+    >>> client = ...
+    >>> graph = get_schema_graph(client)
+    >>> to_agraph(graph).draw("~/Desktop/cogex_schema.pdf", prog="dot")
+    """
+    query = "call db.schema.visualization();"
+    schema_nodes, schema_relationships = client.query_tx(query)[0]
+
+    graph = nx.MultiDiGraph()
+    for node in schema_nodes:
+        graph.add_node(node._id, label=node["name"])
+    for edge in schema_relationships:
+        graph.add_edge(
+            edge.start_node._id,
+            edge.end_node._id,
+            id=edge._id,
+            label=edge.type,
+        )
+    return graph

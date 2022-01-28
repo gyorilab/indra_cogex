@@ -3,11 +3,12 @@
 """An app for gene list analysis."""
 
 import os
+from collections import Counter
+from functools import lru_cache
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
-from flask import redirect, url_for
 from flask_bootstrap import Bootstrap4
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
@@ -38,6 +39,7 @@ from indra_cogex.client.enrichment.signed import (
     reverse_causal_reasoning,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.queries import get_edge_counter, get_node_counter
 
 app = flask.Flask(__name__)
 
@@ -311,10 +313,92 @@ def continuous_analysis():
     )
 
 
+@lru_cache(1)
+def _get_counters() -> Tuple[Counter, Counter]:
+    prod = False
+    if prod:
+        node_counter = get_node_counter(client)
+        edge_counter = get_edge_counter(client)
+    else:
+        node_counter = Counter(
+            {
+                "ClinicalTrial": 364_937,
+                "Evidence": 18_326_675,
+                "BioEntity": 2_612_711,
+                "Publication": 33_369_469,
+            }
+        )
+        edge_counter = Counter(
+            {
+                "expressed_in": 4_725_039,
+                "copy_number_altered_in": 1_422_111,
+                "sensitive_to": 69_271,
+                "mutated_in": 1_140_475,
+                "has_indication": 45_902,
+                "tested_in": 253_578,
+                "has_trial": 536_104,
+                "indra_rel": 6_268_226,
+                "has_citation": 17_975_205,
+                "associated_with": 158_648,
+                "isa": 534_776,
+                "xref": 1_129_208,
+                "partof": 619_379,
+                "annotated_with": 290_131_450,
+                "haspart": 428_980,
+                "has_side_effect": 308_948,
+            }
+        )
+    return node_counter, edge_counter
+
+
+def _figure_number(n: int):
+    if n > 1_000_000:
+        lead = n / 1_000_000
+        if lead < 10:
+            return round(lead, 1), "M"
+        else:
+            return round(lead), "M"
+    if n > 1_000:
+        lead = n / 1_000
+        if lead < 10:
+            return round(lead, 1), "K"
+        else:
+            return round(lead), "K"
+    else:
+        return n, ""
+
+
+edge_labels = {
+    "annotated_with": "MeSH Annotations",
+    "associated_with": "GO Annotations",
+    "has_citation": "Citations",
+    "indra_rel": "Causal Relations",
+    "expressed_in": "Gene Expressions",
+    "copy_number_altered_in": "CNVs",
+    "mutated_in": "Mutations",
+    "xref": "Xrefs",
+    "partof": "Part Of",
+    "has_trial": "Disease Trials",
+    "isa": "Subclasses",
+    "haspart": "Has Part",
+    "has_side_effect": "Side Effects",
+    "tested_in": "Drug Trials",
+    "sensitive_to": "Sensitivities",
+    "has_indication": "Drug Indications",
+}
+
+
 @app.route("/")
 def home():
     """Render the home page."""
-    return redirect(url_for(discretize_analysis.__name__))
+    node_counter, edge_counter = _get_counters()
+    return flask.render_template(
+        "home.html",
+        format_number=_figure_number,
+        node_counter=node_counter,
+        edge_counter=edge_counter,
+        edge_labels=edge_labels,
+    )
 
 
 cli = make_web_command(app=app)
