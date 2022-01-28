@@ -131,7 +131,7 @@ def test_get_shared_pathways_for_gene():
     client = _get_client()
     gene1 = ("HGNC", "1097")
     gene2 = ("HGNC", "6407")
-    pathways = get_shared_pathways_for_genes(client, [gene1, gene2])
+    pathways = get_shared_pathways_for_genes([gene1, gene2], client=client)
     assert pathways
     assert isinstance(pathways[0], Node)
     assert pathways[0].db_ns in {"WIKIPATHWAYS", "REACTOME"}
@@ -326,14 +326,14 @@ def test_is_gene_mutated():
     client = _get_client()
     gene = ("HGNC", "8975")
     cell_line = ("CCLE", "BT20_BREAST")
-    assert is_gene_mutated(client, gene, cell_line)
+    assert is_gene_mutated(gene, cell_line, client=client)
 
 
 @pytest.mark.nonpublic
 def test_drugs_for_target():
     client = _get_client()
     target = ("HGNC", "6840")
-    drugs = get_drugs_for_target(client, target)
+    drugs = get_drugs_for_target(target, client=client)
     assert "nodes" in drugs
     assert "agents" in drugs
     assert len(drugs["nodes"]) == len(drugs["agents"])
@@ -345,7 +345,7 @@ def test_drugs_for_target():
 def test_targets_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
-    targets = get_targets_for_drug(client, drug)
+    targets = get_targets_for_drug(drug, client=client)
     assert "nodes" in targets
     assert "agents" in targets
     assert len(targets["nodes"]) == len(targets["agents"])
@@ -358,6 +358,6 @@ def test_is_drug_target():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
     target = ("HGNC", "6840")
-    assert is_drug_target(client, drug, target)
+    assert is_drug_target(drug, target, client=client)
     wrong_target = ("HGNC", "6407")
-    assert not is_drug_target(client, drug, wrong_target)
+    assert not is_drug_target(drug, wrong_target, client=client)

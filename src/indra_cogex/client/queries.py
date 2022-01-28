@@ -374,7 +374,7 @@ def get_pathways_for_gene(
 
 @autoclient()
 def get_shared_pathways_for_genes(
-    client: Neo4jClient, genes: Iterable[Tuple[str, str]]
+    genes: Iterable[Tuple[str, str]], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the shared pathways for the given list of genes.
 
@@ -1032,7 +1032,7 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
 
 
 def is_gene_mutated(
-    client: Neo4jClient, gene: Tuple[str, str], cell_line: Tuple[str, str]
+    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the gene is mutated in the given cell line.
 
@@ -1063,7 +1063,7 @@ def is_gene_mutated(
 
 
 def get_drugs_for_target(
-    client: Neo4jClient, target: Tuple[str, str]
+    target: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
     """Return the drugs targetting the given protein."""
     rels = client.get_source_relations(
@@ -1077,7 +1077,9 @@ def get_drugs_for_target(
     return {"nodes": drug_nodes, "agents": drug_agents}
 
 
-def get_targets_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[Agent]:
+def get_targets_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Agent]:
     """Return the proteins targetted by the given drug."""
     rels = client.get_target_relations(
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
@@ -1091,7 +1093,7 @@ def get_targets_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable
 
 
 def is_drug_target(
-    client: Neo4jClient, drug: Tuple[str, str], target: Tuple[str, str]
+    drug: Tuple[str, str], target: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the drug targets the given protein."""
     rels = client.get_relations(
