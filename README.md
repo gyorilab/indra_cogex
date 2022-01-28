@@ -9,6 +9,8 @@ non-causal contextual relations including properties, ontology, and data.
 
 ## Content
 
+![A summary of the content in INDRA CoGEx](img/summary.png)
+
 | Knowledge source    | Relation            | Description                                                                                                       |
 |---------------------|-----------------|-------------------------------------------------------------------------------------------------------------------|
 | [INDRA](indra.bio)               | indra_rel       | The source regulates or interacts with the target according to an INDRA Statement.                         |
