@@ -1,17 +1,20 @@
-__all__ = ["Neo4jClient"]
+"""Neo4j client module."""
 
+import inspect
 import logging
+from functools import wraps
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
-import neo4j
 import neo4j.graph
-from neo4j import GraphDatabase
-
 from indra.config import get_config
 from indra.databases import identifiers
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
+from neo4j import GraphDatabase
+
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
+
+__all__ = ["Neo4jClient", "autoclient"]
 
 logger = logging.getLogger(__name__)
 
@@ -798,3 +801,26 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
     else:
         db_id = identifiers.ensure_prefix_if_needed(db_ns, db_id)
     return db_ns, db_id
+
+
+def autoclient(func):
+    """Wrap a function that takes a client for easier usage."""
+    signature = inspect.signature(func)
+    client_param = signature.parameters.get("client")
+    if client_param is None:
+        raise ValueError(
+            "the autoclient decorator can't be applied to a function that doesn't take a neo4j client."
+        )
+    if client_param.kind != inspect.Parameter.KEYWORD_ONLY:
+        raise ValueError(
+            "the autoclient decorator can't be applied to a function whose client argument isn't keyword-only"
+        )
+
+    @wraps(func)
+    def _wrapped(*args, **kwargs):
+        client = kwargs.get("client")
+        if client is None:
+            kwargs["client"] = Neo4jClient()
+        return func(*args, **kwargs)
+
+    return _wrapped
