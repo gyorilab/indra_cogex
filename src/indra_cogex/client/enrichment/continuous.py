@@ -12,7 +12,7 @@ expression experiments.
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, List, Mapping, Optional, Set, Tuple, Union
 
 import gseapy
 import pandas as pd
@@ -62,10 +62,10 @@ def _guess_score_col(df: pd.DataFrame) -> str:
 
 def get_rat_scores(
     path: Union[Path, str, pd.DataFrame],
-    read_csv_kwargs: Optional[dict[str, any]] = None,
+    read_csv_kwargs: Optional[Dict[str, any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
-) -> dict[str, float]:
+) -> Dict[str, float]:
     """Load a differential gene expression file.
 
     This function extracts the RGD gene symbols, maps them
@@ -112,7 +112,7 @@ def get_rat_scores(
 
 def wikipathways_gsea(
     client: Neo4jClient,
-    scores: dict[str, float],
+    scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -146,7 +146,7 @@ def wikipathways_gsea(
 
 def reactome_gsea(
     client: Neo4jClient,
-    scores: dict[str, float],
+    scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -180,7 +180,7 @@ def reactome_gsea(
 
 def go_gsea(
     client: Neo4jClient,
-    scores: dict[str, float],
+    scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -214,7 +214,7 @@ def go_gsea(
 
 def indra_upstream_gsea(
     client: Neo4jClient,
-    scores: dict[str, float],
+    scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -249,7 +249,7 @@ def indra_upstream_gsea(
 
 def indra_downstream_gsea(
     client: Neo4jClient,
-    scores: dict[str, float],
+    scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -283,8 +283,8 @@ def indra_downstream_gsea(
 
 
 def gsea(
-    scores: dict[str, float],
-    gene_sets: dict[tuple[str, str], set[str]],
+    scores: Dict[str, float],
+    gene_sets: Dict[Tuple[str, str], Set[str]],
     directory: Union[None, Path, str] = None,
     **kwargs,
 ) -> pd.DataFrame:

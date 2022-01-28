@@ -3,7 +3,7 @@
 """An app for gene list analysis."""
 
 import os
-from typing import List, Mapping, Tuple
+from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
@@ -113,7 +113,7 @@ permutations_field = IntegerField(
 )
 
 
-def parse_genes_field(s: str) -> tuple[dict[str, str], list[str]]:
+def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     """Parse a genes field string."""
     records = {
         record.strip().strip('"').strip("'").strip()
@@ -179,7 +179,7 @@ class ContinuousForm(FlaskForm):
     permutations = permutations_field
     submit = SubmitField("Submit")
 
-    def get_scores(self) -> dict[str, float]:
+    def get_scores(self) -> Dict[str, float]:
         """Get scores dictionary."""
         name = self.file.data.filename
         sep = "," if name.endswith("csv") else "\t"

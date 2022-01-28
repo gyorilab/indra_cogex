@@ -3,7 +3,7 @@
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
 from functools import lru_cache
-from typing import Iterable, Optional
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -43,8 +43,8 @@ EXAMPLE_GENE_IDS = [
 
 
 def _prepare_hypergeometric_test(
-    query_gene_set: set[str],
-    pathway_gene_set: set[str],
+    query_gene_set: Set[str],
+    pathway_gene_set: Set[str],
     gene_universe: int,
 ) -> np.ndarray:
     """Prepare the matrix for hypergeometric test calculations.
@@ -90,7 +90,7 @@ def count_human_genes(client: Neo4jClient) -> int:
 
 
 def gene_ontology_single_ora(
-    client: Neo4jClient, go_term: tuple[str, str], gene_ids: list[str]
+    client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
 ) -> float:
     """Get the *p*-value for the Fisher exact test a given GO term.
 
@@ -113,7 +113,7 @@ def gene_ontology_single_ora(
 
 
 def _do_ora(
-    curie_to_hgnc_ids: dict[tuple[str, str], set[str]],
+    curie_to_hgnc_ids: Dict[Tuple[str, str], Set[str]],
     gene_ids: Iterable[str],
     count: int,
     method: Optional[str] = "fdr_bh",
