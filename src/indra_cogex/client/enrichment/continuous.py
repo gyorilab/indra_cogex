@@ -12,7 +12,7 @@ expression experiments.
 """
 
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Set, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import gseapy
 import pandas as pd
@@ -282,10 +282,24 @@ def indra_downstream_gsea(
     )
 
 
+GSEA_RETURN_COLUMNS = [
+    "term",
+    "name",
+    "es",
+    "nes",
+    "pval",
+    "fdr",
+    "geneset_size",
+    "matched_size",
+]
+
+
 def gsea(
     scores: Dict[str, float],
     gene_sets: Dict[Tuple[str, str], Set[str]],
     directory: Union[None, Path, str] = None,
+    alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA on pre-ranked data.
@@ -300,6 +314,10 @@ def gsea(
     directory :
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
+    alpha :
+        The cutoff for significance. Defaults to 0.05
+    keep_insignificant :
+        If false, removes results with a p value less than alpha.
     kwargs :
         Remaining keyword arguments to pass through to :func:`gseapy.prerank
 
@@ -308,6 +326,8 @@ def gsea(
     :
         A pandas dataframe with the GSEA results
     """
+    if alpha is None:
+        alpha = 0.05
     if directory is not None:
         if isinstance(directory, str):
             directory = Path(directory)
@@ -330,6 +350,7 @@ def gsea(
     res.res2d.index.name = "term"
     rv = res.res2d.reset_index()
     rv["name"] = rv["term"].map(curie_to_name)
-    return rv[
-        ["term", "name", "es", "nes", "pval", "fdr", "geneset_size", "matched_size"]
-    ]
+    rv = rv[GSEA_RETURN_COLUMNS]
+    if not keep_insignificant:
+        rv = rv[rv["pval"] < alpha]
+    return rv

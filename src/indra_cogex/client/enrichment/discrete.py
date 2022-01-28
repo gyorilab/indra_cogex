@@ -118,7 +118,10 @@ def _do_ora(
     count: int,
     method: Optional[str] = "fdr_bh",
     alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
 ) -> pd.DataFrame:
+    if alpha is None:
+        alpha = 0.05
     query_gene_set = set(gene_ids)
     rows = []
     for (curie, name), pathway_hgnc_ids in curie_to_hgnc_ids.items():
@@ -138,11 +141,13 @@ def _do_ora(
             df["p"],
             method=method,
             is_sorted=True,
-            alpha=alpha or 0.05,
+            alpha=alpha,
         )
         df["q"] = correction_results[1]
         df["mlq"] = -np.log10(df["q"])
         df = df.sort_values("q", ascending=True)
+    if not keep_insignificant:
+        df = df[df["q"] < alpha]
     return df
 
 
