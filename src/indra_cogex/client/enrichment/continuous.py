@@ -26,7 +26,7 @@ from indra_cogex.client.enrichment.utils import (
     get_reactome,
     get_wikipathways,
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
 __all__ = [
     "get_rat_scores",
@@ -110,10 +110,12 @@ def get_rat_scores(
     return df[score_column_name].to_dict()
 
 
+@autoclient
 def wikipathways_gsea(
-    client: Neo4jClient,
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with WikiPathways gene sets.
@@ -137,17 +139,19 @@ def wikipathways_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_wikipathways(client),
+        gene_sets=get_wikipathways(client=client),
         scores=scores,
         directory=directory,
         **kwargs,
     )
 
 
+@autoclient
 def reactome_gsea(
-    client: Neo4jClient,
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with Reactome gene sets.
@@ -171,17 +175,19 @@ def reactome_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_reactome(client),
+        gene_sets=get_reactome(client=client),
         scores=scores,
         directory=directory,
         **kwargs,
     )
 
 
+@autoclient
 def go_gsea(
-    client: Neo4jClient,
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with gene sets for each Gene Ontolgy term.
@@ -205,17 +211,19 @@ def go_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_go(client),
+        gene_sets=get_go(client=client),
         scores=scores,
         directory=directory,
         **kwargs,
     )
 
 
+@autoclient
 def indra_upstream_gsea(
-    client: Neo4jClient,
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -240,17 +248,19 @@ def indra_upstream_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_entity_to_targets(client),
+        gene_sets=get_entity_to_targets(client=client),
         scores=scores,
         directory=directory,
         **kwargs,
     )
 
 
+@autoclient
 def indra_downstream_gsea(
-    client: Neo4jClient,
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -275,7 +285,7 @@ def indra_downstream_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_entity_to_regulators(client),
+        gene_sets=get_entity_to_regulators(client=client),
         scores=scores,
         directory=directory,
         **kwargs,
