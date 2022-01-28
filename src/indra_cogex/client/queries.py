@@ -1070,10 +1070,11 @@ def get_drugs_for_target(
         target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     drug_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    drug_nodes = [(rel.source_ns, rel.source_id) for rel in drug_rels]
     stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in drug_rels]
     stmts = stmts_from_json(stmt_jsons)
-    drugs = [stmt.subj for stmt in stmts]
-    return drugs
+    drug_agents = [stmt.subj for stmt in stmts]
+    return {"nodes": drug_nodes, "agents": drug_agents}
 
 
 def get_targets_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[Agent]:
@@ -1082,10 +1083,11 @@ def get_targets_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     target_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    target_nodes = [(rel.target_ns, rel.target_id) for rel in target_rels]
     stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in target_rels]
     stmts = stmts_from_json(stmt_jsons)
-    targets = [stmt.obj for stmt in stmts]
-    return targets
+    target_agents = [stmt.obj for stmt in stmts]
+    return {"nodes": target_nodes, "agents": target_agents}
 
 
 def is_drug_target(
