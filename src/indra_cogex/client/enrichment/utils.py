@@ -5,7 +5,6 @@
 import logging
 from collections import defaultdict
 from textwrap import dedent
-from typing import Dict, Set, Tuple
 from typing import Dict, Optional, Set, Tuple
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient

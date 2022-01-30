@@ -25,6 +25,8 @@ from wtforms import (
 from wtforms.validators import DataRequired
 
 from indra_cogex.client.enrichment.continuous import (
+    get_human_scores,
+    get_mouse_scores,
     get_rat_scores,
     go_gsea,
     indra_downstream_gsea,
@@ -130,7 +132,6 @@ source_field = RadioField(
     " this analyis is computationally intensive",
 )
 
-
 file_field = FileField("File", validators=[DataRequired()])
 species_field = RadioField(
     "Species",
@@ -234,9 +235,9 @@ class ContinuousForm(FlaskForm):
         if self.species.data == "rat":
             scores = get_rat_scores(df)
         elif self.species.data == "mouse":
-            raise NotImplementedError
+            scores = get_mouse_scores(df)
         elif self.species.data == "human":
-            raise NotImplementedError
+            scores = get_human_scores(df)
         else:
             raise ValueError
         return scores
