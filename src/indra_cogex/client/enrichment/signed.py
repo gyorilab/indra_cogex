@@ -51,6 +51,8 @@ def reverse_causal_reasoning(
     minimum_size: int = 4,
     positive_stmts: Optional[Iterable[str]] = None,
     negative_stmts: Optional[Iterable[str]] = None,
+    alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
@@ -71,6 +73,11 @@ def reverse_causal_reasoning(
         A list of statement types for identifying positive genes
     negative_stmts :
         A list of statement types for identifying negative genes
+    alpha :
+        The cutoff for significance. Defaults to 0.05
+    keep_insignificant :
+        If false, removes results with a p value less than alpha.
+
 
     Returns
     -------
@@ -81,6 +88,8 @@ def reverse_causal_reasoning(
        qualitative causal knowledge to the interpretation of high-throughput data
        <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14**(1), 340.
     """
+    if alpha is None:
+        alpha = 0.05
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
     database_positive = collect_gene_sets(
@@ -142,6 +151,8 @@ def reverse_causal_reasoning(
             "binom_ambig_pvalue",
         ],
     ).sort_values("binom_pvalue")
+    if not keep_insignificant:
+        df = df[df["binom_pvalue"] < alpha]
     return df
 
 

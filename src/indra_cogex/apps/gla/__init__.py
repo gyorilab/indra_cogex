@@ -72,6 +72,9 @@ negative_genes_field = TextAreaField(
     validators=[DataRequired()],
 )
 indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
+keep_insignificant_field = BooleanField(
+    "Keep insignificant results (leads to long results lists)"
+)
 alpha_field = FloatField(
     "Alpha",
     default=0.05,
@@ -148,6 +151,7 @@ class DiscreteForm(FlaskForm):
     indra_path_analysis = indra_path_analysis_field
     alpha = alpha_field
     correction = correction_field
+    keep_insignificant = keep_insignificant_field
     submit = SubmitField("Submit")
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -160,8 +164,9 @@ class SignedForm(FlaskForm):
 
     positive_genes = positive_genes_field
     negative_genes = negative_genes_field
-    # alpha = alpha_field
+    alpha = alpha_field
     # correction = correction_field
+    keep_insignificant = keep_insignificant_field
     submit = SubmitField("Submit")
 
     def parse_positive_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -179,6 +184,8 @@ class ContinuousForm(FlaskForm):
     file = file_field
     species = species_field
     permutations = permutations_field
+    alpha = alpha_field
+    keep_insignificant = keep_insignificant_field
     submit = SubmitField("Submit")
 
     def get_scores(self) -> Dict[str, float]:
@@ -204,6 +211,7 @@ def discretize_analysis():
     if form.validate_on_submit():
         method = form.correction.data
         alpha = form.alpha.data
+        keep_insignificant = form.keep_insignificant.data
         genes, errors = form.parse_genes()
         gene_set = set(genes)
 
@@ -212,18 +220,21 @@ def discretize_analysis():
             gene_set,
             method=method,
             alpha=alpha,
+            keep_insignificant=keep_insignificant,
         )
         wikipathways_results = wikipathways_ora(
             client,
             gene_set,
             method=method,
             alpha=alpha,
+            keep_insignificant=keep_insignificant,
         )
         reactome_results = reactome_ora(
             client,
             gene_set,
             method=method,
             alpha=alpha,
+            keep_insignificant=keep_insignificant,
         )
         if form.indra_path_analysis.data:
             indra_upstream_results = indra_upstream_ora(
@@ -231,12 +242,14 @@ def discretize_analysis():
                 gene_set,
                 method=method,
                 alpha=alpha,
+                keep_insignificant=keep_insignificant,
             )
             indra_downstream_results = indra_downstream_ora(
                 client,
                 gene_set,
                 method=method,
                 alpha=alpha,
+                keep_insignificant=keep_insignificant,
             )
         else:
             indra_upstream_results = None
@@ -275,6 +288,8 @@ def signed_analysis():
             client=client,
             positive_hgnc_ids=positive_genes,
             negative_hgnc_ids=negative_genes,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
         )
         return flask.render_template(
             "signed_results.html",
@@ -301,7 +316,11 @@ def continuous_analysis():
     if form.validate_on_submit():
         scores = form.get_scores()
         go_results = go_gsea(
-            client=client, scores=scores, permutation_num=form.permutations.data
+            client=client,
+            scores=scores,
+            permutation_num=form.permutations.data,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
         )
         return flask.render_template(
             "continuous_results.html",
