@@ -2,7 +2,6 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from functools import lru_cache
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
@@ -17,7 +16,7 @@ from indra_cogex.client.enrichment.utils import (
     get_reactome,
     get_wikipathways,
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.client.queries import get_genes_for_go_term
 
 __all__ = [
@@ -78,7 +77,7 @@ def _prepare_hypergeometric_test(
     )
 
 
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def count_human_genes(client: Neo4jClient) -> int:
     """Count the number of HGNC genes in neo4j."""
     query = f"""\

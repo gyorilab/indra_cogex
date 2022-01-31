@@ -4,7 +4,6 @@
 
 import logging
 from collections import defaultdict
-from functools import lru_cache
 from textwrap import dedent
 from typing import Dict, Set, Tuple
 
@@ -58,7 +57,6 @@ def collect_gene_sets(
 
 
 @autoclient(cache=True)
-@lru_cache(maxsize=1)
 def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 

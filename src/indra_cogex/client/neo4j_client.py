@@ -866,11 +866,13 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
         client_param = signature.parameters.get("client")
         if client_param is None:
             raise ValueError(
-                "the autoclient decorator can't be applied to a function that doesn't take a neo4j client."
+                "the autoclient decorator can't be applied to a function that"
+                " doesn't take a neo4j client."
             )
         if client_param.kind != inspect.Parameter.KEYWORD_ONLY:
             raise ValueError(
-                "the autoclient decorator can't be applied to a function whose client argument isn't keyword-only"
+                "the autoclient decorator can't be applied to a function whose"
+                " `client` argument isn't keyword-only"
             )
 
         @wraps(func)

@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 import networkx as nx
 from indra.statements import Evidence, Statement
 
-from .neo4j_client import Neo4jClient
+from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
@@ -903,7 +903,8 @@ def _get_ev_dict_from_hash_ev_query(
     return dict(ev_dict)
 
 
-def get_node_counter(client: Neo4jClient) -> Counter:
+@autoclient(cache=True)
+def get_node_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each entity type.
 
     .. warning:: this code assumes all nodes only have one label, as in``label[0]``
@@ -916,7 +917,8 @@ def get_node_counter(client: Neo4jClient) -> Counter:
     )
 
 
-def get_edge_counter(client: Neo4jClient) -> Counter:
+@autoclient(cache=True)
+def get_edge_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each edge type."""
     return Counter(
         {
@@ -928,7 +930,8 @@ def get_edge_counter(client: Neo4jClient) -> Counter:
     )
 
 
-def get_schema_graph(client: Neo4jClient) -> nx.MultiDiGraph:
+@autoclient(cache=True)
+def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
     """Get a NetworkX graph reflecting the schema of the Neo4j graph.
 
     Generate a PDF diagram (works with PNG and SVG too) with the following::
