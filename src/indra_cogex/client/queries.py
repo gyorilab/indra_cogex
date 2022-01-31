@@ -775,7 +775,7 @@ def get_stmts_for_pmid(
     result = client.query_tx(hash_query)
     ev_dict = _get_ev_dict_from_hash_ev_query(result)
     stmt_hashes = set(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(client, stmt_hashes, ev_dict)
+    return get_stmts_for_stmt_hashes(stmt_hashes, ev_dict, client=client)
 
 
 @autoclient
@@ -798,9 +798,9 @@ def get_stmts_for_mesh(
     :
         The statements for the given MESH ID.
     """
-    ev_dict = get_evidences_for_mesh(client, mesh_term, include_child_terms)
+    ev_dict = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
     hashes = list(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
+    return get_stmts_for_stmt_hashes(hashes, ev_dict, client=client)
 
 
 @autoclient
@@ -850,7 +850,7 @@ def get_stmts_for_stmt_hashes(
 
     # Get the evidence objects for the given statement hashes
     if missing_hashes:
-        new_evidences = get_evidences_for_stmt_hashes(client, stmt_hashes)
+        new_evidences = get_evidences_for_stmt_hashes(stmt_hashes, client=client)
         if evidence_map:
             evidence_map.update(new_evidences)
         else:

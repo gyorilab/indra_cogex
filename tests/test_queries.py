@@ -209,7 +209,7 @@ def test_isa_or_partof():
 def test_get_pmids_for_mesh():
     # Single query
     client = _get_client()
-    pmids = get_pmids_for_mesh(client, ("MESH", "D015002"))
+    pmids = get_pmids_for_mesh(("MESH", "D015002"), client=client)
     assert pmids
     assert isinstance(pmids[0], Node)
     assert pmids[0].db_ns == "PUBMED"
@@ -221,7 +221,7 @@ def test_get_mesh_ids_for_pmid():
     # Single query
     client = _get_client()
     pmid = ("PUBMED", "27890007")
-    mesh_ids = get_mesh_ids_for_pmid(client, pmid)
+    mesh_ids = get_mesh_ids_for_pmid(pmid, client=client)
     assert mesh_ids
     assert isinstance(mesh_ids[0], Node)
     assert mesh_ids[0].db_ns == "MESH"
@@ -232,7 +232,7 @@ def test_get_mesh_ids_for_pmid():
 def test_get_evidence_obj_for_mesh_id():
     client = _get_client()
     mesh_id = ("MESH", "D015002")
-    evidence_dict = get_evidences_for_mesh(client, mesh_id)
+    evidence_dict = get_evidences_for_mesh(mesh_id, client=client)
     assert len(evidence_dict)
     assert isinstance(list(evidence_dict.values())[0][0], Evidence)
 
@@ -243,7 +243,7 @@ def test_get_evidence_obj_for_stmt_hash():
     # Single query
     stmt_hash = "12198579805553967"
     client = _get_client()
-    ev_objs = get_evidences_for_stmt_hash(client, stmt_hash)
+    ev_objs = get_evidences_for_stmt_hash(stmt_hash, client=client)
     assert ev_objs
     assert isinstance(ev_objs[0], Evidence)
 
@@ -254,7 +254,7 @@ def test_get_evidence_obj_for_stmt_hashes():
     # Single query
     stmt_hashes = ["12198579805553967", "30651649296901235"]
     client = _get_client()
-    ev_dict = get_evidences_for_stmt_hashes(client, stmt_hashes)
+    ev_dict = get_evidences_for_stmt_hashes(stmt_hashes, client=client)
     assert ev_dict
     assert set(ev_dict.keys()) == {"12198579805553967", "30651649296901235"}
     assert ev_dict["12198579805553967"]
@@ -268,7 +268,7 @@ def test_get_stmts_for_pmid():
     # Two queries: first evidences, then the statements
     client = _get_client()
     pmid = ("PUBMED", "14898026")
-    stmts = get_stmts_for_pmid(client, pmid)
+    stmts = get_stmts_for_pmid(pmid, client=client)
     assert stmts
     assert isinstance(stmts[0], Inhibition)
 
@@ -280,7 +280,7 @@ def test_get_stmts_for_mesh_id_w_children():
     # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
-    stmts = get_stmts_for_mesh(client, mesh_id)
+    stmts = get_stmts_for_mesh(mesh_id, client=client)
     assert stmts
     assert isinstance(stmts[0], Activation)
 
@@ -292,7 +292,7 @@ def test_get_stmts_for_mesh_id_wo_children():
     # 2. statements for the evidences in 2
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
-    stmts = get_stmts_for_mesh(client, mesh_id, include_child_terms=False)
+    stmts = get_stmts_for_mesh(mesh_id, include_child_terms=False, client=client)
     assert stmts
     assert isinstance(stmts[0], Activation)
 
@@ -303,6 +303,6 @@ def test_get_stmts_by_hashes():
     # Two queries: first statements, then all the evidence for the statements
     stmt_hashes = ["35279776755000170"]
     client = _get_client()
-    stmts = get_stmts_for_stmt_hashes(client, stmt_hashes)
+    stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
     assert isinstance(stmts[0], Inhibition)
