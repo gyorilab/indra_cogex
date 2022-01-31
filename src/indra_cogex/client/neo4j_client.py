@@ -33,6 +33,9 @@ class Neo4jClient:
         INDRA_NEO4J_PASSWORD set as environment variables or set in the INDRA config file.
     """
 
+    #: The session
+    session: Optional[neo4j.Session]
+
     def __init__(
         self,
         url: Optional[str] = None,
@@ -130,6 +133,11 @@ class Neo4jClient:
             sess = self.driver.session()
             self.session = sess
         return self.session
+
+    def close_session(self):
+        """Close the session if it exists."""
+        if self.session is not None:
+            self.session.close()
 
     def has_relation(
         self,
@@ -870,7 +878,10 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
             client = kwargs.get("client")
             if client is None:
                 kwargs["client"] = Neo4jClient()
-            return func(*args, **kwargs)
+            rv = func(*args, **kwargs)
+            if client is None:
+                kwargs["client"].close_session()
+            return rv
 
         if cache:
             _wrapped = lru_cache(maxsize=maxsize)(_wrapped)

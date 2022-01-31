@@ -12,6 +12,7 @@ from indra_cogex.representation import Node
 def test_missing():
     """Test failure when missing the "client" argument."""
     with pytest.raises(ValueError):
+
         @autoclient()
         def func(something_else):
             pass
@@ -20,6 +21,7 @@ def test_missing():
 def test_positional_exception():
     """Test failure on a positional argument."""
     with pytest.raises(ValueError):
+
         @autoclient()
         def func(client):
             pass
@@ -40,6 +42,16 @@ def test_autoclient():
     assert not hasattr(get_tissues_for_gene, "cache_info"), "caching is not enabled"
 
     tissues = get_tissues_for_gene(("HGNC", "9896"))
+    _check_tissues(tissues)
+
+    # Test what happens when you pass in your own client
+    client = Neo4jClient()
+    tissues = get_tissues_for_gene(("HGNC", "9896"), client=client)
+    _check_tissues(tissues)
+    assert client.session is not None
+
+
+def _check_tissues(tissues):
     assert tissues
     node0 = tissues[0]
     assert isinstance(node0, Node)
