@@ -50,7 +50,9 @@ __all__ = [
 
 
 @autoclient()
-def get_genes_in_tissue(tissue: Tuple[str, str], *, client: Neo4jClient) -> Iterable[Node]:
+def get_genes_in_tissue(
+    tissue: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the genes in the given tissue.
 
     Parameters
@@ -74,7 +76,9 @@ def get_genes_in_tissue(tissue: Tuple[str, str], *, client: Neo4jClient) -> Iter
 
 
 @autoclient()
-def get_tissues_for_gene(gene: Tuple[str, str], *, client: Neo4jClient) -> Iterable[Node]:
+def get_tissues_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the tissues the gene is expressed in.
 
     Parameters
@@ -231,7 +235,9 @@ def is_go_term_for_gene(
 
 
 @autoclient()
-def get_trials_for_drug(drug: Tuple[str, str], *, client: Neo4jClient) -> Iterable[Node]:
+def get_trials_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the trials for the given drug.
 
     Parameters
@@ -281,7 +287,9 @@ def get_trials_for_disease(
 
 
 @autoclient()
-def get_drugs_for_trial(trial: Tuple[str, str], *, client: Neo4jClient) -> Iterable[Node]:
+def get_drugs_for_trial(
+    trial: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the drugs for the given trial.
 
     Parameters
@@ -334,7 +342,9 @@ def get_diseases_for_trial(
 
 
 @autoclient()
-def get_pathways_for_gene(gene: Tuple[str, str], *, client: Neo4jClient) -> Iterable[Node]:
+def get_pathways_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the pathways for the given gene.
 
     Parameters
@@ -890,7 +900,9 @@ def get_stmts_for_stmt_hashes(
 
 
 @autoclient()
-def _get_mesh_child_terms(mesh_term: Tuple[str, str], *, client: Neo4jClient) -> Set[str]:
+def _get_mesh_child_terms(
+    mesh_term: Tuple[str, str], *, client: Neo4jClient
+) -> Set[str]:
     """Return the children of the given MESH ID.
 
     Parameters
