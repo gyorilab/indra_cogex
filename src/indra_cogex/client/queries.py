@@ -549,8 +549,9 @@ def isa_or_partof(
 # MESH / PMID
 
 
+@autoclient
 def get_pmids_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the PubMed IDs for the given MESH term.
 
@@ -600,8 +601,9 @@ def get_pmids_for_mesh(
     return [client.neo4j_to_node(r[0]) for r in client.query_tx(query)]
 
 
+@autoclient
 def get_mesh_ids_for_pmid(
-    client: Neo4jClient, pmid_term: Tuple[str, str]
+    pmid_term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the MESH terms for the given PubMed ID.
 
@@ -628,8 +630,9 @@ def get_mesh_ids_for_pmid(
     )
 
 
+@autoclient
 def get_evidences_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Dict[str, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -675,8 +678,9 @@ def get_evidences_for_mesh(
     return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
+@autoclient
 def get_evidences_for_stmt_hash(
-    client: Neo4jClient, stmt_hash: Union[str, int]
+    stmt_hash: Union[str, int], *, client: Neo4jClient
 ) -> Iterable[Evidence]:
     """Return the matching evidence objects for the given statement hash.
 
@@ -701,8 +705,9 @@ def get_evidences_for_stmt_hash(
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
 
 
+@autoclient
 def get_evidences_for_stmt_hashes(
-    client: Neo4jClient, stmt_hashes: Iterable[Union[str, int]]
+    stmt_hashes: Iterable[Union[str, int]], *, client: Neo4jClient
 ) -> Dict[str, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -732,8 +737,9 @@ def get_evidences_for_stmt_hashes(
     return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
+@autoclient
 def get_stmts_for_pmid(
-    client: Neo4jClient, pmid_term: Tuple[str, str]
+    pmid_term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -772,8 +778,9 @@ def get_stmts_for_pmid(
     return get_stmts_for_stmt_hashes(client, stmt_hashes, ev_dict)
 
 
+@autoclient
 def get_stmts_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Iterable[Statement]:
     """Return the statements with evidence for the given MESH ID.
 
@@ -796,10 +803,12 @@ def get_stmts_for_mesh(
     return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
 
 
+@autoclient
 def get_stmts_for_stmt_hashes(
-    client: Neo4jClient,
     stmt_hashes: Iterable[str],
     evidence_map: Optional[Dict[str, List[Evidence]]] = None,
+    *,
+    client: Neo4jClient,
 ) -> Iterable[Statement]:
     """Return the statements for the given statement hashes.
 
