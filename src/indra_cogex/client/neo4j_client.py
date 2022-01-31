@@ -803,8 +803,55 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
     return db_ns, db_id
 
 
-def autoclient(*, cache: bool = False):
-    """Wrap a function that takes a client for easier usage."""
+def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
+    """Wrap a function that takes a client for easier usage.
+
+
+    Arguments
+    ---------
+    cache :
+        Should the result be cached using :func:`functools.lru_cache`? Is
+        False by default.
+    maxsize :
+        If cache is True, this is the value passed to the ``maxsize`` argument
+        of :func:`functools.lru_cache`. Set to None for unlimited caching, but
+        beware that this can potentially use a lot of memory and isn't a good
+        idea for queries that can take a lot of different kinds of input over
+        time.
+
+    Returns
+    -------
+        : A decorator object that will wrap the function
+
+    Usage
+    -----
+    Not appropriate for caching (i.e., many possible inputs, especially
+    in a web app scenario)::
+
+    .. code-block:: python
+
+        @autoclient()
+        def get_tissues_for_gene(gene: Tuple[str, str], *, client: Neo4jClient):
+            return client.get_targets(
+                gene,
+                relation="expressed_in",
+                source_type="BioEntity",
+                target_type="BioEntity",
+            )
+
+    Appropriate for caching (e.g., doen't take inputs at all)::
+
+    .. code-block:: python
+
+        @autoclient(cache=True, maxsize=1)
+        def get_node_count(*, client: Neo4jClient) -> Counter:
+            return Counter(
+                {
+                    label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
+                    for label in client.query_tx("call db.labels();")
+                }
+            )
+    """
 
     def _decorator(func):
         signature = inspect.signature(func)
@@ -826,7 +873,7 @@ def autoclient(*, cache: bool = False):
             return func(*args, **kwargs)
 
         if cache:
-            _wrapped = lru_cache(maxsize=1)(_wrapped)
+            _wrapped = lru_cache(maxsize=maxsize)(_wrapped)
 
         return _wrapped
 
