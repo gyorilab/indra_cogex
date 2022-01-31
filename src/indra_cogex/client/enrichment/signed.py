@@ -44,7 +44,7 @@ POSITIVE_STMTS = ["Activation", "IncreaseAmount"]
 NEGATIVE_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
-@autoclient
+@autoclient()
 def reverse_causal_reasoning(
     positive_hgnc_ids: Iterable[str],
     negative_hgnc_ids: Iterable[str],

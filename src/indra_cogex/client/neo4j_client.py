@@ -2,7 +2,7 @@
 
 import inspect
 import logging
-from functools import wraps
+from functools import lru_cache, wraps
 from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j.graph
@@ -803,24 +803,31 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
     return db_ns, db_id
 
 
-def autoclient(func):
+def autoclient(*, cache: bool = False):
     """Wrap a function that takes a client for easier usage."""
-    signature = inspect.signature(func)
-    client_param = signature.parameters.get("client")
-    if client_param is None:
-        raise ValueError(
-            "the autoclient decorator can't be applied to a function that doesn't take a neo4j client."
-        )
-    if client_param.kind != inspect.Parameter.KEYWORD_ONLY:
-        raise ValueError(
-            "the autoclient decorator can't be applied to a function whose client argument isn't keyword-only"
-        )
 
-    @wraps(func)
-    def _wrapped(*args, **kwargs):
-        client = kwargs.get("client")
-        if client is None:
-            kwargs["client"] = Neo4jClient()
-        return func(*args, **kwargs)
+    def _decorator(func):
+        signature = inspect.signature(func)
+        client_param = signature.parameters.get("client")
+        if client_param is None:
+            raise ValueError(
+                "the autoclient decorator can't be applied to a function that doesn't take a neo4j client."
+            )
+        if client_param.kind != inspect.Parameter.KEYWORD_ONLY:
+            raise ValueError(
+                "the autoclient decorator can't be applied to a function whose client argument isn't keyword-only"
+            )
 
-    return _wrapped
+        @wraps(func)
+        def _wrapped(*args, **kwargs):
+            client = kwargs.get("client")
+            if client is None:
+                kwargs["client"] = Neo4jClient()
+            return func(*args, **kwargs)
+
+        if cache:
+            _wrapped = lru_cache(maxsize=1)(_wrapped)
+
+        return _wrapped
+
+    return _decorator

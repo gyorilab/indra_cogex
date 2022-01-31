@@ -110,7 +110,7 @@ def get_rat_scores(
     return df[score_column_name].to_dict()
 
 
-@autoclient
+@autoclient()
 def wikipathways_gsea(
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
@@ -146,7 +146,7 @@ def wikipathways_gsea(
     )
 
 
-@autoclient
+@autoclient()
 def reactome_gsea(
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
@@ -182,7 +182,7 @@ def reactome_gsea(
     )
 
 
-@autoclient
+@autoclient()
 def go_gsea(
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
@@ -218,7 +218,7 @@ def go_gsea(
     )
 
 
-@autoclient
+@autoclient()
 def indra_upstream_gsea(
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,
@@ -255,7 +255,7 @@ def indra_upstream_gsea(
     )
 
 
-@autoclient
+@autoclient()
 def indra_downstream_gsea(
     scores: Dict[str, float],
     directory: Union[None, Path, str] = None,

@@ -22,7 +22,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-@autoclient
+@autoclient()
 def collect_gene_sets(
     query: str,
     *,
@@ -57,7 +57,7 @@ def collect_gene_sets(
     return dict(curie_to_hgnc_ids)
 
 
-@autoclient
+@autoclient(cache=True)
 @lru_cache(maxsize=1)
 def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
@@ -83,8 +83,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -110,8 +109,7 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -137,8 +135,7 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
@@ -170,8 +167,7 @@ def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[s
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def get_entity_to_regulators(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
