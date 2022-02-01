@@ -6,6 +6,7 @@ import logging
 from collections import defaultdict
 from textwrap import dedent
 from typing import Dict, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
@@ -133,8 +134,13 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient(cache=True)
-def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True, maxsize=5)
+def get_entity_to_targets(
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
 
@@ -142,6 +148,12 @@ def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[s
     ----------
     client :
         The Neo4j client.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
 
     Returns
     -------
@@ -149,24 +161,40 @@ def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[s
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
+    if minimum_evidence_count is None or minimum_evidence_count == 1:
+        evidence_line = ""
+    else:
+        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
+    if minimum_belief is None or minimum_belief == 0.0:
+        belief_line = ""
+    else:
+        belief_line = f"AND r.belief >= {minimum_belief}"
     query = dedent(
-        """\
+        f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        // Collecting human genes only
-        WHERE gene.id STARTS WITH "hgnc"
-        // Ignore complexes since they are non-directional
-        AND r.stmt_type <> "Complex"
-        // This is a simple way to ignore non-human proteins
-        AND NOT regulator.id STARTS WITH "uniprot"
-        RETURN regulator.id, regulator.name, collect(gene.id);
+        WHERE
+            gene.id STARTS WITH "hgnc"                  // Collecting human genes only
+            AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
+            AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            {evidence_line}
+            {belief_line}
+        RETURN
+            regulator.id,
+            regulator.name,
+            collect(gene.id);
     """
     )
     logger.info("caching entity->targets with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query)
 
 
-@autoclient(cache=True)
-def get_entity_to_regulators(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True, maxsize=5)
+def get_entity_to_regulators(
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
 
@@ -174,6 +202,12 @@ def get_entity_to_regulators(*, client: Neo4jClient) -> Dict[Tuple[str, str], Se
     ----------
     client :
         The Neo4j client.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
 
     Returns
     -------
@@ -181,16 +215,27 @@ def get_entity_to_regulators(*, client: Neo4jClient) -> Dict[Tuple[str, str], Se
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
+    if minimum_evidence_count is None or minimum_evidence_count == 1:
+        evidence_line = ""
+    else:
+        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
+    if minimum_belief is None or minimum_belief == 0.0:
+        belief_line = ""
+    else:
+        belief_line = f"AND r.belief >= {minimum_belief}"
     query = dedent(
-        """\
+        f"""\
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
-        // Collecting human genes only
-        WHERE gene.id STARTS WITH "hgnc"
-        // Ignore complexes since they are non-directional
-        AND r.stmt_type <> "Complex"
-        // This is a simple way to ignore non-human proteins
-        AND NOT target.id STARTS WITH "uniprot"
-        RETURN target.id, target.name, collect(gene.id);
+        WHERE
+            gene.id STARTS WITH "hgnc"               // Collecting human genes only
+            AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
+            AND NOT target.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            {evidence_line}
+            {belief_line}
+        RETURN
+            target.id,
+            target.name,
+            collect(gene.id);
     """
     )
     logger.info("caching entity->regulators with Cypher query: %s", query)

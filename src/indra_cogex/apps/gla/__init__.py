@@ -79,6 +79,16 @@ negative_genes_field = TextAreaField(
     validators=[DataRequired()],
 )
 indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
+minimum_evidence_field = IntegerField(
+    "Minimum Evidence Count",
+    default=1,
+    description="The minimum number of evidences, if using INDRA path-based analysis.",
+)
+minimum_belief_field = FloatField(
+    "Minimum Belief",
+    default=0.0,
+    description="The minimum belief score, if using INDRA path-based analysis.",
+)
 keep_insignificant_field = BooleanField(
     "Keep insignificant results (leads to long results lists)"
 )
@@ -170,6 +180,8 @@ class DiscreteForm(FlaskForm):
 
     genes = genes_field
     indra_path_analysis = indra_path_analysis_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
@@ -185,6 +197,8 @@ class SignedForm(FlaskForm):
 
     positive_genes = positive_genes_field
     negative_genes = negative_genes_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     alpha = alpha_field
     # correction = correction_field
     keep_insignificant = keep_insignificant_field
@@ -207,6 +221,9 @@ class ContinuousForm(FlaskForm):
     permutations = permutations_field
     alpha = alpha_field
     keep_insignificant = keep_insignificant_field
+    source = source_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     submit = SubmitField("Submit")
 
     def get_scores(self) -> Dict[str, float]:
@@ -233,6 +250,8 @@ def discretize_analysis():
         method = form.correction.data
         alpha = form.alpha.data
         keep_insignificant = form.keep_insignificant.data
+        minimum_evidence_count = form.minimum_evidence.data
+        minimum_belief = form.minimum_belief.data
         genes, errors = form.parse_genes()
         gene_set = set(genes)
 
@@ -264,6 +283,8 @@ def discretize_analysis():
                 method=method,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=minimum_evidence_count,
+                minimum_belief=minimum_belief,
             )
             indra_downstream_results = indra_downstream_ora(
                 client,
@@ -271,6 +292,8 @@ def discretize_analysis():
                 method=method,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=minimum_evidence_count,
+                minimum_belief=minimum_belief,
             )
         else:
             indra_upstream_results = None
@@ -311,6 +334,8 @@ def signed_analysis():
             negative_hgnc_ids=negative_genes,
             alpha=form.alpha.data,
             keep_insignificant=form.keep_insignificant.data,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
         )
         return flask.render_template(
             "signed_results.html",
@@ -371,6 +396,8 @@ def continuous_analysis():
                 permutation_num=permutations,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=form.minimum_evidence.data,
+                minimum_belief=form.minimum_belief.data,
             )
         elif source == "indra-downstream":
             results = indra_downstream_gsea(
@@ -379,6 +406,8 @@ def continuous_analysis():
                 permutation_num=permutations,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=form.minimum_evidence.data,
+                minimum_belief=form.minimum_belief.data,
             )
         else:
             raise ValueError
