@@ -24,7 +24,14 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired
 
-from indra_cogex.client.enrichment.continuous import get_rat_scores, go_gsea
+from indra_cogex.client.enrichment.continuous import (
+    get_rat_scores,
+    go_gsea,
+    indra_downstream_gsea,
+    indra_upstream_gsea,
+    reactome_gsea,
+    wikipathways_gsea,
+)
 from indra_cogex.client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
@@ -99,6 +106,20 @@ correction_field = RadioField(
     ],
     default="fdr_bh",
 )
+source_field = RadioField(
+    "Gene Set Source",
+    choices=[
+        ("go", "Gene Ontology"),
+        ("reactome", "Reactome"),
+        ("wikipathways", "WikiPathways"),
+        ("indra-upstream", "INDRA Upstream"),
+        ("indra-downstrea", "INDRA Downstream"),
+    ],
+    default="go",
+    description="The source of gene sets. Only one can be run at a time because"
+    " this analyis is computationally intensive",
+)
+
 
 file_field = FileField("File", validators=[DataRequired()])
 species_field = RadioField(
@@ -315,16 +336,57 @@ def continuous_analysis():
     form = ContinuousForm()
     if form.validate_on_submit():
         scores = form.get_scores()
-        go_results = go_gsea(
-            client=client,
-            scores=scores,
-            permutation_num=form.permutations.data,
-            alpha=form.alpha.data,
-            keep_insignificant=form.keep_insignificant.data,
-        )
+        source = form.source.data
+        alpha = form.alpha.data
+        permutations = form.permutations.data
+        keep_insignificant = form.keep_insignificant.data
+        if source == "go":
+            results = go_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "wikipathways":
+            results = wikipathways_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "reactome":
+            results = reactome_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "indra-upstream":
+            results = indra_upstream_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "indra-downstream":
+            results = indra_downstream_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        else:
+            raise ValueError
+
         return flask.render_template(
             "continuous_results.html",
-            go_results=go_results,
+            source=source,
+            results=results,
         )
     return flask.render_template(
         "continuous_form.html",
