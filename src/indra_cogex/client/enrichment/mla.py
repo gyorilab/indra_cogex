@@ -76,7 +76,7 @@ def get_metabolomics_sets(
         enzyme.id, family.name, collect(chemical.id)
     UNION ALL
     MATCH
-        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
     WHERE
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
