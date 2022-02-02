@@ -1,3 +1,5 @@
+"""Metabolite-centric analysis blueprint."""
+
 from typing import Dict, List, Mapping, Tuple
 
 import flask
@@ -6,12 +8,13 @@ from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
-from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES, metabolomics_ora
-
 from .fields import alpha_field, correction_field, keep_insignificant_field
 from .proxies import client
+from ...client.enrichment.mla import EXAMPLE_CHEBI_CURIES, metabolomics_ora
 
-__all__ = ["metabolite_blueprint"]
+__all__ = [
+    "metabolite_blueprint",
+]
 
 metabolite_blueprint = flask.Blueprint("mla", __name__, url_prefix="/metabolite")
 
@@ -57,7 +60,7 @@ metabolites_field = TextAreaField(
 
 
 class DiscreteForm(FlaskForm):
-    """A form for discrete gene set enrichment analysis."""
+    """A form for discrete metabolute set enrichment analysis."""
 
     metabolites = metabolites_field
     alpha = alpha_field

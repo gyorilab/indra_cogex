@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-def minimum_evidence_helper(
+def _minimum_evidence_helper(
     minimum_evidence_count: Optional[float] = None, name: str = "r"
 ) -> str:
     if minimum_evidence_count is None or minimum_evidence_count == 1:
@@ -26,7 +26,7 @@ def minimum_evidence_helper(
     return f"AND {name}.evidence_count >= {minimum_evidence_count}"
 
 
-def minimum_belief_helper(
+def _minimum_belief_helper(
     minimum_belief: Optional[float] = None, name: str = "r"
 ) -> str:
     if minimum_belief is None or minimum_belief == 0.0:
@@ -51,25 +51,27 @@ def get_metabolomics_sets(
     minimum_belief :
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
+    client :
+        The Neo4j client.
 
     Returns
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
-    evidence_line = minimum_evidence_helper(minimum_evidence_count)
-    belief_line = minimum_belief_helper(minimum_belief)
+    evidence_line = _minimum_evidence_helper(minimum_evidence_count)
+    belief_line = _minimum_belief_helper(minimum_belief)
     query = dedent(
         f"""\
     MATCH
         (enzyme:BioEntity)-[:xref]-(family:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
-    WHERE 
+    WHERE
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
         and chemical.id STARTS WITH "chebi"
         and r.stmt_type in ["Activation", "IncreaseAmount"]
         {evidence_line}
         {belief_line}
-    RETURN 
+    RETURN
         enzyme.id, enzyme.name, collect(chemical.id)
     LIMIT 5;
     """
@@ -100,7 +102,7 @@ EXAMPLE_CHEBI_IDS = [
 EXAMPLE_CHEBI_CURIES = [f"CHEBI:{i}" for i in EXAMPLE_CHEBI_IDS]
 
 
-def main():
+def _main():
     client = Neo4jClient()
     results = get_metabolomics_sets(
         client=client, minimum_belief=0.5, minimum_evidence_count=3
@@ -110,4 +112,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _main()

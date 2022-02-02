@@ -1,22 +1,38 @@
+"""Gene-centric analysis blueprint."""
+
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
-from wtforms import SubmitField
+from wtforms import SubmitField, TextAreaField
+from wtforms.validators import DataRequired
 
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
-    get_rat_scores,
-    go_gsea,
     indra_downstream_gsea,
     indra_upstream_gsea,
     reactome_gsea,
     wikipathways_gsea,
 )
-from indra_cogex.client.enrichment.discrete import (
+
+from .fields import (
+    alpha_field,
+    correction_field,
+    file_field,
+    indra_path_analysis_field,
+    keep_insignificant_field,
+    minimum_belief_field,
+    minimum_evidence_field,
+    permutations_field,
+    source_field,
+    species_field,
+)
+from .proxies import client
+from ...client.enrichment.continuous import get_rat_scores, go_gsea
+from ...client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
     indra_downstream_ora,
@@ -24,32 +40,35 @@ from indra_cogex.client.enrichment.discrete import (
     reactome_ora,
     wikipathways_ora,
 )
-from indra_cogex.client.enrichment.signed import (
+from ...client.enrichment.signed import (
     EXAMPLE_NEGATIVE_HGNC_IDS,
     EXAMPLE_POSITIVE_HGNC_IDS,
     reverse_causal_reasoning,
 )
 
-from .fields import (
-    alpha_field,
-    correction_field,
-    file_field,
-    genes_field,
-    indra_path_analysis_field,
-    keep_insignificant_field,
-    minimum_belief_field,
-    minimum_evidence_field,
-    negative_genes_field,
-    permutations_field,
-    positive_genes_field,
-    source_field,
-    species_field,
-)
-from .proxies import client
-
 __all__ = ["gene_blueprint"]
 
 gene_blueprint = flask.Blueprint("gla", __name__, url_prefix="/gene")
+
+genes_field = TextAreaField(
+    "Genes",
+    description="Paste your list of gene symbols, HGNC gene identifiers, or"
+    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+    " example list of human genes</a> related to COVID-19.",
+    validators=[DataRequired()],
+)
+positive_genes_field = TextAreaField(
+    "Positive Genes",
+    description="Paste your list of gene symbols, HGNC gene identifiers, or CURIEs here",
+    validators=[DataRequired()],
+)
+negative_genes_field = TextAreaField(
+    "Negative Genes",
+    description="Paste your list of gene symbols, HGNC gene identifiers, or"
+    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
+    " example list</a> related to prostate cancer.",
+    validators=[DataRequired()],
+)
 
 
 def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
