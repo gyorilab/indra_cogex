@@ -1,6 +1,7 @@
 """Metabolomic set analysis utilities."""
 
 import itertools as itt
+from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
 from typing import Iterable, Mapping, Optional, Set, Tuple
@@ -72,16 +73,32 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, enzyme.name, collect(chemical.id)
-    LIMIT 5;
+        enzyme.id, family.name, collect(chemical.id)
+    UNION ALL
+    MATCH
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        enzyme.id STARTS WITH "ec-code"
+        and family.id STARTS WITH "fplx"
+        and chemical.id STARTS WITH "chebi"
+        and r.stmt_type in ["Activation", "IncreaseAmount"]
+        {evidence_line}
+        {belief_line}
+    RETURN
+        enzyme.id, family.name, collect(chemical.id)
     """
     )
-    return {
-        (ec_curie.split(":", 1)[1], ec_name): {
-            chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies
-        }
-        for ec_curie, ec_name, chebi_curies in client.query_tx(query)
-    }
+    rv = defaultdict(set)
+    for ec_curie, ec_name, chebi_curies in client.query_tx(query):
+        ec_code = ec_curie.split(":", 1)[1]
+        rv[ec_code, ec_name].update(
+            {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
+        )
+    return dict(rv)
+
+
+def _sum_values(d):
+    return len(set(itt.chain.from_iterable(d.values())))
 
 
 def metabolomics_ora(
