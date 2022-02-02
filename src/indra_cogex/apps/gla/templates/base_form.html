@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% import "bootstrap4/form.html" as wtf %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-4">{% block header %}{% endblock %}</h1>
+        <p class="lead">
+            {% block lead %}{% endblock %}
+        </p>
+        {{ wtf.render_form(form) }}
+    </div>
+{% endblock %}

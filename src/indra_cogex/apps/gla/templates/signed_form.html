@@ -1,22 +1,19 @@
-{% extends "base.html" %}
-
-{% import "bootstrap4/form.html" as wtf %}
+{% extends "base_form.html" %}
 
 {% block title %}Signed Gene Set Analysis{% endblock %}
 
-{% block container %}
+{% block scripts %}
     <script>
         function exampleGenes() {
             document.getElementById('{{ form.positive_genes.name }}').value = "{{ example_positive_hgnc_ids }}";
             document.getElementById('{{ form.negative_genes.name }}').value = "{{ example_negative_hgnc_ids }}";
         }
     </script>
-    <div class="card card-body bg-light">
-        <h1 class="display-4">Signed Gene Set Analysis</h1>
-        <p class="lead">
-            This application performs signed gene set enrichment analysis using
-            INDRA CoGEx and the Reverse Causal Reasoning algorithm.
-        </p>
-        {{ wtf.render_form(form) }}
-    </div>
+{% endblock %}
+
+{% block header %}Signed Gene Set Analysis{% endblock %}
+
+{% block lead %}
+    This application performs signed gene set enrichment analysis using
+    INDRA CoGEx and the Reverse Causal Reasoning algorithm.
 {% endblock %}
