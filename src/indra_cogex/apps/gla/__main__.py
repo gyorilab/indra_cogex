@@ -2,7 +2,7 @@
 
 """Run the Gene List Analysis web service with ``python -m indra_cogex.apps.gla``."""
 
-from . import cli
+from .wsgi import cli
 
 if __name__ == "__main__":
     cli()

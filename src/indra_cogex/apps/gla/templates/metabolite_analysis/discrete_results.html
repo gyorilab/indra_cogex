@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Metabolite Set Analysis{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <link
+            rel="stylesheet"
+            href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
+    />
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        const datatablesConf = {"order": [[2, "asc"]]};
+        $(document).ready(function () {
+            $("#table-results").DataTable(datatablesConf);
+        });
+    </script>
+{% endblock %}
+
+{% macro render_table(df, table_id) -%}
+    <table class="table table-hover table-striped table-ora" id="{{ table_id }}">
+        <thead>
+        <tr>
+            <th scope="col">EC Code</th>
+            <th scope="col">Name</th>
+            <th scope="col"><i>p</i>-value</th>
+            <th scope="col"><i>q</i>-value</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ec_code, name, p, mlp, q, mlq in df.values %}
+            <tr>
+                <td><a href="https://bioregistry.io/eccode:{{ ec_code }}">{{ ec_code }}</a></td>
+                <td>{{ name }}</td>
+                <td>{{ "{:.2e}".format(p) }}</td>
+                <td>{{ "{:.2e}".format(q) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Metabolite Set Analysis</h1>
+        <div>
+            {% if errors %}
+                <h2>Errors</h2>
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <h3>Query</h3>
+            <p>
+                {% for chebi_id, name in metabolites.items() %}
+                    <a class="badge badge-info" href="https://bioregistry.io/chebi:{{ chebi_id }}">CHEBI:{{ chebi_id }}
+                        ({{ name }})
+                    </a>
+                {% endfor %}
+            </p>
+            <h3>Over-Representation Analysis</h3>
+            <div>
+                {{ render_table(results, "table-results") }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

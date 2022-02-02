@@ -1,15 +1,20 @@
 """Metabolomic set analysis utilities."""
 
+import itertools as itt
 from functools import lru_cache
 from textwrap import dedent
-from typing import Mapping, Optional, Set
+from typing import Iterable, Mapping, Optional, Set, Tuple
 
-from tabulate import tabulate
+import pandas as pd
 
+from indra_cogex.client.enrichment.discrete import _do_ora
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 __all__ = [
     "get_metabolomics_sets",
+    "EXAMPLE_CHEBI_IDS",
+    "EXAMPLE_CHEBI_CURIES",
+    "metabolomics_ora",
 ]
 
 
@@ -35,7 +40,7 @@ def get_metabolomics_sets(
     minimum_evidence_count: Optional[float] = None,
     minimum_belief: Optional[float] = None,
     client: Neo4jClient,
-) -> Mapping[str, Set[str]]:
+) -> Mapping[Tuple[str, str], Set[str]]:
     """Get a mapping of EC codes to ChEBI local identifiers that it increases/activates.
 
     Arguments
@@ -65,16 +70,34 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN 
-        enzyme.id, collect(chemical.id)
+        enzyme.id, enzyme.name, collect(chemical.id)
     LIMIT 5;
     """
     )
     return {
-        ec_curie.split(":", 1)[1]: {
+        (ec_curie.split(":", 1)[1], ec_name): {
             chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies
         }
-        for ec_curie, chebi_curies in client.query_tx(query)
+        for ec_curie, ec_name, chebi_curies in client.query_tx(query)
     }
+
+
+def metabolomics_ora(
+    *, client: Neo4jClient, chebi_ids: Iterable[str], **kwargs
+) -> pd.DataFrame:
+    """Calculate over-representation on all metabolites."""
+    curie_to_target_sets = get_metabolomics_sets(client=client)
+    count = len(set(itt.chain.from_iterable(curie_to_target_sets.values())))
+    return _do_ora(curie_to_target_sets, query=chebi_ids, count=count, **kwargs)
+
+
+#: Coming from EC search1.14.19.1
+EXAMPLE_CHEBI_IDS = [
+    "15756",
+    "16196",
+]
+
+EXAMPLE_CHEBI_CURIES = [f"CHEBI:{i}" for i in EXAMPLE_CHEBI_IDS]
 
 
 def main():
@@ -82,7 +105,8 @@ def main():
     results = get_metabolomics_sets(
         client=client, minimum_belief=0.5, minimum_evidence_count=3
     )
-    print(tabulate(results.items()))
+    results = metabolomics_ora(client=client, chebi_ids=EXAMPLE_CHEBI_IDS)
+    print(results.head())
 
 
 if __name__ == "__main__":
