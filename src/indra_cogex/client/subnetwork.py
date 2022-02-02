@@ -1,9 +1,15 @@
 from typing import List, Tuple
 
 from indra.statements import Statement
+
 from .neo4j_client import Neo4jClient
-from .queries import get_expressed_genes_in_tissue
-from ..representation import Node, indra_stmts_from_relations, norm_id
+from .queries import get_genes_in_tissue
+from ..representation import indra_stmts_from_relations, norm_id
+
+__all__ = [
+    "indra_subnetwork",
+    "indra_subnetwork_tissue",
+]
 
 
 def indra_subnetwork(
@@ -56,6 +62,6 @@ def indra_subnetwork_tissue(
     :
         The subnetwork induced by the given nodes and expressed in the given tissue.
     """
-    genes = get_expressed_genes_in_tissue(client, tissue)
+    genes = get_genes_in_tissue(client, tissue)
     relevant_genes = {g.grounding() for g in genes} & set(nodes)
     return indra_subnetwork(client, relevant_genes)
