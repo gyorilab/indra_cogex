@@ -89,26 +89,42 @@ def metabolomics_ora(
 ) -> pd.DataFrame:
     """Calculate over-representation on all metabolites."""
     curie_to_target_sets = get_metabolomics_sets(client=client)
-    count = len(set(itt.chain.from_iterable(curie_to_target_sets.values())))
+    count = _sum_values(curie_to_target_sets)
     return _do_ora(curie_to_target_sets, query=chebi_ids, count=count, **kwargs)
 
 
-#: Coming from EC search1.14.19.1
+#: Various alcohol dehydrogenase products
 EXAMPLE_CHEBI_IDS = [
-    "15756",
-    "16196",
+    "15366",  # acetic acid
+    "15343",  # acetaldehyde
+    "16995",  # oxalic acid
+    "16842",  # formaldehyde
 ]
 
 EXAMPLE_CHEBI_CURIES = [f"CHEBI:{i}" for i in EXAMPLE_CHEBI_IDS]
 
 
 def _main():
+    from tabulate import tabulate
+
     client = Neo4jClient()
     results = get_metabolomics_sets(
-        client=client, minimum_belief=0.5, minimum_evidence_count=3
+        client=client, minimum_belief=0.3, minimum_evidence_count=2
     )
-    results = metabolomics_ora(client=client, chebi_ids=EXAMPLE_CHEBI_IDS)
-    print(results.head())
+    print("number of enzymes", len(results))
+    print("number of metabolites", _sum_values(results))
+    print(
+        tabulate(
+            (
+                (
+                    ec_code,
+                    name,
+                    sorted(f"https://bioregistry.io/chebi:{c}" for c in chebi_ids),
+                )
+                for (ec_code, name), chebi_ids in results.items()
+            )
+        )
+    )
 
 
 if __name__ == "__main__":
