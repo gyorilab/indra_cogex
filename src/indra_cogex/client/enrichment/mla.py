@@ -1,12 +1,16 @@
 """Metabolomic set analysis utilities."""
 
 import itertools as itt
+import json
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
 from typing import Iterable, Mapping, Optional, Set, Tuple
 
 import pandas as pd
+import pyobo
+import pystow
+import requests
 
 from indra_cogex.client.enrichment.discrete import _do_ora
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -17,6 +21,8 @@ __all__ = [
     "EXAMPLE_CHEBI_CURIES",
     "metabolomics_ora",
 ]
+
+ENZYME_FILE = pystow.join("indra", "cogex", "ec", name="hgnc_to_ec.json")
 
 
 def _minimum_evidence_helper(
@@ -33,6 +39,42 @@ def _minimum_belief_helper(
     if minimum_belief is None or minimum_belief == 0.0:
         return ""
     return f"AND {name}.belief >= {minimum_belief}"
+
+
+@lru_cache(1)
+def get_hgnc_to_ec() -> Mapping[str, Set[str]]:
+    """Get the gene-enzyme mappings."""
+    if ENZYME_FILE.is_file():
+        d = json.loads(ENZYME_FILE.read_text())
+    else:
+        url = "https://www.genenames.org/cgi-bin/download/custom"
+        params = {
+            "col": ["gd_hgnc_id", "gd_enz_ids"],
+            "status": "Approved",
+            "hgnc_dbtag": "on",
+            "order_by": "gd_app_sym_sort",
+            "format": "text",
+            "submit": "submit",
+        }
+        res = requests.get(url, params=params)
+        d = {}
+        lines = res.iter_lines(decode_unicode=True)
+        _header = next(lines)
+        for line in lines:
+            try:
+                hgnc_curie, enzyme_ids = line.strip().split("\t")
+            except ValueError:
+                continue  # no enzymes
+            if not enzyme_ids:
+                continue
+            d[hgnc_curie.removeprefix("HGNC:")] = sorted(
+                enzyme_id.strip() for enzyme_id in enzyme_ids.split(", ")
+            )
+        ENZYME_FILE.write_text(json.dumps(d, indent=2))
+    return d
+
+
+HGNC_TO_EC = get_hgnc_to_ec()
 
 
 @lru_cache()
@@ -59,6 +101,8 @@ def get_metabolomics_sets(
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
+    ec_code_to_chemicals = defaultdict(set)
+
     evidence_line = _minimum_evidence_helper(minimum_evidence_count)
     belief_line = _minimum_belief_helper(minimum_belief)
     query = dedent(
@@ -72,7 +116,7 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, family.name, collect(chemical.id)
+        enzyme.id, collect(chemical.id)
     UNION ALL
     MATCH
         (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
@@ -83,16 +127,36 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, family.name, collect(chemical.id)
+        enzyme.id, collect(chemical.id)
     """
     )
-    rv = defaultdict(set)
-    for ec_curie, ec_name, chebi_curies in client.query_tx(query):
+    for ec_curie, chebi_curies in client.query_tx(query):
         ec_code = ec_curie.split(":", 1)[1]
-        rv[ec_code, ec_name].update(
+        ec_code_to_chemicals[ec_code, pyobo.get_name("ec", ec_code)].update(
             {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         )
-    return dict(rv)
+
+    query = dedent(
+        f"""\
+    MATCH
+        (gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        gene.id STARTS WITH "hgnc"
+        and chemical.id STARTS WITH "chebi"
+        {evidence_line}
+        {belief_line}
+    RETURN
+        gene.id, collect(chemical.id)
+    """
+    )
+    for hgnc_curie, chebi_curies in client.query_tx(query):
+        hgnc_id = hgnc_curie.removeprefix("hgnc:")
+        chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
+        for ec_code in HGNC_TO_EC.get(hgnc_id, []):
+            ec_code_to_chemicals[ec_code, pyobo.get_name("ec", ec_code)].update(
+                chebi_ids
+            )
+    return dict(ec_code_to_chemicals)
 
 
 def _sum_values(d):
@@ -136,7 +200,7 @@ def _main():
                     name,
                     sorted(f"https://bioregistry.io/chebi:{c}" for c in chebi_ids),
                 )
-                for (ec_code, name), chebi_ids in results.items()
+                for (ec_code, name), chebi_ids in sorted(results.items())
             )
         )
     )
