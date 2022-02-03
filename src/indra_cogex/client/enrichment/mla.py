@@ -69,7 +69,6 @@ def get_metabolomics_sets(
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
         and chemical.id STARTS WITH "chebi"
-        and r.stmt_type in ["Activation", "IncreaseAmount"]
         {evidence_line}
         {belief_line}
     RETURN
@@ -81,7 +80,6 @@ def get_metabolomics_sets(
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
         and chemical.id STARTS WITH "chebi"
-        and r.stmt_type in ["Activation", "IncreaseAmount"]
         {evidence_line}
         {belief_line}
     RETURN
