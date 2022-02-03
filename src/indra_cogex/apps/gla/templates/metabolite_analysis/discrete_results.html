@@ -38,7 +38,7 @@
         {% for ec_code, name, p, mlp, q, mlq in df.values %}
             <tr>
                 <td><a href="https://bioregistry.io/eccode:{{ ec_code }}">{{ ec_code }}</a></td>
-                <td>{{ name }}</td>
+                <td>{% if name %}{{ name }}{% endif %}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
             </tr>

@@ -101,7 +101,7 @@ def get_metabolomics_sets(
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
-    ec_code_to_chemicals = defaultdict(set)
+    rv = defaultdict(set)
 
     evidence_line = _minimum_evidence_helper(minimum_evidence_count)
     belief_line = _minimum_belief_helper(minimum_belief)
@@ -132,7 +132,7 @@ def get_metabolomics_sets(
     )
     for ec_curie, chebi_curies in client.query_tx(query):
         ec_code = ec_curie.split(":", 1)[1]
-        ec_code_to_chemicals[ec_code, pyobo.get_name("ec", ec_code)].update(
+        rv[ec_code, pyobo.get_name("ec", ec_code)].update(
             {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         )
 
@@ -153,10 +153,12 @@ def get_metabolomics_sets(
         hgnc_id = hgnc_curie.removeprefix("hgnc:")
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         for ec_code in HGNC_TO_EC.get(hgnc_id, []):
-            ec_code_to_chemicals[ec_code, pyobo.get_name("ec", ec_code)].update(
+            rv[ec_code, pyobo.get_name("ec", ec_code)].update(
                 chebi_ids
             )
-    return dict(ec_code_to_chemicals)
+    rv = dict(rv)
+    print(f"got {len(rv)} enzymes to {_sum_values(rv)} chemicals")
+    return rv
 
 
 def _sum_values(d):
