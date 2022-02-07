@@ -40,431 +40,288 @@ def _post_request_preproc(*keys) -> Union[TupOfTups, Tup]:
 @app.route("/get_genes_in_tissue", methods=["POST"])
 def genes_in_tissue():
     """Get genes for a disease."""
-    tissue_name = _post_request_preproc("tissue_name")
-    genes = get_genes_in_tissue(client, tissue_name)
+    tissue = _post_request_preproc("tissue")
+    genes = get_genes_in_tissue(tissue=tissue, client=client)
     return jsonify([g.to_json() for g in genes])
 
 
 @app.route("/get_tissues_for_gene", methods=["POST"])
 def tissues_for_gene():
     """Get tissues for a gene."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    tissues = get_tissues_for_gene(client, gene_name)
+    gene = _post_request_preproc("gene")
+    tissues = get_tissues_for_gene(gene=gene, client=client)
     return jsonify([t.to_json() for t in tissues])
 
 
 @app.route("/is_gene_in_tissue", methods=["POST"])
 def gene_in_tissue():
     """Check if a gene is in a tissue."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    tissue_name = request.json.get("tissue_name")
-    if tissue_name is None:
-        abort(Response("Parameter 'tissue_name' not provided", 415))
-    is_in = is_gene_in_tissue(client, gene_name, tissue_name)
-    return jsonify({"gene_in_tissue": is_in})
+    gene, tissue = _post_request_preproc("gene", "tissue")
+    return jsonify(
+        {"gene_in_tissue": is_gene_in_tissue(gene=gene, tissue=tissue, client=client)}
+    )
 
 
 @app.route("/get_go_terms_for_gene", methods=["POST"])
 def go_terms_for_gene():
     """Get GO terms for a gene."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    go_terms = get_go_terms_for_gene(client, gene_name)
+    gene = _post_request_preproc("gene")
+    go_terms = get_go_terms_for_gene(gene=gene, client=client)
     return jsonify([t.to_json() for t in go_terms])
 
 
 @app.route("/get_genes_for_go_term", methods=["POST"])
 def genes_for_go_term():
     """Get genes for a GO term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    go_term_name = request.json.get("go_term_name")
-    if go_term_name is None:
-        abort(Response("Parameter 'go_term_name' not provided", 415))
-    genes = get_genes_for_go_term(client, go_term_name)
+    go_term = _post_request_preproc("go_term")
+    genes = get_genes_for_go_term(go_term=go_term, client=client)
     return jsonify([g.to_json() for g in genes])
 
 
 @app.route("/is_go_term_for_gene", methods=["POST"])
 def go_term_for_gene():
     """Check if a GO term is for a gene."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    go_term_name = request.json.get("go_term_name")
-    if go_term_name is None:
-        abort(Response("Parameter 'go_term_name' not provided", 415))
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    is_in = is_go_term_for_gene(client, go_term_name, gene_name)
-    return jsonify({"go_term_for_gene": is_in})
+    gene, go_term = _post_request_preproc("gene", "go_term")
+    return jsonify(
+        {
+            "go_term_for_gene": is_go_term_for_gene(
+                gene=gene, go_term=go_term, client=client
+            )
+        }
+    )
 
 
 @app.route("/get_trials_for_drug", methods=["POST"])
 def trials_for_drug():
     """Get trials for a drug."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    drug_name = request.json.get("drug_name")
-    if drug_name is None:
-        abort(Response("Parameter 'drug_name' not provided", 415))
-    trials = get_trials_for_drug(client, drug_name)
+    drug = _post_request_preproc("drug")
+    trials = get_trials_for_drug(drug=drug, client=client)
     return jsonify([t.to_json() for t in trials])
 
 
 @app.route("/get_trials_for_disease", methods=["POST"])
 def trials_for_disease():
     """Get trials for a disease."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    disease_name = request.json.get("disease_name")
-    if disease_name is None:
-        abort(Response("Parameter 'disease_name' not provided", 415))
-    trials = get_trials_for_disease(client, disease_name)
+    disease = _post_request_preproc("disease")
+    trials = get_trials_for_disease(disease=disease, client=client)
     return jsonify([t.to_json() for t in trials])
 
 
 @app.route("/get_drugs_for_trial", methods=["POST"])
 def drugs_for_trial():
     """Get drugs for a trial."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    trial_name = request.json.get("trial_name")
-    if trial_name is None:
-        abort(Response("Parameter 'trial_name' not provided", 415))
-    drugs = get_drugs_for_trial(client, trial_name)
+    trial = _post_request_preproc("trial")
+    drugs = get_drugs_for_trial(trial=trial, client=client)
     return jsonify([d.to_json() for d in drugs])
 
 
 @app.route("/get_diseases_for_trial", methods=["POST"])
 def diseases_for_trial():
     """Get diseases for a trial."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    trial_name = request.json.get("trial_name")
-    if trial_name is None:
-        abort(Response("Parameter 'trial_name' not provided", 415))
-    diseases = get_diseases_for_trial(client, trial_name)
+    trial = _post_request_preproc("trial")
+    diseases = get_diseases_for_trial(trial=trial, client=client)
     return jsonify([d.to_json() for d in diseases])
 
 
 @app.route("/get_pathways_for_gene", methods=["POST"])
 def pathways_for_gene():
     """Get pathways for a gene."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    pathways = get_pathways_for_gene(client, gene_name)
+    gene = _post_request_preproc("gene")
+    pathways = get_pathways_for_gene(gene=gene, client=client)
     return jsonify([p.to_json() for p in pathways])
 
 
 @app.route("/get_shared_pathways_for_genes", methods=["POST"])
 def shared_pathways_for_genes():
     """Get shared genes for a pathway."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    genes = request.json.get("genes")
-    if genes is None:
-        abort(Response("Parameter 'genes' not provided", 415))
-    pathways = get_shared_pathways_for_genes(genes, client=client)
+    genes = _post_request_preproc("genes")
+    if not isinstance(genes, list):
+        genes = [genes]
+    pathways = get_shared_pathways_for_genes(genes=genes, client=client)
     return jsonify([p.to_json() for p in pathways])
 
 
 @app.route("/get_genes_for_pathway", methods=["POST"])
 def genes_for_pathway():
     """Get genes for a pathway."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    pathway_name = request.json.get("pathway_name")
-    if pathway_name is None:
-        abort(Response("Parameter 'pathway_name' not provided", 415))
-    genes = get_genes_for_pathway(client, pathway_name)
+    pathway = _post_request_preproc("pathway")
+    genes = get_genes_for_pathway(pathway=pathway, client=client)
     return jsonify([g.to_json() for g in genes])
 
 
 @app.route("/is_gene_in_pathway", methods=["POST"])
 def gene_in_pathway():
     """Check if a gene is in a pathway."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene_name = request.json.get("gene_name")
-    if gene_name is None:
-        abort(Response("Parameter 'gene_name' not provided", 415))
-    pathway_name = request.json.get("pathway_name")
-    if pathway_name is None:
-        abort(Response("Parameter 'pathway_name' not provided", 415))
-    is_in = is_gene_in_pathway(client, gene_name, pathway_name)
-    return jsonify({"gene_in_pathway": is_in})
+    gene, pathway = _post_request_preproc("gene", "pathway")
+    return jsonify(
+        {
+            "gene_in_pathway": is_gene_in_pathway(
+                gene=gene, pathway=pathway, client=client
+            )
+        }
+    )
 
 
 @app.route("/get_side_effects_for_drug", methods=["POST"])
 def side_effects_for_drug():
     """Get side effects for a drug."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    drug_name = request.json.get("drug_name")
-    if drug_name is None:
-        abort(Response("Parameter 'drug_name' not provided", 415))
-    side_effects = get_side_effects_for_drug(client, drug_name)
+    drug = _post_request_preproc("drug")
+    side_effects = get_side_effects_for_drug(drug=drug, client=client)
     return jsonify([s.to_json() for s in side_effects])
 
 
 @app.route("/get_drugs_for_side_effect", methods=["POST"])
 def drugs_for_side_effect():
     """Get drugs for a side effect."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    side_effect_name = request.json.get("side_effect_name")
-    if side_effect_name is None:
-        abort(Response("Parameter 'side_effect_name' not provided", 415))
-    drugs = get_drugs_for_side_effect(client, side_effect_name)
+    side_effect = _post_request_preproc("side_effect")
+    drugs = get_drugs_for_side_effect(side_effect=side_effect, client=client)
     return jsonify([d.to_json() for d in drugs])
 
 
 @app.route("/is_side_effect_for_drug", methods=["POST"])
 def side_effect_for_drug():
     """Check if a side effect is for a drug."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    side_effect_name = request.json.get("side_effect_name")
-    if side_effect_name is None:
-        abort(Response("Parameter 'side_effect_name' not provided", 415))
-    drug_name = request.json.get("drug_name")
-    if drug_name is None:
-        abort(Response("Parameter 'drug_name' not provided", 415))
-    is_in = is_side_effect_for_drug(client, side_effect_name, drug_name)
-    return jsonify({"side_effect_for_drug": is_in})
+    drug, side_effect = _post_request_preproc("drug", "side_effect")
+    return jsonify(
+        {
+            "side_effect_for_drug": is_side_effect_for_drug(
+                drug=drug, side_effect=side_effect, client=client
+            )
+        }
+    )
 
 
 @app.route("/get_ontology_child_terms", methods=["POST"])
 def ontology_child_terms():
     """Get child terms of a term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    term_name = request.json.get("term_name")
-    if term_name is None:
-        abort(Response("Parameter 'term_name' not provided", 415))
-    child_terms = get_ontology_child_terms(client, term_name)
+    term = _post_request_preproc("term")
+    child_terms = get_ontology_child_terms(term=term, client=client)
     return jsonify([t.to_json() for t in child_terms])
 
 
 @app.route("/get_ontology_parent_terms", methods=["POST"])
 def ontology_parent_terms():
     """Get parent terms of a term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    term_name = request.json.get("term_name")
-    if term_name is None:
-        abort(Response("Parameter 'term_name' not provided", 415))
-    parent_terms = get_ontology_parent_terms(client, term_name)
+    term = _post_request_preproc("term")
+    parent_terms = get_ontology_parent_terms(term=term, client=client)
     return jsonify([t.to_json() for t in parent_terms])
 
 
 @app.route("/isa_or_partof", methods=["POST"])
 def isa_or_partof():
     """Check if a term is a part of another term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    term_name = request.json.get("term_name")
-    if term_name is None:
-        abort(Response("Parameter 'term_name' not provided", 415))
-    parent_term_name = request.json.get("parent_term_name")
-    if parent_term_name is None:
-        abort(Response("Parameter 'parent_term_name' not provided", 415))
-    is_isa = isa_or_partof(client, term_name, parent_term_name)
-    return jsonify({"isa_or_partof": is_isa})
+    term, parent_term = _post_request_preproc("term", "parent_term")
+    return jsonify(
+        {
+            "isa_or_partof": isa_or_partof(
+                term=term, parent_term=parent_term, client=client
+            )
+        }
+    )
 
 
 @app.route("/get_pmids_for_mesh", methods=["POST"])
 def pmids_for_mesh():
     """Get pmids for a mesh term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    mesh_term_name = request.json.get("mesh_term_name")
-    if mesh_term_name is None:
-        abort(Response("Parameter 'mesh_term_name' not provided", 415))
-    pmids = get_pmids_for_mesh(client, mesh_term_name)
+    mesh_term = _post_request_preproc("mesh_term")
+    pmids = get_pmids_for_mesh(mesh_term=mesh_term, client=client)
     return jsonify([p.to_json() for p in pmids])
 
 
 @app.route("/get_mesh_ids_for_pmid", methods=["POST"])
 def mesh_ids_for_pmid():
     """Get mesh ids for a pmid."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    pmid = request.json.get("pmid")
-    if pmid is None:
-        abort(Response("Parameter 'pmid' not provided", 415))
-    mesh_ids = get_mesh_ids_for_pmid(client, pmid)
+    pmid_term = _post_request_preproc("pmid_term")
+    mesh_ids = get_mesh_ids_for_pmid(pmid_term=pmid_term, client=client)
     return jsonify([m.to_json() for m in mesh_ids])
 
 
 @app.route("/get_evidences_for_mesh", methods=["POST"])
 def evidences_for_mesh():
     """Get evidences for a mesh term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    mesh_term_name = request.json.get("mesh_term_name")
-    if mesh_term_name is None:
-        abort(Response("Parameter 'mesh_term_name' not provided", 415))
-    evidence_dict = get_evidences_for_mesh(client, mesh_term_name)
+    mesh_term = _post_request_preproc("mesh_term")
+    evidence_dict = get_evidences_for_mesh(mesh_term=mesh_term, client=client)
     return jsonify({h: [e.to_json() for e in el] for h, el in evidence_dict.items()})
 
 
 @app.route("/get_evidences_for_stmt_hash", methods=["POST"])
 def evidences_for_stmt_hash():
     """Get evidences for a statement hash."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    stmt_hash = request.json.get("stmt_hash")
-    if stmt_hash is None:
-        abort(Response("Parameter 'stmt_hash' not provided", 415))
-    evidences = get_evidences_for_stmt_hash(client, stmt_hash)
+    stmt_hash = _post_request_preproc("stmt_hash")
+    evidences = get_evidences_for_stmt_hash(stmt_hash=stmt_hash, client=client)
     return jsonify([e.to_json() for e in evidences])
 
 
 @app.route("/get_evidences_for_stmt_hashes", methods=["POST"])
 def evidences_for_stmt_hashes():
     """Get evidences for a list of statement hashes."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    stmt_hashes = request.json.get("stmt_hashes")
-    if stmt_hashes is None:
-        abort(Response("Parameter 'stmt_hashes' not provided", 415))
-    evidence_dict = get_evidences_for_stmt_hashes(client, stmt_hashes)
+    stmt_hashes = _post_request_preproc("stmt_hashes")
+    evidence_dict = get_evidences_for_stmt_hashes(
+        stmt_hashes=stmt_hashes, client=client
+    )
     return jsonify({h: [e.to_json() for e in el] for h, el in evidence_dict.items()})
 
 
 @app.route("/get_stmts_for_pmid", methods=["POST"])
 def stmts_for_pmid():
     """Get statements for a pmid."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    pmid = request.json.get("pmid")
-    if pmid is None:
-        abort(Response("Parameter 'pmid' not provided", 415))
-    stmts = get_stmts_for_pmid(client, pmid)
+    pmid_term = _post_request_preproc("pmid_term")
+    stmts = get_stmts_for_pmid(pmid_term=pmid_term, client=client)
     return jsonify([s.to_json() for s in stmts])
 
 
 @app.route("/get_stmts_for_mesh", methods=["POST"])
 def stmts_for_mesh():
     """Get statements for a mesh term."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    mesh_term_name = request.json.get("mesh_term_name")
-    if mesh_term_name is None:
-        abort(Response("Parameter 'mesh_term_name' not provided", 415))
-    stmts = get_stmts_for_mesh(client, mesh_term_name)
+    mesh_term = _post_request_preproc("mesh_term")
+    stmts = get_stmts_for_mesh(mesh_term=mesh_term, client=client)
     return jsonify([s.to_json() for s in stmts])
 
 
 @app.route("/get_stmts_for_stmt_hashes", methods=["POST"])
 def stmts_for_stmt_hashes():
     """Get statements for a list of statement hashes."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    stmt_hashes = request.json.get("stmt_hashes")
-    if stmt_hashes is None:
-        abort(Response("Parameter 'stmt_hashes' not provided", 415))
-    stmts = get_stmts_for_stmt_hashes(client, stmt_hashes)
+    stmt_hashes = _post_request_preproc("stmt_hashes")
+    stmts = get_stmts_for_stmt_hashes(stmt_hashes=stmt_hashes, client=client)
     return jsonify([s.to_json() for s in stmts])
 
 
 @app.route("/is_gene_mutated", methods=["POST"])
 def gene_mutated():
     """Check if a gene is mutated in a cell line"""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    gene = request.json.get("gene")
-    if gene is None:
-        abort(Response("Parameter 'gene' not provided", 415))
-    cell_line = request.json.get("cell_line")
-    if cell_line is None:
-        abort(Response("Parameter 'cell_line' not provided", 415))
-    return jsonify({'is_gene_mutated': is_gene_mutated(gene, cell_line, client=client)})
+    gene, cell_line = _post_request_preproc("gene", "cell_line")
+    return jsonify(
+        {
+            "is_gene_mutated": is_gene_mutated(
+                gene=gene, cell_line=cell_line, client=client
+            )
+        }
+    )
 
 
 @app.route("/get_drugs_for_target", methods=["POST"])
 def drugs_for_target():
     """Get drugs for a target."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    target = request.json.get("target")
-    if target is None:
-        abort(Response("Parameter 'target' not provided", 415))
-    drugs = get_drugs_for_target(target, client=client)
+    target = _post_request_preproc("target")
+    drugs = get_drugs_for_target(target=target, client=client)
     return jsonify([d.to_json() for d in drugs])
 
 
 @app.route("/get_targets_for_drug", methods=["POST"])
 def targets_for_drug():
     """Get targets for a drug."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    drug = request.json.get("drug")
-    if drug is None:
-        abort(Response("Parameter 'drug' not provided", 415))
-    targets = get_targets_for_drug(drug, client=client)
+    drug = _post_request_preproc("drug")
+    targets = get_targets_for_drug(drug=drug, client=client)
     return jsonify([t.to_json() for t in targets])
 
 
 @app.route("/is_drug_target", methods=["POST"])
 def drug_target():
     """Check if the drug targets the given protein."""
-    if request.json is None:
-        abort(Response("Missing application/json header.", 415))
-
-    drug = request.json.get("drug")
-    if drug is None:
-        abort(Response("Parameter 'drug' not provided", 415))
-    target = request.json.get("target")
-    if target is None:
-        abort(Response("Parameter 'target' not provided", 415))
-    return jsonify({'is_drug_target': is_drug_target(drug, target, client=client)})
+    drug, target = _post_request_preproc("drug", "target")
+    return jsonify(
+        {"is_drug_target": is_drug_target(drug=drug, target=target, client=client)}
+    )
 
 
 cli = make_web_command(app=app)
