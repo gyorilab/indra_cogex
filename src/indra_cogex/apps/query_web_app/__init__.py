@@ -181,6 +181,19 @@ def pathways_for_gene():
     return jsonify([p.to_json() for p in pathways])
 
 
+@app.route("/get_shared_pathways_for_genes", methods=["POST"])
+def shared_pathways_for_genes():
+    """Get shared genes for a pathway."""
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+
+    genes = request.json.get("genes")
+    if genes is None:
+        abort(Response("Parameter 'genes' not provided", 415))
+    pathways = get_shared_pathways_for_genes(genes, client=client)
+    return jsonify([p.to_json() for p in pathways])
+
+
 @app.route("/get_genes_for_pathway", methods=["POST"])
 def genes_for_pathway():
     """Get genes for a pathway."""
