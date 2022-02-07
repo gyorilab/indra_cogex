@@ -22,7 +22,7 @@ Tup = Tuple[str, str]
 TupOfTups = Tuple[Tup, ...]
 
 
-def _post_request_preproc(*keys) -> Union[TupOfTups, Tup]:
+def _post_request_preproc(*keys) -> Union[TupOfTups, Tup, str, int]:
     if request.json is None:
         abort(Response("Missing application/json header.", 415))
     tups = []
