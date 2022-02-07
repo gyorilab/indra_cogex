@@ -32,6 +32,7 @@
             <th scope="col">Name</th>
             <th scope="col"><i>p</i>-value</th>
             <th scope="col"><i>q</i>-value</th>
+            <th scope="col"></th>
         </tr>
         </thead>
         <tbody>
@@ -41,6 +42,7 @@
                 <td>{% if name %}{{ name }}{% endif %}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
+                <td><a href="{{ url_for("mla.enzyme", ec_code=ec_code) }}"><i class="fas fa-external-link-alt"></i></a></td>
             </tr>
         {% endfor %}
         </tbody>

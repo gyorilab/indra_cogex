@@ -2,15 +2,21 @@
 
 from typing import Dict, List, Mapping, Tuple
 
+import bioregistry
 import flask
 from flask_wtf import FlaskForm
+from indra.assemblers.html import HtmlAssembler
 from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from .fields import alpha_field, correction_field, keep_insignificant_field
 from .proxies import client
-from ...client.enrichment.mla import EXAMPLE_CHEBI_CURIES, metabolomics_ora
+from ...client.enrichment.mla import (
+    EXAMPLE_CHEBI_CURIES,
+    metabolomics_explanation,
+    metabolomics_ora,
+)
 
 __all__ = [
     "metabolite_blueprint",
@@ -105,3 +111,17 @@ def discrete_analysis():
         form=form,
         example_chebi_curies=", ".join(EXAMPLE_CHEBI_CURIES),
     )
+
+
+@metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
+def enzyme(ec_code: str):
+    """Render the enzyme page."""
+    _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
+    if identifier is None:
+        return flask.abort(400, f"Invalid EC Code: {ec_code}")
+    stmts = metabolomics_explanation(client=client, ec_code=identifier)
+    html_assembler = HtmlAssembler(
+        stmts,
+        db_rest_url="https://db.indra.bio",
+    )
+    return html_assembler.make_model()

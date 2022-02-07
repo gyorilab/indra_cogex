@@ -5,12 +5,14 @@ import json
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
-from typing import Iterable, Mapping, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
+import indra.statements
 import pandas as pd
 import pyobo
 import pystow
 import requests
+from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -153,9 +155,7 @@ def get_metabolomics_sets(
         hgnc_id = hgnc_curie.removeprefix("hgnc:")
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         for ec_code in HGNC_TO_EC.get(hgnc_id, []):
-            rv[ec_code, pyobo.get_name("ec", ec_code)].update(
-                chebi_ids
-            )
+            rv[ec_code, pyobo.get_name("ec", ec_code)].update(chebi_ids)
     rv = dict(rv)
     print(f"got {len(rv)} enzymes to {_sum_values(rv)} chemicals")
     return rv
@@ -174,6 +174,45 @@ def metabolomics_ora(
     return _do_ora(curie_to_target_sets, query=chebi_ids, count=count, **kwargs)
 
 
+def metabolomics_explanation(
+    *,
+    client: Neo4jClient,
+    ec_code: str,
+    minimum_evidence_count: Optional[float] = None,
+    minimum_belief: Optional[float] = None,
+) -> List[indra.statements.Statement]:
+    evidence_line = _minimum_evidence_helper(minimum_evidence_count)
+    belief_line = _minimum_belief_helper(minimum_belief)
+    query = dedent(
+        f"""\
+    MATCH
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        enzyme.id in ["ec-code:{ec_code}"]
+        and family.id STARTS WITH "fplx"
+        and chemical.id STARTS WITH "chebi"
+        {evidence_line}
+        {belief_line}
+    RETURN
+        r.stmt_json
+    UNION ALL
+    MATCH
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        enzyme.id in ["ec-code:{ec_code}"]
+        and family.id STARTS WITH "fplx"
+        and chemical.id STARTS WITH "chebi"
+        {evidence_line}
+        {belief_line}
+    RETURN
+        r.stmt_json
+    """
+    )
+    stmts_json = [json.loads(row[0]) for row in client.query_tx(query)]
+    stmts = stmts_from_json(stmts_json)
+    return stmts
+
+
 #: Various alcohol dehydrogenase products
 EXAMPLE_CHEBI_IDS = [
     "15366",  # acetic acid
@@ -189,6 +228,11 @@ def _main():
     from tabulate import tabulate
 
     client = Neo4jClient()
+    stmts = metabolomics_explanation(client=client, ec_code="1.1.1.1")
+    # TODO do some grouping of statements since they all only have one evidence
+    for stmt in stmts:
+        print(stmt)
+
     results = get_metabolomics_sets(
         client=client, minimum_belief=0.3, minimum_evidence_count=2
     )
