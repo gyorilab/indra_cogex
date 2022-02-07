@@ -411,6 +411,62 @@ def stmts_for_stmt_hashes():
     return jsonify([s.to_json() for s in stmts])
 
 
+@app.route("/is_gene_mutated", methods=["POST"])
+def gene_mutated():
+    """Check if a gene is mutated in a cell line"""
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+
+    gene = request.json.get("gene")
+    if gene is None:
+        abort(Response("Parameter 'gene' not provided", 415))
+    cell_line = request.json.get("cell_line")
+    if cell_line is None:
+        abort(Response("Parameter 'cell_line' not provided", 415))
+    return jsonify({'is_gene_mutated': is_gene_mutated(gene, cell_line, client=client)})
+
+
+@app.route("/get_drugs_for_target", methods=["POST"])
+def drugs_for_target():
+    """Get drugs for a target."""
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+
+    target = request.json.get("target")
+    if target is None:
+        abort(Response("Parameter 'target' not provided", 415))
+    drugs = get_drugs_for_target(target, client=client)
+    return jsonify([d.to_json() for d in drugs])
+
+
+@app.route("/get_targets_for_drug", methods=["POST"])
+def targets_for_drug():
+    """Get targets for a drug."""
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+
+    drug = request.json.get("drug")
+    if drug is None:
+        abort(Response("Parameter 'drug' not provided", 415))
+    targets = get_targets_for_drug(drug, client=client)
+    return jsonify([t.to_json() for t in targets])
+
+
+@app.route("/is_drug_target", methods=["POST"])
+def drug_target():
+    """Check if the drug targets the given protein."""
+    if request.json is None:
+        abort(Response("Missing application/json header.", 415))
+
+    drug = request.json.get("drug")
+    if drug is None:
+        abort(Response("Parameter 'drug' not provided", 415))
+    target = request.json.get("target")
+    if target is None:
+        abort(Response("Parameter 'target' not provided", 415))
+    return jsonify({'is_drug_target': is_drug_target(drug, target, client=client)})
+
+
 cli = make_web_command(app=app)
 
 
