@@ -65,7 +65,7 @@ class PubmedProcessor(Processor):
                     "pii": get_val(pii),
                     "url": get_val(url),
                     "manuscript_id": get_val(manuscript_id),
-                    "year": year,
+                    "year:int": year,
                 }
                 yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
 
@@ -89,7 +89,11 @@ class PubmedProcessor(Processor):
                             "MESH",
                             mesh_id,
                             "annotated_with",
-                            {"is_major_topic": True if major_topic == "1" else False},
+                            {
+                                "is_major_topic:boolean": "true"
+                                if major_topic == "1"
+                                else "false"
+                            },
                         )
                     )
                 yield relations_batch

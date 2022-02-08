@@ -80,9 +80,9 @@ class ChemblIndicationsProcessor(Processor):
                 indication.db_ns,
                 indication.db_id,
                 "has_indication",
-                dict(
-                    source=self.name,
-                    max_phase=max_phase,
-                    version=self.version,
-                ),
+                {
+                    "source": self.name,
+                    "max_phase:int": max_phase,
+                    "version": self.version,
+                },
             )

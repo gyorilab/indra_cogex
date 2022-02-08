@@ -781,6 +781,68 @@ class Neo4jClient:
         )
         return self.create_tx(query)
 
+    def create_single_property_node_index(
+        self, index_name: str, label: str, property_name: str, exist_ok: bool = False
+    ):
+        """Create a single property node index.
+
+        Reference:
+        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-only-if-it-does-not-already-exist
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        label :
+            The label of the node.
+        property_name :
+            The property name to index.
+        exist_ok :
+            If True, ignore the indexes that already exist. If False,
+            raise error if index already exists. Default: False.
+        """
+        logger.info(
+            f"Creating index '{index_name}' for label '{label}' on property "
+            f"'{property_name}'. Index is created in background and may not "
+            f"be available immediately."
+        )
+        if_not = " IF NOT EXISTS" if exist_ok else ""
+        create_query = (
+            f"CREATE INDEX {index_name}{if_not} FOR (n:{label}) ON (n.{property_name})"
+        )
+
+        self.create_tx(create_query)
+
+    def create_single_property_relationship_index(
+        self, index_name: str, rel_type: str, property_name: str
+    ):
+        """Create a single property relationship index.
+
+        NOTE: Relationship indexes can only be created once, and there is no
+        IF NOT EXISTS option to silently ignore if the index already exists.
+
+        Reference:
+        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-for-relationships
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        rel_type :
+            The relationship type to index a property on
+        property_name :
+            The property name to index.
+        """
+        logger.info(
+            f"Creating index '{index_name}' for relationship type '{rel_type}' on "
+            f"property '{property_name}'. Index is created in background and may not "
+            f"be available immediately."
+        )
+        create_query = (
+            f"CREATE INDEX {index_name} FOR ()-[r:{rel_type}]-() ON (r.{property_name})"
+        )
+        self.create_tx(create_query)
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.

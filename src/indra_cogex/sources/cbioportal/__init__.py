@@ -109,7 +109,7 @@ class CcleCnaProcessor(Processor):
                         target_ns="CCLE",
                         target_id=cell_line,
                         rel_type="copy_number_altered_in",
-                        data={"CNA": row[cell_line], "source": "ccle"},
+                        data={"CNA:int": row[cell_line], "source": "ccle"},
                     )
 
 
