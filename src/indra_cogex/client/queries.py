@@ -7,7 +7,7 @@ import networkx as nx
 from indra.statements import Evidence, Statement, stmts_from_json, Agent
 
 from .neo4j_client import Neo4jClient, autoclient
-from ..representation import Node,Relation,  indra_stmts_from_relations, norm_id
+from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +398,7 @@ def get_shared_pathways_for_genes(
     )
 
 
+@autoclient()
 def get_genes_for_pathway(
     pathway: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
@@ -1031,6 +1032,7 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
 # CCLE
 
 
+@autoclient()
 def is_gene_mutated(
     gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
@@ -1062,6 +1064,7 @@ def is_gene_mutated(
 # Indra DB
 
 
+@autoclient()
 def get_drugs_for_target(
     target: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
@@ -1076,6 +1079,7 @@ def get_drugs_for_target(
     return drug_nodes
 
 
+@autoclient()
 def get_targets_for_drug(
     drug: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
@@ -1090,6 +1094,7 @@ def get_targets_for_drug(
     return target_nodes
 
 
+@autoclient()
 def is_drug_target(
     drug: Tuple[str, str], target: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
