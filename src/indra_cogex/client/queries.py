@@ -1070,11 +1070,10 @@ def get_drugs_for_target(
         target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     drug_rels = [rel for rel in rels if _is_drug_relation(rel)]
-    drug_nodes = [(rel.source_ns, rel.source_id) for rel in drug_rels]
-    stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in drug_rels]
-    stmts = stmts_from_json(stmt_jsons)
-    drug_agents = [stmt.subj for stmt in stmts]
-    return {"nodes": drug_nodes, "agents": drug_agents}
+    drug_nodes = [
+        _get_node_from_stmt_relation(rel, "source", "subj") for rel in drug_rels
+    ]
+    return drug_nodes
 
 
 def get_targets_for_drug(
@@ -1085,11 +1084,10 @@ def get_targets_for_drug(
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     target_rels = [rel for rel in rels if _is_drug_relation(rel)]
-    target_nodes = [(rel.target_ns, rel.target_id) for rel in target_rels]
-    stmt_jsons = [json.loads(rel.data["stmt_json"]) for rel in target_rels]
-    stmts = stmts_from_json(stmt_jsons)
-    target_agents = [stmt.obj for stmt in stmts]
-    return {"nodes": target_nodes, "agents": target_agents}
+    target_nodes = [
+        _get_node_from_stmt_relation(rel, "target", "obj") for rel in target_rels
+    ]
+    return target_nodes
 
 
 def is_drug_target(
@@ -1105,3 +1103,14 @@ def is_drug_target(
 def _is_drug_relation(rel: Relation) -> bool:
     """Return True if the relation is a drug-target relation."""
     return rel.data["stmt_type"] == "Inhibition" and "tas" in rel.data["source_counts"]
+
+
+def _get_node_from_stmt_relation(
+    rel: Relation, node_role: str, agent_role: str
+) -> Node:
+    """Return the node from the given relation."""
+    node_ns = getattr(rel, f"{node_role}_ns")
+    node_id = getattr(rel, f"{node_role}_id")
+    stmt_json = json.loads(rel.data["stmt_json"])
+    name = stmt_json[agent_role]["name"]
+    return Node(node_ns, node_id, ["BioEntity"], dict(name=name))
