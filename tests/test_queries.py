@@ -334,11 +334,10 @@ def test_drugs_for_target():
     client = _get_client()
     target = ("HGNC", "6840")
     drugs = get_drugs_for_target(target, client=client)
-    assert "nodes" in drugs
-    assert "agents" in drugs
-    assert len(drugs["nodes"]) == len(drugs["agents"])
-    assert isinstance(drugs["agents"][0], Agent)
-    assert ("CHEBI", "CHEBI:90227") in drugs["nodes"]
+    assert drugs
+    assert isinstance(drugs[0], Node)
+    assert drugs[0].db_ns == "CHEBI"
+    assert ("CHEBI", "CHEBI:90227") in {d.grounding() for d in drugs}
 
 
 @pytest.mark.nonpublic
@@ -346,11 +345,10 @@ def test_targets_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
     targets = get_targets_for_drug(drug, client=client)
-    assert "nodes" in targets
-    assert "agents" in targets
-    assert len(targets["nodes"]) == len(targets["agents"])
-    assert isinstance(targets["agents"][0], Agent)
-    assert ("HGNC", "6840") in targets["nodes"]
+    assert targets
+    assert isinstance(targets[0], Node)
+    assert targets[0].db_ns == "HGNC"
+    assert ("HGNC", "6840") in {t.grounding() for t in targets}
 
 
 @pytest.mark.nonpublic
