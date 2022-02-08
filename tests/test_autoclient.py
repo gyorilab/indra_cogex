@@ -27,6 +27,7 @@ def test_positional_exception():
             pass
 
 
+@pytest.mark.nonpublic
 def test_autoclient():
     """Test a successful application of the autoclient decorator."""
 
@@ -59,6 +60,7 @@ def _check_tissues(tissues):
     assert ("UBERON", "UBERON:0002349") in {g.grounding() for g in tissues}
 
 
+@pytest.mark.nonpublic
 def test_autoclient_cached():
     """Test caching a function with autoclient."""
 
