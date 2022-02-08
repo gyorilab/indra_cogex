@@ -2,8 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from functools import lru_cache
-from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ from indra_cogex.client.enrichment.utils import (
     get_reactome,
     get_wikipathways,
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.client.queries import get_genes_for_go_term
 
 __all__ = [
@@ -27,7 +26,6 @@ __all__ = [
     "indra_downstream_ora",
     "indra_upstream_ora",
 ]
-
 
 # fmt: off
 #: This example list comes from human genes associated with COVID-19
@@ -39,6 +37,8 @@ EXAMPLE_GENE_IDS = [
     "10498", "10819", "6769", "11120", "11133", "11432", "11584", "18348", "11849", "28948", "11876", "11878",
     "11985", "20820", "12647", "20593", "12713"
 ]
+
+
 # fmt: on
 
 
@@ -77,7 +77,7 @@ def _prepare_hypergeometric_test(
     )
 
 
-@lru_cache(maxsize=1)
+@autoclient(cache=True)
 def count_human_genes(client: Neo4jClient) -> int:
     """Count the number of HGNC genes in neo4j."""
     query = f"""\
@@ -97,7 +97,7 @@ def gene_ontology_single_ora(
     1. Look up genes associated with GO term or child terms
     2. Run ORA and return results
     """
-    count = count_human_genes(client)
+    count = count_human_genes(client=client)
     go_gene_ids = {
         gene.db_id
         for gene in get_genes_for_go_term(
@@ -153,24 +153,28 @@ def _do_ora(
 
 def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFrame:
     """Calculate over-representation on all GO terms."""
-    count = count_human_genes(client)
-    return _do_ora(get_go(client), gene_ids=gene_ids, count=count, **kwargs)
+    count = count_human_genes(client=client)
+    return _do_ora(get_go(client=client), gene_ids=gene_ids, count=count, **kwargs)
 
 
 def wikipathways_ora(
     client: Neo4jClient, gene_ids: Iterable[str], **kwargs
 ) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways."""
-    count = count_human_genes(client)
-    return _do_ora(get_wikipathways(client), gene_ids=gene_ids, count=count, **kwargs)
+    count = count_human_genes(client=client)
+    return _do_ora(
+        get_wikipathways(client=client), gene_ids=gene_ids, count=count, **kwargs
+    )
 
 
 def reactome_ora(
     client: Neo4jClient, gene_ids: Iterable[str], **kwargs
 ) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways."""
-    count = count_human_genes(client)
-    return _do_ora(get_reactome(client), gene_ids=gene_ids, count=count, **kwargs)
+    count = count_human_genes(client=client)
+    return _do_ora(
+        get_reactome(client=client), gene_ids=gene_ids, count=count, **kwargs
+    )
 
 
 def indra_downstream_ora(
@@ -181,9 +185,12 @@ def indra_downstream_ora(
     based on the genes that are causally upstream of it and how
     they compare to the query gene set.
     """
-    count = count_human_genes(client)
+    count = count_human_genes(client=client)
     return _do_ora(
-        get_entity_to_regulators(client), gene_ids=gene_ids, count=count, **kwargs
+        get_entity_to_regulators(client=client),
+        gene_ids=gene_ids,
+        count=count,
+        **kwargs,
     )
 
 
@@ -195,27 +202,43 @@ def indra_upstream_ora(
     based on the set of genes that it regulates and how
     they compare to the query gene set.
     """
-    count = count_human_genes(client)
+    count = count_human_genes(client=client)
     return _do_ora(
-        get_entity_to_targets(client), gene_ids=gene_ids, count=count, **kwargs
+        get_entity_to_targets(client=client), gene_ids=gene_ids, count=count, **kwargs
     )
 
 
 def main():
     client = Neo4jClient()
     print("\nGO Enrichment\n")
-    print(go_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
+    print(
+        go_ora(client=client, gene_ids=EXAMPLE_GENE_IDS)
+        .head(15)
+        .to_markdown(index=False)
+    )
     print("\n## WikiPathways Enrichment\n")
-    print(wikipathways_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
+    print(
+        wikipathways_ora(client=client, gene_ids=EXAMPLE_GENE_IDS)
+        .head(15)
+        .to_markdown(index=False)
+    )
     print("\n## Reactome Enrichment\n")
-    print(reactome_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False))
+    print(
+        reactome_ora(client=client, gene_ids=EXAMPLE_GENE_IDS)
+        .head(15)
+        .to_markdown(index=False)
+    )
     print("\n## INDRA Upstream Enrichment\n")
     print(
-        indra_upstream_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False)
+        indra_upstream_ora(client=client, gene_ids=EXAMPLE_GENE_IDS)
+        .head(15)
+        .to_markdown(index=False)
     )
     print("\n## INDRA Downstream Enrichment\n")
     print(
-        indra_downstream_ora(client, EXAMPLE_GENE_IDS).head(15).to_markdown(index=False)
+        indra_downstream_ora(client=client, gene_ids=EXAMPLE_GENE_IDS)
+        .head(15)
+        .to_markdown(index=False)
     )
 
 

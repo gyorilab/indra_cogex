@@ -2,12 +2,12 @@
 
 """Utilities for getting gene sets."""
 
+import logging
 from collections import defaultdict
-from functools import lru_cache
 from textwrap import dedent
-from typing import Dict, List, Mapping, Set, Tuple
+from typing import Dict, Set, Tuple
 
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
 __all__ = [
     "collect_gene_sets",
@@ -18,18 +18,23 @@ __all__ = [
     "get_entity_to_regulators",
 ]
 
+logger = logging.getLogger(__name__)
 
+
+@autoclient()
 def collect_gene_sets(
-    client: Neo4jClient, query: str
+    query: str,
+    *,
+    client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
     Parameters
     ----------
-    client :
-        The Neo4j client.
     query:
         A cypher query
+    client :
+        The Neo4j client.
 
     Returns
     -------
@@ -43,15 +48,16 @@ def collect_gene_sets(
         name = result[1]
         hgnc_ids = {
             hgnc_curie.lower().replace("hgnc:", "")
-            if hgnc_curie.lower().startswith("hgnc:") else hgnc_curie.lower()
+            if hgnc_curie.lower().startswith("hgnc:")
+            else hgnc_curie.lower()
             for hgnc_curie in result[2]
         }
         curie_to_hgnc_ids[curie, name].update(hgnc_ids)
     return dict(curie_to_hgnc_ids)
 
 
-@lru_cache(maxsize=1)
-def get_go(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True)
+def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
     Parameters
@@ -71,11 +77,12 @@ def get_go(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
-    return collect_gene_sets(client, query)
+    logger.info("caching GO with Cypher query: %s", query)
+    return collect_gene_sets(client=client, query=query)
 
 
-@lru_cache(maxsize=1)
-def get_wikipathways(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True)
+def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
     Parameters
@@ -96,11 +103,12 @@ def get_wikipathways(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client, query)
+    logger.info("caching WikiPathways with Cypher query: %s", query)
+    return collect_gene_sets(client=client, query=query)
 
 
-@lru_cache(maxsize=1)
-def get_reactome(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True)
+def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
     Parameters
@@ -121,11 +129,12 @@ def get_reactome(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client, query)
+    logger.info("caching Reactome with Cypher query: %s", query)
+    return collect_gene_sets(client=client, query=query)
 
 
-@lru_cache(maxsize=1)
-def get_entity_to_targets(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True)
+def get_entity_to_targets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
 
@@ -152,11 +161,12 @@ def get_entity_to_targets(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]
         RETURN regulator.id, regulator.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client, query)
+    logger.info("caching entity->targets with Cypher query: %s", query)
+    return collect_gene_sets(client=client, query=query)
 
 
-@lru_cache(maxsize=1)
-def get_entity_to_regulators(client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+@autoclient(cache=True)
+def get_entity_to_regulators(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
 
@@ -183,4 +193,5 @@ def get_entity_to_regulators(client: Neo4jClient) -> Dict[Tuple[str, str], Set[s
         RETURN target.id, target.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client, query)
+    logger.info("caching entity->regulators with Cypher query: %s", query)
+    return collect_gene_sets(client=client, query=query)

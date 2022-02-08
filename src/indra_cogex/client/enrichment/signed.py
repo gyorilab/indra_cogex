@@ -11,7 +11,7 @@ import pystow
 import scipy.stats
 
 from indra_cogex.client.enrichment.utils import collect_gene_sets
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
 HERE = Path(__file__).parent.resolve()
 
@@ -44,8 +44,8 @@ POSITIVE_STMTS = ["Activation", "IncreaseAmount"]
 NEGATIVE_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
+@autoclient()
 def reverse_causal_reasoning(
-    client: Neo4jClient,
     positive_hgnc_ids: Iterable[str],
     negative_hgnc_ids: Iterable[str],
     minimum_size: int = 4,
@@ -53,6 +53,8 @@ def reverse_causal_reasoning(
     negative_stmts: Optional[Iterable[str]] = None,
     alpha: Optional[float] = None,
     keep_insignificant: bool = True,
+    *,
+    client: Neo4jClient,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
@@ -93,10 +95,10 @@ def reverse_causal_reasoning(
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
     database_positive = collect_gene_sets(
-        client, _query(positive_stmts or POSITIVE_STMTS)
+        client=client, query=_query(positive_stmts or POSITIVE_STMTS)
     )
     database_negative = collect_gene_sets(
-        client, _query(negative_stmts or NEGATIVE_STMTS)
+        client=client, query=_query(negative_stmts or NEGATIVE_STMTS)
     )
     entities = set(database_positive).union(database_negative)
 
@@ -182,7 +184,7 @@ def main():
     """Demonstrate signed gene list functions."""
     client = Neo4jClient()
     df = reverse_causal_reasoning(
-        client,
+        client=client,
         positive_hgnc_ids=EXAMPLE_POSITIVE_HGNC_IDS,
         negative_hgnc_ids=EXAMPLE_NEGATIVE_HGNC_IDS,
     )

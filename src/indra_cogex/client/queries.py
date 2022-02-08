@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 import networkx as nx
 from indra.statements import Evidence, Statement
 
-from .neo4j_client import Neo4jClient
+from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,10 @@ __all__ = [
 # BGee
 
 
-def get_genes_in_tissue(client: Neo4jClient, tissue: Tuple[str, str]) -> Iterable[Node]:
+@autoclient()
+def get_genes_in_tissue(
+    tissue: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the genes in the given tissue.
 
     Parameters
@@ -72,7 +75,10 @@ def get_genes_in_tissue(client: Neo4jClient, tissue: Tuple[str, str]) -> Iterabl
     )
 
 
-def get_tissues_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable[Node]:
+@autoclient()
+def get_tissues_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the tissues the gene is expressed in.
 
     Parameters
@@ -95,8 +101,9 @@ def get_tissues_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable
     )
 
 
+@autoclient()
 def is_gene_in_tissue(
-    client: Neo4jClient, gene: Tuple[str, str], tissue: Tuple[str, str]
+    gene: Tuple[str, str], tissue: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the gene is expressed in the given tissue.
 
@@ -126,8 +133,9 @@ def is_gene_in_tissue(
 # GO
 
 
+@autoclient()
 def get_go_terms_for_gene(
-    client: Neo4jClient, gene: Tuple[str, str], include_indirect=False
+    gene: Tuple[str, str], include_indirect=False, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the GO terms for the given gene.
 
@@ -159,8 +167,9 @@ def get_go_terms_for_gene(
     return list(go_terms.values())
 
 
+@autoclient()
 def get_genes_for_go_term(
-    client: Neo4jClient, go_term: Tuple[str, str], include_indirect: bool = False
+    go_term: Tuple[str, str], include_indirect: bool = False, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the genes associated with the given GO term.
 
@@ -193,8 +202,9 @@ def get_genes_for_go_term(
     return list(gene_nodes.values())
 
 
+@autoclient()
 def is_go_term_for_gene(
-    client: Neo4jClient, gene: Tuple[str, str], go_term: Tuple[str, str]
+    gene: Tuple[str, str], go_term: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the given GO term is associated with the given gene.
 
@@ -224,7 +234,10 @@ def is_go_term_for_gene(
 # Trials
 
 
-def get_trials_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[Node]:
+@autoclient()
+def get_trials_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the trials for the given drug.
 
     Parameters
@@ -247,8 +260,9 @@ def get_trials_for_drug(client: Neo4jClient, drug: Tuple[str, str]) -> Iterable[
     )
 
 
+@autoclient()
 def get_trials_for_disease(
-    client: Neo4jClient, disease: Tuple[str, str]
+    disease: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the trials for the given disease.
 
@@ -272,7 +286,10 @@ def get_trials_for_disease(
     )
 
 
-def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]) -> Iterable[Node]:
+@autoclient()
+def get_drugs_for_trial(
+    trial: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the drugs for the given trial.
 
     Parameters
@@ -295,8 +312,9 @@ def get_drugs_for_trial(client: Neo4jClient, trial: Tuple[str, str]) -> Iterable
     )
 
 
+@autoclient()
 def get_diseases_for_trial(
-    client: Neo4jClient, trial: Tuple[str, str]
+    trial: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the diseases for the given trial.
 
@@ -323,7 +341,10 @@ def get_diseases_for_trial(
 # Pathways
 
 
-def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterable[Node]:
+@autoclient()
+def get_pathways_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
     """Return the pathways for the given gene.
 
     Parameters
@@ -346,8 +367,9 @@ def get_pathways_for_gene(client: Neo4jClient, gene: Tuple[str, str]) -> Iterabl
     )
 
 
+@autoclient()
 def get_genes_for_pathway(
-    client: Neo4jClient, pathway: Tuple[str, str]
+    pathway: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the genes for the given pathway.
 
@@ -371,8 +393,9 @@ def get_genes_for_pathway(
     )
 
 
+@autoclient()
 def is_gene_in_pathway(
-    client: Neo4jClient, gene: Tuple[str, str], pathway: Tuple[str, str]
+    gene: Tuple[str, str], pathway: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the gene is in the given pathway.
 
@@ -402,8 +425,9 @@ def is_gene_in_pathway(
 # Side effects
 
 
+@autoclient()
 def get_side_effects_for_drug(
-    client: Neo4jClient, drug: Tuple[str, str]
+    drug: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the side effects for the given drug.
 
@@ -427,8 +451,9 @@ def get_side_effects_for_drug(
     )
 
 
+@autoclient()
 def get_drugs_for_side_effect(
-    client: Neo4jClient, side_effect: Tuple[str, str]
+    side_effect: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the drugs for the given side effect.
 
@@ -452,8 +477,9 @@ def get_drugs_for_side_effect(
     )
 
 
+@autoclient()
 def is_side_effect_for_drug(
-    client: Neo4jClient, drug: Tuple[str, str], side_effect: Tuple[str, str]
+    drug: Tuple[str, str], side_effect: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the given side effect is associated with the given drug.
 
@@ -483,8 +509,9 @@ def is_side_effect_for_drug(
 # Ontology
 
 
+@autoclient()
 def get_ontology_child_terms(
-    client: Neo4jClient, term: Tuple[str, str]
+    term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the child terms of the given term.
 
@@ -503,8 +530,9 @@ def get_ontology_child_terms(
     return client.get_predecessors(term, relations={"isa", "partof"})
 
 
+@autoclient()
 def get_ontology_parent_terms(
-    client: Neo4jClient, term: Tuple[str, str]
+    term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the parent terms of the given term.
 
@@ -523,8 +551,9 @@ def get_ontology_parent_terms(
     return client.get_successors(term, relations={"isa", "partof"})
 
 
+@autoclient()
 def isa_or_partof(
-    client: Neo4jClient, term: Tuple[str, str], parent: Tuple[str, str]
+    term: Tuple[str, str], parent: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Return True if the given term is a child of the given parent.
 
@@ -542,15 +571,16 @@ def isa_or_partof(
     :
         True if the given term is a child term of the given parent.
     """
-    term_parents = get_ontology_parent_terms(client, term)
+    term_parents = get_ontology_parent_terms(term, client=client)
     return any(parent == parent_term.grounding() for parent_term in term_parents)
 
 
 # MESH / PMID
 
 
+@autoclient()
 def get_pmids_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the PubMed IDs for the given MESH term.
 
@@ -577,7 +607,7 @@ def get_pmids_for_mesh(
     # slower for this specific query, so we do an optimized query that is
     # basically equivalent instead.
     if include_child_terms:
-        child_terms = _get_mesh_child_terms(client, mesh_term)
+        child_terms = _get_mesh_child_terms(mesh_term, client=client)
     else:
         child_terms = set()
 
@@ -600,8 +630,9 @@ def get_pmids_for_mesh(
     return [client.neo4j_to_node(r[0]) for r in client.query_tx(query)]
 
 
+@autoclient()
 def get_mesh_ids_for_pmid(
-    client: Neo4jClient, pmid_term: Tuple[str, str]
+    pmid_term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the MESH terms for the given PubMed ID.
 
@@ -628,8 +659,9 @@ def get_mesh_ids_for_pmid(
     )
 
 
+@autoclient()
 def get_evidences_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Dict[str, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -653,7 +685,7 @@ def get_evidences_for_mesh(
 
     norm_mesh = norm_id(*mesh_term)
     if include_child_terms:
-        child_terms = _get_mesh_child_terms(client, mesh_term)
+        child_terms = _get_mesh_child_terms(mesh_term, client=client)
     else:
         child_terms = set()
 
@@ -675,8 +707,9 @@ def get_evidences_for_mesh(
     return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
+@autoclient()
 def get_evidences_for_stmt_hash(
-    client: Neo4jClient, stmt_hash: Union[str, int]
+    stmt_hash: Union[str, int], *, client: Neo4jClient
 ) -> Iterable[Evidence]:
     """Return the matching evidence objects for the given statement hash.
 
@@ -701,8 +734,9 @@ def get_evidences_for_stmt_hash(
     return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
 
 
+@autoclient()
 def get_evidences_for_stmt_hashes(
-    client: Neo4jClient, stmt_hashes: Iterable[Union[str, int]]
+    stmt_hashes: Iterable[Union[str, int]], *, client: Neo4jClient
 ) -> Dict[str, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -732,8 +766,9 @@ def get_evidences_for_stmt_hashes(
     return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
 
 
+@autoclient()
 def get_stmts_for_pmid(
-    client: Neo4jClient, pmid_term: Tuple[str, str]
+    pmid_term: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -769,11 +804,12 @@ def get_stmts_for_pmid(
     result = client.query_tx(hash_query)
     ev_dict = _get_ev_dict_from_hash_ev_query(result)
     stmt_hashes = set(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(client, stmt_hashes, ev_dict)
+    return get_stmts_for_stmt_hashes(stmt_hashes, ev_dict, client=client)
 
 
+@autoclient()
 def get_stmts_for_mesh(
-    client: Neo4jClient, mesh_term: Tuple[str, str], include_child_terms: bool = True
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Iterable[Statement]:
     """Return the statements with evidence for the given MESH ID.
 
@@ -791,15 +827,17 @@ def get_stmts_for_mesh(
     :
         The statements for the given MESH ID.
     """
-    ev_dict = get_evidences_for_mesh(client, mesh_term, include_child_terms)
+    ev_dict = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
     hashes = list(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(client, hashes, ev_dict)
+    return get_stmts_for_stmt_hashes(hashes, ev_dict, client=client)
 
 
+@autoclient()
 def get_stmts_for_stmt_hashes(
-    client: Neo4jClient,
     stmt_hashes: Iterable[str],
     evidence_map: Optional[Dict[str, List[Evidence]]] = None,
+    *,
+    client: Neo4jClient,
 ) -> Iterable[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -841,7 +879,7 @@ def get_stmts_for_stmt_hashes(
 
     # Get the evidence objects for the given statement hashes
     if missing_hashes:
-        new_evidences = get_evidences_for_stmt_hashes(client, stmt_hashes)
+        new_evidences = get_evidences_for_stmt_hashes(stmt_hashes, client=client)
         if evidence_map:
             evidence_map.update(new_evidences)
         else:
@@ -861,7 +899,10 @@ def get_stmts_for_stmt_hashes(
     return list(stmts.values())
 
 
-def _get_mesh_child_terms(client: Neo4jClient, mesh_term: Tuple[str, str]) -> Set[str]:
+@autoclient()
+def _get_mesh_child_terms(
+    mesh_term: Tuple[str, str], *, client: Neo4jClient
+) -> Set[str]:
     """Return the children of the given MESH ID.
 
     Parameters
@@ -903,7 +944,8 @@ def _get_ev_dict_from_hash_ev_query(
     return dict(ev_dict)
 
 
-def get_node_counter(client: Neo4jClient) -> Counter:
+@autoclient(cache=True)
+def get_node_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each entity type.
 
     .. warning:: this code assumes all nodes only have one label, as in``label[0]``
@@ -916,7 +958,8 @@ def get_node_counter(client: Neo4jClient) -> Counter:
     )
 
 
-def get_edge_counter(client: Neo4jClient) -> Counter:
+@autoclient(cache=True)
+def get_edge_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each edge type."""
     return Counter(
         {
@@ -928,7 +971,8 @@ def get_edge_counter(client: Neo4jClient) -> Counter:
     )
 
 
-def get_schema_graph(client: Neo4jClient) -> nx.MultiDiGraph:
+@autoclient(cache=True)
+def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
     """Get a NetworkX graph reflecting the schema of the Neo4j graph.
 
     Generate a PDF diagram (works with PNG and SVG too) with the following::
