@@ -1,4 +1,5 @@
 import csv
+import gzip
 import json
 import logging
 import pystow
@@ -15,7 +16,7 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 MESH_PMID = resources.join(name="mesh_pmids.csv")
 PMID_YEAR = resources.join(name="pmid_years_07-2021.json")
-TEXT_REFS = resources.join(name="text_refs.tsv")
+TEXT_REFS = resources.join(name="text_refs.tsv.gz")
 
 
 class PubmedProcessor(Processor):
@@ -52,7 +53,7 @@ class PubmedProcessor(Processor):
 
         # We iterate over text refs to get the nodes and
         # then look up the year to add as a property
-        with open(self.text_refs_path, "r") as fh:
+        with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
                 if not get_val(pmid):
