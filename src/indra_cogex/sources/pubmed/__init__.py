@@ -291,7 +291,7 @@ def xml_path_generator(
     if bar:
         for i in tqdm(
             range(1, max_update_index + 1),
-            total=max_update_index + 1,
+            total=max_update_index,
             desc=description,
         ):
             yield _get_tuple(i)
