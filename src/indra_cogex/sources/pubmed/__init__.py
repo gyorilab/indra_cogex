@@ -103,7 +103,7 @@ class PubmedProcessor(Processor):
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
                 relations_batch = []
-                for mesh_id, is_concept, major_topic, pmid in batch:
+                for mesh_id, major_topic, pmid in batch:
                     relations_batch.append(
                         Relation(
                             "PUBMED",
@@ -173,7 +173,7 @@ def ensure_text_refs(fname):
 
 def extract_info_from_medline_xml(
     xml_path: str,
-) -> Generator[Tuple[str, int, bool, int], None, None]:
+) -> Generator[Tuple[str, int, int], None, None]:
     """Extract info from medline xml file.
 
     Parameters
@@ -199,9 +199,8 @@ def extract_info_from_medline_xml(
             descriptor = mesh_element.xpath("DescriptorName")[0]
             attributes = descriptor.attrib
             mesh_id = attributes["UI"]
-            is_concept = 1 if mesh_id[0] == "C" else 0
-            major_topic = attributes["MajorTopicYN"] == "Y"
-            yield mesh_id, is_concept, major_topic, pmid
+            major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
+            yield mesh_id, major_topic, pmid
 
 
 def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = False):
@@ -223,7 +222,7 @@ def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = Fals
     logger.info("Processing xml files to CSV")
     with mesh_pmid_path.open("w") as fh:
         writer = csv.writer(fh, delimiter=",")
-        writer.writerow(["mesh_id", "is_concept", "major_topic", "pmid"])
+        writer.writerow(["mesh_id", "major_topic", "pmid"])
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
             writer.writerows(extract_info_from_medline_xml(xml_path.as_posix()))
 
