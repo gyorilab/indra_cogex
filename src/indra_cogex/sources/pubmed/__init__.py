@@ -33,7 +33,7 @@ class PubmedProcessor(Processor):
         self.pmid_year_path = pmid_year_path
         self.text_refs_path = pystow.join("indra", "db", "text_refs.tsv.gz")
         # Check if the files exist without loading them
-        for path in [mesh_pmid_path, pmid_year_path, text_refs_path]:
+        for path in [mesh_pmid_path, pmid_year_path]:
             if not path.exists():
                 raise FileNotFoundError(f"No such file: {path}")
 
