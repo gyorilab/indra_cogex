@@ -12,6 +12,7 @@ import textwrap
 from pathlib import Path
 
 import requests
+from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
 from indra_cogex.representation import Node, Relation
@@ -165,6 +166,56 @@ def ensure_text_refs(fname):
     """
     ).replace("\n", " ")
     os.system(command)
+
+
+def extract_info_from_medline_xml(
+    xml_path: str,
+) -> Generator[Tuple[str, int, bool, int], None, None]:
+    """Extract info from medline xml file.
+
+    Parameters
+    ----------
+    xml_path :
+        Path to medline xml file.
+
+    Yields
+    ------
+    :
+        Tuple of (pmid, year, is_concept, mesh_num).
+    """
+    tree = etree.parse(xml_path)
+    elements = tree.xpath("//MedlineCitation")
+    for element in elements:
+        pmid_element = element.xpath("PMID")[0]
+        pmid = int(pmid_element.text)
+        mesh_heading_list = element.xpath("MeshHeadingList")
+        if not mesh_heading_list:
+            continue
+        mesh_heading_list = mesh_heading_list[0]
+        for mesh_element in mesh_heading_list.getchildren():
+            descriptor = mesh_element.xpath("DescriptorName")[0]
+            attributes = descriptor.attrib
+            mesh_id = attributes["UI"]
+            is_concept = 1 if mesh_id[0] == "C" else 0
+            major_topic = attributes["MajorTopicYN"] == "Y"
+            yield mesh_id, is_concept, major_topic, pmid
+
+
+def process_mesh_xml_to_csv():
+    """Process the pubmed xml and dump to a CSV file
+
+    Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
+    """
+    # Run the download first
+    # Check that files are present and if not download them
+    download_medline_pubmed_xml_resource()
+    # Loop the stowed xml files
+    logger.info("Processing xml files to CSV")
+    with MESH_PMID.open("w") as fh:
+        writer = csv.writer(fh, delimiter=",")
+        writer.writerow(["mesh_id", "is_concept", "major_topic", "pmid"])
+        for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
+            writer.writerows(extract_info_from_medline_xml(xml_path.as_posix()))
 
 
 def download_medline_pubmed_xml_resource(force: bool = False) -> None:
