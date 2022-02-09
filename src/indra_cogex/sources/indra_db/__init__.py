@@ -59,12 +59,12 @@ class DbProcessor(Processor):
         elif isinstance(dir_path, str):
             dir_path = Path(dir_path)
         if add_jsons:
-            self.stmts_fname = pystow.join(
-                "indra", "cogex", "database", name="statements_with_evidences.tsv.gz"
-            )
+            self.stmts_fname = dir_path.join(name="statements_with_evidences.tsv.gz")
+            self.text_refs_fname = dir_path.join(name="text_refs_for_readings.tsv.gz")
             logger.info("Creating DB with Statement JSONs")
         else:
             self.stmt_fnames = None
+            self.text_refs_fname = None
             logger.info("Creating DB without Statement JSONs")
         sif_path = dir_path.joinpath("sif.pkl")
         with open(sif_path, "rb") as fh:
@@ -135,8 +135,7 @@ class DbProcessor(Processor):
             df_dict = df.to_dict(orient="index")
             hashes_yielded = set()
             logger.info("Getting text refs from text refs file")
-            with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
-                text_refs = json.load(fh)
+            text_refs = load_text_refs_for_reading_dict(self.text_refs_fname)
             with gzip.open(self.stmts_fname, "rt", encoding="utf-8") as fh:
                 # For each statement find corresponding row in df
                 reader = csv.reader(fh, delimiter="\t")
@@ -427,3 +426,20 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
     raise StatementJSONDecodeError(
         f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
     )
+
+
+def load_text_refs_for_reading_dict(fname: str):
+    text_refs = {}
+    for line in tqdm(
+        gzip.open(fname, "rt", encoding="utf-8"),
+        desc="Processing text refs for readings into a lookup dictionary",
+    ):
+        ids = line.strip().split("\t")
+        id_names = ["TRID", "PMID", "PMCID", "DOI", "PII", "URL", "MANUSCRIPT_ID"]
+        d = {}
+        rid = ids[0]
+        for id_name, id_val in zip(id_names, ids[1:]):
+            if id_val != "\\N":
+                d[id_name] = id_val
+        text_refs[rid] = d
+    return text_refs
