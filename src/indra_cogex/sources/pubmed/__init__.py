@@ -89,6 +89,10 @@ class PubmedProcessor(Processor):
                 yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
 
     def get_relations(self):
+        # Ensure cached files exist
+        # Todo: Add force option to download files?
+        process_mesh_xml_to_csv(mesh_pmid_path=self.mesh_pmid_path)
+
         with open(self.mesh_pmid_path, "r") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
@@ -200,7 +204,7 @@ def extract_info_from_medline_xml(
             yield mesh_id, is_concept, major_topic, pmid
 
 
-def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID):
+def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = False):
     """Process the pubmed xml and dump to a CSV file
 
     Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
@@ -209,10 +213,12 @@ def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID):
     ----------
     mesh_pmid_path :
         Path to the mesh pmid file
+    force :
+        If True, re-run the download even if the file already exists.
     """
-    # Run the download first
-    # Check that files are present and if not download them
-    download_medline_pubmed_xml_resource()
+    # Run the check and download first
+    download_medline_pubmed_xml_resource(force=force)
+
     # Loop the stowed xml files
     logger.info("Processing xml files to CSV")
     with mesh_pmid_path.open("w") as fh:
