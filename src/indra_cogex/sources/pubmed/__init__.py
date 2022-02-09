@@ -200,17 +200,22 @@ def extract_info_from_medline_xml(
             yield mesh_id, is_concept, major_topic, pmid
 
 
-def process_mesh_xml_to_csv():
+def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID):
     """Process the pubmed xml and dump to a CSV file
 
     Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
+
+    Parameters
+    ----------
+    mesh_pmid_path :
+        Path to the mesh pmid file
     """
     # Run the download first
     # Check that files are present and if not download them
     download_medline_pubmed_xml_resource()
     # Loop the stowed xml files
     logger.info("Processing xml files to CSV")
-    with MESH_PMID.open("w") as fh:
+    with mesh_pmid_path.open("w") as fh:
         writer = csv.writer(fh, delimiter=",")
         writer.writerow(["mesh_id", "is_concept", "major_topic", "pmid"])
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
