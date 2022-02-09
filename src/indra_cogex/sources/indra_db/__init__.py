@@ -133,22 +133,58 @@ class DbProcessor(Processor):
             # Convert to dict with hashes as keys
             df = df.set_index("stmt_hash")
             df_dict = df.to_dict(orient="index")
+            hashes_yielded = set()
+            logger.info("Getting text refs from text refs file")
+            with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
+                text_refs = json.load(fh)
             with gzip.open(self.stmts_fname, "rt", encoding="utf-8") as fh:
                 # For each statement find corresponding row in df
-                for line in fh:
-                    stmt = json.loads(line)
-                    stmt_hash = int(stmt["matches_hash"])
+                reader = csv.reader(fh, delimiter="\t")
+                for (
+                    raw_stmt_id,
+                    reading_id,
+                    stmt_hash,
+                    raw_json_str,
+                    pa_json_str,
+                ) in reader:
+                    stmt_hash = int(stmt_hash)
+                    # If we already yielded this statement, we can skip it
+                    if stmt_hash in hashes_yielded:
+                        continue
+                    stmt_json = load_statement_json(pa_json_str)
                     try:
                         values = df_dict[stmt_hash]
+                        source_counts = json.loads(values["source_counts"])
+                        # For statements with only evidence from medscan,
+                        # we don't add an evidence and yield the statement
+                        medscan_only = set(source_counts) == {"medscan"}
+                        if medscan_only:
+                            stmt_json["evidence"] = []
+                        # Otherwise, we know that eventually we will bump into
+                        # an evidence we can use and so we skip any medscan
+                        # ones without yielding the statement
+                        else:
+                            raw_json = load_statement_json(raw_json_str)
+                            if raw_json["source_api"] == "medscan":
+                                continue
+                            elif reading_id != "\\N":
+                                tr = text_refs[reading_id]
+                                raw_json["evidence"][0]["text_refs"] = tr
+                                if "PMID" in raw_json["evidence"][0]["text_refs"]:
+                                    raw_json["evidence"][0]["pmid"] = raw_json[
+                                        "evidence"
+                                    ][0]["text_refs"]["PMID"]
+                            stmt_json["evidence"] = raw_json["evidence"]
                         data = {
                             "stmt_hash:long": stmt_hash,
                             "source_counts:string": values["source_counts"],
                             "evidence_count:int": values["evidence_count"],
                             "stmt_type:string": values["stmt_type"],
                             "belief:float": values["belief"],
-                            "stmt_json:string": json.dumps(stmt),
+                            "stmt_json:string": json.dumps(stmt_json),
                         }
                         total_count += 1
+                        hashes_yielded.add(stmt_hash)
                         yield Relation(
                             values["agA_ns"],
                             values["agA_id"],
