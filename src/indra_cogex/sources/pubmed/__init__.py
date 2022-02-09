@@ -29,8 +29,10 @@ TEXT_REFS = resources.join(name="text_refs.tsv.gz")
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
 year_index = 22
 max_file_index = 1114
+max_update_index = 1186
 xml_file_temp = "pubmed%sn{index}.xml" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
+pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
 
 class PubmedProcessor(Processor):
@@ -174,7 +176,7 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
     force :
         If True, will download a file even if it already exists.
     """
-    for i in tqdm(range(1, max_file_index + 1), total=max_file_index,
+    for i in tqdm(range(1, max_update_index + 1), total=max_file_index,
                   desc="Download medline pubmed xml resource files"):
         # Assemble the file name and the resource path
         xml_file = xml_file_temp.format(index=str(i).zfill(4))
@@ -185,8 +187,12 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
             logger.info(f"{stow} already exists, skipping download.")
             continue
 
-        response = requests.get(pubmed_base_url + xml_file + '.gz')
-        md5_response = requests.get(pubmed_base_url + xml_file + '.gz.md5')
+        # Download the resource; if index <= max_update_index, then
+        # the resource file is from the /baseline directory, otherwise it's
+        # from the /updatefiles directory on the server
+        url = pubmed_base_url if i <= max_file_index else pubmed_update_url
+        response = requests.get(url + xml_file + '.gz')
+        md5_response = requests.get(url + xml_file + '.gz.md5')
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
             r'[0-9a-z]+(?=\n)', md5_response.content.decode('utf-8')
