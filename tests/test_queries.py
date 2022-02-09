@@ -127,6 +127,19 @@ def test_get_pathways_for_gene():
 
 
 @pytest.mark.nonpublic
+def test_get_shared_pathways_for_gene():
+    client = _get_client()
+    gene1 = ("HGNC", "1097")
+    gene2 = ("HGNC", "6407")
+    pathways = get_shared_pathways_for_genes([gene1, gene2], client=client)
+    assert pathways
+    assert isinstance(pathways[0], Node)
+    assert pathways[0].db_ns in {"WIKIPATHWAYS", "REACTOME"}
+    assert ("WIKIPATHWAYS", "WP4685") in {p.grounding() for p in pathways}
+    assert ("REACTOME", "R-HSA-6802952") in {p.grounding() for p in pathways}
+
+
+@pytest.mark.nonpublic
 def test_get_genes_for_pathway():
     client = _get_client()
     pathway = ("WIKIPATHWAYS", "WP5037")
@@ -306,3 +319,43 @@ def test_get_stmts_by_hashes():
     stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
     assert isinstance(stmts[0], Inhibition)
+
+
+@pytest.mark.nonpublic
+def test_is_gene_mutated():
+    client = _get_client()
+    gene = ("HGNC", "8975")
+    cell_line = ("CCLE", "BT20_BREAST")
+    assert is_gene_mutated(gene, cell_line, client=client)
+
+
+@pytest.mark.nonpublic
+def test_drugs_for_target():
+    client = _get_client()
+    target = ("HGNC", "6840")
+    drugs = get_drugs_for_target(target, client=client)
+    assert drugs
+    assert isinstance(drugs[0], Node)
+    assert drugs[0].db_ns == "CHEBI"
+    assert ("CHEBI", "CHEBI:90227") in {d.grounding() for d in drugs}
+
+
+@pytest.mark.nonpublic
+def test_targets_for_drug():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:90227")
+    targets = get_targets_for_drug(drug, client=client)
+    assert targets
+    assert isinstance(targets[0], Node)
+    assert targets[0].db_ns == "HGNC"
+    assert ("HGNC", "6840") in {t.grounding() for t in targets}
+
+
+@pytest.mark.nonpublic
+def test_is_drug_target():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:90227")
+    target = ("HGNC", "6840")
+    assert is_drug_target(drug, target, client=client)
+    wrong_target = ("HGNC", "6407")
+    assert not is_drug_target(drug, wrong_target, client=client)

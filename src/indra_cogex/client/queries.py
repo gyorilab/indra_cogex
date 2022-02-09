@@ -4,10 +4,10 @@ from collections import Counter, defaultdict
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
-from indra.statements import Evidence, Statement
+from indra.statements import Evidence, Statement, stmts_from_json, Agent
 
 from .neo4j_client import Neo4jClient, autoclient
-from ..representation import Node, indra_stmts_from_relations, norm_id
+from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ __all__ = [
     "get_drugs_for_trial",
     "get_diseases_for_trial",
     "get_pathways_for_gene",
+    "get_shared_pathways_for_genes",
     "get_genes_for_pathway",
     "is_gene_in_pathway",
     "get_side_effects_for_drug",
@@ -39,6 +40,10 @@ __all__ = [
     "get_stmts_for_pmid",
     "get_stmts_for_mesh",
     "get_stmts_for_stmt_hashes",
+    "is_gene_mutated",
+    "get_drugs_for_target",
+    "get_targets_for_drug",
+    "is_drug_target",
     # Summary functions
     "get_node_counter",
     "get_edge_counter",
@@ -361,6 +366,32 @@ def get_pathways_for_gene(
     """
     return client.get_sources(
         gene,
+        relation="haspart",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def get_shared_pathways_for_genes(
+    genes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the shared pathways for the given list of genes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    genes :
+        The list of genes to query.
+
+    Returns
+    -------
+    :
+        The pathways for the given gene.
+    """
+    return client.get_common_sources(
+        genes,
         relation="haspart",
         source_type="BioEntity",
         target_type="BioEntity",
@@ -996,3 +1027,95 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
             label=edge.type,
         )
     return graph
+
+
+# CCLE
+
+
+@autoclient()
+def is_gene_mutated(
+    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Return True if the gene is mutated in the given cell line.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    gene :
+        The gene to query.
+    cell_line :
+        The cell line to query.
+
+    Returns
+    -------
+    :
+        True if the gene is mutated in the given cell line.
+    """
+    return client.has_relation(
+        gene,
+        cell_line,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+# Indra DB
+
+
+@autoclient()
+def get_drugs_for_target(
+    target: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Agent]:
+    """Return the drugs targetting the given protein."""
+    rels = client.get_source_relations(
+        target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    drug_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    drug_nodes = [
+        _get_node_from_stmt_relation(rel, "source", "subj") for rel in drug_rels
+    ]
+    return drug_nodes
+
+
+@autoclient()
+def get_targets_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Agent]:
+    """Return the proteins targetted by the given drug."""
+    rels = client.get_target_relations(
+        drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    target_rels = [rel for rel in rels if _is_drug_relation(rel)]
+    target_nodes = [
+        _get_node_from_stmt_relation(rel, "target", "obj") for rel in target_rels
+    ]
+    return target_nodes
+
+
+@autoclient()
+def is_drug_target(
+    drug: Tuple[str, str], target: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Return True if the drug targets the given protein."""
+    rels = client.get_relations(
+        drug, target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    return any(_is_drug_relation(rel) for rel in rels)
+
+
+def _is_drug_relation(rel: Relation) -> bool:
+    """Return True if the relation is a drug-target relation."""
+    return rel.data["stmt_type"] == "Inhibition" and "tas" in rel.data["source_counts"]
+
+
+def _get_node_from_stmt_relation(
+    rel: Relation, node_role: str, agent_role: str
+) -> Node:
+    """Return the node from the given relation."""
+    node_ns = getattr(rel, f"{node_role}_ns")
+    node_id = getattr(rel, f"{node_role}_id")
+    stmt_json = json.loads(rel.data["stmt_json"])
+    name = stmt_json[agent_role]["name"]
+    return Node(node_ns, node_id, ["BioEntity"], dict(name=name))
