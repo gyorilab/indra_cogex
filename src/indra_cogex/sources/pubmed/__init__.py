@@ -2,6 +2,7 @@ import csv
 import gzip
 import json
 import logging
+import os
 import pystow
 from pathlib import Path
 from tqdm.std import tqdm
@@ -27,11 +28,10 @@ class PubmedProcessor(Processor):
         self,
         mesh_pmid_path=MESH_PMID,
         pmid_year_path=PMID_YEAR,
-        text_refs_path=TEXT_REFS,
     ):
         self.mesh_pmid_path = mesh_pmid_path
         self.pmid_year_path = pmid_year_path
-        self.text_refs_path = text_refs_path
+        self.text_refs_path = pystow.join("indra", "db", "text_refs.tsv.gz")
         # Check if the files exist without loading them
         for path in [mesh_pmid_path, pmid_year_path, text_refs_path]:
             if not path.exists():
@@ -53,6 +53,7 @@ class PubmedProcessor(Processor):
 
         # We iterate over text refs to get the nodes and
         # then look up the year to add as a property
+        ensure_text_refs(self.text_refs_path.as_posixpath())
         with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
@@ -128,3 +129,21 @@ def mesh_num_to_id(mesh_num, is_concept):
         else:
             mesh_num = str(mesh_num).zfill(9)
     return prefix + mesh_num
+
+
+def ensure_text_refs(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing text refs in {fname}")
+        return
+    from indra_db import get_ro
+
+    db = get_ro("primary")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping text refs into {fname}")
+    command = f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id 
+        FROM public.text_ref) TO STDOUT"
+        | gzip > {fname}
+    """
+    os.system(command)

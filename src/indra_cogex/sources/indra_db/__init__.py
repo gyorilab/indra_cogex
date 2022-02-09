@@ -9,6 +9,7 @@ import logging
 import pickle
 import click
 import codecs
+import os
 from collections import defaultdict
 from more_click import verbose_option
 from pathlib import Path
@@ -128,6 +129,8 @@ class DbProcessor(Processor):
         # If we want to add statement JSONs, process the statement batches and
         # map to records in SIF dataframe
         if self.stmts_fname:
+            ensure_statements_with_evidences(self.stmts_fname.as_posix())
+            ensure_text_refs_for_reading(self.text_refs_fname.as_posix())
             # Remove duplicate hashes (e.g. reverse edges for Complexes)
             df = self.df.drop_duplicates(subset="stmt_hash", keep="first")
             # Convert to dict with hashes as keys
@@ -443,3 +446,39 @@ def load_text_refs_for_reading_dict(fname: str):
                 d[id_name] = id_val
         text_refs[rid] = d
     return text_refs
+
+
+def ensure_statements_with_evidences(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing statements with evidences in {fname}")
+        return
+    from indra_db import get_ro
+
+    db = get_ro("primary")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping statements with evidences into {fname}")
+    command = f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT id, reading_id, mk_hash, encode(raw_json::bytea, 'escape'),
+        encode(pa_json::bytea, 'escape') FROM readonly.fast_raw_pa_link) TO STDOUT"
+        | gzip > {fname}
+    """
+    os.system(command)
+
+
+def ensure_text_refs_for_reading(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing text refs for reading in {fname}")
+        return
+    from indra_db import get_db
+
+    db = get_db("principal")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping text refs for reading into {fname}")
+    command = f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT rid, trid, pmid, pmcid, doi, pii, url, manuscript_id 
+        FROM readonly.reading_ref_link) TO STDOUT"
+        | gzip > {fname}
+    """
+    os.system(command)
