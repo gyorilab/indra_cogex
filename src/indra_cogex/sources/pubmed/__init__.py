@@ -5,6 +5,7 @@ import logging
 import os
 import re
 from hashlib import md5
+from typing import Tuple, Generator
 
 import pystow
 import textwrap
@@ -209,3 +210,43 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
         # PyStow the file
         with stow.open("w") as f:
             f.write(gzip.decompress(response.content).decode("utf-8"))
+
+
+def xml_path_generator(
+    bar: bool = True, description: str = "Looping xml paths"
+) -> Generator[Tuple[str, Path, str], None, None]:
+    """Returns a generator of (xml_file, xml_path, base_url) tuples.
+
+    Parameters
+    ----------
+    bar :
+        If True, will display a progress bar.
+    description :
+        Description of the progress bar.
+
+    Yields
+    ------
+    :
+        Tuple of (xml_file, xml_path, xml_url).
+    """
+
+    def _get_tuple(ix: int) -> Tuple[str, Path, str]:
+        file = xml_file_temp.format(index=str(ix).zfill(4))
+        stow = raw_xml.join(name=file)
+
+        # If index <= max_update_index, then the resource file is from the
+        # /baseline directory, otherwise it's from the /updatefiles
+        # directory on the server
+        base_url = pubmed_base_url if ix <= max_file_index else pubmed_update_url
+        return file, stow, base_url
+
+    if bar:
+        for i in tqdm(
+            range(1, max_update_index + 1),
+            total=max_update_index + 1,
+            desc=description,
+        ):
+            yield _get_tuple(i)
+    else:
+        for i in range(1, max_update_index + 1):
+            yield _get_tuple(i)
