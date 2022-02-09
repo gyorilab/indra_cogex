@@ -176,8 +176,11 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
     force :
         If True, will download a file even if it already exists.
     """
-    for i in tqdm(range(1, max_update_index + 1), total=max_file_index,
-                  desc="Download medline pubmed xml resource files"):
+    for i in tqdm(
+        range(1, max_update_index + 1),
+        total=max_file_index,
+        desc="Download medline pubmed xml resource files",
+    ):
         # Assemble the file name and the resource path
         xml_file = xml_file_temp.format(index=str(i).zfill(4))
         stow = raw_xml.join(name=xml_file)
@@ -191,17 +194,18 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
         # the resource file is from the /baseline directory, otherwise it's
         # from the /updatefiles directory on the server
         url = pubmed_base_url if i <= max_file_index else pubmed_update_url
-        response = requests.get(url + xml_file + '.gz')
-        md5_response = requests.get(url + xml_file + '.gz.md5')
+        response = requests.get(url + xml_file + ".gz")
+        md5_response = requests.get(url + xml_file + ".gz.md5")
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
-            r'[0-9a-z]+(?=\n)', md5_response.content.decode('utf-8')
+            r"[0-9a-z]+(?=\n)", md5_response.content.decode("utf-8")
         ).group()
         if actual_checksum != expected_checksum:
-            logger.warning(f'Checksum does not match for {xml_file}. Is index '
-                           f'out of bounds?')
+            logger.warning(
+                f"Checksum does not match for {xml_file}. Is index out of bounds?"
+            )
             continue
 
         # PyStow the file
-        with stow.open('w') as f:
-            f.write(gzip.decompress(response.content).decode('utf-8'))
+        with stow.open("w") as f:
+            f.write(gzip.decompress(response.content).decode("utf-8"))
