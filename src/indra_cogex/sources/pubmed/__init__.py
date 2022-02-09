@@ -3,9 +3,14 @@ import gzip
 import json
 import logging
 import os
+import re
+from hashlib import md5
+
 import pystow
 import textwrap
 from pathlib import Path
+
+import requests
 from tqdm.std import tqdm
 from indra.util import batch_iter
 from indra_cogex.representation import Node, Relation
@@ -19,6 +24,13 @@ resources = pystow.module("indra", "cogex", "pubmed")
 MESH_PMID = resources.join(name="mesh_pmids.csv")
 PMID_YEAR = resources.join(name="pmid_years_07-2021.json")
 TEXT_REFS = resources.join(name="text_refs.tsv.gz")
+
+# Settings for downloading content from the PubMed FTP server
+raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
+year_index = 22
+max_file_index = 1114
+xml_file_temp = "pubmed%sn{index}.xml" % year_index
+pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 
 
 class PubmedProcessor(Processor):
@@ -150,3 +162,40 @@ def ensure_text_refs(fname):
     """
     ).replace("\n", " ")
     os.system(command)
+
+
+def download_medline_pubmed_xml_resource(force: bool = False) -> None:
+    """Downloads the medline and pubmed data from the NCBI ftp site.
+
+    The location of the downloaded data is determined by pystow
+
+    Parameters
+    ----------
+    force :
+        If True, will download a file even if it already exists.
+    """
+    for i in tqdm(range(1, max_file_index + 1), total=max_file_index,
+                  desc="Download medline pubmed xml resource files"):
+        # Assemble the file name and the resource path
+        xml_file = xml_file_temp.format(index=str(i).zfill(4))
+        stow = raw_xml.join(name=xml_file)
+
+        # Check if resource already exists
+        if not force and stow.exists():
+            logger.info(f"{stow} already exists, skipping download.")
+            continue
+
+        response = requests.get(pubmed_base_url + xml_file + '.gz')
+        md5_response = requests.get(pubmed_base_url + xml_file + '.gz.md5')
+        actual_checksum = md5(response.content).hexdigest()
+        expected_checksum = re.search(
+            r'[0-9a-z]+(?=\n)', md5_response.content.decode('utf-8')
+        ).group()
+        if actual_checksum != expected_checksum:
+            logger.warning(f'Checksum does not match for {xml_file}. Is index '
+                           f'out of bounds?')
+            continue
+
+        # PyStow the file
+        with stow.open('w') as f:
+            f.write(gzip.decompress(response.content).decode('utf-8'))
