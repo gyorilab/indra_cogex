@@ -99,8 +99,7 @@ class PubmedProcessor(Processor):
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
                 relations_batch = []
-                for mesh_num, is_concept, major_topic, pmid in batch:
-                    mesh_id = mesh_num_to_id(mesh_num, int(is_concept))
+                for mesh_id, is_concept, major_topic, pmid in batch:
                     relations_batch.append(
                         Relation(
                             "PUBMED",
