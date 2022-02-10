@@ -215,7 +215,18 @@ def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = Fals
     force :
         If True, re-run the download even if the file already exists.
     """
-    # Run the check and download first
+    # Todo: Some of the pipeline could be replaced with
+    #  raw_xml.ensure(url=xml_gz_url) though this makes the md5 check
+    #  cumbersome.
+
+    if not force and mesh_pmid_path.exists():
+        logger.info(
+            f"{mesh_pmid_path.name} already exists, skipping check for "
+            f"xml resource files"
+        )
+        return
+
+    # Check resource files and download missing ones first
     download_medline_pubmed_xml_resource(force=force)
 
     # Loop the stowed xml files
