@@ -30,6 +30,6 @@ def index_indra_rel_on_stmt_hash(client: Neo4jClient):
     client :
         Neo4jClient instance to the graph database to be indexed
     """
-    client.create_single_property_node_index(
-        index_name="indra_rel_hash", label="indra_rel", property_name="stmt_hash"
+    client.create_single_property_relationship_index(
+        index_name="indra_rel_hash", rel_type="indra_rel", property_name="stmt_hash"
     )
