@@ -10,6 +10,7 @@ import pickle
 import click
 import codecs
 import os
+import textwrap
 from collections import defaultdict
 from more_click import verbose_option
 from pathlib import Path
@@ -60,8 +61,8 @@ class DbProcessor(Processor):
         elif isinstance(dir_path, str):
             dir_path = Path(dir_path)
         if add_jsons:
-            self.stmts_fname = dir_path.join(name="statements_with_evidences.tsv.gz")
-            self.text_refs_fname = dir_path.join(name="text_refs_for_readings.tsv.gz")
+            self.stmts_fname = dir_path / "statements_with_evidences.tsv.gz"
+            self.text_refs_fname = dir_path / "text_refs_for_reading.tsv.gz"
             logger.info("Creating DB with Statement JSONs")
         else:
             self.stmt_fnames = None
@@ -457,12 +458,14 @@ def ensure_statements_with_evidences(fname):
     db = get_ro("primary")
     os.environ["PGPASSWORD"] = db.url.password
     logger.info(f"Dumping statements with evidences into {fname}")
-    command = f"""
+    command = textwrap.dedent(
+        f"""
         psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
         -c "COPY (SELECT id, reading_id, mk_hash, encode(raw_json::bytea, 'escape'),
         encode(pa_json::bytea, 'escape') FROM readonly.fast_raw_pa_link) TO STDOUT"
         | gzip > {fname}
     """
+    ).replace("\n", " ")
     os.system(command)
 
 
@@ -470,15 +473,17 @@ def ensure_text_refs_for_reading(fname):
     if os.path.exists(fname):
         logger.info(f"Found existing text refs for reading in {fname}")
         return
-    from indra_db import get_db
+    from indra_db import get_ro
 
-    db = get_db("principal")
+    db = get_ro("primary")
     os.environ["PGPASSWORD"] = db.url.password
     logger.info(f"Dumping text refs for reading into {fname}")
-    command = f"""
+    command = textwrap.dedent(
+        f"""
         psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
         -c "COPY (SELECT rid, trid, pmid, pmcid, doi, pii, url, manuscript_id 
         FROM readonly.reading_ref_link) TO STDOUT"
         | gzip > {fname}
     """
+    ).replace("\n", " ")
     os.system(command)
