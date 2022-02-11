@@ -63,9 +63,12 @@ class DbProcessor(Processor):
         if add_jsons:
             self.stmts_fname = dir_path / "statements_with_evidences.tsv.gz"
             self.text_refs_fname = dir_path / "text_refs_for_reading.tsv.gz"
-            logger.info("Creating DB with Statement JSONs")
+            logger.info(
+                "Creating DB with Statement JSONs. Note that this "
+                "requires at least 128GB of RAM"
+            )
         else:
-            self.stmt_fnames = None
+            self.stmts_fname = None
             self.text_refs_fname = None
             logger.info("Creating DB without Statement JSONs")
         sif_path = dir_path.joinpath("sif.pkl")
