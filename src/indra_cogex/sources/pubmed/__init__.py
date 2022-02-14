@@ -136,21 +136,6 @@ class PubmedProcessor(Processor):
         return edges_path
 
 
-def mesh_num_to_id(mesh_num, is_concept):
-    prefix = "C" if is_concept else "D"
-    if prefix == "D":
-        if int(mesh_num) < 66332:
-            mesh_num = str(mesh_num).zfill(6)
-        else:
-            mesh_num = str(mesh_num).zfill(9)
-    elif prefix == "C":
-        if int(mesh_num) < 588418:
-            mesh_num = str(mesh_num).zfill(6)
-        else:
-            mesh_num = str(mesh_num).zfill(9)
-    return prefix + mesh_num
-
-
 def ensure_text_refs(fname):
     if os.path.exists(fname):
         logger.info(f"Found existing text refs in {fname}")
