@@ -171,15 +171,16 @@ class DbProcessor(Processor):
                         # ones without yielding the statement
                         else:
                             raw_json = load_statement_json(raw_json_str)
-                            if raw_json["source_api"] == "medscan":
+                            raw_json_ev = raw_json["evidence"][0]
+                            if raw_json_ev["source_api"] == "medscan":
                                 continue
                             elif reading_id != "\\N":
                                 tr = text_refs[reading_id]
-                                raw_json["evidence"][0]["text_refs"] = tr
-                                if "PMID" in raw_json["evidence"][0]["text_refs"]:
-                                    raw_json["evidence"][0]["pmid"] = raw_json[
-                                        "evidence"
-                                    ][0]["text_refs"]["PMID"]
+                                raw_json_ev["text_refs"] = tr
+                                if "PMID" in raw_json_ev["text_refs"]:
+                                    raw_json_ev["pmid"] = raw_json_ev["text_refs"][
+                                        "PMID"
+                                    ]
                             stmt_json["evidence"] = raw_json["evidence"]
                         data = {
                             "stmt_hash:long": stmt_hash,
