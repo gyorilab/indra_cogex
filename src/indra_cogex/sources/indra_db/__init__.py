@@ -289,8 +289,7 @@ class EvidenceProcessor(Processor):
         # Load the text ref lookup so that we can set text refs in
         # evidences
         logger.info("Getting text refs from text refs file")
-        with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
-            text_refs = json.load(fh)
+        text_refs = load_text_refs_for_reading_dict(self.text_refs_path.as_posix())
         # Get a list of hashes from the SIF file so that we only
         # add nodes/relations for statements that are in the SIF file
         logger.info("Getting hashes from SIF file")
