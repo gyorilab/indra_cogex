@@ -206,7 +206,9 @@ def metabolomics_explanation(
     evidence_line = _minimum_evidence_helper(minimum_evidence_count)
     belief_line = _minimum_belief_helper(minimum_belief)
     if chebi_ids:
-        entity_line = 'IN [{}]'.format(", ".join(f'"chebi:{chebi_id}"' for chebi_id in chebi_ids))
+        entity_line = "IN [{}]".format(
+            ", ".join(f'"chebi:{chebi_id}"' for chebi_id in chebi_ids)
+        )
     else:
         entity_line = 'STARTS WITH "chebi"'
 

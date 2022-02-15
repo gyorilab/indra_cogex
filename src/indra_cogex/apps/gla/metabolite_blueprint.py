@@ -4,10 +4,10 @@ from typing import Dict, List, Mapping, Tuple
 
 import bioregistry
 import flask
+from flask import request
 from flask_wtf import FlaskForm
 from indra.assemblers.html import HtmlAssembler
 from indra.databases import chebi_client
-from flask import request
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
@@ -121,7 +121,9 @@ def enzyme(ec_code: str):
     _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
     if identifier is None:
         return flask.abort(400, f"Invalid EC Code: {ec_code}")
-    stmts = metabolomics_explanation(client=client, ec_code=identifier, chebi_ids=chebi_ids)
+    stmts = metabolomics_explanation(
+        client=client, ec_code=identifier, chebi_ids=chebi_ids
+    )
     # TODO only show statements with views centered on given entities?
     #  e.g., there are lots of enzyme-water, enzyme-NAD, enzyme-NADH statements
     #  that should be skipped showing since they weren't part of the query
