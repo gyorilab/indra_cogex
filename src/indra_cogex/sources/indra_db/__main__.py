@@ -14,7 +14,7 @@ from . import DbProcessor, EvidenceProcessor
 @verbose_option
 @click.pass_context
 def _main(ctx: click.Context, add_jsons: bool):
-    ctx.invoke(DbProcessor.get_cli()(add_jsons))
+    ctx.invoke(DbProcessor.get_cli(), add_jsons=add_jsons)
     ctx.invoke(EvidenceProcessor.get_cli())
 
 
