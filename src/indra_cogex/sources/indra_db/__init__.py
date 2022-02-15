@@ -276,7 +276,7 @@ class EvidenceProcessor(Processor):
     def __init__(self):
         base_path = pystow.module("indra", "db")
         self.statements_path = base_path.join(name="statements_with_evidences.tsv.gz")
-        self.text_refs_path = base_path.join(name="text_refs_for_reading.json.gz")
+        self.text_refs_path = base_path.join(name="text_refs_for_reading.tsv.gz")
         self.sif_path = base_path.join(name="sif.pkl")
         self._stmt_id_pmid_links = {}
         # Check if files exist without loading them
