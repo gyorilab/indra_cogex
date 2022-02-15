@@ -122,6 +122,9 @@ def enzyme(ec_code: str):
     if identifier is None:
         return flask.abort(400, f"Invalid EC Code: {ec_code}")
     stmts = metabolomics_explanation(client=client, ec_code=identifier, chebi_ids=chebi_ids)
+    # TODO only show statements with views centered on given entities?
+    #  e.g., there are lots of enzyme-water, enzyme-NAD, enzyme-NADH statements
+    #  that should be skipped showing since they weren't part of the query
     html_assembler = HtmlAssembler(
         stmts,
         db_rest_url="https://db.indra.bio",

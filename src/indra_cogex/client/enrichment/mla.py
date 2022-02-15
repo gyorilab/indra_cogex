@@ -209,6 +209,8 @@ def metabolomics_explanation(
         entity_line = 'IN [{}]'.format(", ".join(f'"chebi:{chebi_id}"' for chebi_id in chebi_ids))
     else:
         entity_line = 'STARTS WITH "chebi"'
+
+    # TODO consider enzyme->entity and enzyme->gene->entity query
     query = dedent(
         f"""\
     MATCH
@@ -236,6 +238,7 @@ def metabolomics_explanation(
     )
     stmts_json = [json.loads(row[0]) for row in client.query_tx(query)]
     stmts = stmts_from_json(stmts_json)
+    # TODO add some deduplication
     return stmts
 
 
