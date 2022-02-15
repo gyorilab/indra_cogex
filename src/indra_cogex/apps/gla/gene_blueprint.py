@@ -1,12 +1,13 @@
 """Gene-centric analysis blueprint."""
 
+from pathlib import Path
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
-from wtforms import SubmitField, TextAreaField
+from wtforms import BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.client.enrichment.continuous import (
@@ -107,6 +108,7 @@ class DiscreteForm(FlaskForm):
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
+    local_download = BooleanField("local_download")
     submit = SubmitField("Submit")
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -220,6 +222,33 @@ def discretize_analysis():
         else:
             indra_upstream_results = None
             indra_downstream_results = None
+
+        if form.local_download.data:
+            downloads = Path.home().joinpath("Downloads")
+            go_results.to_csv(
+                downloads.joinpath("go_results.tsv"), sep="\t", index=False
+            )
+            wikipathways_results.to_csv(
+                downloads.joinpath("wikipathways_results.tsv"), sep="\t", index=False
+            )
+            reactome_results.to_csv(
+                downloads.joinpath("reactome_results.tsv"), sep="\t", index=False
+            )
+            if form.indra_path_analysis.data:
+                indra_downstream_results.to_csv(
+                    downloads.joinpath("indra_downstream_results.tsv"),
+                    sep="\t",
+                    index=False,
+                )
+                indra_upstream_results.to_csv(
+                    downloads.joinpath("indra_upstream_results.tsv"),
+                    sep="\t",
+                    index=False,
+                )
+            flask.flash(f"Downloaded files to {downloads}")
+            return flask.redirect(
+                f"{gene_blueprint.name}.{discretize_analysis.__name__}"
+            )
 
         return flask.render_template(
             "gene_analysis/discrete_results.html",
