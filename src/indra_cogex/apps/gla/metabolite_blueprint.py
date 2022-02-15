@@ -7,6 +7,7 @@ import flask
 from flask_wtf import FlaskForm
 from indra.assemblers.html import HtmlAssembler
 from indra.databases import chebi_client
+from flask import request
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
@@ -116,10 +117,11 @@ def discrete_analysis():
 @metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
 def enzyme(ec_code: str):
     """Render the enzyme page."""
+    chebi_ids = request.args.get("q").split(",") if "q" in request.args else None
     _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
     if identifier is None:
         return flask.abort(400, f"Invalid EC Code: {ec_code}")
-    stmts = metabolomics_explanation(client=client, ec_code=identifier)
+    stmts = metabolomics_explanation(client=client, ec_code=identifier, chebi_ids=chebi_ids)
     html_assembler = HtmlAssembler(
         stmts,
         db_rest_url="https://db.indra.bio",

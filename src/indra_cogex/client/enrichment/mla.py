@@ -176,21 +176,47 @@ def metabolomics_ora(
 
 def metabolomics_explanation(
     *,
-    client: Neo4jClient,
     ec_code: str,
+    chebi_ids: Optional[List[str]] = None,
     minimum_evidence_count: Optional[float] = None,
     minimum_belief: Optional[float] = None,
+    client: Neo4jClient,
 ) -> List[indra.statements.Statement]:
+    """
+
+    Parameters
+    ----------
+    ec_code:
+        The enzyme class code in the form of ``W.X.Y.Z``
+    chebi_ids:
+        An optional list of CURIEs to filter by
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    A list of INDRA statements
+    """
     evidence_line = _minimum_evidence_helper(minimum_evidence_count)
     belief_line = _minimum_belief_helper(minimum_belief)
+    if chebi_ids:
+        entity_line = 'IN [{}]'.format(", ".join(f'"chebi:{chebi_id}"' for chebi_id in chebi_ids))
+    else:
+        entity_line = 'STARTS WITH "chebi"'
     query = dedent(
         f"""\
     MATCH
         (enzyme:BioEntity)-[:xref]-(family:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
     WHERE
-        enzyme.id in ["ec-code:{ec_code}"]
+        enzyme.id IN ["ec-code:{ec_code}"]
         and family.id STARTS WITH "fplx"
-        and chemical.id STARTS WITH "chebi"
+        and chemical.id {entity_line}
         {evidence_line}
         {belief_line}
     RETURN
@@ -201,7 +227,7 @@ def metabolomics_explanation(
     WHERE
         enzyme.id in ["ec-code:{ec_code}"]
         and family.id STARTS WITH "fplx"
-        and chemical.id STARTS WITH "chebi"
+        and chemical.id {entity_line}
         {evidence_line}
         {belief_line}
     RETURN
