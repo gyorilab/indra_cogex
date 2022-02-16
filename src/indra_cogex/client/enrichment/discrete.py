@@ -2,7 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
