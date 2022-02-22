@@ -10,8 +10,7 @@ from typing import Iterable, List, Mapping, Optional, Set, Tuple
 import indra.statements
 import pandas as pd
 import pyobo
-import pystow
-import requests
+from indra.databases.hgnc_client import hgnc_to_enzymes
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
@@ -27,44 +26,6 @@ __all__ = [
     "EXAMPLE_CHEBI_CURIES",
     "metabolomics_ora",
 ]
-
-ENZYME_FILE = pystow.join("indra", "cogex", "ec", name="hgnc_to_ec.json")
-
-
-@lru_cache(1)
-def get_hgnc_to_ec() -> Mapping[str, Set[str]]:
-    """Get the gene-enzyme mappings."""
-    if ENZYME_FILE.is_file():
-        d = json.loads(ENZYME_FILE.read_text())
-    else:
-        url = "https://www.genenames.org/cgi-bin/download/custom"
-        params = {
-            "col": ["gd_hgnc_id", "gd_enz_ids"],
-            "status": "Approved",
-            "hgnc_dbtag": "on",
-            "order_by": "gd_app_sym_sort",
-            "format": "text",
-            "submit": "submit",
-        }
-        res = requests.get(url, params=params)
-        d = {}
-        lines = res.iter_lines(decode_unicode=True)
-        _header = next(lines)
-        for line in lines:
-            try:
-                hgnc_curie, enzyme_ids = line.strip().split("\t")
-            except ValueError:
-                continue  # no enzymes
-            if not enzyme_ids:
-                continue
-            d[hgnc_curie.removeprefix("HGNC:")] = sorted(
-                enzyme_id.strip() for enzyme_id in enzyme_ids.split(", ")
-            )
-        ENZYME_FILE.write_text(json.dumps(d, indent=2))
-    return d
-
-
-HGNC_TO_EC = get_hgnc_to_ec()
 
 
 @lru_cache()
@@ -142,7 +103,7 @@ def get_metabolomics_sets(
     for hgnc_curie, chebi_curies in client.query_tx(query):
         hgnc_id = hgnc_curie.removeprefix("hgnc:")
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
-        for ec_code in HGNC_TO_EC.get(hgnc_id, []):
+        for ec_code in hgnc_to_enzymes.get(hgnc_id, []):
             rv[ec_code, pyobo.get_name("ec", ec_code)].update(chebi_ids)
     rv = dict(rv)
     print(f"got {len(rv)} enzymes to {_sum_values(rv)} chemicals")
