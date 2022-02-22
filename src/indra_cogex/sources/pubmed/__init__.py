@@ -1,11 +1,10 @@
 import csv
 import gzip
-import json
 import logging
 import os
 import re
 from hashlib import md5
-from typing import Tuple, Generator
+from typing import Tuple, Generator, Mapping
 
 import pystow
 import textwrap
@@ -15,6 +14,7 @@ import requests
 from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
+from indra.literature.pubmed_client import _get_annotations
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -38,12 +38,8 @@ class PubmedProcessor(Processor):
     node_types = ["Publication"]
 
     def __init__(self):
-        self.mesh_pmid_path = pystow.join(
-            "indra", "cogex", "pubmed", name="mesh_pmids.csv.gz"
-        )
-        self.pmid_year_path = pystow.join(
-            "indra", "cogex", "pubmed", name="pmid_years.csv.gz"
-        )
+        self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
+        self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
         self.text_refs_path = pystow.join("indra", "db", name="text_refs.tsv.gz")
 
     def get_nodes(self):
@@ -155,7 +151,7 @@ def ensure_text_refs(fname):
 
 def extract_info_from_medline_xml(
     xml_path: str,
-) -> Generator[Tuple[str, int, str, int], None, None]:
+) -> Generator[Tuple[str, int, Mapping], None, None]:
     """Extract info from medline xml file.
 
     Parameters
@@ -166,7 +162,7 @@ def extract_info_from_medline_xml(
     Yields
     ------
     :
-        Tuple of (MeSH ID, major topic, PMID, year).
+        Tuple of (PMID, year, MeSH annotations).
     """
     tree = etree.parse(xml_path)
 
@@ -176,18 +172,10 @@ def extract_info_from_medline_xml(
             medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
         ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
         min_year = min(int(year.text) for year in years)
-
         pmid = medline_citation.find("PMID").text
-        mesh_heading_list = medline_citation.xpath("MeshHeadingList")
-        if not mesh_heading_list:
-            continue
-        mesh_heading_list = mesh_heading_list[0]
-        for mesh_element in mesh_heading_list.getchildren():
-            descriptor = mesh_element.xpath("DescriptorName")[0]
-            attributes = descriptor.attrib
-            mesh_id = attributes["UI"]
-            major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
-            yield mesh_id, major_topic, pmid, min_year
+
+        mesh_annotations = _get_annotations(medline_citation)
+        yield pmid, min_year, mesh_annotations["mesh_annotations"]
 
 
 def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False):
@@ -222,13 +210,14 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
         writer.writerow(["mesh_id", "major_topic", "pmid"])
         writer_year = csv.writer(fh_year, delimiter=",")
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
-            pmid_years = {}
-            for mesh_id, major_topic, pmid, year in extract_info_from_medline_xml(
+            for pmid, year, mesh_annotations in extract_info_from_medline_xml(
                 xml_path.as_posix()
             ):
-                writer.writerow((mesh_id, major_topic, pmid))
-                pmid_years[pmid] = year
-            writer_year.writerows(sorted(pmid_years.items()))
+                for annot in mesh_annotations:
+                    writer.writerow(
+                        (annot["mesh"], 1 if annot["major_topic"] else 0, pmid)
+                    )
+                writer_year.writerow([pmid, year])
 
 
 def download_medline_pubmed_xml_resource(force: bool = False) -> None:
