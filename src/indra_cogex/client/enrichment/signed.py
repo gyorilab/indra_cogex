@@ -38,7 +38,6 @@ def _query(
     return dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        
         WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
             AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
             AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins

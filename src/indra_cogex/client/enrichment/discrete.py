@@ -91,7 +91,7 @@ def count_human_genes(*, client: Neo4jClient) -> int:
     :
         Number of HGNC genes
     """
-    query = f"""\
+    query = """\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
         RETURN count(n) as count
