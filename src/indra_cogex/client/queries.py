@@ -794,7 +794,7 @@ def get_evidences_for_stmt_hashes(
         A mapping of stmt hash to a list of evidence objects for the given
         statement hashes.
     """
-    stmt_hashes_str = ",".join(f"{h}" for h in stmt_hashes)
+    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     query = (
         """
         MATCH (n:Evidence)
