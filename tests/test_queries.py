@@ -1,6 +1,7 @@
 import pytest
-from indra_cogex.client.queries import *
 from indra.statements import *
+
+from indra_cogex.client.queries import *
 from indra_cogex.representation import Node
 
 from .test_neo4j_client import _get_client
@@ -290,7 +291,7 @@ def test_get_stmts_for_pmid():
 def test_get_stmts_for_mesh_id_w_children():
     # Two queries:
     # 1. evidences for publications with pmid having mesh annotation
-    # 2. statements for the evidences in 2
+    # 2. statements for the evidences in 1
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, client=client)
@@ -302,7 +303,7 @@ def test_get_stmts_for_mesh_id_w_children():
 def test_get_stmts_for_mesh_id_wo_children():
     # Two queries:
     # 1. evidences for publications with pmid having mesh annotation
-    # 2. statements for the evidences in 2
+    # 2. statements for the evidences in 1
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, include_child_terms=False, client=client)

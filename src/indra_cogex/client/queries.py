@@ -794,7 +794,7 @@ def get_evidences_for_stmt_hashes(
         A mapping of stmt hash to a list of evidence objects for the given
         statement hashes.
     """
-    stmt_hashes_str = ",".join(f'{h}' for h in stmt_hashes)
+    stmt_hashes_str = ",".join(f"{h}" for h in stmt_hashes)
     query = (
         """
         MATCH (n:Evidence)
@@ -905,7 +905,9 @@ def get_stmts_for_stmt_hashes(
         % stmt_hashes_str
     )
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
-    stmts: Dict[int, Statement] = {s.get_hash(): s for s in indra_stmts_from_relations(rels)}
+    stmts: Dict[int, Statement] = {
+        s.get_hash(): s for s in indra_stmts_from_relations(rels)
+    }
 
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
