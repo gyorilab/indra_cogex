@@ -15,6 +15,7 @@ import requests
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
+from indra_cogex.client.enrichment.utils import minimum_belief_helper, minimum_evidence_helper
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 __all__ = [
@@ -25,22 +26,6 @@ __all__ = [
 ]
 
 ENZYME_FILE = pystow.join("indra", "cogex", "ec", name="hgnc_to_ec.json")
-
-
-def _minimum_evidence_helper(
-    minimum_evidence_count: Optional[float] = None, name: str = "r"
-) -> str:
-    if minimum_evidence_count is None or minimum_evidence_count == 1:
-        return ""
-    return f"AND {name}.evidence_count >= {minimum_evidence_count}"
-
-
-def _minimum_belief_helper(
-    minimum_belief: Optional[float] = None, name: str = "r"
-) -> str:
-    if minimum_belief is None or minimum_belief == 0.0:
-        return ""
-    return f"AND {name}.belief >= {minimum_belief}"
 
 
 @lru_cache(1)
@@ -105,8 +90,8 @@ def get_metabolomics_sets(
     """
     rv = defaultdict(set)
 
-    evidence_line = _minimum_evidence_helper(minimum_evidence_count)
-    belief_line = _minimum_belief_helper(minimum_belief)
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
     query = dedent(
         f"""\
     MATCH
@@ -203,8 +188,8 @@ def metabolomics_explanation(
     -------
     A list of INDRA statements
     """
-    evidence_line = _minimum_evidence_helper(minimum_evidence_count)
-    belief_line = _minimum_belief_helper(minimum_belief)
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
     if chebi_ids:
         entity_line = "IN [{}]".format(
             ", ".join(f'"chebi:{chebi_id}"' for chebi_id in chebi_ids)
