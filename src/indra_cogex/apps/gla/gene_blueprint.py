@@ -19,6 +19,7 @@ from indra_cogex.client.enrichment.continuous import (
     wikipathways_gsea,
 )
 
+from .constants import INDRA_COGEX_WEB_LOCAL
 from .fields import (
     alpha_field,
     correction_field,
@@ -108,7 +109,8 @@ class DiscreteForm(FlaskForm):
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
-    local_download = BooleanField("local_download")
+    if INDRA_COGEX_WEB_LOCAL:
+        local_download = BooleanField("local_download")
     submit = SubmitField("Submit")
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -223,7 +225,7 @@ def discretize_analysis():
             indra_upstream_results = None
             indra_downstream_results = None
 
-        if form.local_download.data:
+        if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
             downloads = Path.home().joinpath("Downloads")
             go_results.to_csv(
                 downloads.joinpath("go_results.tsv"), sep="\t", index=False
