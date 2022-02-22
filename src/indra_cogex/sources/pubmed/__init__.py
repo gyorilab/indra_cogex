@@ -32,7 +32,7 @@ raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
 year_index = 22
 max_file_index = 1114  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
 max_update_index = 1192  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
-xml_file_temp = "pubmed%sn{index}.xml" % year_index
+xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
@@ -164,28 +164,29 @@ def extract_info_from_medline_xml(
     Parameters
     ----------
     xml_path :
-        Path to medline xml file.
+        Path to medline xml.gz file.
 
     Yields
     ------
     :
         Tuple of (pmid, year, is_concept, mesh_num).
     """
-    tree = etree.parse(xml_path)
-    elements = tree.xpath("//MedlineCitation")
-    for element in elements:
-        pmid_element = element.xpath("PMID")[0]
-        pmid = int(pmid_element.text)
-        mesh_heading_list = element.xpath("MeshHeadingList")
-        if not mesh_heading_list:
-            continue
-        mesh_heading_list = mesh_heading_list[0]
-        for mesh_element in mesh_heading_list.getchildren():
-            descriptor = mesh_element.xpath("DescriptorName")[0]
-            attributes = descriptor.attrib
-            mesh_id = attributes["UI"]
-            major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
-            yield mesh_id, major_topic, pmid
+    with gzip.open(xml_path, "rt") as fh:
+        tree = etree.parse(fh)
+        elements = tree.xpath("//MedlineCitation")
+        for element in elements:
+            pmid_element = element.xpath("PMID")[0]
+            pmid = int(pmid_element.text)
+            mesh_heading_list = element.xpath("MeshHeadingList")
+            if not mesh_heading_list:
+                continue
+            mesh_heading_list = mesh_heading_list[0]
+            for mesh_element in mesh_heading_list.getchildren():
+                descriptor = mesh_element.xpath("DescriptorName")[0]
+                attributes = descriptor.attrib
+                mesh_id = attributes["UI"]
+                major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
+                yield mesh_id, major_topic, pmid
 
 
 def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = False):
@@ -239,8 +240,8 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
             continue
 
         # Download the resource
-        response = requests.get(base_url + xml_file + ".gz")
-        md5_response = requests.get(base_url + xml_file + ".gz.md5")
+        response = requests.get(base_url + xml_file)
+        md5_response = requests.get(base_url + xml_file + ".md5")
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
             r"[0-9a-z]+(?=\n)", md5_response.content.decode("utf-8")
@@ -252,8 +253,8 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
             continue
 
         # PyStow the file
-        with stow.open("w") as f:
-            f.write(gzip.decompress(response.content).decode("utf-8"))
+        with stow.open("wb") as f:
+            f.write(response.content)
 
 
 def xml_path_generator(
