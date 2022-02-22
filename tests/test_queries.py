@@ -1,5 +1,5 @@
 import pytest
-from indra.statements import *
+from indra.statements import Statement, Evidence
 
 from indra_cogex.client.queries import *
 from indra_cogex.representation import Node
@@ -284,7 +284,7 @@ def test_get_stmts_for_pmid():
     pmid = ("PUBMED", "14898026")
     stmts = get_stmts_for_pmid(pmid, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
@@ -296,7 +296,7 @@ def test_get_stmts_for_mesh_id_w_children():
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
@@ -308,7 +308,7 @@ def test_get_stmts_for_mesh_id_wo_children():
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, include_child_terms=False, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
@@ -319,7 +319,7 @@ def test_get_stmts_by_hashes():
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
