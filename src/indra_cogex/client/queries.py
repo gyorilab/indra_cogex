@@ -740,7 +740,7 @@ def get_evidences_for_mesh(
 
 @autoclient()
 def get_evidences_for_stmt_hash(
-    stmt_hash: Union[str, int], *, client: Neo4jClient
+    stmt_hash: int, *, client: Neo4jClient
 ) -> Iterable[Evidence]:
     """Return the matching evidence objects for the given statement hash.
 
@@ -757,7 +757,7 @@ def get_evidences_for_stmt_hash(
         The evidence objects for the given statement hash.
     """
     query = (
-        """MATCH (n:Evidence {stmt_hash: "%s"})
+        """MATCH (n:Evidence {stmt_hash: %s})
                RETURN n.evidence"""
         % stmt_hash
     )
