@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 resources = pystow.module("indra", "cogex", "pubmed")
 
-MESH_PMID = resources.join(name="mesh_pmids.csv")
-PMID_YEAR = resources.join(name="pmid_years_07-2021.json")
+MESH_PMID = resources.join(name="mesh_pmids.csv.gz")
+PMID_YEAR = resources.join(name="pmid_years.csv.gz")
 TEXT_REFS = resources.join(name="text_refs.tsv.gz")
 
 # Settings for downloading content from the PubMed FTP server
@@ -158,7 +158,7 @@ def ensure_text_refs(fname):
 
 def extract_info_from_medline_xml(
     xml_path: str,
-) -> Generator[Tuple[str, int, int], None, None]:
+) -> Generator[Tuple[str, int, str, int], None, None]:
     """Extract info from medline xml file.
 
     Parameters
@@ -169,27 +169,35 @@ def extract_info_from_medline_xml(
     Yields
     ------
     :
-        Tuple of (pmid, year, is_concept, mesh_num).
+        Tuple of (MeSH ID, major topic, PMID, year).
     """
-    with gzip.open(xml_path, "rt") as fh:
-        tree = etree.parse(fh)
-        elements = tree.xpath("//MedlineCitation")
-        for element in elements:
-            pmid_element = element.xpath("PMID")[0]
-            pmid = int(pmid_element.text)
-            mesh_heading_list = element.xpath("MeshHeadingList")
-            if not mesh_heading_list:
-                continue
-            mesh_heading_list = mesh_heading_list[0]
-            for mesh_element in mesh_heading_list.getchildren():
-                descriptor = mesh_element.xpath("DescriptorName")[0]
-                attributes = descriptor.attrib
-                mesh_id = attributes["UI"]
-                major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
-                yield mesh_id, major_topic, pmid
+    tree = etree.parse(xml_path)
+
+    for article in tree.findall("PubmedArticle"):
+        medline_citation = article.find("MedlineCitation")
+        years = list(
+            medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
+        ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
+        min_year = min(int(year.text) for year in years)
+
+        pmid = medline_citation.find("PMID").text
+        mesh_heading_list = medline_citation.xpath("MeshHeadingList")
+        if not mesh_heading_list:
+            continue
+        mesh_heading_list = mesh_heading_list[0]
+        for mesh_element in mesh_heading_list.getchildren():
+            descriptor = mesh_element.xpath("DescriptorName")[0]
+            attributes = descriptor.attrib
+            mesh_id = attributes["UI"]
+            major_topic = 1 if attributes["MajorTopicYN"] == "Y" else 0
+            yield mesh_id, major_topic, pmid, min_year
 
 
-def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = False):
+def process_mesh_xml_to_csv(
+    mesh_pmid_path: Path = MESH_PMID,
+    pmid_year_path: Path = PMID_YEAR,
+    force: bool = False,
+):
     """Process the pubmed xml and dump to a CSV file
 
     Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
@@ -217,11 +225,20 @@ def process_mesh_xml_to_csv(mesh_pmid_path: Path = MESH_PMID, force: bool = Fals
 
     # Loop the stowed xml files
     logger.info("Processing xml files to CSV")
-    with mesh_pmid_path.open("w") as fh:
+    with gzip.open(mesh_pmid_path, "wt") as fh, gzip.open(
+        pmid_year_path, "wt"
+    ) as fh_year:
         writer = csv.writer(fh, delimiter=",")
         writer.writerow(["mesh_id", "major_topic", "pmid"])
+        writer_year = csv.writer(fh_year, delimiter=",")
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
-            writer.writerows(extract_info_from_medline_xml(xml_path.as_posix()))
+            pmid_years = {}
+            for mesh_id, major_topic, pmid, year in extract_info_from_medline_xml(
+                xml_path.as_posix()
+            ):
+                writer.writerow((mesh_id, major_topic, pmid))
+                pmid_years[pmid] = year
+            writer_year.writerows(sorted(pmid_years.items()))
 
 
 def download_medline_pubmed_xml_resource(force: bool = False) -> None:
