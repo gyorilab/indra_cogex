@@ -287,6 +287,7 @@ def indra_downstream_ora(
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         ),
+        query=gene_ids,
         count=count,
         **kwargs,
     )

@@ -35,8 +35,8 @@ app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 
 @lru_cache(1)
 def _get_counters() -> Tuple[Counter, Counter]:
-    node_counter = get_node_counter(client)
-    edge_counter = get_edge_counter(client)
+    node_counter = get_node_counter(client=client)
+    edge_counter = get_edge_counter(client=client)
     return node_counter, edge_counter
 
 
