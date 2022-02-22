@@ -140,7 +140,7 @@ def metabolomics_explanation(
     minimum_belief: Optional[float] = None,
     client: Neo4jClient,
 ) -> List[indra.statements.Statement]:
-    """
+    """Get explanations for a given enzyme and metabolites query.
 
     Parameters
     ----------
