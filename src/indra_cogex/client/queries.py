@@ -558,7 +558,12 @@ def get_ontology_child_terms(
     :
         The child terms of the given term.
     """
-    return client.get_predecessors(term, relations={"isa", "partof"})
+    return client.get_predecessors(
+        term,
+        relations={"isa", "partof"},
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 @autoclient()
@@ -579,7 +584,12 @@ def get_ontology_parent_terms(
     :
         The parent terms of the given term.
     """
-    return client.get_successors(term, relations={"isa", "partof"})
+    return client.get_successors(
+        term,
+        relations={"isa", "partof"},
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
 
 
 @autoclient()
