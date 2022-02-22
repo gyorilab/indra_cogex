@@ -91,7 +91,7 @@ class Processor(ABC):
         return node_paths, nodes, edge_paths
 
     @classmethod
-    def _get_node_paths(cls, node_type: str) -> Path:
+    def _get_node_paths(cls, node_type: str) -> Tuple[Path, Path, Path]:
         # If the processor returns multiple types of nodes, add node_type to the file name
         if len(cls.node_types) > 1:
             return (

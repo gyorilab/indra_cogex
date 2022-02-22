@@ -9,6 +9,8 @@ import logging
 import pickle
 import click
 import codecs
+import os
+import textwrap
 from collections import defaultdict
 from more_click import verbose_option
 from pathlib import Path
@@ -59,10 +61,15 @@ class DbProcessor(Processor):
         elif isinstance(dir_path, str):
             dir_path = Path(dir_path)
         if add_jsons:
-            self.stmt_fnames = dir_path.glob("batch*.json.gz")
-            logger.info("Creating DB with Statement JSONs")
+            self.stmts_fname = dir_path / "statements_with_evidences.tsv.gz"
+            self.text_refs_fname = dir_path / "text_refs_for_reading.tsv.gz"
+            logger.info(
+                "Creating DB with Statement JSONs. Note that this "
+                "requires at least 128GB of RAM"
+            )
         else:
-            self.stmt_fnames = None
+            self.stmts_fname = None
+            self.text_refs_fname = None
             logger.info("Creating DB without Statement JSONs")
         sif_path = dir_path.joinpath("sif.pkl")
         with open(sif_path, "rb") as fh:
@@ -125,43 +132,77 @@ class DbProcessor(Processor):
         total_count = 0
         # If we want to add statement JSONs, process the statement batches and
         # map to records in SIF dataframe
-        if self.stmt_fnames:
+        if self.stmts_fname:
+            ensure_statements_with_evidences(self.stmts_fname.as_posix())
+            ensure_text_refs_for_reading(self.text_refs_fname.as_posix())
             # Remove duplicate hashes (e.g. reverse edges for Complexes)
             df = self.df.drop_duplicates(subset="stmt_hash", keep="first")
             # Convert to dict with hashes as keys
             df = df.set_index("stmt_hash")
             df_dict = df.to_dict(orient="index")
-            for fname in tqdm(self.stmt_fnames):
-                count = 0
-                with gzip.open(fname, "r") as fh:
-                    # For each statement find corresponding row in df
-                    for i, line in enumerate(fh.readlines()):
-                        stmt = json.loads(line)
-                        stmt_hash = int(stmt["matches_hash"])
-                        try:
-                            values = df_dict[stmt_hash]
-                            data = {
-                                "stmt_hash:long": stmt_hash,
-                                "source_counts:string": values["source_counts"],
-                                "evidence_count:int": values["evidence_count"],
-                                "stmt_type:string": values["stmt_type"],
-                                "belief:float": values["belief"],
-                                "stmt_json:string": json.dumps(stmt),
-                            }
-                            count += 1
-                            yield Relation(
-                                values["agA_ns"],
-                                values["agA_id"],
-                                values["agB_ns"],
-                                values["agB_id"],
-                                rel_type,
-                                data,
-                            )
-                        # This statement is not in df
-                        except KeyError:
-                            continue
-                total_count += count
-                logger.info(f"Got {count} relations from {i} records in {fname}")
+            hashes_yielded = set()
+            logger.info("Getting text refs from text refs file")
+            text_refs = load_text_refs_for_reading_dict(self.text_refs_fname)
+            with gzip.open(self.stmts_fname, "rt", encoding="utf-8") as fh:
+                # For each statement find corresponding row in df
+                reader = csv.reader(fh, delimiter="\t")
+                for (
+                    raw_stmt_id,
+                    reading_id,
+                    stmt_hash,
+                    raw_json_str,
+                    pa_json_str,
+                ) in reader:
+                    stmt_hash = int(stmt_hash)
+                    # If we already yielded this statement, we can skip it
+                    if stmt_hash in hashes_yielded:
+                        continue
+                    stmt_json = load_statement_json(pa_json_str)
+                    try:
+                        values = df_dict[stmt_hash]
+                        source_counts = json.loads(values["source_counts"])
+                        # For statements with only evidence from medscan,
+                        # we don't add an evidence and yield the statement
+                        medscan_only = set(source_counts) == {"medscan"}
+                        if medscan_only:
+                            stmt_json["evidence"] = []
+                        # Otherwise, we know that eventually we will bump into
+                        # an evidence we can use and so we skip any medscan
+                        # ones without yielding the statement
+                        else:
+                            raw_json = load_statement_json(raw_json_str)
+                            raw_json_ev = raw_json["evidence"][0]
+                            if raw_json_ev["source_api"] == "medscan":
+                                continue
+                            elif reading_id != "\\N":
+                                tr = text_refs[reading_id]
+                                raw_json_ev["text_refs"] = tr
+                                if "PMID" in raw_json_ev["text_refs"]:
+                                    raw_json_ev["pmid"] = raw_json_ev["text_refs"][
+                                        "PMID"
+                                    ]
+                            stmt_json["evidence"] = raw_json["evidence"]
+                        data = {
+                            "stmt_hash:long": stmt_hash,
+                            "source_counts:string": values["source_counts"],
+                            "evidence_count:int": values["evidence_count"],
+                            "stmt_type:string": values["stmt_type"],
+                            "belief:float": values["belief"],
+                            "stmt_json:string": json.dumps(stmt_json),
+                        }
+                        total_count += 1
+                        hashes_yielded.add(stmt_hash)
+                        yield Relation(
+                            values["agA_ns"],
+                            values["agA_id"],
+                            values["agB_ns"],
+                            values["agB_id"],
+                            rel_type,
+                            data,
+                        )
+                    # This statement is not in df
+                    except KeyError:
+                        continue
         # Otherwise only process the SIF dataframe
         else:
             for (
@@ -233,10 +274,10 @@ class EvidenceProcessor(Processor):
     node_types = ["Evidence", "Publication"]
 
     def __init__(self):
-        base_path = pystow.module("indra", "cogex", "database")
-        self.statements_path = base_path.join(name="statements.tsv")
-        self.text_refs_path = base_path.join(name="text_refs.json")
-        self.sif_path = pystow.join("indra", "db", name="sif.pkl")
+        base_path = pystow.module("indra", "db")
+        self.statements_path = base_path.join(name="statements_with_evidences.tsv.gz")
+        self.text_refs_path = base_path.join(name="text_refs_for_reading.tsv.gz")
+        self.sif_path = base_path.join(name="sif.pkl")
         self._stmt_id_pmid_links = {}
         # Check if files exist without loading them
         for path in [self.statements_path, self.text_refs_path, self.sif_path]:
@@ -248,8 +289,7 @@ class EvidenceProcessor(Processor):
         # Load the text ref lookup so that we can set text refs in
         # evidences
         logger.info("Getting text refs from text refs file")
-        with open(self.text_refs_path, "r") as fh:
-            text_refs = json.load(fh)
+        text_refs = load_text_refs_for_reading_dict(self.text_refs_path.as_posix())
         # Get a list of hashes from the SIF file so that we only
         # add nodes/relations for statements that are in the SIF file
         logger.info("Getting hashes from SIF file")
@@ -257,7 +297,7 @@ class EvidenceProcessor(Processor):
             sif = pickle.load(fh)
         sif_hashes = set(sif["stmt_hash"])
         logger.info("Getting statements from statements file")
-        with open(self.statements_path, "r") as fh:
+        with gzip.open(self.statements_path, "rt", encoding="utf-8") as fh:
             # TODO test whether this is a reasonable size
             batch_size = 100000
             # TODO get number of batches from the total number of statements
@@ -269,7 +309,7 @@ class EvidenceProcessor(Processor):
                 total=total,
             ):
                 node_batch = []
-                for raw_stmt_id, reading_id, stmt_hash, raw_json_str in batch:
+                for raw_stmt_id, reading_id, stmt_hash, raw_json_str, _ in batch:
                     stmt_hash = int(stmt_hash)
                     if stmt_hash not in sif_hashes:
                         continue
@@ -393,3 +433,60 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
     raise StatementJSONDecodeError(
         f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
     )
+
+
+def load_text_refs_for_reading_dict(fname: str):
+    text_refs = {}
+    for line in tqdm(
+        gzip.open(fname, "rt", encoding="utf-8"),
+        desc="Processing text refs for readings into a lookup dictionary",
+    ):
+        ids = line.strip().split("\t")
+        id_names = ["TRID", "PMID", "PMCID", "DOI", "PII", "URL", "MANUSCRIPT_ID"]
+        d = {}
+        rid = ids[0]
+        for id_name, id_val in zip(id_names, ids[1:]):
+            if id_val != "\\N":
+                d[id_name] = id_val
+        text_refs[rid] = d
+    return text_refs
+
+
+def ensure_statements_with_evidences(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing statements with evidences in {fname}")
+        return
+    from indra_db import get_ro
+
+    db = get_ro("primary")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping statements with evidences into {fname}")
+    command = textwrap.dedent(
+        f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT id, reading_id, mk_hash, encode(raw_json::bytea, 'escape'),
+        encode(pa_json::bytea, 'escape') FROM readonly.fast_raw_pa_link) TO STDOUT"
+        | gzip > {fname}
+    """
+    ).replace("\n", " ")
+    os.system(command)
+
+
+def ensure_text_refs_for_reading(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing text refs for reading in {fname}")
+        return
+    from indra_db import get_ro
+
+    db = get_ro("primary")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping text refs for reading into {fname}")
+    command = textwrap.dedent(
+        f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT rid, trid, pmid, pmcid, doi, pii, url, manuscript_id 
+        FROM readonly.reading_ref_link) TO STDOUT"
+        | gzip > {fname}
+    """
+    ).replace("\n", " ")
+    os.system(command)

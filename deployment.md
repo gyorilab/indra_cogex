@@ -11,7 +11,7 @@ and do
 sudo apt-get update
 sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
-sudo add-apt-repository "deb https://debian.neo4j.com stable 4.1"
+sudo add-apt-repository "deb https://debian.neo4j.com stable 4.4"
 sudo apt-get install neo4j
 ```
 

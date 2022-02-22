@@ -1,10 +1,20 @@
 import csv
-import json
+import gzip
 import logging
+import os
+import re
+from hashlib import md5
+from typing import Tuple, Generator, Mapping
+
 import pystow
+import textwrap
 from pathlib import Path
+
+import requests
+from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
+from indra.literature.pubmed_client import _get_annotations
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -13,34 +23,33 @@ logger = logging.getLogger(__name__)
 
 resources = pystow.module("indra", "cogex", "pubmed")
 
-MESH_PMID = resources.join(name="mesh_pmids.csv")
-PMID_YEAR = resources.join(name="pmid_years_07-2021.json")
-TEXT_REFS = resources.join(name="text_refs.tsv")
+# Settings for downloading content from the PubMed FTP server
+raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
+year_index = 22
+max_file_index = 1114  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
+max_update_index = 1192  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
+xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
+pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
+pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
 
 class PubmedProcessor(Processor):
     name = "pubmed"
     node_types = ["Publication"]
 
-    def __init__(
-        self,
-        mesh_pmid_path=MESH_PMID,
-        pmid_year_path=PMID_YEAR,
-        text_refs_path=TEXT_REFS,
-    ):
-        self.mesh_pmid_path = mesh_pmid_path
-        self.pmid_year_path = pmid_year_path
-        self.text_refs_path = text_refs_path
-        # Check if the files exist without loading them
-        for path in [mesh_pmid_path, pmid_year_path, text_refs_path]:
-            if not path.exists():
-                raise FileNotFoundError(f"No such file: {path}")
+    def __init__(self):
+        self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
+        self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
+        self.text_refs_path = pystow.join("indra", "db", name="text_refs.tsv.gz")
 
     def get_nodes(self):
         pmid_node_type = "Publication"
+        process_mesh_xml_to_csv(
+            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+        )
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
-        with open(self.pmid_year_path, "r") as fh:
-            pmid_years = json.load(fh)
+        with gzip.open(self.pmid_year_path, "rt") as fh:
+            pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
         logger.info("Loaded PMID year info from %s" % self.pmid_year_path)
 
         def get_val(val):
@@ -52,7 +61,8 @@ class PubmedProcessor(Processor):
 
         # We iterate over text refs to get the nodes and
         # then look up the year to add as a property
-        with open(self.text_refs_path, "r") as fh:
+        ensure_text_refs(self.text_refs_path.as_posix())
+        with gzip.open(self.text_refs_path, "rt", encoding="utf-8") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
                 if not get_val(pmid):
@@ -70,18 +80,23 @@ class PubmedProcessor(Processor):
                 yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
 
     def get_relations(self):
-        with open(self.mesh_pmid_path, "r") as fh:
+        # Ensure cached files exist
+        # Todo: Add force option to download files?
+        process_mesh_xml_to_csv(
+            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+        )
+
+        with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
             # NOTE tested with 100000 batch size but given that total is ~290M
             # and each line is lightweight, trying with larger batch here
-            batch_size = 1000000
+            batch_size = 10000000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
                 relations_batch = []
-                for mesh_num, is_concept, major_topic, pmid in batch:
-                    mesh_id = mesh_num_to_id(mesh_num, int(is_concept))
+                for mesh_id, major_topic, pmid in batch:
                     relations_batch.append(
                         Relation(
                             "PUBMED",
@@ -114,16 +129,165 @@ class PubmedProcessor(Processor):
         return edges_path
 
 
-def mesh_num_to_id(mesh_num, is_concept):
-    prefix = "C" if is_concept else "D"
-    if prefix == "D":
-        if int(mesh_num) < 66332:
-            mesh_num = str(mesh_num).zfill(6)
-        else:
-            mesh_num = str(mesh_num).zfill(9)
-    elif prefix == "C":
-        if int(mesh_num) < 588418:
-            mesh_num = str(mesh_num).zfill(6)
-        else:
-            mesh_num = str(mesh_num).zfill(9)
-    return prefix + mesh_num
+def ensure_text_refs(fname):
+    if os.path.exists(fname):
+        logger.info(f"Found existing text refs in {fname}")
+        return
+    from indra_db import get_db
+
+    db = get_db("primary")
+    os.environ["PGPASSWORD"] = db.url.password
+    logger.info(f"Dumping text refs into {fname}")
+    command = textwrap.dedent(
+        f"""
+        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
+        -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id 
+        FROM public.text_ref) TO STDOUT"
+        | gzip > {fname}
+    """
+    ).replace("\n", " ")
+    os.system(command)
+
+
+def extract_info_from_medline_xml(
+    xml_path: str,
+) -> Generator[Tuple[str, int, Mapping], None, None]:
+    """Extract info from medline xml file.
+
+    Parameters
+    ----------
+    xml_path :
+        Path to medline xml.gz file.
+
+    Yields
+    ------
+    :
+        Tuple of (PMID, year, MeSH annotations).
+    """
+    tree = etree.parse(xml_path)
+
+    for article in tree.findall("PubmedArticle"):
+        medline_citation = article.find("MedlineCitation")
+        years = list(
+            medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
+        ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
+        min_year = min(int(year.text) for year in years)
+        pmid = medline_citation.find("PMID").text
+
+        mesh_annotations = _get_annotations(medline_citation)
+        yield pmid, min_year, mesh_annotations["mesh_annotations"]
+
+
+def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False):
+    """Process the pubmed xml and dump to a CSV file
+
+    Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
+
+    Parameters
+    ----------
+    mesh_pmid_path :
+        Path to the mesh pmid file
+    force :
+        If True, re-run the download even if the file already exists.
+    """
+    # Todo: Some of the pipeline could be replaced with
+    #  raw_xml.ensure(url=xml_gz_url) though this makes the md5 check
+    #  cumbersome.
+
+    if not force and mesh_pmid_path.exists() and pmid_year_path.exists():
+        logger.info(f"{mesh_pmid_path.name} and {pmid_year_path.name} already exist")
+        return
+
+    # Check resource files and download missing ones first
+    download_medline_pubmed_xml_resource(force=force)
+
+    # Loop the stowed xml files
+    logger.info("Processing PubMed XML files")
+    with gzip.open(mesh_pmid_path, "wt") as fh, gzip.open(
+        pmid_year_path, "wt"
+    ) as fh_year:
+        writer = csv.writer(fh, delimiter=",")
+        writer.writerow(["mesh_id", "major_topic", "pmid"])
+        writer_year = csv.writer(fh_year, delimiter=",")
+        for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
+            for pmid, year, mesh_annotations in extract_info_from_medline_xml(
+                xml_path.as_posix()
+            ):
+                for annot in mesh_annotations:
+                    writer.writerow(
+                        (annot["mesh"], 1 if annot["major_topic"] else 0, pmid)
+                    )
+                writer_year.writerow([pmid, year])
+
+
+def download_medline_pubmed_xml_resource(force: bool = False) -> None:
+    """Downloads the medline and pubmed data from the NCBI ftp site.
+
+    The location of the downloaded data is determined by pystow
+
+    Parameters
+    ----------
+    force :
+        If True, will download a file even if it already exists.
+    """
+    for xml_file, stow, base_url in xml_path_generator(description="Download"):
+        # Check if resource already exists
+        if not force and stow.exists():
+            continue
+
+        # Download the resource
+        response = requests.get(base_url + xml_file)
+        md5_response = requests.get(base_url + xml_file + ".md5")
+        actual_checksum = md5(response.content).hexdigest()
+        expected_checksum = re.search(
+            r"[0-9a-z]+(?=\n)", md5_response.content.decode("utf-8")
+        ).group()
+        if actual_checksum != expected_checksum:
+            logger.warning(
+                f"Checksum does not match for {xml_file}. Is index out of bounds?"
+            )
+            continue
+
+        # PyStow the file
+        with stow.open("wb") as f:
+            f.write(response.content)
+
+
+def xml_path_generator(
+    bar: bool = True, description: str = "Looping xml paths"
+) -> Generator[Tuple[str, Path, str], None, None]:
+    """Returns a generator of (xml_file, xml_path, base_url) tuples.
+
+    Parameters
+    ----------
+    bar :
+        If True, will display a progress bar.
+    description :
+        Description of the progress bar.
+
+    Yields
+    ------
+    :
+        Tuple of (xml_file, xml_path, xml_url).
+    """
+
+    def _get_tuple(ix: int) -> Tuple[str, Path, str]:
+        file = xml_file_temp.format(index=str(ix).zfill(4))
+        stow = raw_xml.join(name=file)
+
+        # If index <= max_update_index, then the resource file is from the
+        # /baseline directory, otherwise it's from the /updatefiles
+        # directory on the server
+        base_url = pubmed_base_url if ix <= max_file_index else pubmed_update_url
+        return file, stow, base_url
+
+    if bar:
+        for i in tqdm(
+            range(1, max_update_index + 1),
+            total=max_update_index,
+            desc=description,
+        ):
+            yield _get_tuple(i)
+    else:
+        for i in range(1, max_update_index + 1):
+            yield _get_tuple(i)
