@@ -91,7 +91,7 @@ class PubmedProcessor(Processor):
             next(reader)  # skip header
             # NOTE tested with 100000 batch size but given that total is ~290M
             # and each line is lightweight, trying with larger batch here
-            batch_size = 1000000
+            batch_size = 10000000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
