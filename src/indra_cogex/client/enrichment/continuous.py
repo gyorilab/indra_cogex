@@ -30,6 +30,8 @@ from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
 __all__ = [
     "get_rat_scores",
+    "get_mouse_scores",
+    "get_human_scores",
     "go_gsea",
     "wikipathways_gsea",
     "reactome_gsea",
@@ -66,7 +68,7 @@ def get_rat_scores(
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
-    """Load a differential gene expression file.
+    """Load a differential gene expression file with rat measurements.
 
     This function extracts the RGD gene symbols, maps them
     to RGD identifiers, uses PyOBO to map orthologs to HGNC,
@@ -91,6 +93,100 @@ def get_rat_scores(
         A dictionary of mapped orthologus human gene HGNC IDs to
         scores.
     """
+    return _get_species_scores(
+        prefix="rgd",
+        func=hgnc_client.get_hgnc_from_rat,
+        path=path,
+        read_csv_kwargs=read_csv_kwargs,
+        gene_symbol_column_name=gene_symbol_column_name,
+        score_column_name=score_column_name,
+    )
+
+
+def get_mouse_scores(
+    path: Union[Path, str, pd.DataFrame],
+    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    gene_symbol_column_name: Optional[str] = None,
+    score_column_name: Optional[str] = None,
+) -> Dict[str, float]:
+    """Load a differential gene expression file with mouse measurements.
+
+    This function extracts the MGI gene symbols, maps them
+    to MGI identifiers, uses PyOBO to map orthologs to HGNC,
+    then returns the HGNC gene and scores as a dictionary.
+
+    Parameters
+    ----------
+    path :
+        Path to the file to read with :func:`pandas.read_csv`.
+    read_csv_kwargs :
+        Keyword arguments to pass to :func:`pandas.read_csv`
+    gene_symbol_column_name :
+        The name of the column with gene symbols. If none,
+        will try and guess.
+    score_column_name :
+        The name of the column with scores. If none, will try
+        and guess.
+
+    Returns
+    -------
+    :
+        A dictionary of mapped orthologus human gene HGNC IDs to
+        scores.
+    """
+    return _get_species_scores(
+        prefix="mgi",
+        func=hgnc_client.get_hgnc_from_mouse,
+        path=path,
+        read_csv_kwargs=read_csv_kwargs,
+        gene_symbol_column_name=gene_symbol_column_name,
+        score_column_name=score_column_name,
+    )
+
+
+def get_human_scores(
+    path: Union[Path, str, pd.DataFrame],
+    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    gene_symbol_column_name: Optional[str] = None,
+    score_column_name: Optional[str] = None,
+) -> Dict[str, float]:
+    """Load a differential gene expression file with human measurements.
+
+    Parameters
+    ----------
+    path :
+        Path to the file to read with :func:`pandas.read_csv`.
+    read_csv_kwargs :
+        Keyword arguments to pass to :func:`pandas.read_csv`
+    gene_symbol_column_name :
+        The name of the column with gene symbols. If none,
+        will try and guess.
+    score_column_name :
+        The name of the column with scores. If none, will try
+        and guess.
+
+    Returns
+    -------
+    :
+        A dictionary of human gene HGNC IDs to scores.
+    """
+    return _get_species_scores(
+        path=path,
+        read_csv_kwargs=read_csv_kwargs,
+        gene_symbol_column_name=gene_symbol_column_name,
+        score_column_name=score_column_name,
+    )
+
+
+def _get_species_scores(
+    path: Union[Path, str, pd.DataFrame],
+    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    gene_symbol_column_name: Optional[str] = None,
+    score_column_name: Optional[str] = None,
+    *,
+    prefix=None,
+    func=None,
+) -> Dict[str, float]:
     if isinstance(path, pd.DataFrame):
         df = path
     else:
@@ -103,9 +199,21 @@ def get_rat_scores(
         score_column_name = _guess_score_col(df)
     elif score_column_name not in df.columns:
         raise ValueError
-    df["rgd_id"] = df[gene_symbol_column_name].map(pyobo.get_name_id_mapping("rgd"))
-    df = df[df["rgd_id"].notna()]
-    df["hgnc_id"] = df["rgd_id"].map(hgnc_client.get_hgnc_from_rat)
+
+    if prefix is not None and func is not None:
+        mapped_gene_symbol_column_name = f"{prefix}_id"
+        df[mapped_gene_symbol_column_name] = df[gene_symbol_column_name].map(
+            pyobo.get_name_id_mapping(prefix)
+        )
+        df = df[df[mapped_gene_symbol_column_name].notna()]
+    elif prefix is not None or func is not None:
+        raise ValueError("If specifying one, must specify both of prefix and func")
+    else:
+        # If no prefix is given, assume columns are human.
+        mapped_gene_symbol_column_name = gene_symbol_column_name
+        func = hgnc_client.get_current_hgnc_id
+
+    df["hgnc_id"] = df[mapped_gene_symbol_column_name].map(func)
     df = df.set_index("hgnc_id")
     return df[score_column_name].to_dict()
 

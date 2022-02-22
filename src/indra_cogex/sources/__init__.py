@@ -36,7 +36,7 @@ __all__ = [
     "ChemblIndicationsProcessor",
     "SIDERSideEffectProcessor",
     "EvidenceProcessor",
-    "PubmedProcessor"
+    "PubmedProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)

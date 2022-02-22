@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
-from indra.statements import Evidence, Statement, stmts_from_json, Agent
+from indra.statements import Agent, Evidence, Statement, stmts_from_json
 
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
