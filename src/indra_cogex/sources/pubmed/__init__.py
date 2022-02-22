@@ -86,7 +86,7 @@ class PubmedProcessor(Processor):
             mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
         )
 
-        with open(self.mesh_pmid_path, "r") as fh:
+        with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
             # NOTE tested with 100000 batch size but given that total is ~290M
