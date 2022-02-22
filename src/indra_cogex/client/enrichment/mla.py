@@ -15,7 +15,10 @@ import requests
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
-from indra_cogex.client.enrichment.utils import minimum_belief_helper, minimum_evidence_helper
+from indra_cogex.client.enrichment.utils import (
+    minimum_belief_helper,
+    minimum_evidence_helper,
+)
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 __all__ = [
@@ -151,10 +154,19 @@ def _sum_values(d):
 
 
 def metabolomics_ora(
-    *, client: Neo4jClient, chebi_ids: Iterable[str], **kwargs
+    *,
+    client: Neo4jClient,
+    chebi_ids: Iterable[str],
+    minimum_evidence_count: Optional[float] = None,
+    minimum_belief: Optional[float] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all metabolites."""
-    curie_to_target_sets = get_metabolomics_sets(client=client)
+    curie_to_target_sets = get_metabolomics_sets(
+        client=client,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+    )
     count = _sum_values(curie_to_target_sets)
     return _do_ora(curie_to_target_sets, query=chebi_ids, count=count, **kwargs)
 

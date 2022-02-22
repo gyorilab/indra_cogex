@@ -11,7 +11,13 @@ from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
-from .fields import alpha_field, correction_field, keep_insignificant_field
+from .fields import (
+    alpha_field,
+    correction_field,
+    keep_insignificant_field,
+    minimum_belief_field,
+    minimum_evidence_field,
+)
 from .proxies import client
 from ...client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
@@ -70,6 +76,8 @@ class DiscreteForm(FlaskForm):
     """A form for discrete metabolute set enrichment analysis."""
 
     metabolites = metabolites_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
@@ -96,6 +104,8 @@ def discrete_analysis():
             method=method,
             alpha=alpha,
             keep_insignificant=keep_insignificant,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
         )
 
         return flask.render_template(
