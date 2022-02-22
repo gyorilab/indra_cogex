@@ -693,7 +693,7 @@ def get_mesh_ids_for_pmid(
 @autoclient()
 def get_evidences_for_mesh(
     mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
-) -> Dict[str, List[Evidence]]:
+) -> Dict[int, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
     Parameters
@@ -767,8 +767,8 @@ def get_evidences_for_stmt_hash(
 
 @autoclient()
 def get_evidences_for_stmt_hashes(
-    stmt_hashes: Iterable[Union[str, int]], *, client: Neo4jClient
-) -> Dict[str, List[Evidence]]:
+    stmt_hashes: Iterable[int], *, client: Neo4jClient
+) -> Dict[int, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
     Parameters
@@ -817,14 +817,13 @@ def get_stmts_for_pmid(
     """
     # Todo: Investigate if it's possible to do this in one query like
     # MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "pubmed:14898026"})
-    # MATCH (:BioEntity)-[r:indra_rel {stmt_hash: toInteger(e.stmt_hash)}]->(:BioEntity)
+    # MATCH (:BioEntity)-[r:indra_rel {stmt_hash: e.stmt_hash}]->(:BioEntity)
     # RETURN r, e
-    # note that the hash str/int conversion is done as part of the query.
 
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
     pmid_norm = norm_id(*pmid_term)
-    # First, get the hashes and evidences for the given PubMed ID
+    # Get the hashes and evidences for the given PubMed ID
     hash_query = (
         """
         MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "%s"})
@@ -865,8 +864,8 @@ def get_stmts_for_mesh(
 
 @autoclient()
 def get_stmts_for_stmt_hashes(
-    stmt_hashes: Iterable[str],
-    evidence_map: Optional[Dict[str, List[Evidence]]] = None,
+    stmt_hashes: Iterable[int],
+    evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     *,
     client: Neo4jClient,
 ) -> Iterable[Statement]:
@@ -886,9 +885,7 @@ def get_stmts_for_stmt_hashes(
     :
         The statements for the given statement hashes.
     """
-    stmt_hashes_str = ",".join(stmt_hashes)
-    # NOTE: for indra_rel Relationships, stmt_hash is an int, in Evidence
-    # nodes stmt_hash is a string
+    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     stmts_query = (
         """
         MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
@@ -898,7 +895,7 @@ def get_stmts_for_stmt_hashes(
         % stmt_hashes_str
     )
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
-    stmts = {str(s.get_hash()): s for s in indra_stmts_from_relations(rels)}
+    stmts: Dict[int, Statement] = {s.get_hash(): s for s in indra_stmts_from_relations(rels)}
 
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
@@ -961,8 +958,8 @@ def _get_mesh_child_terms(
 
 
 def _get_ev_dict_from_hash_ev_query(
-    result: Optional[Iterable[List[str]]] = None,
-) -> Dict[str, List[Evidence]]:
+    result: Optional[Iterable[List[Union[int, str]]]] = None,
+) -> Dict[int, List[Evidence]]:
     """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning("No result for hash, Evidence query, returning empty dict")
