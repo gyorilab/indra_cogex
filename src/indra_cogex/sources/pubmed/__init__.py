@@ -57,8 +57,8 @@ class PubmedProcessor(Processor):
     def get_nodes(self):
         pmid_node_type = "Publication"
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
-        with open(self.pmid_year_path, "r") as fh:
-            pmid_years = json.load(fh)
+        with gzip.open(self.pmid_year_path, "rt") as fh:
+            pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
         logger.info("Loaded PMID year info from %s" % self.pmid_year_path)
 
         def get_val(val):
