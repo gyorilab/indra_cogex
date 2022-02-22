@@ -224,6 +224,8 @@ def indra_upstream_gsea(
     directory: Union[None, Path, str] = None,
     *,
     client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -239,6 +241,12 @@ def indra_upstream_gsea(
     directory :
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
     kwargs :
         Remaining keyword arguments to pass through to :func:`gseapy.prerank
 
@@ -248,7 +256,11 @@ def indra_upstream_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_entity_to_targets(client=client),
+        gene_sets=get_entity_to_targets(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
         scores=scores,
         directory=directory,
         **kwargs,
@@ -261,6 +273,8 @@ def indra_downstream_gsea(
     directory: Union[None, Path, str] = None,
     *,
     client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
@@ -276,6 +290,12 @@ def indra_downstream_gsea(
     directory :
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
     kwargs :
         Remaining keyword arguments to pass through to :func:`gseapy.prerank
 
@@ -285,7 +305,11 @@ def indra_downstream_gsea(
         A pandas dataframe with the GSEA results
     """
     return gsea(
-        gene_sets=get_entity_to_regulators(client=client),
+        gene_sets=get_entity_to_regulators(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
         scores=scores,
         directory=directory,
         **kwargs,

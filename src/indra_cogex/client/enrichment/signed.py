@@ -20,18 +20,30 @@ HERE = Path(__file__).parent.resolve()
 #  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
 
 
-def _query(stmt_types: Iterable[str]) -> str:
+def _query(
+    stmt_types: Iterable[str],
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> str:
     """Return a query over INDRA relations f the given statement types."""
     query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
+    if minimum_evidence_count is None or minimum_evidence_count == 1:
+        evidence_line = ""
+    else:
+        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
+    if minimum_belief is None or minimum_belief == 0.0:
+        belief_line = ""
+    else:
+        belief_line = f"AND r.belief >= {minimum_belief}"
     return dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        // Collecting human genes only
-        WHERE gene.id STARTS WITH "hgnc"
-        // Ignore complexes since they are non-directional
-        AND r.stmt_type in [{query_range}]
-        // This is a simple way to ignore non-human proteins
-        AND NOT regulator.id STARTS WITH "uniprot"
+        
+        WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
+            AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
+            AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            {evidence_line}
+            {belief_line}
         RETURN regulator.id, regulator.name, collect(gene.id);
     """
     )
@@ -55,6 +67,8 @@ def reverse_causal_reasoning(
     keep_insignificant: bool = True,
     *,
     client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
 
@@ -79,7 +93,12 @@ def reverse_causal_reasoning(
         The cutoff for significance. Defaults to 0.05
     keep_insignificant :
         If false, removes results with a p value less than alpha.
-
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
 
     Returns
     -------
@@ -95,10 +114,20 @@ def reverse_causal_reasoning(
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
     database_positive = collect_gene_sets(
-        client=client, query=_query(positive_stmts or POSITIVE_STMTS)
+        client,
+        _query(
+            positive_stmts or POSITIVE_STMTS,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
     )
     database_negative = collect_gene_sets(
-        client=client, query=_query(negative_stmts or NEGATIVE_STMTS)
+        client,
+        _query(
+            negative_stmts or NEGATIVE_STMTS,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
     )
     entities = set(database_positive).union(database_negative)
 

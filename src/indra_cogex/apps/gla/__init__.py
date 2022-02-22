@@ -24,7 +24,14 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired
 
-from indra_cogex.client.enrichment.continuous import get_rat_scores, go_gsea
+from indra_cogex.client.enrichment.continuous import (
+    get_rat_scores,
+    go_gsea,
+    indra_downstream_gsea,
+    indra_upstream_gsea,
+    reactome_gsea,
+    wikipathways_gsea,
+)
 from indra_cogex.client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
@@ -72,6 +79,16 @@ negative_genes_field = TextAreaField(
     validators=[DataRequired()],
 )
 indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
+minimum_evidence_field = IntegerField(
+    "Minimum Evidence Count",
+    default=1,
+    description="The minimum number of evidences, if using INDRA path-based analysis.",
+)
+minimum_belief_field = FloatField(
+    "Minimum Belief",
+    default=0.0,
+    description="The minimum belief score, if using INDRA path-based analysis.",
+)
 keep_insignificant_field = BooleanField(
     "Keep insignificant results (leads to long results lists)"
 )
@@ -99,6 +116,20 @@ correction_field = RadioField(
     ],
     default="fdr_bh",
 )
+source_field = RadioField(
+    "Gene Set Source",
+    choices=[
+        ("go", "Gene Ontology"),
+        ("reactome", "Reactome"),
+        ("wikipathways", "WikiPathways"),
+        ("indra-upstream", "INDRA Upstream"),
+        ("indra-downstrea", "INDRA Downstream"),
+    ],
+    default="go",
+    description="The source of gene sets. Only one can be run at a time because"
+    " this analyis is computationally intensive",
+)
+
 
 file_field = FileField("File", validators=[DataRequired()])
 species_field = RadioField(
@@ -149,6 +180,8 @@ class DiscreteForm(FlaskForm):
 
     genes = genes_field
     indra_path_analysis = indra_path_analysis_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
@@ -164,6 +197,8 @@ class SignedForm(FlaskForm):
 
     positive_genes = positive_genes_field
     negative_genes = negative_genes_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     alpha = alpha_field
     # correction = correction_field
     keep_insignificant = keep_insignificant_field
@@ -186,6 +221,9 @@ class ContinuousForm(FlaskForm):
     permutations = permutations_field
     alpha = alpha_field
     keep_insignificant = keep_insignificant_field
+    source = source_field
+    minimum_evidence = minimum_evidence_field
+    minimum_belief = minimum_belief_field
     submit = SubmitField("Submit")
 
     def get_scores(self) -> Dict[str, float]:
@@ -212,6 +250,8 @@ def discretize_analysis():
         method = form.correction.data
         alpha = form.alpha.data
         keep_insignificant = form.keep_insignificant.data
+        minimum_evidence_count = form.minimum_evidence.data
+        minimum_belief = form.minimum_belief.data
         genes, errors = form.parse_genes()
         gene_set = set(genes)
 
@@ -243,6 +283,8 @@ def discretize_analysis():
                 method=method,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=minimum_evidence_count,
+                minimum_belief=minimum_belief,
             )
             indra_downstream_results = indra_downstream_ora(
                 client,
@@ -250,6 +292,8 @@ def discretize_analysis():
                 method=method,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
+                minimum_evidence_count=minimum_evidence_count,
+                minimum_belief=minimum_belief,
             )
         else:
             indra_upstream_results = None
@@ -290,6 +334,8 @@ def signed_analysis():
             negative_hgnc_ids=negative_genes,
             alpha=form.alpha.data,
             keep_insignificant=form.keep_insignificant.data,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
         )
         return flask.render_template(
             "signed_results.html",
@@ -315,16 +361,61 @@ def continuous_analysis():
     form = ContinuousForm()
     if form.validate_on_submit():
         scores = form.get_scores()
-        go_results = go_gsea(
-            client=client,
-            scores=scores,
-            permutation_num=form.permutations.data,
-            alpha=form.alpha.data,
-            keep_insignificant=form.keep_insignificant.data,
-        )
+        source = form.source.data
+        alpha = form.alpha.data
+        permutations = form.permutations.data
+        keep_insignificant = form.keep_insignificant.data
+        if source == "go":
+            results = go_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "wikipathways":
+            results = wikipathways_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "reactome":
+            results = reactome_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+            )
+        elif source == "indra-upstream":
+            results = indra_upstream_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+                minimum_evidence_count=form.minimum_evidence.data,
+                minimum_belief=form.minimum_belief.data,
+            )
+        elif source == "indra-downstream":
+            results = indra_downstream_gsea(
+                client=client,
+                scores=scores,
+                permutation_num=permutations,
+                alpha=alpha,
+                keep_insignificant=keep_insignificant,
+                minimum_evidence_count=form.minimum_evidence.data,
+                minimum_belief=form.minimum_belief.data,
+            )
+        else:
+            raise ValueError
+
         return flask.render_template(
             "continuous_results.html",
-            go_results=go_results,
+            source=source,
+            results=results,
         )
     return flask.render_template(
         "continuous_form.html",

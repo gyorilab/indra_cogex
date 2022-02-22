@@ -178,7 +178,12 @@ def reactome_ora(
 
 
 def indra_downstream_ora(
-    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+    client: Neo4jClient,
+    gene_ids: Iterable[str],
+    *,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Calculate a p-value for each entity in the INDRA database
@@ -187,7 +192,11 @@ def indra_downstream_ora(
     """
     count = count_human_genes(client=client)
     return _do_ora(
-        get_entity_to_regulators(client=client),
+        get_entity_to_regulators(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
         gene_ids=gene_ids,
         count=count,
         **kwargs,
@@ -195,7 +204,12 @@ def indra_downstream_ora(
 
 
 def indra_upstream_ora(
-    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+    client: Neo4jClient,
+    gene_ids: Iterable[str],
+    *,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Calculate a p-value for each entity in the INDRA database
@@ -204,7 +218,14 @@ def indra_upstream_ora(
     """
     count = count_human_genes(client=client)
     return _do_ora(
-        get_entity_to_targets(client=client), gene_ids=gene_ids, count=count, **kwargs
+        get_entity_to_targets(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+        ),
+        gene_ids=gene_ids,
+        count=count,
+        **kwargs,
     )
 
 

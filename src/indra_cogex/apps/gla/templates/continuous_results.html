@@ -19,7 +19,7 @@
     <script>
         const datatablesConf = {"order": [[2, "asc"]]};
         $(document).ready(function () {
-            $("#table-go").DataTable(datatablesConf);
+            $("#table-continuous").DataTable(datatablesConf);
         });
     </script>
 {% endblock %}
@@ -55,15 +55,25 @@
     <div class="card card-body bg-light">
         <h1 class="display-3">Continuous Gene Set Analysis</h1>
         <div>
-            <h3>GO Results</h3>
+            <h3>Results</h3>
             <div>
                 <p>
-                    These results are acquired by running GSEA on the genes annotated to terms in the
+                    These results are acquired by running GSEA on the genes annotated to terms in
+                    {% if source == "go" %}the
                     <a href="http://geneontology.org/docs/go-annotations/">Gene Ontology</a>
                     via the <a href="http://geneontology.org/docs/go-annotations/">Gene
                     Ontology Annotations Database</a>.
+                    {% elif source == "wikipathways" %}
+                        WikiPathways.
+                    {% elif source == "reactome" %}
+                        Reactome.
+                    {% elif source == "indra-upstream" %}
+                        INDRA upstream controllers.
+                    {% elif source == "indra-downstream" %}
+                        INDRA downstream regulators.
+                    {% endif %}
                 </p>
-                {{ render_table(go_results, "table-go") }}
+                {{ render_table(results, "table-continuous") }}
             </div>
         </div>
     </div>
