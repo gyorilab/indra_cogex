@@ -23,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 resources = pystow.module("indra", "cogex", "pubmed")
 
-MESH_PMID = resources.join(name="mesh_pmids.csv.gz")
-PMID_YEAR = resources.join(name="pmid_years.csv.gz")
-TEXT_REFS = resources.join(name="text_refs.tsv.gz")
-
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
 year_index = 22
@@ -41,21 +37,20 @@ class PubmedProcessor(Processor):
     name = "pubmed"
     node_types = ["Publication"]
 
-    def __init__(
-        self,
-        mesh_pmid_path=MESH_PMID,
-        pmid_year_path=PMID_YEAR,
-    ):
-        self.mesh_pmid_path = mesh_pmid_path
-        self.pmid_year_path = pmid_year_path
+    def __init__(self):
+        self.mesh_pmid_path = pystow.join(
+            "indra", "cogex", "pubmed", name="mesh_pmids.csv.gz"
+        )
+        self.pmid_year_path = pystow.join(
+            "indra", "cogex", "pubmed", name="pmid_years.csv.gz"
+        )
         self.text_refs_path = pystow.join("indra", "db", name="text_refs.tsv.gz")
-        # Check if the files exist without loading them
-        for path in [mesh_pmid_path, pmid_year_path]:
-            if not path.exists():
-                raise FileNotFoundError(f"No such file: {path}")
 
     def get_nodes(self):
         pmid_node_type = "Publication"
+        process_mesh_xml_to_csv(
+            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+        )
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
         with gzip.open(self.pmid_year_path, "rt") as fh:
             pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
@@ -91,7 +86,9 @@ class PubmedProcessor(Processor):
     def get_relations(self):
         # Ensure cached files exist
         # Todo: Add force option to download files?
-        process_mesh_xml_to_csv(mesh_pmid_path=self.mesh_pmid_path)
+        process_mesh_xml_to_csv(
+            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+        )
 
         with open(self.mesh_pmid_path, "r") as fh:
             reader = csv.reader(fh)
@@ -193,11 +190,7 @@ def extract_info_from_medline_xml(
             yield mesh_id, major_topic, pmid, min_year
 
 
-def process_mesh_xml_to_csv(
-    mesh_pmid_path: Path = MESH_PMID,
-    pmid_year_path: Path = PMID_YEAR,
-    force: bool = False,
-):
+def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False):
     """Process the pubmed xml and dump to a CSV file
 
     Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
@@ -213,18 +206,15 @@ def process_mesh_xml_to_csv(
     #  raw_xml.ensure(url=xml_gz_url) though this makes the md5 check
     #  cumbersome.
 
-    if not force and mesh_pmid_path.exists():
-        logger.info(
-            f"{mesh_pmid_path.name} already exists, skipping check for "
-            f"xml resource files"
-        )
+    if not force and mesh_pmid_path.exists() and pmid_year_path.exists():
+        logger.info(f"{mesh_pmid_path.name} and {pmid_year_path.name} already exist")
         return
 
     # Check resource files and download missing ones first
     download_medline_pubmed_xml_resource(force=force)
 
     # Loop the stowed xml files
-    logger.info("Processing xml files to CSV")
+    logger.info("Processing PubMed XML files")
     with gzip.open(mesh_pmid_path, "wt") as fh, gzip.open(
         pmid_year_path, "wt"
     ) as fh_year:
