@@ -295,7 +295,7 @@ def test_get_stmts_for_mesh_id_w_children():
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, client=client)
     assert stmts
-    assert isinstance(stmts[0], Activation)
+    assert isinstance(stmts[0], Inhibition)
 
 
 @pytest.mark.nonpublic
@@ -307,7 +307,7 @@ def test_get_stmts_for_mesh_id_wo_children():
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, include_child_terms=False, client=client)
     assert stmts
-    assert isinstance(stmts[0], Activation)
+    assert isinstance(stmts[0], Inhibition)
 
 
 @pytest.mark.nonpublic
