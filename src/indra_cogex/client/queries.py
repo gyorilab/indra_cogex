@@ -140,7 +140,7 @@ def is_gene_in_tissue(
 
 @autoclient()
 def get_go_terms_for_gene(
-    gene: Tuple[str, str], include_indirect=False, *, client: Neo4jClient
+    gene: Tuple[str, str], include_indirect: bool = False, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the GO terms for the given gene.
 
@@ -150,6 +150,8 @@ def get_go_terms_for_gene(
         The Neo4j client.
     gene :
         The gene to query.
+    include_indirect :
+        If True, also return indirect GO terms.
 
     Returns
     -------
