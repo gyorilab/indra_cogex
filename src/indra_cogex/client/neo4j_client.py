@@ -251,6 +251,10 @@ class Neo4jClient:
             Target namespace and identifier.
         relation :
             Relation type.
+        target_type :
+            A constraint on the target node type.
+        source_type :
+            A constraint on the source node type.
 
         Returns
         -------
@@ -280,6 +284,10 @@ class Neo4jClient:
             Source namespace and identifier.
         relation :
             Relation type.
+        source_type :
+            A constraint on the source node type.
+        target_type :
+            A constraint on the target node type.
 
         Returns
         -------
@@ -293,6 +301,68 @@ class Neo4jClient:
             source_type=source_type,
             target_type=target_type,
         )
+
+    def get_target_relations_for_sources(
+        self,
+        sources: Iterable[Tuple[str, str]],
+        relation: Optional[str] = None,
+        source_type: Optional[str] = None,
+        target_type: Optional[str] = None,
+    ) -> Mapping[Tuple[str, str], List[Relation]]:
+        match = triple_query(
+            source_name="s",
+            source_type=source_type,
+            relation_type=relation,
+            target_type=target_type,
+        )
+        sources = [norm_id(*source) for source in sources]
+        sources_match = "[%s]" % ",".join(["'%s'" % s for s in sources])
+        query = """
+            MATCH p=%s
+            WHERE s.id IN %s
+            RETURN p
+        """ % (
+            match,
+            sources_match,
+        )
+        from collections import defaultdict
+
+        rels = defaultdict(list)
+        for res in self.query_tx(query):
+            rel = self.neo4j_to_relation(res[0])
+            rels[(rel.source_ns, rel.source_id)].append(rel)
+        return rels
+
+    def get_source_relations_for_targets(
+        self,
+        targets: Iterable[Tuple[str, str]],
+        relation: Optional[str] = None,
+        target_type: Optional[str] = None,
+        source_type: Optional[str] = None,
+    ) -> Mapping[Tuple[str, str], List[Relation]]:
+        match = triple_query(
+            source_type=source_type,
+            relation_type=relation,
+            target_name="t",
+            target_type=target_type,
+        )
+        targets = [norm_id(*target) for target in targets]
+        targets_match = "[%s]" % ",".join(["'%s'" % t for t in targets])
+        query = """
+            MATCH p=%s
+            WHERE t.id IN %s
+            RETURN p
+        """ % (
+            match,
+            targets_match,
+        )
+        from collections import defaultdict
+
+        rels = defaultdict(list)
+        for res in self.query_tx(query):
+            rel = self.neo4j_to_relation(res[0])
+            rels[(rel.target_ns, rel.target_id)].append(rel)
+        return rels
 
     def get_all_relations(
         self,

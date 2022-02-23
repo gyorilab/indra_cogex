@@ -78,7 +78,7 @@ def _prepare_hypergeometric_test(
 
 
 @autoclient(cache=True)
-def count_human_genes(client: Neo4jClient) -> int:
+def count_human_genes(*, client: Neo4jClient) -> int:
     """Count the number of HGNC genes in neo4j."""
     query = f"""\
         MATCH (n:BioEntity)
