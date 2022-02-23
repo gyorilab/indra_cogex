@@ -1091,7 +1091,20 @@ def is_gene_mutated(
 def get_drugs_for_target(
     target: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the drugs targeting the given protein."""
+    """Return the drugs targeting the given protein.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    target :
+        The target to query.
+
+    Returns
+    -------
+    :
+        The drugs targeting the given protein.
+    """
     rels = client.get_source_relations(
         target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1125,7 +1138,20 @@ def get_drugs_for_targets(
 def get_targets_for_drug(
     drug: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the proteins targeted by the given drug."""
+    """Return the proteins targeted by the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+
+    Returns
+    -------
+    :
+        The proteins targeted by the given drug.
+    """
     rels = client.get_target_relations(
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1159,7 +1185,22 @@ def get_targets_for_drugs(
 def is_drug_target(
     drug: Tuple[str, str], target: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
-    """Return True if the drug targets the given protein."""
+    """Return True if the drug targets the given protein.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+    target :
+        The target to query.
+
+    Returns
+    -------
+    :
+        True if the drug targets the given protein.
+    """
     rels = client.get_relations(
         drug, target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
