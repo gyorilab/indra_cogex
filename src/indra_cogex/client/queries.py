@@ -1077,7 +1077,7 @@ def is_gene_mutated(
 def get_drugs_for_target(
     target: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the drugs targetting the given protein."""
+    """Return the drugs targeting the given protein."""
     rels = client.get_source_relations(
         target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1089,10 +1089,29 @@ def get_drugs_for_target(
 
 
 @autoclient()
+def get_drugs_for_targets(
+    targets: Iterable[Tuple[str, str]], *, client: Neo4jClient
+) -> Mapping[Tuple[str, str], Iterable[Agent]]:
+    """Return the drugs targeting each of the given targets."""
+    rels = client.get_source_relations_for_targets(
+        targets, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    drug_nodes = {
+        target: [
+            _get_node_from_stmt_relation(rel, "source", "subj")
+            for rel in target_rels
+            if _is_drug_relation(rel)
+        ]
+        for target, target_rels in rels.items()
+    }
+    return drug_nodes
+
+
+@autoclient()
 def get_targets_for_drug(
     drug: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the proteins targetted by the given drug."""
+    """Return the proteins targeted by the given drug."""
     rels = client.get_target_relations(
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1107,7 +1126,7 @@ def get_targets_for_drug(
 def get_targets_for_drugs(
     drugs: Iterable[Tuple[str, str]], *, client: Neo4jClient
 ) -> Mapping[Tuple[str, str], Iterable[Agent]]:
-    """Return the proteins targetted by the given drug."""
+    """Return the proteins targeted by each of the given drugs."""
     rels = client.get_target_relations_for_sources(
         drugs, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
