@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import Counter, defaultdict
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement, stmts_from_json
@@ -1100,6 +1100,25 @@ def get_targets_for_drug(
     target_nodes = [
         _get_node_from_stmt_relation(rel, "target", "obj") for rel in target_rels
     ]
+    return target_nodes
+
+
+@autoclient()
+def get_targets_for_drugs(
+    drugs: Iterable[Tuple[str, str]], *, client: Neo4jClient
+) -> Mapping[Tuple[str, str], Iterable[Agent]]:
+    """Return the proteins targetted by the given drug."""
+    rels = client.get_target_relations_for_sources(
+        drugs, "indra_rel", source_type="BioEntity", target_type="BioEntity"
+    )
+    target_nodes = {
+        drug: [
+            _get_node_from_stmt_relation(rel, "target", "obj")
+            for rel in drug_rels
+            if _is_drug_relation(rel)
+        ]
+        for drug, drug_rels in rels.items()
+    }
     return target_nodes
 
 
