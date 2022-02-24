@@ -988,7 +988,19 @@ def _get_ev_dict_from_hash_ev_query(
 def get_node_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each entity type.
 
-    .. warning:: this code assumes all nodes only have one label, as in``label[0]``
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A Counter of the entity types.
+
+        .. warning::
+
+            This code assumes all nodes only have one label, as in ``label[0]``
     """
     return Counter(
         {
