@@ -1,6 +1,7 @@
 .. _indra_cogex_assembly_ref:
 
-INDRA CoGEx Knowledge Assembly
-==============================
+INDRA CoGEx Knowledge Assembly (:py:mod:`indra_cogex.assembly`)
+===============================================================
 
-How INDRA CoGEx assembles the knowledge base.
+.. automodule:: indra_cogex.assembly
+    :members:
