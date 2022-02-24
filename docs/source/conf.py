@@ -61,6 +61,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.intersphinx',
     "sphinx.ext.todo",
+    "sphinx.ext.napoleon",
     # 'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx_autodoc_typehints',
