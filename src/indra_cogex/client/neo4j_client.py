@@ -865,10 +865,9 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
 
     Returns
     -------
-    db_ns:
-        An INDRA-standard namespace corresponding to the input identifier.
-    db_id:
-        An INDRA-standard identifier corresponding to the input identifier.
+    :
+        A tuple of the INDRA-standard namespace, identifier corresponding to
+        the input identifier.
     """
     graph_ns, graph_id = identifier.split(":", maxsplit=1)
     db_ns, db_id = identifiers.get_ns_id_from_identifiers(graph_ns, graph_id)
@@ -886,7 +885,6 @@ def process_identifier(identifier: str) -> Tuple[str, str]:
 def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
     """Wrap a function that takes a client for easier usage.
 
-
     Arguments
     ---------
     cache :
@@ -901,36 +899,37 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 
     Returns
     -------
-        : A decorator object that will wrap the function
+    :
+        A decorator object that will wrap the function
 
-    Usage
-    -----
-    Not appropriate for caching (i.e., many possible inputs, especially
-    in a web app scenario)::
+    Examples
+    --------
+        Not appropriate for caching (i.e., many possible inputs, especially
+        in a web app scenario):
 
-    .. code-block:: python
+        .. code-block:: python
 
-        @autoclient()
-        def get_tissues_for_gene(gene: Tuple[str, str], *, client: Neo4jClient):
-            return client.get_targets(
-                gene,
-                relation="expressed_in",
-                source_type="BioEntity",
-                target_type="BioEntity",
-            )
+            @autoclient()
+            def get_tissues_for_gene(gene: Tuple[str, str], *, client: Neo4jClient):
+                return client.get_targets(
+                    gene,
+                    relation="expressed_in",
+                    source_type="BioEntity",
+                    target_type="BioEntity",
+                )
 
-    Appropriate for caching (e.g., doen't take inputs at all)::
+        Appropriate for caching (e.g., doen't take inputs at all):
 
-    .. code-block:: python
+        .. code-block:: python
 
-        @autoclient(cache=True, maxsize=1)
-        def get_node_count(*, client: Neo4jClient) -> Counter:
-            return Counter(
-                {
-                    label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
-                    for label in client.query_tx("call db.labels();")
-                }
-            )
+            @autoclient(cache=True, maxsize=1)
+            def get_node_count(*, client: Neo4jClient) -> Counter:
+                return Counter(
+                    {
+                        label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
+                        for label in client.query_tx("call db.labels();")
+                    }
+                )
     """
 
     def _decorator(func):
