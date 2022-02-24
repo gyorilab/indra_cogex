@@ -4,3 +4,8 @@ INDRA CoGEx Apps
 ================
 
 INDRA CoGEx apps
+
+.. toctree::
+   :maxdepth: 3
+
+   gla
