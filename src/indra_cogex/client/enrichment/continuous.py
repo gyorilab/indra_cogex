@@ -239,7 +239,7 @@ def wikipathways_gsea(
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
@@ -275,7 +275,7 @@ def reactome_gsea(
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
@@ -298,7 +298,7 @@ def go_gsea(
     client: Neo4jClient,
     **kwargs,
 ) -> pd.DataFrame:
-    """Run GSEA with gene sets for each Gene Ontolgy term.
+    """Run GSEA with gene sets for each Gene Ontology term.
 
     Parameters
     ----------
@@ -311,7 +311,7 @@ def go_gsea(
         Specify the directory if the results should be saved, including
         both a dataframe and plots for each gen set
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
@@ -356,7 +356,7 @@ def indra_upstream_gsea(
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
@@ -405,7 +405,7 @@ def indra_downstream_gsea(
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
@@ -461,7 +461,7 @@ def gsea(
     keep_insignificant :
         If false, removes results with a p value less than alpha.
     kwargs :
-        Remaining keyword arguments to pass through to :func:`gseapy.prerank
+        Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
     Returns
     -------
