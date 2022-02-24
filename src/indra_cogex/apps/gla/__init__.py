@@ -151,7 +151,7 @@ permutations_field = IntegerField(
 
 
 def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a genes field string."""
+    """Parse a genes field"""
     records = {
         record.strip().strip('"').strip("'").strip()
         for line in s.strip().lstrip("[").rstrip("]").split()
