@@ -95,7 +95,7 @@ def reverse_causal_reasoning(
         If false, removes results with a p value less than alpha.
     minimum_evidence_count :
         The minimum number of evidences for a relationship to count it as a regulator.
-        Defaults to 1 (i.e., cutoff not applied.
+        Defaults to 1 (i.e., cutoff not applied).
     minimum_belief :
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
@@ -105,7 +105,7 @@ def reverse_causal_reasoning(
     :
         A pandas DataFrame with results for each entity in the graph database
 
-    .. [catlett2013] Catlett, N. L., *et al* (2013). `Reverse causal reasoning: applying
+    .. [catlett2013] Catlett, N. L., *et al.* (2013). `Reverse causal reasoning: applying
        qualitative causal knowledge to the interpretation of high-throughput data
        <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14**(1), 340.
     """
