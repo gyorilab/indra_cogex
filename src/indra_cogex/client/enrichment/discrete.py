@@ -79,7 +79,18 @@ def _prepare_hypergeometric_test(
 
 @autoclient(cache=True)
 def count_human_genes(*, client: Neo4jClient) -> int:
-    """Count the number of HGNC genes in neo4j."""
+    """Count the number of HGNC genes in neo4j.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+
+    Returns
+    -------
+    :
+        Number of HGNC genes
+    """
     query = f"""\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
@@ -96,6 +107,20 @@ def gene_ontology_single_ora(
 
     1. Look up genes associated with GO term or child terms
     2. Run ORA and return results
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    go_term :
+        GO term to test
+    gene_ids :
+        List of gene identifiers
+
+    Returns
+    -------
+    :
+        p-value
     """
     count = count_human_genes(client=client)
     go_gene_ids = {
@@ -152,7 +177,23 @@ def _do_ora(
 
 
 def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFrame:
-    """Calculate over-representation on all GO terms."""
+    """Calculate over-representation on all GO terms.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    gene_ids :
+        List of gene identifiers
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
     count = count_human_genes(client=client)
     return _do_ora(get_go(client=client), gene_ids=gene_ids, count=count, **kwargs)
 
@@ -160,7 +201,23 @@ def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFra
 def wikipathways_ora(
     client: Neo4jClient, gene_ids: Iterable[str], **kwargs
 ) -> pd.DataFrame:
-    """Calculate over-representation on all WikiPathway pathways."""
+    """Calculate over-representation on all WikiPathway pathways.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    gene_ids :
+        List of gene identifiers
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
     count = count_human_genes(client=client)
     return _do_ora(
         get_wikipathways(client=client), gene_ids=gene_ids, count=count, **kwargs
@@ -170,7 +227,23 @@ def wikipathways_ora(
 def reactome_ora(
     client: Neo4jClient, gene_ids: Iterable[str], **kwargs
 ) -> pd.DataFrame:
-    """Calculate over-representation on all Reactome pathways."""
+    """Calculate over-representation on all Reactome pathways.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    gene_ids :
+        List of gene identifiers
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
     count = count_human_genes(client=client)
     return _do_ora(
         get_reactome(client=client), gene_ids=gene_ids, count=count, **kwargs
@@ -189,6 +262,25 @@ def indra_downstream_ora(
     Calculate a p-value for each entity in the INDRA database
     based on the genes that are causally upstream of it and how
     they compare to the query gene set.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    gene_ids :
+        List of gene identifiers
+    minimum_evidence_count :
+        Minimum number of evidences to consider a causal relationship
+    minimum_belief :
+        Minimum belief to consider a causal relationship
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
     """
     count = count_human_genes(client=client)
     return _do_ora(
@@ -215,6 +307,25 @@ def indra_upstream_ora(
     Calculate a p-value for each entity in the INDRA database
     based on the set of genes that it regulates and how
     they compare to the query gene set.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    gene_ids :
+        List of gene identifiers
+    minimum_evidence_count :
+        Minimum number of evidences to consider a causal relationship
+    minimum_belief :
+        Minimum belief to consider a causal relationship
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
     """
     count = count_human_genes(client=client)
     return _do_ora(
