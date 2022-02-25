@@ -30,7 +30,6 @@ class NodeAssembler:
         nodes :
             A list of Node objects.
         """
-        self.nodes.extend(nodes)
         self.nodes += nodes
 
     def assemble_nodes(self) -> List[Node]:
