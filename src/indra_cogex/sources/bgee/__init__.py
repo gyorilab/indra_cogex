@@ -5,7 +5,7 @@
 import os
 import pickle
 from pathlib import Path
-from typing import Union
+from typing import Union, Iterable, Tuple
 
 import pyobo
 
@@ -32,7 +32,7 @@ class BgeeProcessor(Processor):
         with open(path, "rb") as fh:
             self.expressions = pickle.load(fh)
 
-    def get_nodes(self):  # noqa:D102
+    def get_nodes(self) -> Iterable[Node]:  # noqa:D102
         for context in self.expressions:
             context_ns, context_id = get_context(context)
             yield Node(
@@ -49,7 +49,7 @@ class BgeeProcessor(Processor):
                 data={"name": pyobo.get_name("hgnc", hgnc_id)},
             )
 
-    def get_relations(self):  # noqa:D102
+    def get_relations(self) -> Iterable[Relation]:  # noqa:D102
         data = {"source": self.name}
         for context, hgnc_ids in self.expressions.items():
             context_ns, context_id = get_context(context)
@@ -59,7 +59,7 @@ class BgeeProcessor(Processor):
                 )
 
 
-def get_context(context):
+def get_context(context) -> Tuple[str, str]:
     context_ns, context_id = context.split(":", maxsplit=1)
     if context_ns == "UBERON":
         context_id = f"UBERON:{context_id}"
