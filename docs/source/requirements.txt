@@ -1,0 +1,16 @@
+sphinx
+sphinx-rtd-theme
+sphinx-click
+sphinx-autodoc-typehints
+indra @ git+https://github.com/sorgerlab/indra.git
+neo4j
+click
+more_click
+class-resolver>=0.0.9
+pystow>=0.1.6
+pyobo
+gilda
+biomappings
+numpy
+statsmodels
+pandas
