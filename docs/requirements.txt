@@ -15,4 +15,4 @@ numpy
 statsmodels
 pandas
 gseapy
-flask_bootstrap
+bootstrap-flask>=2.0.0
