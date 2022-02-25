@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+"""Assembly of Node objects."""
+
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -5,14 +9,40 @@ from indra_cogex.representation import Node
 
 
 class NodeAssembler:
+    """Assembles Node objects."""
+
     def __init__(self, nodes: Optional[List[Node]] = None):
+        """Initialize a new NodeAssembler object.
+
+        Parameters
+        ----------
+        nodes :
+            A list of Node objects.
+        """
         self.nodes = nodes if nodes else []
         self.conflicts: List[Conflict] = []
 
     def add_nodes(self, nodes: List[Node]):
+        """Add a list of Node objects to the assembler.
+
+        Parameters
+        ----------
+        nodes :
+            A list of Node objects.
+        """
         self.nodes += nodes
 
     def assemble_nodes(self) -> List[Node]:
+        """Assemble the nodes in the assembler.
+
+        Nodes with the same grounding are assembled into a single node that
+        contains all the labels and data from all the nodes.
+
+        Returns
+        -------
+        nodes :
+            A list of Node objects.
+        """
         nodes_by_id = defaultdict(list)
         for node in self.nodes:
             nodes_by_id[(node.db_ns, node.db_id)].append(node)
@@ -24,6 +54,23 @@ class NodeAssembler:
         return assembled_nodes
 
     def get_aggregate_node(self, db_ns: str, db_id: str, nodes: List[Node]) -> Node:
+        """Aggregate a list of Node objects.
+
+        Parameters
+        ----------
+        db_ns :
+            The database namespace of the nodes.
+        db_id :
+            The database id of the nodes.
+        nodes :
+            A list of Node objects.
+
+        Returns
+        -------
+        :
+            A Node object with all the
+            labels and data from the input nodes.
+        """
         labels = set()
         data: Dict[str, str] = {}
         for node in nodes:

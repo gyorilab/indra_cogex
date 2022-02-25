@@ -1,9 +1,12 @@
 INDRA CoGEx |release| Documentation
 ===================================
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Getting Started
    :name: start
+
+   license.rst
+   modules/index
 
 Indices and Tables
 ------------------

@@ -2,15 +2,19 @@
 
 """Representations for nodes and relations to upload to Neo4j."""
 
-from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple
 
 __all__ = ["Node", "Relation"]
 
+from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, \
+    Dict, Union
 import json
 from indra.databases import identifiers
 from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
 from indra.statements import stmts_from_json, Statement
+
+NodeJson = Dict[str, Union[Collection[str], Dict[str, Any]]]
+RelJson = Dict[str, Union[Mapping[str, Any], Dict]]
 
 
 class Node:
@@ -53,7 +57,24 @@ class Node:
         name: Optional[str] = None,
         labels: Collection[str],
     ) -> "Node":
-        """Initialize the node, but first standardize the prefix/identifier/name."""
+        """Initialize the node, but first standardize the prefix/identifier/name.
+
+        Parameters
+        ----------
+        db_ns :
+            The namespace associated with the node.
+        db_id :
+            The identifier within the namespace associated with the node.
+        name :
+            An optional name for the node.
+        labels :
+            A collection of labels for the node.
+
+        Returns
+        -------
+        :
+            A node with standardized prefix/identifier/name.
+        """
         db_ns, db_id, name = standardize(db_ns, db_id, name)
         return cls(
             db_ns,
@@ -62,18 +83,30 @@ class Node:
             dict(name=name),
         )
 
-    def grounding(self):
-        """Get the grounding tuple for this node."""
-        return (self.db_ns, self.db_id)
+    def grounding(self) -> Tuple[str, str]:
+        """Get the grounded namespace and identifier for this node as a tuple
 
-    def to_json(self):
-        """Serialize the node to JSON."""
+        Returns
+        -------
+        :
+            A tuple of the namespace and identifier for the node.
+        """
+        return self.db_ns, self.db_id
+
+    def to_json(self) -> NodeJson:
+        """Serialize the node to JSON.
+
+        Returns
+        -------
+        :
+            A JSON representation of the node.
+        """
         data = {k: v for k, v in self.data.items()}
         data["db_ns"] = self.db_ns
         data["db_id"] = self.db_id
         return {"labels": self.labels, "data": data}
 
-    def _get_data_str(self):
+    def _get_data_str(self) -> str:
         pieces = ["id:'%s:%s'" % (self.db_ns, self.db_id)]
         for k, v in self.data.items():
             if isinstance(v, str):
@@ -110,10 +143,20 @@ class Relation:
     ):
         """Initialize the relation.
 
-        :param source_id: The identifier of the source node
-        :param target_id: The identifier of the target node
-        :param rel_type: The relation's type.
-        :param data: The optional data dictionary associated with the relation.
+        Parameters
+        ----------
+        source_ns :
+            The namespace associated with the source node.
+        source_id :
+            The identifier within the namespace associated with the source node.
+        target_ns :
+            The namespace associated with the target node.
+        target_id :
+            The identifier within the namespace associated with the target node.
+        rel_type :
+            The type of relation.
+        data :
+            An optional data dictionary associated with the relation.
         """
         self.source_ns = source_ns
         self.source_id = source_id
@@ -122,8 +165,14 @@ class Relation:
         self.rel_type = rel_type
         self.data = data if data else {}
 
-    def to_json(self):
-        """Serialize the relation to JSON."""
+    def to_json(self) -> RelJson:
+        """Serialize the relation to JSON format.
+
+        Returns
+        -------
+        :
+            A JSON representation of the relation.
+        """
         return {
             "source_ns": self.source_ns,
             "source_id": self.source_id,
@@ -147,7 +196,22 @@ class Relation:
 def standardize(
     prefix: str, identifier: str, name: Optional[str] = None
 ) -> Tuple[str, str, str]:
-    """Get a standardized prefix, identifier, and name, if possible."""
+    """Get a standardized prefix, identifier, and name, if possible.
+
+    Parameters
+    ----------
+    prefix :
+        The prefix to standardize.
+    identifier :
+        The identifier to standardize.
+    name :
+        The name to standardize.
+
+    Returns
+    -------
+    :
+        A tuple of the standardized prefix, identifier, and name.
+    """
     standard_name, db_refs = standardize_name_db_refs({prefix: identifier})
     name = standard_name if standard_name else name
     db_ns, db_id = get_grounding(db_refs)
@@ -156,7 +220,21 @@ def standardize(
     return db_ns, db_id, name
 
 
-def norm_id(db_ns, db_id):
+def norm_id(db_ns, db_id) -> str:
+    """Normalize an identifier.
+
+    Parameters
+    ----------
+    db_ns :
+        The namespace of the identifier.
+    db_id :
+        The identifier.
+
+    Returns
+    -------
+    :
+        The normalized identifier.
+    """
     identifiers_ns = identifiers.get_identifiers_ns(db_ns)
     identifiers_id = db_id
     if not identifiers_ns:
@@ -180,7 +258,32 @@ def triple_query(
     target_type: Optional[str] = None,
     target_id: Optional[str] = None,
 ) -> str:
-    """Create a Cypher triple query part."""
+    """Create a Cypher query from the given parameters.
+
+    Parameters
+    ----------
+    source_name :
+        The name of the source node. Optional.
+    source_type :
+        The type of the source node. Optional.
+    source_id :
+        The identifier of the source node. Optional.
+    relation_name :
+        The name of the relation. Optional.
+    relation_type :
+        The type of the relation. Optional.
+    target_name :
+        The name of the target node. Optional.
+    target_type :
+        The type of the target node. Optional.
+    target_id :
+        The identifier of the target node. Optional.
+
+    Returns
+    -------
+    :
+        A Cypher query as a string.
+    """
     source = node_query(node_name=source_name, node_type=source_type, node_id=source_id)
     # TODO could later make an alternate function for the relation
     relation = node_query(node_name=relation_name, node_type=relation_type)
@@ -193,7 +296,22 @@ def node_query(
     node_type: Optional[str] = None,
     node_id: Optional[str] = None,
 ) -> str:
-    """Create a Cypher node query part."""
+    """Create a Cypher node query
+
+    Parameters
+    ----------
+    node_name :
+        The name of the node. Optional.
+    node_type :
+        The type of the node. Optional.
+    node_id :
+        The identifier of the node. Optional.
+
+    Returns
+    -------
+    :
+        A Cypher node query as a string.
+    """
     if node_name is None:
         node_name = ""
     rv = node_name or ""

@@ -61,10 +61,11 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.intersphinx',
     "sphinx.ext.todo",
+    "sphinx.ext.napoleon",
     # 'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx_autodoc_typehints',
-    # 'sphinx_click.ext',
+    'sphinx_click.ext',
     # 'sphinx_automodapi.automodapi',
     # 'texext',
 ]
