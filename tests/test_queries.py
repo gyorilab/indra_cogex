@@ -1,6 +1,7 @@
 import pytest
+from indra.statements import Statement, Evidence
+
 from indra_cogex.client.queries import *
-from indra.statements import *
 from indra_cogex.representation import Node
 
 from .test_neo4j_client import _get_client
@@ -254,7 +255,7 @@ def test_get_evidence_obj_for_mesh_id():
 def test_get_evidence_obj_for_stmt_hash():
     # Note: This statement has 3 evidences
     # Single query
-    stmt_hash = "12198579805553967"
+    stmt_hash = 12198579805553967
     client = _get_client()
     ev_objs = get_evidences_for_stmt_hash(stmt_hash, client=client)
     assert ev_objs
@@ -265,15 +266,15 @@ def test_get_evidence_obj_for_stmt_hash():
 def test_get_evidence_obj_for_stmt_hashes():
     # Note: These statements have 3+5 evidences
     # Single query
-    stmt_hashes = ["12198579805553967", "30651649296901235"]
+    stmt_hashes = [12198579805553967, 30651649296901235]
     client = _get_client()
     ev_dict = get_evidences_for_stmt_hashes(stmt_hashes, client=client)
     assert ev_dict
-    assert set(ev_dict.keys()) == {"12198579805553967", "30651649296901235"}
-    assert ev_dict["12198579805553967"]
-    assert ev_dict["30651649296901235"]
-    assert isinstance(ev_dict["12198579805553967"][0], Evidence)
-    assert isinstance(ev_dict["30651649296901235"][0], Evidence)
+    assert set(ev_dict.keys()) == {12198579805553967, 30651649296901235}
+    assert ev_dict[12198579805553967]
+    assert ev_dict[30651649296901235]
+    assert isinstance(ev_dict[12198579805553967][0], Evidence)
+    assert isinstance(ev_dict[30651649296901235][0], Evidence)
 
 
 @pytest.mark.nonpublic
@@ -283,31 +284,31 @@ def test_get_stmts_for_pmid():
     pmid = ("PUBMED", "14898026")
     stmts = get_stmts_for_pmid(pmid, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
 def test_get_stmts_for_mesh_id_w_children():
     # Two queries:
     # 1. evidences for publications with pmid having mesh annotation
-    # 2. statements for the evidences in 2
+    # 2. statements for the evidences in 1
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, client=client)
     assert stmts
-    assert isinstance(stmts[0], Activation)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
 def test_get_stmts_for_mesh_id_wo_children():
     # Two queries:
     # 1. evidences for publications with pmid having mesh annotation
-    # 2. statements for the evidences in 2
+    # 2. statements for the evidences in 1
     client = _get_client()
     mesh_id = ("MESH", "D000068236")
     stmts = get_stmts_for_mesh(mesh_id, include_child_terms=False, client=client)
     assert stmts
-    assert isinstance(stmts[0], Activation)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
@@ -318,7 +319,7 @@ def test_get_stmts_by_hashes():
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
-    assert isinstance(stmts[0], Inhibition)
+    assert isinstance(stmts[0], Statement)
 
 
 @pytest.mark.nonpublic
