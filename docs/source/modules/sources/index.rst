@@ -3,4 +3,19 @@
 INDRA CoGEx Sources
 ===================
 
-The sources of INDRA CoGEx are the following:
+.. toctree::
+   :maxdepth: 3
+
+   source_cli
+   sources_processor
+   bgee
+   cbioportal
+   chembl
+   clinicaltrials
+   goa
+   indra_db
+   indra_ontology
+   odinson/index
+   pathways
+   pubmed
+   sider
