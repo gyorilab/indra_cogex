@@ -114,7 +114,7 @@ Returns
                 name=param.arg_name, typing=str_type, description=param.description
             )
         )
-    params = "\n".join(param_list)
+    params = "\n\n".join(param_list)
 
     return_str = ret_templ.format(
         typing=str(get_web_return_annotation(sig)).replace("typing.", ""),
