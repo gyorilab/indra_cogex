@@ -90,7 +90,7 @@ def get_web_return_annotation(sig: Signature) -> Type:
         return List[Dict[str, Any]]
     elif return_annotation is bool:
         return Dict[str, bool]
-    elif return_annotation is Dict[str, List[Evidence]]:
+    elif return_annotation is Dict[int, List[Evidence]]:
         return Dict[str, List[Dict[str, Any]]]
     elif return_annotation is Iterable[Evidence]:
         return List[Dict[str, Any]]
