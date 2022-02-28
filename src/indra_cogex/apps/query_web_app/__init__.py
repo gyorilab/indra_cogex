@@ -32,20 +32,47 @@ TupOfTups = Tuple[Tup, ...]
 
 def get_docstring(fun: Callable) -> Tuple[str, str]:
     parsed_doc = parse(fun.__doc__)
+    sig = signature(fun)
 
-    long = parsed_doc.short_description + "\n\n"
+    full_docstr = """{title}
 
-    if parsed_doc.long_description:
-        long += parsed_doc.long_description + "\n\n"
+Parameters
+----------
+{params}
 
-    long += "Parameters\n----------\n"
+Returns
+-------
+{return_str}
+"""
+    # Get title
+    short = parsed_doc.short_description
+
+    param_templ = "{name} : {typing}\n    {description}"
+
+    ret_templ = "name : {typing}\n    {description}"
+
+    # Get the parameters
+    param_list = []
     for param in parsed_doc.params:
-        long += param.arg_name + ": " + param.description + "\n"
-    long += "\n"
-    long += "Returns\n-------\n"
-    long += parsed_doc.returns.description
+        if param.arg_name == "client":
+            continue
 
-    return parsed_doc.short_description, parsed_doc.long_description
+        str_type = str(sig.parameters[param.arg_name].annotation).replace("typing.", "")
+        param_list.append(
+            param_templ.format(
+                name=param.arg_name, typing=str_type, description=param.description
+            )
+        )
+    params = "\n".join(param_list)
+
+    return_str = ret_templ.format(
+        typing=str(sig.return_annotation).replace("typing.", ""),
+        description=parsed_doc.returns.description,
+    )
+
+    return short, full_docstr.format(
+        title=short, params=params, return_str=return_str,
+    )
 
 
 func_mapping = {fname: getattr(queries, fname) for fname in queries.__all__}
