@@ -315,7 +315,7 @@ def test_get_stmts_for_mesh_id_wo_children():
 def test_get_stmts_by_hashes():
     # Note: This statement has a ~500 of evidences
     # Two queries: first statements, then all the evidence for the statements
-    stmt_hashes = ["35279776755000170"]
+    stmt_hashes = [35279776755000170]
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
