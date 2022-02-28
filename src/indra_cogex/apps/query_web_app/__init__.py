@@ -105,7 +105,8 @@ Returns
     # Get the parameters
     param_list = []
     for param in parsed_doc.params:
-        if param.arg_name == "client":
+        # Skip client, evidence_map,
+        if param.arg_name in ("client", 'evidence_map'):
             continue
 
         str_type = str(sig.parameters[param.arg_name].annotation).replace("typing.", "")
