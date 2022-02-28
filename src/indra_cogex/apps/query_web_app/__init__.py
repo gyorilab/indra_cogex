@@ -161,8 +161,16 @@ for func_name in queries.__all__:
         def post(self):
             """Get a query."""
             json_dict = request.json
-            result = func_mapping[self.func_name](**json_dict, client=client)
-            return jsonify(result)
+            if json_dict is None:
+                abort(Response("Missing application/json header.", 415))
+            try:
+                result = func_mapping[self.func_name](**json_dict, client=client)
+
+                return jsonify(result)
+
+            except TypeError as err:
+                logger.error(err)
+                abort(Response(str(err), 415))
 
         post.__doc__ = fixed_doc
 
