@@ -3,7 +3,8 @@
 """An app wrapping the query module of indra_cogex."""
 import logging
 from inspect import isfunction, signature, Signature
-from typing import Callable, Tuple, Type, Iterable, Any, Dict, List, Counter
+from typing import Callable, Tuple, Type, Iterable, Any, Dict, List, Counter, \
+    Mapping
 
 import flask
 from docstring_parser import parse
@@ -26,6 +27,24 @@ client = Neo4jClient()
 
 
 logger = logging.getLogger(__name__)
+
+
+def process_result(result) -> Any:
+    # Any fundamental type
+    if isinstance(result, (int, str, bool)):
+        return result
+    # Any iterable query
+    elif isinstance(result, (Iterable, list, set)):
+        list_res = list(result)
+        if hasattr(list_res[0], "to_json"):
+            list_res = [res.to_json() for res in list_res]
+        return list_res
+    # Any dict query
+    elif isinstance(result, (dict, Mapping, Counter)):
+        res_dict = dict(result)
+        return {k: process_result(v) for k, v in res_dict.items()}
+    else:
+        raise TypeError(f"Don't know how to process result of type {type(result)}")
 
 
 def get_web_return_annotation(sig: Signature) -> Type:
@@ -165,9 +184,11 @@ for func_name in queries.__all__:
                 abort(Response("Missing application/json header.", 415))
             try:
                 result = func_mapping[self.func_name](**json_dict, client=client)
-
-                return jsonify(result)
-
+                # Any 'is' type query
+                if isinstance(result, bool):
+                    return jsonify({func_name: result})
+                else:
+                    return jsonify(process_result(result))
             except TypeError as err:
                 logger.error(err)
                 abort(Response(str(err), 415))
