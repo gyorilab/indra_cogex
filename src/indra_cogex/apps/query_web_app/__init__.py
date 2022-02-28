@@ -186,7 +186,7 @@ for func_name in queries.__all__:
                 result = func_mapping[self.func_name](**json_dict, client=client)
                 # Any 'is' type query
                 if isinstance(result, bool):
-                    return jsonify({func_name: result})
+                    return jsonify({self.func_name: result})
                 else:
                     return jsonify(process_result(result))
             except TypeError as err:
