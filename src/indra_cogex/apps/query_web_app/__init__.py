@@ -2,18 +2,19 @@
 
 """An app wrapping the query module of indra_cogex."""
 import logging
-from inspect import isfunction, signature
-from typing import Callable, Tuple, Union
+from inspect import isfunction, signature, Signature
+from typing import Callable, Tuple, Type, Iterable, Any, Dict, List, Counter
 
 import flask
 from docstring_parser import parse
-from flask import request, Response, jsonify
-from flask_restx import Api, Resource, fields, abort
+from flask import request, jsonify, abort, Response
+from flask_restx import Api, Resource, fields
 from more_click import make_web_command
 
+from indra.statements import Evidence, Statement, Agent
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client import queries
-
+from indra_cogex.representation import Node
 
 app = flask.Flask(__name__)
 api = Api(
@@ -26,8 +27,39 @@ client = Neo4jClient()
 
 logger = logging.getLogger(__name__)
 
-Tup = Tuple[str, str]
-TupOfTups = Tuple[Tup, ...]
+
+def get_web_return_annotation(sig: Signature) -> Type:
+    """Get and translate the return annotation of a function."""
+    # Get the return annotation
+    return_annotation = sig.return_annotation
+    if return_annotation is sig.empty:
+        raise ValueError("Forgot to type annotate function")
+
+    # Translate the return annotation:
+    # Iterable[Node] -> List[Dict[str, Any]]
+    # bool -> Dict[str: bool]
+    # Dict[str, List[Evidence]] -> Dict[int, List[Dict[str, Any]]]
+    # Iterable[Evidence] -> List[Dict[str, Any]]
+    # Iterable[Statement] -> List[Dict[int, Any]]
+    # Counter -> Dict[str, int]
+    # Iterable[Agent] -> List[Dict[str, Any]]
+
+    if return_annotation is Iterable[Node]:
+        return List[Dict[str, Any]]
+    elif return_annotation is bool:
+        return Dict[str, bool]
+    elif return_annotation is Dict[str, List[Evidence]]:
+        return Dict[str, List[Dict[str, Any]]]
+    elif return_annotation is Iterable[Evidence]:
+        return List[Dict[str, Any]]
+    elif return_annotation is Iterable[Statement]:
+        return List[Dict[str, Any]]
+    elif return_annotation is Counter:
+        return Dict[str, int]
+    elif return_annotation is Iterable[Agent]:
+        return List[Dict[str, Any]]
+    else:
+        return return_annotation
 
 
 def get_docstring(fun: Callable) -> Tuple[str, str]:
@@ -66,7 +98,7 @@ Returns
     params = "\n".join(param_list)
 
     return_str = ret_templ.format(
-        typing=str(sig.return_annotation).replace("typing.", ""),
+        typing=str(get_web_return_annotation(sig)).replace("typing.", ""),
         description=parsed_doc.returns.description,
     )
 
