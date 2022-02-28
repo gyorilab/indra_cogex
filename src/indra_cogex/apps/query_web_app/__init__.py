@@ -71,7 +71,9 @@ Returns
     )
 
     return short, full_docstr.format(
-        title=short, params=params, return_str=return_str,
+        title=short,
+        params=params,
+        return_str=return_str,
     )
 
 
@@ -89,23 +91,23 @@ for func_name in queries.__all__:
     if client_param is None:
         continue
 
-    short_doc, doc = get_docstring(func)
+    short_doc, fixed_doc = get_docstring(func)
 
     param_names = list(func_sig.parameters.keys())
     param_names.remove("client")
 
-    name_title = func_name.replace("_", " ").title()
+    model_name = f"{func_name} model"
 
     # Create query model, separate between one and two parameter expectations
     if len(func_sig.parameters) == 2:
         # Get the parameters name for the other parameter that is not 'client'
         query_model = api.model(
-            f"{func_name}_endpoint", {param_names[0]: fields.List(fields.String)}
+            model_name, {param_names[0]: fields.List(fields.String)}
         )
     elif len(func_sig.parameters) == 3:
 
         query_model = api.model(
-            f"{func_name}_endpoint",
+            model_name,
             {
                 param_names[0]: fields.List(fields.String),
                 param_names[1]: fields.List(fields.String),
@@ -118,7 +120,7 @@ for func_name in queries.__all__:
         )
 
     @query_ns.expect(query_model)
-    @query_ns.route(f"/{func_name}", doc={"summary": "This is the summary"})
+    @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
     class QueryResource(Resource):
         """A resource for a query."""
 
@@ -130,7 +132,7 @@ for func_name in queries.__all__:
             result = func_mapping[self.func_name](**json_dict, client=client)
             return jsonify(result)
 
-        post.__doc__ = "This is the full __doc__"
+        post.__doc__ = fixed_doc
 
 
 cli = make_web_command(app=app)
