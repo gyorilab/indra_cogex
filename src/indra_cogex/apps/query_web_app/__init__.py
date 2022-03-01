@@ -52,6 +52,7 @@ examples_dict = {
     "target": ["HGNC", "6840"],
     "include_indirect": True,
     "evidence_map": {},
+    "filter_medscan": True,
 }
 
 
@@ -213,34 +214,37 @@ for func_name in queries.__all__:
     model_name = f"{func_name}_model"
 
     # Create query model, separate between one and two parameter expectations
-    if len(func_sig.parameters) == 2:
-        # Get the parameters name for the other parameter that is not 'client'
-        query_model = api.model(
-            model_name,
-            {
-                param_names[0]: fields.List(
-                    fields.String, example=examples_dict[param_names[0]]
-                )
-            },
-        )
-    elif len(func_sig.parameters) == 3:
+    try:
+        if len(func_sig.parameters) == 2:
+            # Get the parameters name for the other parameter that is not 'client'
+            query_model = api.model(
+                model_name,
+                {
+                    param_names[0]: fields.List(
+                        fields.String, example=examples_dict[param_names[0]]
+                    )
+                },
+            )
+        elif len(func_sig.parameters) == 3:
 
-        query_model = api.model(
-            model_name,
-            {
-                param_names[0]: fields.List(
-                    fields.String, example=examples_dict[param_names[0]]
-                ),
-                param_names[1]: fields.List(
-                    fields.String, example=examples_dict[param_names[1]]
-                ),
-            },
-        )
-    else:
-        raise ValueError(
-            f"Query function {func_name} has an unexpected number of "
-            f"parameters ({len(func_sig.parameters)})"
-        )
+            query_model = api.model(
+                model_name,
+                {
+                    param_names[0]: fields.List(
+                        fields.String, example=examples_dict[param_names[0]]
+                    ),
+                    param_names[1]: fields.List(
+                        fields.String, example=examples_dict[param_names[1]]
+                    ),
+                },
+            )
+        else:
+            raise ValueError(
+                f"Query function {func_name} has an unexpected number of "
+                f"parameters ({len(func_sig.parameters)})"
+            )
+    except KeyError as err:
+        raise KeyError(f"No examples for {func_name}, please add one") from err
 
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
