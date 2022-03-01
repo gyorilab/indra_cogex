@@ -173,7 +173,7 @@ for func_name in queries.__all__:
     param_names = list(func_sig.parameters.keys())
     param_names.remove("client")
 
-    model_name = f"{func_name} model"
+    model_name = f"{func_name}_model"
 
     # Create query model, separate between one and two parameter expectations
     if len(func_sig.parameters) == 2:
