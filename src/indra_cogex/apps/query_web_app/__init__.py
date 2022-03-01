@@ -266,6 +266,10 @@ for func_name in queries.__all__:
                 logger.error(err)
                 abort(Response(str(err), 415))
 
+            except Exception as err:
+                logger.error(err)
+                abort(Response(str(err), 500))
+
         post.__doc__ = fixed_doc
 
 
