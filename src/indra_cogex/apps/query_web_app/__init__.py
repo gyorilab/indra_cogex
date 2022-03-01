@@ -21,7 +21,6 @@ api = Api(
     app,
     title="INDRA CoGEx Query API",
     description="REST API for INDRA CoGEx queries",
-    doc="/docs",
 )
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
