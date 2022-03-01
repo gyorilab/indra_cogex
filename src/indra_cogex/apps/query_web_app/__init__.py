@@ -90,7 +90,8 @@ def process_result(result) -> Any:
     # Any iterable query
     elif isinstance(result, (Iterable, list, set)):
         list_res = list(result)
-        if hasattr(list_res[0], "to_json"):
+        # Check for empty list
+        if list_res and hasattr(list_res[0], "to_json"):
             list_res = [res.to_json() for res in list_res]
         return list_res
     # Any dict query
