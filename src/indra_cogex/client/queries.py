@@ -774,7 +774,7 @@ def get_evidences_for_stmt_hash(
         % stmt_hash
     )
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
+    return _filter_out_medscan_evidence(ev_list=ev_jsons)
 
 
 @autoclient()
@@ -973,6 +973,7 @@ def _get_mesh_child_terms(
 
 def _get_ev_dict_from_hash_ev_query(
     result: Optional[Iterable[List[Union[int, str]]]] = None,
+    remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
     """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
@@ -982,6 +983,8 @@ def _get_ev_dict_from_hash_ev_query(
     ev_dict = defaultdict(list)
     for stmt_hash, ev_json_str in result:
         ev_json = json.loads(ev_json_str)
+        if remove_medscan and ev_json["source_api"] == "medscan":
+            continue
         ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
     return dict(ev_dict)
 
@@ -1221,3 +1224,14 @@ def _get_node_from_stmt_relation(
     stmt_json = json.loads(rel.data["stmt_json"])
     name = stmt_json[agent_role]["name"]
     return Node(node_ns, node_id, ["BioEntity"], dict(name=name))
+
+
+def _filter_out_medscan_evidence(
+    ev_list: Iterable[Dict[str, Dict]], remove_medscan: bool = True
+) -> Iterable[Evidence]:
+    """Filter out Evidence JSONs containing evidence from MedScan."""
+    return [
+        Evidence._from_json(ev)
+        for ev in ev_list
+        if not (remove_medscan and ev["source_api"] == "medscan")
+    ]
