@@ -123,7 +123,7 @@ Returns
 
     param_templ = "{name} : {typing}\n    {description}"
 
-    ret_templ = "name : {typing}\n    {description}"
+    ret_templ = "{typing}\n    {description}"
 
     # Get the parameters
     param_list = []
