@@ -1228,8 +1228,8 @@ def _get_node_from_stmt_relation(
 
 def _filter_out_medscan_evidence(
     ev_list: Iterable[Dict[str, Dict]], remove_medscan: bool = True
-) -> Iterable[Evidence]:
-    """Filter out Evidence JSONs containing evidence from MedScan."""
+) -> List[Evidence]:
+    """Filter out Evidence JSONs containing evidence from medscan."""
     return [
         Evidence._from_json(ev)
         for ev in ev_list
