@@ -747,7 +747,7 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
 
 
 @autoclient()
@@ -774,7 +774,7 @@ def get_evidences_for_stmt_hash(
         % stmt_hash
     )
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons)
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
 
 
 @autoclient()
@@ -806,7 +806,7 @@ def get_evidences_for_stmt_hashes(
         % stmt_hashes_str
     )
 
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
 
 
 @autoclient()
@@ -844,7 +844,7 @@ def get_stmts_for_pmid(
         % pmid_norm
     )
     result = client.query_tx(hash_query)
-    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    ev_dict = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(ev_dict.keys())
     return get_stmts_for_stmt_hashes(stmt_hashes, ev_dict, client=client)
 
