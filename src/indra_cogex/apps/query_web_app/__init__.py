@@ -18,7 +18,10 @@ from indra_cogex.representation import Node
 
 app = flask.Flask(__name__)
 api = Api(
-    app, title="INDRA CoGEx Query API", description="REST API for INDRA CoGEx queries"
+    app,
+    title="INDRA CoGEx Query API",
+    description="REST API for INDRA CoGEx queries",
+    doc="/docs",
 )
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
@@ -48,7 +51,7 @@ examples_dict = {
     "cell_line": ["CCLE", "BT20_BREAST"],
     "target": ["HGNC", "6840"],
     "include_indirect": True,
-    "evidence_map": {}
+    "evidence_map": {},
 }
 
 
