@@ -971,24 +971,6 @@ def _get_mesh_child_terms(
     return {c[0] for c in client.query_tx(query)}
 
 
-def _get_ev_dict_from_hash_ev_query(
-    result: Optional[Iterable[List[Union[int, str]]]] = None,
-    remove_medscan: bool = True,
-) -> Dict[int, List[Evidence]]:
-    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
-    if result is None:
-        logger.warning("No result for hash, Evidence query, returning empty dict")
-        return {}
-
-    ev_dict = defaultdict(list)
-    for stmt_hash, ev_json_str in result:
-        ev_json = json.loads(ev_json_str)
-        if remove_medscan and ev_json["source_api"] == "medscan":
-            continue
-        ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
-    return dict(ev_dict)
-
-
 @autoclient(cache=True)
 def get_node_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each entity type.
@@ -1208,6 +1190,24 @@ def is_drug_target(
         drug, target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     return any(_is_drug_relation(rel) for rel in rels)
+
+
+def _get_ev_dict_from_hash_ev_query(
+    result: Optional[Iterable[List[Union[int, str]]]] = None,
+    remove_medscan: bool = True,
+) -> Dict[int, List[Evidence]]:
+    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    if result is None:
+        logger.warning("No result for hash, Evidence query, returning empty dict")
+        return {}
+
+    ev_dict = defaultdict(list)
+    for stmt_hash, ev_json_str in result:
+        ev_json = json.loads(ev_json_str)
+        if remove_medscan and ev_json["source_api"] == "medscan":
+            continue
+        ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
+    return dict(ev_dict)
 
 
 def _is_drug_relation(rel: Relation) -> bool:
