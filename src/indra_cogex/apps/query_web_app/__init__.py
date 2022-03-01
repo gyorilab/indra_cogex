@@ -45,13 +45,42 @@ examples_dict = {
     "mesh_term": ["MESH", "D015002"],
     "pmid_term": ["PUBMED", "27890007"],
     "include_child_terms": True,
-    "stmt_hash": 12198579805553967,
-    "stmt_hashes": [12198579805553967, 30651649296901235],
+    # NOTE: statement hashes are too large to be int for JavaScript
+    "stmt_hash": "12198579805553967",
+    "stmt_hashes": ["12198579805553967", "30651649296901235"],
     "cell_line": ["CCLE", "BT20_BREAST"],
     "target": ["HGNC", "6840"],
     "include_indirect": True,
     "evidence_map": {},
 }
+
+
+def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
+    """Parse the incoming query
+
+    Parameters
+    ----------
+    query_json :
+        The incoming query as a dictionary
+
+    Returns
+    -------
+    :
+        The parsed query
+    """
+    parsed_query = {}
+    for key, value in query_json.items():
+        if key in ('stmt_hashes', 'stmt_hash'):
+            if isinstance(value, str):
+                parsed_query[key] = int(value)
+            elif isinstance(value, list):
+                parsed_query[key] = [int(v) for v in value]
+            else:
+                raise ValueError(f"{key} must be a string or list of strings")
+        else:
+            parsed_query[key] = value
+
+    return parsed_query
 
 
 def process_result(result) -> Any:
@@ -134,7 +163,14 @@ Returns
         if param.arg_name in ("client", "evidence_map"):
             continue
 
-        str_type = str(sig.parameters[param.arg_name].annotation).replace("typing.", "")
+        if param.arg_name == 'stmt_hash':
+            annot = str
+        elif param.arg_name == 'stmt_hashes':
+            annot = List[str]
+        else:
+            annot = sig.parameters[param.arg_name].annotation
+        str_type = str(annot).replace("typing.", "")
+
         param_list.append(
             param_templ.format(
                 name=param.arg_name, typing=str_type, description=param.description
@@ -218,7 +254,8 @@ for func_name in queries.__all__:
             if json_dict is None:
                 abort(Response("Missing application/json header.", 415))
             try:
-                result = func_mapping[self.func_name](**json_dict, client=client)
+                parsed_query = parse_json(json_dict)
+                result = func_mapping[self.func_name](**parsed_query, client=client)
                 # Any 'is' type query
                 if isinstance(result, bool):
                     return jsonify({self.func_name: result})
