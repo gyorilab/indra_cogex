@@ -62,7 +62,7 @@ def env_table(tablefmt: str = "github", headers: Tuple[str, str] = ("Key", "Valu
         ("Python", f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"),
         ("INDRA Version", indra_version),
         ("INDRA Git Hash", indra_hash),
-        ("INDRA CoGEx", metadata.version("indra_cogex")),
+        ("INDRA CoGEx Version", metadata.version("indra_cogex")),
         ("INDRA CoGEx Git Hash", get_git_hash()),
         ("INDRA CoGEx Branch", get_git_branch()),
     ]
