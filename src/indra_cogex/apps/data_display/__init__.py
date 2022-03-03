@@ -91,7 +91,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
             json.dumps(
                 _format_evidence_text(
                     st,
-                    curation_dict=cur_counts,
+                    curation_dict=cur_dict,
                     correct_tags=["correct", "act_vs_amt", "hypothesis"],
                 )
             )
@@ -124,14 +124,12 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
         ]
 
     all_pa_hashes = [st.get_hash() for st in stmts]
-    stmts_by_hash = {st.get_hash(): st for st in stmts}
     curations = get_curations(pa_hash=all_pa_hashes)
     cur_dict = defaultdict(list)
     for cur in curations:
         cur_dict[(cur["pa_hash"], cur["source_hash"])].append(
             {"error_type": cur["tag"]}
         )
-    cur_counts = count_curations(curations, stmts_by_hash)
 
     stmt_rows = []
     for stmt in stmts:
@@ -166,8 +164,7 @@ def statement_display():
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
         stmts = get_stmts_for_stmt_hashes([stmt_hash])[:10]
         stmts = format_stmts(stmts)
-        return render_template("data_display_base.html", stmts=stmts,
-                               user_email=email)
+        return render_template("data_display_base.html", stmts=stmts, user_email=email)
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
@@ -203,9 +200,11 @@ def submit_curation_endpoint(hash_val: str):
     if not is_test:
         assert tag != "test"
         try:
-            dbid = submit_curation(hash_val, tag, email, ip, text, ev_hash, source_api)
+            dbid = submit_curation(
+                int(hash_val), tag, email, ip, text, ev_hash, source_api
+            )
         except BadHashError as e:
-            abort(Response("Invalid hash: %s." % e.mk_hash, 400))
+            abort(Response("Invalid hash: %s." % e.bad_hash, 400))
         res = {"result": "success", "ref": {"id": dbid}}
     else:
         res = {"result": "test passed", "ref": None}
