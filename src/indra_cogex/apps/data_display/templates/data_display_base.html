@@ -1,3 +1,4 @@
+{% from "auth_macros.html" import login_overlay %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,9 +22,75 @@
 </head>
 <body>
     {% block page_header %}
+    {{ login_overlay(url_prefix="") }}
+    <script>
+      function handle_success(type, resp_data) {
+        if (type === "login") {
+          const btn = document.querySelector("#loginout-button");
+          btn.innerHTML = 'Logout';
+          btn.onclick = () => {return trigger_logout()};
+          report_login_result(''); // clear the login result message
+        }
+        else if (type === "register") {
+          trigger_login()
+        }
+        else { // logout
+          const btn = document.querySelector("#loginout-button");
+          btn.innerHTML = 'Login';
+          btn.onclick = () => {return trigger_login()};
+        }
+      }
+
+      function trigger_login(type=null, data=null) {
+        return login(handle_success, trigger_unchecked_login)
+      }
+
+      function trigger_unchecked_login(type=null, data=null) {
+        return login(handle_success, trigger_unchecked_login, true)
+      }
+
+      function trigger_logout() {
+        return logout(handle_success)
+        }
+    </script>
+
+    <style>
+      #loginout-button {
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+
+      .no-horiz-pad {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    </style>
+
+    <header class="bg-white border-bottom shadow-sm fixed-top no-horiz-pad">
+      <div class="d-flex flex-row align-items-center">
+        {% block extend_header %}
+        {% endblock %}
+        <nav class="d-inline-flex p-2">
+        <a class="p-2 text-dark" href="https://emmaa.readthedocs.io/en/latest/dashboard/index.html" target="_blank">Help</a>
+        <a class="p-2 text-dark" href="#about">About</a>
+        <a class="p-2 text-dark" href="/demos">Demos</a>
+        <a class="p-2 text-dark" href="/doc">REST API</a>
+      </nav>
+        <div class="d-inline-flex button-container p-2">
+          <button class="btn btn-primary"
+                onclick="return {% if user_email %}trigger_logout(){% else %}trigger_login(){% endif %};"
+                id="loginout-button">
+            {% if user_email %}
+              Logout
+            {% else %}
+              Login
+            {% endif %}
+          </button>
+        </div>
+      </div>
+    </header>
     {% endblock %}
-    <h1>INDRA CoGEx</h1>
-    <div class="container" id="app">
+    <div class="container" id="vue-app">
         <!-- Copied structure from emmaa evidence:
             - BootStrap card
                 - Card body: Table
@@ -62,7 +129,7 @@
     </div>
     <script>
         let app = new Vue({
-            el: '#app',
+            el: '#vue-app',
             data: {
                 stmts: [
                     {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
@@ -78,7 +145,7 @@
                 ]
             }
         });
-        Vue.prototype.$stmt_hash_url = "/";
+        Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
         Vue.prototype.$curation_url = "{{ url_for('submit_curation_endpoint', hash_val='') }}";
     </script>
 </body>

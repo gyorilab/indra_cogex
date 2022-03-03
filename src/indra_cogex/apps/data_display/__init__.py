@@ -8,15 +8,19 @@ https://emmaa.indra.bio/evidence?model=covid19&source=model_statement&stmt_hash=
 import json
 import logging
 from collections import defaultdict
-from typing import List, Iterable
+from typing import List, Iterable, Dict, Tuple
 
 from flask import request, jsonify, abort, Response, Flask, render_template
+from flask_jwt_extended import jwt_optional
 from more_click import make_web_command
 
-from indra_db.client import get_curations
+from indra_db.exceptions import BadHashError
+from indra_db.client import get_curations, submit_curation
+from indralab_auth_tools.auth import auth, config_auth, resolve_auth
 from indra.statements import Statement
 from indra.assemblers.html.assembler import _format_stmt_text, _format_evidence_text
 from indra.util.statement_presentation import _get_available_ev_source_counts
+
 from indra_cogex.apps.query_web_app import process_result
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
@@ -26,6 +30,11 @@ logger = logging.getLogger(__name__)
 
 # Setup Flask app
 app = Flask(__name__)
+app.register_blueprint(auth)
+SC, jwt = config_auth(app)
+
+# Derived types
+StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
 
 # Helper functions (move them to a separate file?)
@@ -55,7 +64,7 @@ def count_curations(curations, stmts_by_hash):
     return cur_counts
 
 
-def format_stmts(stmts: Iterable[Statement]):
+def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
     """Format the statements for display
 
     Wanted objects:
@@ -145,7 +154,11 @@ def get_stmts():
 
 # Serve the statement display template
 @app.route("/statement_display", methods=["GET"])
+@jwt_optional
 def statement_display():
+    user, roles = resolve_auth(dict(request.args))
+    email = user.email if user else ""
+
     # Get the statements hash from the query string
     try:
         stmt_hash = int(request.args.get("stmt_hash", 0))
@@ -153,7 +166,8 @@ def statement_display():
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
         stmts = get_stmts_for_stmt_hashes([stmt_hash])[:10]
         stmts = format_stmts(stmts)
-        return render_template("data_display_base.html", stmts=stmts)
+        return render_template("data_display_base.html", stmts=stmts,
+                               user_email=email)
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
@@ -161,10 +175,42 @@ def statement_display():
 
 # Curation endpoint
 @app.route("/curate/<hash_val>", methods=["POST"])
+@jwt_optional
 def submit_curation_endpoint(hash_val: str):
-    # For now just return a fake 401 error
-    res_dict = {"result": "failure", "reason": "Invalid Credentials"}
-    return jsonify(res_dict), 401
+    user, roles = resolve_auth(dict(request.args))
+    if not roles and not user:
+        res_dict = {"result": "failure", "reason": "Invalid Credentials"}
+        return jsonify(res_dict), 401
+
+    if user:
+        email = user.email
+    else:
+        email = request.json.get("email")
+        if not email:
+            res_dict = {
+                "result": "failure",
+                "reason": "POST with API key requires a user email.",
+            }
+            return jsonify(res_dict), 400
+
+    logger.info("Adding curation for statement %s." % hash_val)
+    ev_hash = request.json.get("ev_hash")
+    source_api = request.json.pop("source", "EMMAA")
+    tag = request.json.get("tag")
+    ip = request.remote_addr
+    text = request.json.get("text")
+    is_test = "test" in request.args
+    if not is_test:
+        assert tag != "test"
+        try:
+            dbid = submit_curation(hash_val, tag, email, ip, text, ev_hash, source_api)
+        except BadHashError as e:
+            abort(Response("Invalid hash: %s." % e.mk_hash, 400))
+        res = {"result": "success", "ref": {"id": dbid}}
+    else:
+        res = {"result": "test passed", "ref": None}
+    logger.info("Got result: %s" % str(res))
+    return jsonify(res)
 
 
 # Create runnable cli command
