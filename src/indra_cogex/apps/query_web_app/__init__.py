@@ -88,6 +88,10 @@ def process_result(result) -> Any:
     # Any fundamental type
     if isinstance(result, (int, str, bool, float)):
         return result
+    # Any dict query
+    elif isinstance(result, (dict, Mapping, Counter)):
+        res_dict = dict(result)
+        return {k: process_result(v) for k, v in res_dict.items()}
     # Any iterable query
     elif isinstance(result, (Iterable, list, set)):
         list_res = list(result)
@@ -95,10 +99,6 @@ def process_result(result) -> Any:
         if list_res and hasattr(list_res[0], "to_json"):
             list_res = [res.to_json() for res in list_res]
         return list_res
-    # Any dict query
-    elif isinstance(result, (dict, Mapping, Counter)):
-        res_dict = dict(result)
-        return {k: process_result(v) for k, v in res_dict.items()}
     else:
         raise TypeError(f"Don't know how to process result of type {type(result)}")
 
