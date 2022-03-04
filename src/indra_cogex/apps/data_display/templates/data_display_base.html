@@ -147,6 +147,7 @@
         });
         Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
         Vue.prototype.$curation_url = "{{ url_for('submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
     </script>
 </body>
 </html>
