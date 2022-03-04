@@ -64,9 +64,13 @@
         padding-left: 0;
         padding-right: 0;
       }
+      #page-header {
+          position: relative;
+          margin-bottom: 40px;
+      }
     </style>
 
-    <header class="bg-white border-bottom shadow-sm fixed-top no-horiz-pad">
+    <header id="page-header" class="bg-white border-bottom shadow-sm fixed-top no-horiz-pad">
       <div class="d-flex flex-row align-items-center">
         {% block extend_header %}
         {% endblock %}
@@ -98,15 +102,10 @@
                     - Table row: one <statement> per row i.e. one column per row with <statement> in it -->
         <div class="card">
             <div class="card-header">
-                <h3>CoGEx Statements</h3>
+                <h4 class="my-0 font-weight-normal">CoGEx Statements</h4>
             </div>
             <div class="card-body">
                 <table class="table">
-                    <thead class="table-head">
-                        <tr>
-                            <th>Statement</th>
-                        </tr>
-                    </thead>
                     <tbody>
                         {% raw %}
                         <tr v-for="st_obj in this.$data.stmts">
