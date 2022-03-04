@@ -159,10 +159,11 @@ def statement_display():
 
     # Get the statements hash from the query string
     try:
-        stmt_hash = int(request.args.get("stmt_hash", 0))
-        if stmt_hash == 0:
+        stmt_hash_list = request.args.getlist("stmt_hash", type=int)
+        print(stmt_hash_list)
+        if not stmt_hash_list:
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
-        stmts = get_stmts_for_stmt_hashes([stmt_hash])[:10]
+        stmts = get_stmts_for_stmt_hashes(stmt_hash_list)
         stmts = format_stmts(stmts)
         return render_template("data_display_base.html", stmts=stmts, user_email=email)
     except (TypeError, ValueError) as err:
