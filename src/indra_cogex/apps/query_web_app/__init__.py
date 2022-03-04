@@ -86,7 +86,7 @@ def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
 
 def process_result(result) -> Any:
     # Any fundamental type
-    if isinstance(result, (int, str, bool)):
+    if isinstance(result, (int, str, bool, float)):
         return result
     # Any iterable query
     elif isinstance(result, (Iterable, list, set)):
