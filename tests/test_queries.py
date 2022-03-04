@@ -1,7 +1,13 @@
+import json
+
 import pytest
 from indra.statements import Statement, Evidence
 
 from indra_cogex.client.queries import *
+from indra_cogex.client.queries import (
+    _filter_out_medscan_evidence,
+    _get_ev_dict_from_hash_ev_query,
+)
 from indra_cogex.representation import Node
 
 from .test_neo4j_client import _get_client
@@ -315,7 +321,7 @@ def test_get_stmts_for_mesh_id_wo_children():
 def test_get_stmts_by_hashes():
     # Note: This statement has a ~500 of evidences
     # Two queries: first statements, then all the evidence for the statements
-    stmt_hashes = ["35279776755000170"]
+    stmt_hashes = [35279776755000170]
     client = _get_client()
     stmts = get_stmts_for_stmt_hashes(stmt_hashes, client=client)
     assert stmts
@@ -360,3 +366,49 @@ def test_is_drug_target():
     assert is_drug_target(drug, target, client=client)
     wrong_target = ("HGNC", "6407")
     assert not is_drug_target(drug, wrong_target, client=client)
+
+
+def test_filter_out_medscan_evidence():
+    ev = Evidence(source_api="reach").to_json()
+    medscan_ev = Evidence(source_api="medscan").to_json()
+
+    ev_list = _filter_out_medscan_evidence([ev, medscan_ev], remove_medscan=True)
+    assert len(ev_list) == 1
+    assert ev_list[0].equals(Evidence._from_json(ev))
+
+    ev_list = _filter_out_medscan_evidence([ev, medscan_ev], remove_medscan=False)
+    assert len(ev_list) == 2
+    assert ev_list[0].equals(Evidence._from_json(ev))
+    assert ev_list[1].equals(Evidence._from_json(medscan_ev))
+
+    ev_list = _filter_out_medscan_evidence([medscan_ev], remove_medscan=True)
+    assert len(ev_list) == 0
+
+
+def test_get_ev_dict_from_hash_ev_query():
+    ev = Evidence(source_api="reach").to_json()
+    medscan_ev = Evidence(source_api="medscan").to_json()
+
+    ev_dict = _get_ev_dict_from_hash_ev_query(
+        [[123456, json.dumps(ev)], [654321, json.dumps(medscan_ev)]],
+        remove_medscan=True,
+    )
+    assert ev_dict[123456]
+    assert ev_dict[123456][0].equals(Evidence._from_json(ev))
+    assert 654321 not in ev_dict
+
+    ev_dict = _get_ev_dict_from_hash_ev_query(
+        [[123456, json.dumps(ev)], [654321, json.dumps(medscan_ev)]],
+        remove_medscan=False,
+    )
+    assert ev_dict[123456]
+    assert ev_dict[123456][0].equals(Evidence._from_json(ev))
+    assert ev_dict[654321]
+    assert ev_dict[654321][0].equals(Evidence._from_json(medscan_ev))
+
+    ev_dict = _get_ev_dict_from_hash_ev_query(
+        [[654321, json.dumps(medscan_ev)]],
+        remove_medscan=True,
+    )
+    assert 654321 not in ev_dict
+    assert not ev_dict

@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import networkx as nx
-from indra.statements import Agent, Evidence, Statement, stmts_from_json
+from indra.statements import Agent, Evidence, Statement
 
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
@@ -140,7 +140,7 @@ def is_gene_in_tissue(
 
 @autoclient()
 def get_go_terms_for_gene(
-    gene: Tuple[str, str], include_indirect=False, *, client: Neo4jClient
+    gene: Tuple[str, str], include_indirect: bool = False, *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the GO terms for the given gene.
 
@@ -150,6 +150,8 @@ def get_go_terms_for_gene(
         The Neo4j client.
     gene :
         The gene to query.
+    include_indirect :
+        If True, also return indirect GO terms.
 
     Returns
     -------
@@ -745,7 +747,7 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
 
 
 @autoclient()
@@ -772,7 +774,7 @@ def get_evidences_for_stmt_hash(
         % stmt_hash
     )
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return [Evidence._from_json(ev_json) for ev_json in ev_jsons]
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
 
 
 @autoclient()
@@ -804,7 +806,7 @@ def get_evidences_for_stmt_hashes(
         % stmt_hashes_str
     )
 
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query))
+    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
 
 
 @autoclient()
@@ -842,7 +844,7 @@ def get_stmts_for_pmid(
         % pmid_norm
     )
     result = client.query_tx(hash_query)
-    ev_dict = _get_ev_dict_from_hash_ev_query(result)
+    ev_dict = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(ev_dict.keys())
     return get_stmts_for_stmt_hashes(stmt_hashes, ev_dict, client=client)
 
@@ -969,21 +971,6 @@ def _get_mesh_child_terms(
     return {c[0] for c in client.query_tx(query)}
 
 
-def _get_ev_dict_from_hash_ev_query(
-    result: Optional[Iterable[List[Union[int, str]]]] = None,
-) -> Dict[int, List[Evidence]]:
-    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
-    if result is None:
-        logger.warning("No result for hash, Evidence query, returning empty dict")
-        return {}
-
-    ev_dict = defaultdict(list)
-    for stmt_hash, ev_json_str in result:
-        ev_json = json.loads(ev_json_str)
-        ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
-    return dict(ev_dict)
-
-
 @autoclient(cache=True)
 def get_node_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each entity type.
@@ -1089,7 +1076,20 @@ def is_gene_mutated(
 def get_drugs_for_target(
     target: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the drugs targeting the given protein."""
+    """Return the drugs targeting the given protein.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    target :
+        The target to query.
+
+    Returns
+    -------
+    :
+        The drugs targeting the given protein.
+    """
     rels = client.get_source_relations(
         target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1123,7 +1123,20 @@ def get_drugs_for_targets(
 def get_targets_for_drug(
     drug: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Agent]:
-    """Return the proteins targeted by the given drug."""
+    """Return the proteins targeted by the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+
+    Returns
+    -------
+    :
+        The proteins targeted by the given drug.
+    """
     rels = client.get_target_relations(
         drug, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
@@ -1157,11 +1170,44 @@ def get_targets_for_drugs(
 def is_drug_target(
     drug: Tuple[str, str], target: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
-    """Return True if the drug targets the given protein."""
+    """Return True if the drug targets the given protein.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query.
+    target :
+        The target to query.
+
+    Returns
+    -------
+    :
+        True if the drug targets the given protein.
+    """
     rels = client.get_relations(
         drug, target, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     return any(_is_drug_relation(rel) for rel in rels)
+
+
+def _get_ev_dict_from_hash_ev_query(
+    result: Optional[Iterable[List[Union[int, str]]]] = None,
+    remove_medscan: bool = True,
+) -> Dict[int, List[Evidence]]:
+    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    if result is None:
+        logger.warning("No result for hash, Evidence query, returning empty dict")
+        return {}
+
+    ev_dict = defaultdict(list)
+    for stmt_hash, ev_json_str in result:
+        ev_json = json.loads(ev_json_str)
+        if remove_medscan and ev_json["source_api"] == "medscan":
+            continue
+        ev_dict[stmt_hash].append(Evidence._from_json(ev_json))
+    return dict(ev_dict)
 
 
 def _is_drug_relation(rel: Relation) -> bool:
@@ -1178,3 +1224,14 @@ def _get_node_from_stmt_relation(
     stmt_json = json.loads(rel.data["stmt_json"])
     name = stmt_json[agent_role]["name"]
     return Node(node_ns, node_id, ["BioEntity"], dict(name=name))
+
+
+def _filter_out_medscan_evidence(
+    ev_list: Iterable[Dict[str, Dict]], remove_medscan: bool = True
+) -> List[Evidence]:
+    """Filter out Evidence JSONs containing evidence from medscan."""
+    return [
+        Evidence._from_json(ev)
+        for ev in ev_list
+        if not (remove_medscan and ev["source_api"] == "medscan")
+    ]
