@@ -10,7 +10,9 @@
     <!-- Bootstrap 4 CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <!-- Bootstrap 4.1.3 JS -->
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+            integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+            crossorigin="anonymous"></script>
 
     <!-- Vue 2 -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
@@ -23,184 +25,191 @@
     {% endblock %}
 </head>
 <body>
-    {% block page_header %}
+{% block page_header %}
     {{ login_overlay(url_prefix="") }}
     <script>
-      function handle_success(type, resp_data) {
-        if (type === "login") {
-          const btn = document.querySelector("#loginout-button");
-          btn.innerHTML = 'Logout';
-          btn.onclick = () => {return trigger_logout()};
-          report_login_result(''); // clear the login result message
+        function handle_success(type, resp_data) {
+            if (type === "login") {
+                const btn = document.querySelector("#loginout-button");
+                btn.innerHTML = 'Logout';
+                btn.onclick = () => {
+                    return trigger_logout()
+                };
+                report_login_result(''); // clear the login result message
+            } else if (type === "register") {
+                trigger_login()
+            } else { // logout
+                const btn = document.querySelector("#loginout-button");
+                btn.innerHTML = 'Login';
+                btn.onclick = () => {
+                    return trigger_login()
+                };
+            }
         }
-        else if (type === "register") {
-          trigger_login()
+
+        function trigger_login(type = null, data = null) {
+            return login(handle_success, trigger_unchecked_login)
         }
-        else { // logout
-          const btn = document.querySelector("#loginout-button");
-          btn.innerHTML = 'Login';
-          btn.onclick = () => {return trigger_login()};
+
+        function trigger_unchecked_login(type = null, data = null) {
+            return login(handle_success, trigger_unchecked_login, true)
         }
-      }
 
-      function trigger_login(type=null, data=null) {
-        return login(handle_success, trigger_unchecked_login)
-      }
-
-      function trigger_unchecked_login(type=null, data=null) {
-        return login(handle_success, trigger_unchecked_login, true)
-      }
-
-      function trigger_logout() {
-        return logout(handle_success)
+        function trigger_logout() {
+            return logout(handle_success)
         }
     </script>
 
     <style>
-      #loginout-button {
-        margin-top: 5px;
-        margin-bottom: 5px;
-      }
+        #loginout-button {
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
 
-      .no-horiz-pad {
-        padding-left: 0;
-        padding-right: 0;
-      }
-      #page-header {
-          position: relative;
-          margin-bottom: 40px;
-      }
-      .badge-subject {
-        background-color: #4a36aa;
-        color: #FFFFFF;
-      }
-      .badge-object {
-        background-color: #2d8e4c;
-        color: #FFFFFF;
-      }
-      .badge-other {
-        background-color: #606060;
-        color: #FFFFFF;
-      }
-      .badge-source {
-        font-size: 8pt;
-        margin: 0;
-        padding-left: 5px;
-        cursor: pointer;
-      }
+        .no-horiz-pad {
+            padding-left: 0;
+            padding-right: 0;
+        }
 
-      .nvm {
-        padding-left: 0;
-        padding-right: 0;
-      }
+        #page-header {
+            position: relative;
+            margin-bottom: 40px;
+        }
 
-      .col-1 {
-        flex: 12%;
-        max-width: 12%;
-      }
+        .badge-subject {
+            background-color: #4a36aa;
+            color: #FFFFFF;
+        }
 
-      .col-10 {
-        flex: 76%;
-        max-width: 76%;
-      }
+        .badge-object {
+            background-color: #2d8e4c;
+            color: #FFFFFF;
+        }
+
+        .badge-other {
+            background-color: #606060;
+            color: #FFFFFF;
+        }
+
+        .badge-source {
+            font-size: 8pt;
+            margin: 0;
+            padding-left: 5px;
+            cursor: pointer;
+        }
+
+        .nvm {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .col-1 {
+            flex: 12%;
+            max-width: 12%;
+        }
+
+        .col-10 {
+            flex: 76%;
+            max-width: 76%;
+        }
     </style>
 
     <header id="page-header" class="bg-white border-bottom shadow-sm fixed-top no-horiz-pad">
-      <div class="d-flex flex-row align-items-center justify-content-end">
-        {% block extend_header %}
-        {% endblock %}
-        <nav class="d-inline-flex p-2">
-{#        <a class="p-2 text-dark" href="" target="_blank">Nav1</a>#}
-        <a class="p-2 text-dark" href="#about">About</a>
-{#        <a class="p-2 text-dark" href="">Nav2</a>#}
-      </nav>
-        <div class="d-inline-flex button-container p-2">
-          <button class="btn btn-primary"
-                onclick="return {% if user_email %}trigger_logout(){% else %}trigger_login(){% endif %};"
-                id="loginout-button">
-            {% if user_email %}
-              Logout
-            {% else %}
-              Login
-            {% endif %}
-          </button>
+        <div class="d-flex flex-row align-items-center justify-content-end">
+            {% block extend_header %}
+            {% endblock %}
+            <nav class="d-inline-flex p-2">
+                {#        <a class="p-2 text-dark" href="" target="_blank">Nav1</a>#}
+                <a class="p-2 text-dark" href="#about">About</a>
+                {#        <a class="p-2 text-dark" href="">Nav2</a>#}
+            </nav>
+            <div class="d-inline-flex button-container p-2">
+                <button class="btn btn-primary"
+                        onclick="return {% if user_email %}trigger_logout(){% else %}trigger_login(){% endif %};"
+                        id="loginout-button">
+                    {% if user_email %}
+                        Logout
+                    {% else %}
+                        Login
+                    {% endif %}
+                </button>
+            </div>
         </div>
-      </div>
     </header>
-    {% endblock %}
-    <div class="container" id="vue-app">
-        <!-- Copied structure from emmaa evidence:
-            - BootStrap card
-                - Card body: Table
-                    - Table header: None
-                    - Table row: one <statement> per row i.e. one column per row with <statement> in it -->
-        <div class="card">
-            <div class="card-header">
-                <h4 class="my-0 font-weight-normal">CoGEx Statements</h4>
-            </div>
-            <div class="card-body">
-                <table class="table">
-                    <tbody>
-                        {% raw %}
-                        <tr v-for="st_obj in this.$data.stmts">
-                            <td>
-                                <statement
-                                        :evidence="st_obj.ev_array"
-                                        :english="st_obj.english"
-                                        :hash="st_obj.hash"
-                                        :sources="st_obj.sources"
-                                        :total_evidence="st_obj.total_evidence"
-                                        :badges="st_obj.badges"
-                                ></statement>
-                            </td>
-                        </tr>
-                        {% endraw %}
-                    </tbody>
-                </table>
-            </div>
+{% endblock %}
+<div class="container" id="vue-app">
+    <!-- Copied structure from emmaa evidence:
+        - BootStrap card
+            - Card body: Table
+                - Table header: None
+                - Table row: one <statement> per row i.e. one column per row with <statement> in it -->
+    <div class="card">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">CoGEx Statements</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tbody>
+                {% raw %}
+                <tr v-for="st_obj in this.$data.stmts">
+                    <td>
+                        <statement
+                                :evidence="st_obj.ev_array"
+                                :english="st_obj.english"
+                                :hash="st_obj.hash"
+                                :sources="st_obj.sources"
+                                :total_evidence="st_obj.total_evidence"
+                                :badges="st_obj.badges"
+                        ></statement>
+                    </td>
+                </tr>
+                {% endraw %}
+                </tbody>
+            </table>
         </div>
     </div>
-    {% block footer %}
-        <footer class="footer text-muted" id="about" style="background: #F5F5F5;">
-            <div class="container">
-                <h5 class="my-0 mr-md-auto font-weight-normal">About</h5>
-                <small>
-                    <p class="float-right">
-                        <a href="#">Back to top</a>
-                    </p>
-                    <p><a href="https://indralab.github.io" target="_blank">INDRALAB</a></p>
-                    <p><a href="http://hits.harvard.edu" target="_blank">Harvard Program in Therapeutic Science
-                        (HiTS)</a></p>
-                    <p><b>DARPA Young Faculty Award (YFA)</b><br>INDRA CoGEx (Context Graph Extension) is an automatically
-                        assembled biomedical knowledge graph which integrates causal mechanisms from INDRA with
-                        non-causal contextual relations including properties, ontology, and data.<br><i>The development
-                            of this project is funded under the DARPA Young Faculty Award (ARO grant W911NF2010255).</i>
-                    </p>
-                </small>
-            </div>
-        </footer>
-    {% endblock %}
-    <script>
-        let app = new Vue({
-            el: '#vue-app',
-            data: {
-                stmts: [
-                    {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
-                        {
-                            ev_array: {{ ev_array|safe }},
-                            english: {{ english|safe }},
-                            hash: {{ hash_str|safe }},
-                            sources: {{ sources|safe }},
-                            total_evidence: {{ total_evidence|int }},
-                            badges: {{ badges|safe }}
-                        },
-                    {% endfor %}
-                ]
-            }
-        });
-        Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
-        Vue.prototype.$curation_url = "{{ url_for('submit_curation_endpoint', hash_val='') }}";
-        Vue.prototype.$curation_list_url = "{{ url_for('list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
-    </script>
+</div>
+{% block footer %}
+    <footer class="footer text-muted" id="about" style="background: #F5F5F5;">
+        <div class="container">
+            <h5 class="my-0 mr-md-auto font-weight-normal">About</h5>
+            <small>
+                <p class="float-right">
+                    <a href="#">Back to top</a>
+                </p>
+                <p><a href="https://indralab.github.io" target="_blank">INDRALAB</a></p>
+                <p><a href="http://hits.harvard.edu" target="_blank">Harvard Program in Therapeutic Science
+                    (HiTS)</a></p>
+                <p><b>DARPA Young Faculty Award (YFA)</b><br>INDRA CoGEx (Context Graph Extension) is an automatically
+                    assembled biomedical knowledge graph which integrates causal mechanisms from INDRA with
+                    non-causal contextual relations including properties, ontology, and data.<br><i>The development
+                        of this project is funded under the DARPA Young Faculty Award (ARO grant W911NF2010255).</i>
+                </p>
+            </small>
+        </div>
+    </footer>
+{% endblock %}
+<script>
+    let app = new Vue({
+        el: '#vue-app',
+        data: {
+            stmts: [
+                {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
+                    {
+                        ev_array: {{ ev_array|safe }},
+                        english: {{ english|safe }},
+                        hash: {{ hash_str|safe }},
+                        sources: {{ sources|safe }},
+                        total_evidence: {{ total_evidence|int }},
+                        badges: {{ badges|safe }}
+                    },
+                {% endfor %}
+            ]
+        }
+    });
+    Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
+    Vue.prototype.$curation_url = "{{ url_for('submit_curation_endpoint', hash_val='') }}";
+    Vue.prototype.$curation_list_url = "{{ url_for('list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+</script>
 </body>
 </html>
