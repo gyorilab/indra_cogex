@@ -126,6 +126,26 @@
             </div>
         </div>
     </div>
+    {% block footer %}
+        <footer class="footer text-muted" id="about" style="background: #F5F5F5;">
+            <div class="container">
+                <h5 class="my-0 mr-md-auto font-weight-normal">About</h5>
+                <small>
+                    <p class="float-right">
+                        <a href="#">Back to top</a>
+                    </p>
+                    <p><a href="https://indralab.github.io" target="_blank">INDRALAB</a></p>
+                    <p><a href="http://hits.harvard.edu" target="_blank">Harvard Program in Therapeutic Science
+                        (HiTS)</a></p>
+                    <p><b>DARPA Young Faculty Award (YFA)</b><br>INDRA CoGEx (Context Graph Extension) is an automatically
+                        assembled biomedical knowledge graph which integrates causal mechanisms from INDRA with
+                        non-causal contextual relations including properties, ontology, and data.<br><i>The development
+                            of this project is funded under the DARPA Young Faculty Award (ARO grant W911NF2010255).</i>
+                    </p>
+                </small>
+            </div>
+        </footer>
+    {% endblock %}
     <script>
         let app = new Vue({
             el: '#vue-app',
