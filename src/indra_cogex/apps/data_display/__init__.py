@@ -170,7 +170,7 @@ def statement_display():
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
 
 
-# Curation endpoint
+# Curation endpoints
 @app.route("/curate/<hash_val>", methods=["POST"])
 @jwt_optional
 def submit_curation_endpoint(hash_val: str):
@@ -210,6 +210,12 @@ def submit_curation_endpoint(hash_val: str):
         res = {"result": "test passed", "ref": None}
     logger.info("Got result: %s" % str(res))
     return jsonify(res)
+
+
+@app.route('/curation/list/<stmt_hash>/<src_hash>', methods=['GET'])
+def list_curations(stmt_hash, src_hash):
+    curations = get_curations(pa_hash=stmt_hash, source_hash=src_hash)
+    return jsonify(curations)
 
 
 # Create runnable cli command
