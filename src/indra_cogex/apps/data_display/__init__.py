@@ -38,12 +38,15 @@ StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
 
 # Helper functions (move them to a separate file?)
-def count_curations(curations, stmts_by_hash):
+def count_curations(
+    curations, stmts_by_hash
+) -> Dict[int, Dict[str, defaultdict[str, int]]]:
     correct_tags = ["correct", "act_vs_amt", "hypothesis"]
     cur_counts = {}
     for cur in curations:
-        stmt_hash = str(cur["pa_hash"])
+        stmt_hash = cur["pa_hash"]
         if stmt_hash not in stmts_by_hash:
+            print(f"{stmt_hash} not among {list(stmts_by_hash.keys())}")
             continue
         if stmt_hash not in cur_counts:
             cur_counts[stmt_hash] = {
@@ -82,6 +85,11 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
             {'label': 'belief', 'num': belief, 'color': '#ffc266',
              'symbol': None, 'title': 'Belief score for this statement',
              'loc': 'right'},
+        Correct curation count:
+            {'label': 'correct_this', 'num': cur_counts['this']['correct'],
+             'color': '#28a745', 'symbol':  '\u270E',
+             'title': 'Curated as correct in this model'},
+
     """
 
     def stmt_to_row(
@@ -97,7 +105,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
             )
         )
         english = _format_stmt_text(st)
-        hash_str = str(st.get_hash())
+        hash_int = st.get_hash()
         sources = _get_available_ev_source_counts(st.evidence)
         total_evidence = len(st.evidence)
         badges = [
@@ -118,9 +126,22 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
                 "loc": "right",
             },
         ]
+        if cur_counts and hash_int in cur_counts:
+            num = cur_counts[hash_int]["this"]["correct"]
+            badges.append(
+                {
+                    "label": "correct_this",
+                    "num": num,
+                    "color": "#28a745",
+                    "symbol": "\u270E",
+                    "title": f"{num} evidences curated as correct",
+                }
+            )
+
         return [
             json.dumps(e)
-            for e in [ev_array, english, hash_str, sources, total_evidence, badges]
+            for e in [ev_array, english, str(hash_int), sources,
+                      total_evidence, badges]
         ]
 
     all_pa_hashes = [st.get_hash() for st in stmts]
@@ -130,6 +151,17 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
         cur_dict[(cur["pa_hash"], cur["source_hash"])].append(
             {"error_type": cur["tag"]}
         )
+
+    stmts_by_hash = {st.get_hash(): st for st in stmts}
+    cur_counts = count_curations(curations, stmts_by_hash)
+    if cur_counts:
+        assert isinstance(
+            list(cur_counts.keys())[0], int
+        ), f"{list(cur_counts.keys())[0]} is not an int"
+        key = list(cur_counts.keys())[0]
+        assert isinstance(
+            list(cur_counts[key].keys())[0], str
+        ), f"{list(cur_counts[key].keys())[0]} is not an str"
 
     stmt_rows = []
     for stmt in stmts:
@@ -213,7 +245,7 @@ def submit_curation_endpoint(hash_val: str):
     return jsonify(res)
 
 
-@app.route('/curation/list/<stmt_hash>/<src_hash>', methods=['GET'])
+@app.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
     curations = get_curations(pa_hash=stmt_hash, source_hash=src_hash)
     return jsonify(curations)
