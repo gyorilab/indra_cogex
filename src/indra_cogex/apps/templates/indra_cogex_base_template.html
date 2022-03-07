@@ -17,7 +17,6 @@
             integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF"
             crossorigin="anonymous"></script>
 
-    {# todo: load css from external stylesheet #}
     <style>
         #loginout-button {
             margin-top: 5px;
@@ -41,7 +40,6 @@
 </head>
 <body>
 {% block navbar %}
-    {% block load_login %}
     {{ login_overlay(url_prefix="") }}
     <script>
         function handle_success(type, resp_data) {
@@ -98,7 +96,6 @@
             </div>
         </div>
     </header>
-    {% endblock load_login %}
 {% endblock %}
 
 {% block content %}
