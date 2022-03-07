@@ -17,18 +17,31 @@
             integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF"
             crossorigin="anonymous"></script>
 
-    <!-- Vue 2 -->
-    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    {# todo: load css from external stylesheet #}
+    <style>
+        #loginout-button {
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
 
-    <!-- Indralab-vue, for access to <statement> component and its child components -->
-    <script src="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.umd.min.js"></script>
-    <link href="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.css" rel="stylesheet">
+        .no-horiz-pad {
+            padding-left: 0;
+            padding-right: 0;
+        }
 
-    {% block header_scripts %}
+        #page-header {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+    </style>
+
+    {% block extend_head_tag %}
     {% endblock %}
 </head>
 <body>
-{% block page_header %}
+{% block navbar %}
+    {% block load_login %}
     {{ login_overlay(url_prefix="") }}
     <script>
         function handle_success(type, resp_data) {
@@ -63,60 +76,6 @@
         }
     </script>
 
-    <style>
-        #loginout-button {
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-
-        .no-horiz-pad {
-            padding-left: 0;
-            padding-right: 0;
-        }
-
-        #page-header {
-            position: relative;
-            margin-bottom: 40px;
-        }
-
-        .badge-subject {
-            background-color: #4a36aa;
-            color: #FFFFFF;
-        }
-
-        .badge-object {
-            background-color: #2d8e4c;
-            color: #FFFFFF;
-        }
-
-        .badge-other {
-            background-color: #606060;
-            color: #FFFFFF;
-        }
-
-        .badge-source {
-            font-size: 8pt;
-            margin: 0;
-            padding-left: 5px;
-            cursor: pointer;
-        }
-
-        .nvm {
-            padding-left: 0;
-            padding-right: 0;
-        }
-
-        .col-1 {
-            flex: 12%;
-            max-width: 12%;
-        }
-
-        .col-10 {
-            flex: 76%;
-            max-width: 76%;
-        }
-    </style>
-
     <header id="page-header" class="bg-white border-bottom shadow-sm fixed-top no-horiz-pad">
         <div class="d-flex flex-row align-items-center justify-content-end">
             {% block extend_header %}
@@ -139,39 +98,12 @@
             </div>
         </div>
     </header>
+    {% endblock load_login %}
 {% endblock %}
-<div class="container" id="vue-app">
-    <!-- Copied structure from emmaa evidence:
-        - BootStrap card
-            - Card body: Table
-                - Table header: None
-                - Table row: one <statement> per row i.e. one column per row with <statement> in it -->
-    <div class="card">
-        <div class="card-header">
-            <h4 class="my-0 font-weight-normal">CoGEx Statements</h4>
-        </div>
-        <div class="card-body">
-            <table class="table">
-                <tbody>
-                {% raw %}
-                <tr v-for="st_obj in this.$data.stmts">
-                    <td>
-                        <statement
-                                :evidence="st_obj.ev_array"
-                                :english="st_obj.english"
-                                :hash="st_obj.hash"
-                                :sources="st_obj.sources"
-                                :total_evidence="st_obj.total_evidence"
-                                :badges="st_obj.badges"
-                        ></statement>
-                    </td>
-                </tr>
-                {% endraw %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+
+{% block content %}
+{% endblock %}
+
 {% block footer %}
     <footer class="footer text-muted" id="about" style="background: #F5F5F5;">
         <div class="container">
@@ -192,27 +124,8 @@
         </div>
     </footer>
 {% endblock %}
-<script>
-    let app = new Vue({
-        el: '#vue-app',
-        data: {
-            stmts: [
-                {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
-                    {
-                        ev_array: {{ ev_array|safe }},
-                        english: {{ english|safe }},
-                        hash: {{ hash_str|safe }},
-                        sources: {{ sources|safe }},
-                        total_evidence: {{ total_evidence|int }},
-                        badges: {{ badges|safe }}
-                    },
-                {% endfor %}
-            ]
-        }
-    });
-    Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
-    Vue.prototype.$curation_url = "{{ url_for('submit_curation_endpoint', hash_val='') }}";
-    Vue.prototype.$curation_list_url = "{{ url_for('list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
-</script>
+
+{% block end_body %}
+{% endblock %}
 </body>
 </html>

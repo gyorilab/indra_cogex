@@ -10,13 +10,13 @@ import logging
 from collections import defaultdict
 from typing import List, Iterable, Dict, Tuple
 
-from flask import request, jsonify, abort, Response, Flask, render_template
+from flask import request, jsonify, abort, Response, render_template
 from flask_jwt_extended import jwt_optional
 from more_click import make_web_command
 
 from indra_db.exceptions import BadHashError
 from indra_db.client import get_curations, submit_curation
-from indralab_auth_tools.auth import auth, config_auth, resolve_auth
+from indralab_auth_tools.auth import resolve_auth
 from indra.statements import Statement
 from indra.assemblers.html.assembler import _format_stmt_text, _format_evidence_text
 from indra.util.statement_presentation import _get_available_ev_source_counts
@@ -24,14 +24,12 @@ from indra.util.statement_presentation import _get_available_ev_source_counts
 from indra_cogex.apps.query_web_app import process_result
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
+from .. import get_flask_app
 
 logger = logging.getLogger(__name__)
 
-
 # Setup Flask app
-app = Flask(__name__)
-app.register_blueprint(auth)
-SC, jwt = config_auth(app)
+app = get_flask_app(__name__)
 
 # Derived types
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
