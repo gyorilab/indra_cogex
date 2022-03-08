@@ -24,21 +24,73 @@
 
 
 {% block container %}
-    <div class="card card-body">
-        <h1 class="display-4">INDRA CoGEx</h1>
-        <p class="lead">
-            A graph database integrating causal relations, ontological relations, properties, and data.
-        </p>
-        <div class="row text-center stats">
-            {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
-            {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
-            {{ count_column(node_counter, "Publication", "Publications", "book") }}
-            {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
+    <div class="row">
+        <div class="card card-body">
+            <h1 class="display-4">INDRA CoGEx</h1>
+            <p class="lead">
+                A graph database integrating causal relations, ontological relations, properties, and data.
+            </p>
+            <div class="row text-center stats">
+                {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
+                {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
+                {{ count_column(node_counter, "Publication", "Publications", "book") }}
+                {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
+            </div>
+            <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
+                {% for edge_type, _ in edge_counter.most_common() %}
+                    {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
+                {% endfor %}
+            </div>
         </div>
-        <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
-            {% for edge_type, _ in edge_counter.most_common() %}
-                {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
-            {% endfor %}
+    </div>
+    <div class="row">
+        {# todo: use programmatic links #}
+        <div class="col-sm-6">
+            <div class="card text-center">
+                <div class="card-body">
+
+                    <div class="container border rounded">
+                        <h5 class="card-title">Discrete Gene List Analysis</h5>
+                        <p class="card-text">
+                            Discrete gene list analysis of a set of genes.
+                        </p>
+                        <a href="/gene/discrete" class="btn btn-primary">Discrete</a>
+                    </div>
+
+                    <div class="container border rounded">
+                        <h5 class="card-title">Signed Gene List Analysis</h5>
+                        <p class="card-text">
+                            Signed gene list analysis of a set of genes.
+                        </p>
+                        <a href="/gene/signed" class="btn btn-primary">Signed</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="card text-center">
+                <div class="card-body">
+
+                    <div class="container border rounded">
+                        <h5 class="card-title">Continuous Gene List Analysis</h5>
+                        <p class="card-text">
+                            Continuous gene list analysis of a set of genes.
+                        </p>
+                        <a href="/gene/continuous" class="btn btn-primary">Continuous</a>
+                    </div>
+
+                    <div class="container border rounded">
+                        <h5 class="card-title">Discrete Metabolite List Analysis</h5>
+                        <p class="card-text">
+                            Discrete metabolite list analysis of a set of genes.
+                        </p>
+                        <a href="/metabolite/discrete" class="btn btn-primary">Discrete</a>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
 {% endblock %}
