@@ -195,7 +195,7 @@ def statement_display():
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
         stmts = get_stmts_for_stmt_hashes(stmt_hash_list)
         stmts = format_stmts(stmts)
-        return render_template("data_display_base.html", stmts=stmts, user_email=email)
+        return render_template("data_display/data_display_base.html", stmts=stmts, user_email=email)
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
