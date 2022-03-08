@@ -11,7 +11,6 @@ TEMPLATES_DIR = APPS_DIR / 'templates'
 
 def get_flask_app(app_name) -> Flask:
     """Return a Flask app."""
-    from flask import Flask
     from indralab_auth_tools.auth import auth, config_auth
     app = Flask(app_name, template_folder=TEMPLATES_DIR)
     app.register_blueprint(auth)
