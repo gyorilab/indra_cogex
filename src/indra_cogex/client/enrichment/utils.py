@@ -163,7 +163,7 @@ def get_entity_to_targets(
     evidence_line = minimum_evidence_helper(
         minimum_evidence_count=minimum_evidence_count, name="r"
     )
-    belief_line = minimum_belief_helper(minimum_evidence_count=minimum_belief, name="r")
+    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
     query = dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
@@ -213,7 +213,7 @@ def get_entity_to_regulators(
     evidence_line = minimum_evidence_helper(
         minimum_evidence_count=minimum_evidence_count, name="r"
     )
-    belief_line = minimum_belief_helper(minimum_evidence_count=minimum_belief, name="r")
+    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
     query = dedent(
         f"""\
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
