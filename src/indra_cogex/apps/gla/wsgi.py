@@ -14,10 +14,11 @@ from more_click import make_web_command
 from .gene_blueprint import gene_blueprint
 from .metabolite_blueprint import metabolite_blueprint
 from .proxies import INDRA_COGEX_EXTENSION, client
+from .. import get_flask_app
 from ...client.neo4j_client import Neo4jClient
 from ...client.queries import get_edge_counter, get_node_counter
 
-app = flask.Flask(__name__)
+app = get_flask_app(__name__)
 
 # Secret key must be set to use flask-wtf, but there's no *really*
 # secure information in this app so it's okay to set randomly
