@@ -61,6 +61,13 @@
 
 {% block main %}
     <div class="container" style="margin-top: 50px; margin-bottom: 50px">
+        {% with messages = get_flashed_messages() %}
+                {% for message in messages %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+        {% endwith %}
         <div class="row justify-content-center">
             <div {% block containerattr %}class="col-md-10 col-lg-10"{% endblock %}>
                 {% block container %}{% endblock %}
