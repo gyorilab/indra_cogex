@@ -8,7 +8,6 @@ from functools import lru_cache
 from typing import Tuple
 
 import flask
-from flask_bootstrap import Bootstrap4
 from more_click import make_web_command
 
 from .gene_blueprint import gene_blueprint
@@ -24,8 +23,6 @@ app = get_flask_app(__name__)
 # secure information in this app so it's okay to set randomly
 app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(8)
-
-bootstrap = Bootstrap4(app)
 
 if not hasattr(app, "extensions"):
     print("no extensions?")

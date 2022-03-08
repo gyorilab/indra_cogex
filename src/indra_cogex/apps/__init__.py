@@ -22,8 +22,10 @@ def get_flask_app(app_name: str) -> Flask:
     :
         Flask app.
     """
+    from flask_bootstrap import Bootstrap4
     from indralab_auth_tools.auth import auth, config_auth
     app = Flask(app_name, template_folder=TEMPLATES_DIR)
     app.register_blueprint(auth)
     SC, jwt = config_auth(app)
+    bootstrap = Bootstrap4(app)
     return app
