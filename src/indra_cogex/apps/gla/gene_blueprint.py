@@ -5,6 +5,7 @@ from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
+from flask import url_for
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField
@@ -249,7 +250,7 @@ def discretize_analysis():
                 )
             flask.flash(f"Downloaded files to {downloads}")
             return flask.redirect(
-                f"{gene_blueprint.name}.{discretize_analysis.__name__}"
+                url_for(f".{discretize_analysis.__name__}")
             )
 
         return flask.render_template(
