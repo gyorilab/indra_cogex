@@ -193,18 +193,14 @@ def statement_display():
         print(stmt_hash_list)
         if not stmt_hash_list:
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
-        stmts = get_stmts_for_stmt_hashes(stmt_hash_list)
-        stmts = format_stmts(stmts)
+        stmts = format_stmts(get_stmts_for_stmt_hashes(stmt_hash_list))
         return render_template("data_display/data_display_base.html", stmts=stmts, user_email=email)
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
 
 
-# Curation endpoints
-@app.route("/curate/<hash_val>", methods=["POST"])
-@jwt_optional
-def submit_curation_endpoint(hash_val: str):
+def _get_user():
     user, roles = resolve_auth(dict(request.args))
     if not roles and not user:
         res_dict = {"result": "failure", "reason": "Invalid Credentials"}
@@ -220,6 +216,33 @@ def submit_curation_endpoint(hash_val: str):
                 "reason": "POST with API key requires a user email.",
             }
             return jsonify(res_dict), 400
+
+    return email
+
+
+# Curation endpoints
+@app.route("/curate/go/<term>", methods=["GET"])
+@jwt_optional
+def curate_go(term):
+    email = _get_user()
+    if not isinstance(email, str):
+        return email
+
+    # Get the statements for go term
+    try:
+        pass
+    except (TypeError, ValueError) as err:
+        logger.exception(err)
+        abort(Response("Parameter 'term' unfilled", status=415))
+
+
+
+@app.route("/curate/<hash_val>", methods=["POST"])
+@jwt_optional
+def submit_curation_endpoint(hash_val: str):
+    email = _get_user()
+    if not isinstance(email, str):
+        return email
 
     logger.info("Adding curation for statement %s." % hash_val)
     ev_hash = request.json.get("ev_hash")
