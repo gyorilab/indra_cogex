@@ -16,7 +16,7 @@ __all__ = [
 
 
 def indra_subnetwork(
-    client: Neo4jClient, nodes: List[Tuple[str, str]]
+    client: Neo4jClient, nodes: Iterable[Tuple[str, str]]
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
