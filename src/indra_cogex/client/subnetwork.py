@@ -1,14 +1,17 @@
-from typing import List, Tuple
+"""Queries that generate statement subnetworks."""
+
+from typing import Iterable, List, Tuple
 
 from indra.statements import Statement
 
-from .neo4j_client import Neo4jClient
-from .queries import get_genes_in_tissue
+from .neo4j_client import Neo4jClient, autoclient
+from .queries import get_genes_for_go_term, get_genes_in_tissue
 from ..representation import indra_stmts_from_relations, norm_id
 
 __all__ = [
     "indra_subnetwork",
     "indra_subnetwork_tissue",
+    "indra_subnetwork_go",
 ]
 
 
@@ -64,4 +67,35 @@ def indra_subnetwork_tissue(
     """
     genes = get_genes_in_tissue(client=client, tissue=tissue)
     relevant_genes = {g.grounding() for g in genes} & set(nodes)
+    return indra_subnetwork(client, relevant_genes)
+
+
+@autoclient()
+def indra_subnetwork_go(
+    go_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+):
+    """Return the INDRA Statement subnetwork induced by the given GO term.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    go_term :
+        The GO term to query
+    include_indirect :
+        Should ontological children of the given GO term
+        be queried as well? Defaults to False.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by GO term.
+    """
+    genes = get_genes_for_go_term(
+        client=client, go_term=go_term, include_indirect=include_indirect
+    )
+    relevant_genes = {g.grounding() for g in genes}
     return indra_subnetwork(client, relevant_genes)

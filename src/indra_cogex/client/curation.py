@@ -1,15 +1,19 @@
 """Tools for INDRA curation."""
 
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
+from .neo4j_client import Neo4jClient
+from .subnetwork import indra_subnetwork_go
+
 __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
+    "get_go_curation_hashes",
 ]
 
 # TODO can this be imported from INDRA and auto-generated?
@@ -29,7 +33,7 @@ def _get_curated_statement_hashes() -> set[int]:
 
 
 def get_prioritized_stmt_hashes(stmts: Iterable[Statement]) -> List[int]:
-    """Get the priority ordered hashes of statements to curate from."""
+    """Get prioritized hashes of statements to curate."""
     df = get_curation_df(stmts)
     return list(df["stmt_hash"])
 
@@ -70,3 +74,13 @@ def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
     # to have the hash multiple times
     df = df.drop_duplicates("stmt_hash")
     return df
+
+
+def get_go_curation_hashes(
+    go_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+) -> List[int]:
+    """Get prioritized statement hashes to curate for a given GO term."""
+    go_stmts = indra_subnetwork_go(go_term=go_term, client=client, include_indirect=True)
+    return get_prioritized_stmt_hashes(go_stmts)
