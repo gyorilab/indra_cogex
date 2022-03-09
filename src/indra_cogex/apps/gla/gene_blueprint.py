@@ -33,7 +33,7 @@ from .fields import (
     source_field,
     species_field,
 )
-from .proxies import client
+from indra_cogex.apps.proxies import client
 from ...client.enrichment.continuous import get_rat_scores, go_gsea
 from ...client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,

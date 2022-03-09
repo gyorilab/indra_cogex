@@ -18,7 +18,7 @@ from .fields import (
     minimum_belief_field,
     minimum_evidence_field,
 )
-from .proxies import client
+from indra_cogex.apps.proxies import client
 from ...client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,

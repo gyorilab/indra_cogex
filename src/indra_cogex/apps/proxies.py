@@ -8,7 +8,7 @@ without creating circular imports.
 from flask import current_app
 from werkzeug.local import LocalProxy
 
-from ...client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import Neo4jClient
 
 __all__ = [
     "INDRA_COGEX_EXTENSION",

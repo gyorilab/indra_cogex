@@ -24,8 +24,17 @@ def get_flask_app(app_name: str) -> Flask:
     """
     from flask_bootstrap import Bootstrap4
     from indralab_auth_tools.auth import auth, config_auth
+    from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION
+    from ..client.neo4j_client import Neo4jClient
+
     app = Flask(app_name, template_folder=TEMPLATES_DIR)
     app.register_blueprint(auth)
+    if not hasattr(app, "extensions"):
+        print("no extensions?")
+        app.extensions = {}
+
+    app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
+
     SC, jwt = config_auth(app)
     bootstrap = Bootstrap4(app)
     return app
