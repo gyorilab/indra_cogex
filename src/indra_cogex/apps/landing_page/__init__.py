@@ -5,16 +5,13 @@ from typing import Tuple, Counter
 from flask import render_template
 from more_click import make_web_command
 
-from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION, client
+from indra_cogex.apps.proxies import client
 from .. import get_flask_app
-from ...client.neo4j_client import Neo4jClient
 from ...client.queries import get_edge_counter, get_node_counter
 
 logger = logging.getLogger(__name__)
 
 app = get_flask_app(__name__)
-
-app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
