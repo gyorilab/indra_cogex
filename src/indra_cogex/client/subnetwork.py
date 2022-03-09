@@ -76,6 +76,64 @@ def indra_mediated_subnetwork(
     )
 
 
+@autoclient()
+def indra_shared_downstream_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by shared downstream targets
+    of nodes in the query.
+
+    For example, if gene A and gene B are given as the query, find statements
+    to shared downstream entity X such that A -> X <- B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return _help_stepped_subnetwork(
+        client=client, nodes=nodes, first_forward=True, second_forward=False
+    )
+
+
+@autoclient()
+def indra_shared_upstream_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by shared upstream controllers
+    of nodes in the query.
+
+    For example, if gene A and gene B are given as the query, find statements
+    to shared upstream entity X such that A <- X -> B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return _help_stepped_subnetwork(
+        client=client, nodes=nodes, first_forward=False, second_forward=True
+    )
+
+
 def _help_stepped_subnetwork(
     *,
     client: Neo4jClient,
@@ -141,6 +199,8 @@ def indra_subnetwork_go(
     client: Neo4jClient,
     include_indirect: bool = False,
     mediated: bool = False,
+    upstream_controllers: bool = False,
+    downstream_targets: bool = False,
 ):
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
@@ -156,6 +216,12 @@ def indra_subnetwork_go(
     mediated:
         Should relations A->X->B be included for X not associated
         to the given GO term?
+    upstream_controllers:
+        Should relations A<-X->B be included for upstream controller
+        X not associated to the given GO term?
+    downstream_targets:
+        Should relations A->X<-B be included for downstream target
+        X not associated to the given GO term?
 
     Returns
     -------
@@ -169,4 +235,8 @@ def indra_subnetwork_go(
     rv = indra_subnetwork(client=client, nodes=nodes)
     if mediated:
         rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes))
+    if upstream_controllers:
+        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes))
+    if downstream_targets:
+        rv.extend(indra_shared_downstream_subnetwork(client=client, nodes=nodes))
     return rv
