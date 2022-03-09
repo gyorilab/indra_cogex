@@ -10,6 +10,7 @@ from ..representation import indra_stmts_from_relations, norm_id
 
 __all__ = [
     "indra_subnetwork",
+    "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
     "indra_subnetwork_go",
 ]
@@ -47,6 +48,65 @@ def indra_subnetwork(
 
 
 @autoclient()
+def indra_mediated_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced pairs of statements
+    between the given nodes.
+
+    For example, if gene A and gene B are given as the query, find statements
+    mediated by X such that A -> X -> B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return _help_stepped_subnetwork(
+        client=client, nodes=nodes, first_forward=True, second_forward=True
+    )
+
+
+def _help_stepped_subnetwork(
+    *,
+    client: Neo4jClient,
+    nodes: Iterable[Tuple[str, str]],
+    first_forward: bool = True,
+    second_forward: bool = True,
+) -> List[Statement]:
+    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+    f1, f2 = ("-", "->") if first_forward else ("<-", "-")
+    s1, s2 = ("-", "->") if second_forward else ("<-", "-")
+    query = f"""\
+        MATCH p=(n1:BioEntity){f1}[r1:indra_rel]{f2}(n3:BioEntity){s1}[r2:indra_rel]{s2}(n2:BioEntity)
+        WHERE 
+            n1.id IN [{nodes_str}]
+            AND n2.id IN [{nodes_str}]
+            AND n1.id <> n2.id
+            AND NOT n3 IN [{nodes_str}]
+        RETURN p
+    """
+    return _paths_to_stmts(client=client, query=query)
+
+
+def _paths_to_stmts(*, client: Neo4jClient, query: str) -> List[Statement]:
+    return indra_stmts_from_relations(
+        relation
+        for path in client.query_tx(query)
+        for relation in client.neo4j_to_relations(path[0])
+    )
+
+
+@autoclient()
 def indra_subnetwork_tissue(
     nodes: List[Tuple[str, str]],
     tissue: Tuple[str, str],
@@ -80,6 +140,7 @@ def indra_subnetwork_go(
     *,
     client: Neo4jClient,
     include_indirect: bool = False,
+    mediated: bool = False,
 ):
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
@@ -92,6 +153,9 @@ def indra_subnetwork_go(
     include_indirect :
         Should ontological children of the given GO term
         be queried as well? Defaults to False.
+    mediated:
+        Should relations A->X->B be included for X not associated
+        to the given GO term?
 
     Returns
     -------
@@ -101,5 +165,8 @@ def indra_subnetwork_go(
     genes = get_genes_for_go_term(
         client=client, go_term=go_term, include_indirect=include_indirect
     )
-    relevant_genes = {g.grounding() for g in genes}
-    return indra_subnetwork(client, relevant_genes)
+    nodes = {g.grounding() for g in genes}
+    rv = indra_subnetwork(client=client, nodes=nodes)
+    if mediated:
+        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes))
+    return rv
