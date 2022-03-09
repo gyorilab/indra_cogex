@@ -228,12 +228,13 @@ def _get_user():
 def curate_go(term: str):
     user, roles = resolve_auth(dict(request.args))
     email = user.email if user else ""
+    max_results = request.args.get("max_results", type=int, default=25)
 
     # Get the statements for go term
     try:
         # Example: 'GO:0003677'
         hashes = get_go_curation_hashes(go_term=('GO', term), client=client)
-        stmts = get_stmts_for_stmt_hashes(hashes)
+        stmts = get_stmts_for_stmt_hashes(hashes[:max_results])
         form_stmts = format_stmts(stmts)
         return render_template(
             "data_display/data_display_base.html", stmts=form_stmts, user_email=email
