@@ -24,6 +24,7 @@ from indra.util.statement_presentation import _get_available_ev_source_counts
 from indra_cogex.apps.query_web_app import process_result
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 from indra_cogex.client.curation import get_go_curation_hashes
+from indra_cogex.apps.proxies import client
 
 from .. import get_flask_app
 
@@ -225,18 +226,21 @@ def _get_user():
 @app.route("/curate/go/<term>", methods=["GET"])
 @jwt_optional
 def curate_go(term: str):
-    email = _get_user()
-    if not isinstance(email, str):
-        return email
+    user, roles = resolve_auth(dict(request.args))
+    email = user.email if user else ""
 
     # Get the statements for go term
     try:
         # Example: 'GO:0003677'
         hashes = get_go_curation_hashes(go_term=('GO', term), client=client)
+        stmts = get_stmts_for_stmt_hashes(hashes)
+        form_stmts = format_stmts(stmts)
+        return render_template(
+            "data_display/data_display_base.html", stmts=form_stmts, user_email=email
+        )
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'term' unfilled", status=415))
-
 
 
 @app.route("/curate/<hash_val>", methods=["POST"])
