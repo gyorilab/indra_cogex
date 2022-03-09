@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 # TODO can this be imported from INDRA and auto-generated?
-DATABASES = {"biogrid", "hprd", 'signor', 'phosphoelm', 'signor', 'biopax'}
+DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
 
 
 def _keep_by_source(source_counts) -> bool:
@@ -82,5 +82,7 @@ def get_go_curation_hashes(
     client: Neo4jClient,
 ) -> List[int]:
     """Get prioritized statement hashes to curate for a given GO term."""
-    go_stmts = indra_subnetwork_go(go_term=go_term, client=client, include_indirect=True)
+    go_stmts = indra_subnetwork_go(
+        go_term=go_term, client=client, include_indirect=True
+    )
     return get_prioritized_stmt_hashes(go_stmts)

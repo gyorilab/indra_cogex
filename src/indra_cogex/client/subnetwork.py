@@ -46,8 +46,12 @@ def indra_subnetwork(
     return stmts
 
 
+@autoclient()
 def indra_subnetwork_tissue(
-    client: Neo4jClient, nodes: List[Tuple[str, str]], tissue: Tuple[str, str]
+    nodes: List[Tuple[str, str]],
+    tissue: Tuple[str, str],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes and expressed in the given tissue.
 
