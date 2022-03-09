@@ -80,9 +80,43 @@ def get_go_curation_hashes(
     go_term: Tuple[str, str],
     *,
     client: Neo4jClient,
+    include_indirect: bool = False,
+    mediated: bool = False,
+    upstream_controllers: bool = False,
+    downstream_targets: bool = False,
 ) -> List[int]:
-    """Get prioritized statement hashes to curate for a given GO term."""
-    go_stmts = indra_subnetwork_go(
-        go_term=go_term, client=client, include_indirect=True
+    """Get prioritized statement hashes to curate for a given GO term.
+
+    Parameters
+    ----------
+    go_term :
+        The GO term to query
+    client :
+        The Neo4j client.
+    include_indirect :
+        Should ontological children of the given GO term
+        be queried as well? Defaults to False.
+    mediated:
+        Should relations A->X->B be included for X not associated
+        to the given GO term?
+    upstream_controllers:
+        Should relations A<-X->B be included for upstream controller
+        X not associated to the given GO term?
+    downstream_targets:
+        Should relations A->X<-B be included for downstream target
+        X not associated to the given GO term?
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    stmts = indra_subnetwork_go(
+        go_term=go_term,
+        client=client,
+        include_indirect=include_indirect,
+        mediated=mediated,
+        upstream_controllers=upstream_controllers,
+        downstream_targets=downstream_targets,
     )
-    return get_prioritized_stmt_hashes(go_stmts)
+    return get_prioritized_stmt_hashes(stmts)

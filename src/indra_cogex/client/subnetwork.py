@@ -206,27 +206,27 @@ def indra_subnetwork_go(
 
     Parameters
     ----------
-    client :
-        The Neo4j client.
     go_term :
         The GO term to query
+    client :
+        The Neo4j client.
     include_indirect :
         Should ontological children of the given GO term
         be queried as well? Defaults to False.
     mediated:
         Should relations A->X->B be included for X not associated
-        to the given GO term?
+        to the given GO term? Defaults to False.
     upstream_controllers:
         Should relations A<-X->B be included for upstream controller
-        X not associated to the given GO term?
+        X not associated to the given GO term? Defaults to False.
     downstream_targets:
         Should relations A->X<-B be included for downstream target
-        X not associated to the given GO term?
+        X not associated to the given GO term? Defaults to False.
 
     Returns
     -------
     :
-        The subnetwork induced by GO term.
+        The INDRA statement subnetwork induced by GO term.
     """
     genes = get_genes_for_go_term(
         client=client, go_term=go_term, include_indirect=include_indirect
@@ -239,4 +239,6 @@ def indra_subnetwork_go(
         rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes))
     if downstream_targets:
         rv.extend(indra_shared_downstream_subnetwork(client=client, nodes=nodes))
+    # No deduplication of statements based on the union of
+    # the queries should be necessary since each are disjoint
     return rv
