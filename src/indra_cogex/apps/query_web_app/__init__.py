@@ -67,7 +67,7 @@ def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
     """
     parsed_query = {}
     for key, value in query_json.items():
-        if key in ('stmt_hashes', 'stmt_hash'):
+        if key in ("stmt_hashes", "stmt_hash"):
             if isinstance(value, str):
                 parsed_query[key] = int(value)
             elif isinstance(value, list):
@@ -161,9 +161,9 @@ Returns
         if param.arg_name in ("client", "evidence_map"):
             continue
 
-        if param.arg_name == 'stmt_hash':
+        if param.arg_name == "stmt_hash":
             annot = str
-        elif param.arg_name == 'stmt_hashes':
+        elif param.arg_name == "stmt_hashes":
             annot = List[str]
         else:
             annot = sig.parameters[param.arg_name].annotation
@@ -241,7 +241,6 @@ for func_name in queries.__all__:
     except KeyError as err:
         raise KeyError(f"No examples for {func_name}, please add one") from err
 
-
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
     class QueryResource(Resource):
@@ -271,6 +270,7 @@ for func_name in queries.__all__:
                 abort(Response(str(err), 500))
 
         post.__doc__ = fixed_doc
+
 
 app = flask.Flask(__name__)
 api.init_app(app)

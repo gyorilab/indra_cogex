@@ -6,7 +6,7 @@ from pathlib import Path
 from flask import Flask
 
 APPS_DIR = Path(__file__).parent.absolute()
-TEMPLATES_DIR = APPS_DIR / 'templates'
+TEMPLATES_DIR = APPS_DIR / "templates"
 
 
 def get_flask_app(app_name: str) -> Flask:

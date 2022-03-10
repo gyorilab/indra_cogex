@@ -140,8 +140,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
 
         return [
             json.dumps(e)
-            for e in [ev_array, english, str(hash_int), sources,
-                      total_evidence, badges]
+            for e in [ev_array, english, str(hash_int), sources, total_evidence, badges]
         ]
 
     all_pa_hashes = [st.get_hash() for st in stmts]
@@ -196,7 +195,9 @@ def statement_display():
         if not stmt_hash_list:
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
         stmts = format_stmts(get_stmts_for_stmt_hashes(stmt_hash_list))
-        return render_template("data_display/data_display_base.html", stmts=stmts, user_email=email)
+        return render_template(
+            "data_display/data_display_base.html", stmts=stmts, user_email=email
+        )
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
@@ -233,7 +234,7 @@ def curate_go(term: str):
     # Get the statements for go term
     try:
         # Example: 'GO:0003677'
-        hashes = get_go_curation_hashes(go_term=('GO', term), client=client)
+        hashes = get_go_curation_hashes(go_term=("GO", term), client=client)
         stmts = get_stmts_for_stmt_hashes(hashes[:max_results])
         form_stmts = format_stmts(stmts)
         return render_template(

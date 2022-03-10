@@ -249,9 +249,7 @@ def discretize_analysis():
                     index=False,
                 )
             flask.flash(f"Downloaded files to {downloads}")
-            return flask.redirect(
-                url_for(f".{discretize_analysis.__name__}")
-            )
+            return flask.redirect(url_for(f".{discretize_analysis.__name__}"))
 
         return flask.render_template(
             "gene_analysis/discrete_results.html",
