@@ -10,9 +10,8 @@ import flask
 from docstring_parser import parse
 from flask import Response, abort, jsonify, request
 from flask_restx import Api, Resource, fields
-from more_click import make_web_command
-
 from indra.statements import Agent, Evidence, Statement
+
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries
 from indra_cogex.representation import Node
@@ -20,6 +19,7 @@ from indra_cogex.representation import Node
 api = Api(
     title="INDRA CoGEx Query API",
     description="REST API for INDRA CoGEx queries",
+    doc="/apidocs",
 )
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
@@ -272,9 +272,10 @@ for func_name in queries.__all__:
         post.__doc__ = fixed_doc
 
 
-app = flask.Flask(__name__)
-api.init_app(app)
-cli = make_web_command(app=app)
-
 if __name__ == "__main__":
+    from more_click import make_web_command
+
+    app = flask.Flask(__name__)
+    api.init_app(app)
+    cli = make_web_command(app=app)
     cli()

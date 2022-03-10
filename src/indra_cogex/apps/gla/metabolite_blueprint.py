@@ -11,6 +11,8 @@ from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.proxies import client
+
 from .fields import (
     alpha_field,
     correction_field,
@@ -18,7 +20,6 @@ from .fields import (
     minimum_belief_field,
     minimum_evidence_field,
 )
-from indra_cogex.apps.proxies import client
 from ...client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,

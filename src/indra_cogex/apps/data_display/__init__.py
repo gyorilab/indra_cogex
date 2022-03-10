@@ -8,23 +8,22 @@ https://emmaa.indra.bio/evidence?model=covid19&source=model_statement&stmt_hash=
 import json
 import logging
 from collections import defaultdict
-from typing import List, Iterable, Dict, Tuple
+from typing import Dict, Iterable, List, Tuple
 
-from flask import request, jsonify, abort, Response, render_template
+from flask import Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
+from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
+from indra.statements import Statement
+from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra_db.client import get_curations, submit_curation
+from indra_db.exceptions import BadHashError
+from indralab_auth_tools.auth import resolve_auth
 from more_click import make_web_command
 
-from indra_db.exceptions import BadHashError
-from indra_db.client import get_curations, submit_curation
-from indralab_auth_tools.auth import resolve_auth
-from indra.statements import Statement
-from indra.assemblers.html.assembler import _format_stmt_text, _format_evidence_text
-from indra.util.statement_presentation import _get_available_ev_source_counts
-
-from indra_cogex.apps.query_web_app import process_result
-from indra_cogex.client.queries import get_stmts_for_stmt_hashes
-from indra_cogex.client.curation import get_go_curation_hashes
 from indra_cogex.apps.proxies import client
+from indra_cogex.apps.query_web_app import process_result
+from indra_cogex.client.curation import get_go_curation_hashes
+from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
 from .. import get_flask_app
 

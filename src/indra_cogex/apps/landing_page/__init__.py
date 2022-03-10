@@ -1,17 +1,20 @@
 import logging
 from functools import lru_cache
-from typing import Tuple, Counter
+from typing import Counter, Tuple
 
-from flask import render_template
-from more_click import make_web_command
+from flask import Blueprint, current_app, render_template
 
 from indra_cogex.apps.proxies import client
-from .. import get_flask_app
+
 from ...client.queries import get_edge_counter, get_node_counter
+
+__all__ = [
+    "landing_blueprint",
+]
 
 logger = logging.getLogger(__name__)
 
-app = get_flask_app(__name__)
+landing_blueprint = Blueprint("landing", __name__)
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
@@ -57,7 +60,7 @@ def _figure_number(n: int):
         return n, ""
 
 
-@app.route("/")
+@landing_blueprint.route("/")
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
@@ -67,11 +70,16 @@ def home():
         node_counter=node_counter,
         edge_counter=edge_counter,
         edge_labels=edge_labels,
+        blueprints=current_app.blueprints,
     )
 
 
-# Create runnable cli command
-cli = make_web_command(app)
-
 if __name__ == "__main__":
+    from more_click import make_web_command
+
+    from .. import get_flask_app
+
+    app = get_flask_app(__name__)
+    app.register_blueprint(landing_blueprint)
+    cli = make_web_command(app)
     cli()

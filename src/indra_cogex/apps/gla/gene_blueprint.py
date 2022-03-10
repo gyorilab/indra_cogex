@@ -11,6 +11,7 @@ from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.proxies import client
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
@@ -33,7 +34,6 @@ from .fields import (
     source_field,
     species_field,
 )
-from indra_cogex.apps.proxies import client
 from ...client.enrichment.continuous import get_rat_scores, go_gsea
 from ...client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
