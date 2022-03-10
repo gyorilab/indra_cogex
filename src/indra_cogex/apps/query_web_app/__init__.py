@@ -1,34 +1,30 @@
 # -*- coding: utf-8 -*-
 
 """An app wrapping the query module of indra_cogex."""
+
 import logging
-from inspect import isfunction, signature, Signature
-from typing import Callable, Tuple, Type, Iterable, Any, Dict, List, Counter, Mapping
+from inspect import Signature, isfunction, signature
+from typing import Any, Callable, Counter, Dict, Iterable, List, Mapping, Tuple, Type
 
 import flask
 from docstring_parser import parse
-from flask import request, jsonify, abort, Response
+from flask import Response, abort, jsonify, request
 from flask_restx import Api, Resource, fields
 from more_click import make_web_command
 
-from indra.statements import Evidence, Statement, Agent
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra.statements import Agent, Evidence, Statement
+from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries
 from indra_cogex.representation import Node
 
-app = flask.Flask(__name__)
 api = Api(
-    app,
     title="INDRA CoGEx Query API",
     description="REST API for INDRA CoGEx queries",
 )
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
-client = Neo4jClient()
-
 
 logger = logging.getLogger(__name__)
-
 
 examples_dict = {
     "tissue": ["UBERON", "UBERON:0002349"],
@@ -194,7 +190,6 @@ Returns
 
 func_mapping = {fname: getattr(queries, fname) for fname in queries.__all__}
 
-
 # Create resource for each query function
 for func_name in queries.__all__:
     if not isfunction(getattr(queries, func_name)) or func_name == "get_schema_graph":
@@ -246,6 +241,7 @@ for func_name in queries.__all__:
     except KeyError as err:
         raise KeyError(f"No examples for {func_name}, please add one") from err
 
+
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
     class QueryResource(Resource):
@@ -276,9 +272,9 @@ for func_name in queries.__all__:
 
         post.__doc__ = fixed_doc
 
-
+app = flask.Flask(__name__)
+api.init_app(app)
 cli = make_web_command(app=app)
-
 
 if __name__ == "__main__":
     cli()
