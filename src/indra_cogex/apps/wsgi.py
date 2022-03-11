@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Full INDRA CoGEx web app suite."""
-
+import os
 from pathlib import Path
 
 from flask import Flask
@@ -32,6 +32,12 @@ if not hasattr(app, "extensions"):
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 
 SC, jwt = config_auth(app)
+
+# Secret key must be set to use flask-wtf, but there's no *really*
+# secure information in this app so it's okay to set randomly
+app.config["WTF_CSRF_ENABLED"] = False
+app.config["SECRET_KEY"] = os.urandom(32)
+
 bootstrap = Bootstrap4(app)
 
 app.run()
