@@ -17,8 +17,9 @@ from indra_cogex.client.neo4j_client import Neo4jClient
 
 APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
+STATIC_DIR = APPS_DIR / "static"
 
-app = Flask(__name__, template_folder=TEMPLATES_DIR)
+app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 app.register_blueprint(auth)
 app.register_blueprint(landing_blueprint)
 app.register_blueprint(gene_blueprint)
