@@ -1,6 +1,6 @@
 from more_click import make_web_command
 
-from .wsgi import app
+from indra_cogex.apps.wsgi import app
 
 cli = make_web_command(app=app)
 
