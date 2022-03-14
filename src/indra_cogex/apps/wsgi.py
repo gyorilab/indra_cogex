@@ -36,5 +36,3 @@ app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(32)
 
 bootstrap = Bootstrap4(app)
-
-app.run()
