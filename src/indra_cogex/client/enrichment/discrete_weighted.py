@@ -3,6 +3,7 @@
 """Weighted ORA."""
 
 from typing import Mapping, Tuple
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ __all__ = [
 ]
 
 LOOKUP_CACHE_PATH = pystow.join("indra", name="weighted_ora_belief_cache.tsv")
+LOOKUP_DICT_PATH = pystow.join("indra", name="weighted_ora_belief_cache.pkl")
 
 ALL_BELIEFS_CYPHER = """\
 MATCH (h:BioEntity)-[r:indra_rel]->(t:BioEntity)
@@ -44,13 +46,17 @@ def get_lookup(
     *, client: Neo4jClient, force: bool = False
 ) -> Mapping[Tuple[str, str], float]:
     """Get the source/target to belief lookup table."""
+    if LOOKUP_DICT_PATH.is_file() and not force:
+        return pickle.loads(LOOKUP_DICT_PATH.read_bytes())
     if LOOKUP_CACHE_PATH.is_file() and not force:
         df = pd.read_csv(LOOKUP_CACHE_PATH, sep="\t")
     else:
         res = client.query_tx(all_beliefs)
         df = pd.DataFrame(res, columns=["source", "target", "stmt_hash", "belief"])
         df.to_csv(LOOKUP_CACHE_PATH, sep="\t", index=False)
-    return df.groupby(["source", "target"])["belief"].max().to_dict()
+    rv = df.groupby(["source", "target"])["belief"].max().to_dict()
+    LOOKUP_DICT_PATH.write_bytes(pickle.dumps(rv))
+    return rv
 
 
 @autoclient(cache=True, maxsize=1)
