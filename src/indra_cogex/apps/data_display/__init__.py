@@ -10,16 +10,18 @@ import logging
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from flask import Response, abort, jsonify, render_template, request, \
-    Blueprint, Flask
+from flask import Blueprint, Flask, Response, abort, jsonify, render_template, request
+from flask_bootstrap import Bootstrap4
 from flask_jwt_extended import jwt_optional
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
 from indra_db.client import get_curations, submit_curation
 from indra_db.exceptions import BadHashError
-from indralab_auth_tools.auth import resolve_auth
+from indralab_auth_tools.auth import auth, config_auth, resolve_auth
+from more_click import make_web_command
 
+from indra_cogex.apps import STATIC_DIR, TEMPLATES_DIR
 from indra_cogex.apps.proxies import client
 from indra_cogex.apps.query_web_app import process_result
 from indra_cogex.client.curation import get_go_curation_hashes
@@ -27,7 +29,7 @@ from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
 logger = logging.getLogger(__name__)
 
-data_display_blueprint = Blueprint('data_display', __name__)
+data_display_blueprint = Blueprint("data_display", __name__)
 
 # Derived types
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
@@ -276,11 +278,13 @@ def list_curations(stmt_hash, src_hash):
     return jsonify(curations)
 
 
-if __name__ == "__main__":
-    from more_click import make_web_command
-    from indra_cogex.apps.wsgi import TEMPLATES_DIR, STATIC_DIR
+app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
+app.register_blueprint(auth)
+app.register_blueprint(data_display_blueprint)
+SC, jwt = config_auth(app)
+cli = make_web_command(app)
+bootstrap = Bootstrap4(app)
 
-    app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
-    app.register_blueprint(data_display_blueprint)
-    cli = make_web_command(app)
+
+if __name__ == "__main__":
     cli()
