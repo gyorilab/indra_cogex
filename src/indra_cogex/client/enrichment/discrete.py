@@ -2,7 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -43,19 +43,19 @@ EXAMPLE_GENE_IDS = [
 
 
 def _prepare_hypergeometric_test(
-    query_gene_set: Set[str],
-    pathway_gene_set: Set[str],
-    gene_universe: int,
+    query_set: Set[str],
+    target_set: Set[str],
+    universe_size: int,
 ) -> np.ndarray:
     """Prepare the matrix for hypergeometric test calculations.
 
     Parameters
     ----------
-    query_gene_set:
+    query_set:
         gene set to test against pathway
-    pathway_gene_set:
+    target_set:
         pathway gene set
-    gene_universe:
+    universe_size:
         number of HGNC symbols
 
     Returns
@@ -66,12 +66,12 @@ def _prepare_hypergeometric_test(
     return np.array(
         [
             [
-                len(query_gene_set.intersection(pathway_gene_set)),
-                len(query_gene_set.difference(pathway_gene_set)),
+                len(query_set.intersection(target_set)),
+                len(query_set.difference(target_set)),
             ],
             [
-                len(pathway_gene_set.difference(query_gene_set)),
-                gene_universe - len(pathway_gene_set.union(query_gene_set)),
+                len(target_set.difference(query_set)),
+                universe_size - len(target_set.union(query_set)),
             ],
         ]
     )
@@ -91,7 +91,7 @@ def count_human_genes(*, client: Neo4jClient) -> int:
     :
         Number of HGNC genes
     """
-    query = f"""\
+    query = """\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
         RETURN count(n) as count
@@ -130,16 +130,16 @@ def gene_ontology_single_ora(
         )
     }
     table = _prepare_hypergeometric_test(
-        query_gene_set=set(gene_ids),
-        pathway_gene_set=go_gene_ids,
-        gene_universe=count,
+        query_set=set(gene_ids),
+        target_set=go_gene_ids,
+        universe_size=count,
     )
     return fisher_exact(table, alternative="greater")[1]
 
 
 def _do_ora(
-    curie_to_hgnc_ids: Dict[Tuple[str, str], Set[str]],
-    gene_ids: Iterable[str],
+    curie_to_target_sets: Mapping[Tuple[str, str], Set[str]],
+    query: Iterable[str],
     count: int,
     method: Optional[str] = "fdr_bh",
     alpha: Optional[float] = None,
@@ -147,13 +147,13 @@ def _do_ora(
 ) -> pd.DataFrame:
     if alpha is None:
         alpha = 0.05
-    query_gene_set = set(gene_ids)
+    query_set = set(query)
     rows = []
-    for (curie, name), pathway_hgnc_ids in curie_to_hgnc_ids.items():
+    for (curie, name), target_set in curie_to_target_sets.items():
         table = _prepare_hypergeometric_test(
-            query_gene_set=query_gene_set,
-            pathway_gene_set=pathway_hgnc_ids,
-            gene_universe=count,
+            query_set=query_set,
+            target_set=target_set,
+            universe_size=count,
         )
         _, pvalue = fisher_exact(table, alternative="greater")
         rows.append((curie, name, pvalue))
@@ -195,7 +195,7 @@ def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFra
         curie, name, p, q, mlp, mlq
     """
     count = count_human_genes(client=client)
-    return _do_ora(get_go(client=client), gene_ids=gene_ids, count=count, **kwargs)
+    return _do_ora(get_go(client=client), query=gene_ids, count=count, **kwargs)
 
 
 def wikipathways_ora(
@@ -220,7 +220,7 @@ def wikipathways_ora(
     """
     count = count_human_genes(client=client)
     return _do_ora(
-        get_wikipathways(client=client), gene_ids=gene_ids, count=count, **kwargs
+        get_wikipathways(client=client), query=gene_ids, count=count, **kwargs
     )
 
 
@@ -245,9 +245,7 @@ def reactome_ora(
         curie, name, p, q, mlp, mlq
     """
     count = count_human_genes(client=client)
-    return _do_ora(
-        get_reactome(client=client), gene_ids=gene_ids, count=count, **kwargs
-    )
+    return _do_ora(get_reactome(client=client), query=gene_ids, count=count, **kwargs)
 
 
 def indra_downstream_ora(
@@ -289,7 +287,7 @@ def indra_downstream_ora(
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         ),
-        gene_ids=gene_ids,
+        query=gene_ids,
         count=count,
         **kwargs,
     )
@@ -334,7 +332,7 @@ def indra_upstream_ora(
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         ),
-        gene_ids=gene_ids,
+        query=gene_ids,
         count=count,
         **kwargs,
     )

@@ -1,40 +1,41 @@
-# -*- coding: utf-8 -*-
+"""Gene-centric analysis blueprint."""
 
-"""An app for gene list analysis."""
-
-import os
-from collections import Counter
-from functools import lru_cache
+from pathlib import Path
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
-from flask_bootstrap import Bootstrap4
+from flask import url_for
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
-from more_click import make_web_command
-from wtforms import (
-    BooleanField,
-    FileField,
-    FloatField,
-    IntegerField,
-    RadioField,
-    SubmitField,
-    TextAreaField,
-)
+from wtforms import BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
-    get_rat_scores,
-    go_gsea,
     indra_downstream_gsea,
     indra_upstream_gsea,
     reactome_gsea,
     wikipathways_gsea,
 )
-from indra_cogex.client.enrichment.discrete import (
+
+from .constants import INDRA_COGEX_WEB_LOCAL
+from .fields import (
+    alpha_field,
+    correction_field,
+    file_field,
+    indra_path_analysis_field,
+    keep_insignificant_field,
+    minimum_belief_field,
+    minimum_evidence_field,
+    permutations_field,
+    source_field,
+    species_field,
+)
+from .proxies import client
+from ...client.enrichment.continuous import get_rat_scores, go_gsea
+from ...client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
     go_ora,
     indra_downstream_ora,
@@ -42,24 +43,15 @@ from indra_cogex.client.enrichment.discrete import (
     reactome_ora,
     wikipathways_ora,
 )
-from indra_cogex.client.enrichment.signed import (
+from ...client.enrichment.signed import (
     EXAMPLE_NEGATIVE_HGNC_IDS,
     EXAMPLE_POSITIVE_HGNC_IDS,
     reverse_causal_reasoning,
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
-from indra_cogex.client.queries import get_edge_counter, get_node_counter
 
-app = flask.Flask(__name__)
+__all__ = ["gene_blueprint"]
 
-# Secret key must be set to use flask-wtf, but there's no *really*
-# secure information in this app so it's okay to set randomly
-app.config["WTF_CSRF_ENABLED"] = False
-app.config["SECRET_KEY"] = os.urandom(8)
-
-bootstrap = Bootstrap4(app)
-
-client = Neo4jClient()
+gene_blueprint = flask.Blueprint("gla", __name__, url_prefix="/gene")
 
 genes_field = TextAreaField(
     "Genes",
@@ -80,78 +72,10 @@ negative_genes_field = TextAreaField(
     " example list</a> related to prostate cancer.",
     validators=[DataRequired()],
 )
-indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
-minimum_evidence_field = IntegerField(
-    "Minimum Evidence Count",
-    default=1,
-    description="The minimum number of evidences, if using INDRA path-based analysis.",
-)
-minimum_belief_field = FloatField(
-    "Minimum Belief",
-    default=0.0,
-    description="The minimum belief score, if using INDRA path-based analysis.",
-)
-keep_insignificant_field = BooleanField(
-    "Keep insignificant results (leads to long results lists)"
-)
-alpha_field = FloatField(
-    "Alpha",
-    default=0.05,
-    validators=[DataRequired()],
-    description="The alpha is the threshold for significance in the"
-    " Fisher's exact test with which multiple hypothesis"
-    " testing correction will be executed.",
-)
-correction_field = RadioField(
-    "Multiple Hypothesis Test Correction",
-    choices=[
-        ("fdr_bh", "Family-wise Correction with Benjamini/Hochberg"),
-        ("bonferroni", "Bonferroni (one-step correction)"),
-        ("sidak", "Sidak (one-step correction)"),
-        ("holm-sidak", "Holm-Sidak (step down method using Sidak adjustments)"),
-        ("holm", "Holm (step-down method using Bonferroni adjustments)"),
-        ("fdr_tsbh", "Two step Benjamini and Hochberg procedure"),
-        (
-            "fdr_tsbky",
-            "Two step estimation method of Benjamini, Krieger, and Yekutieli",
-        ),
-    ],
-    default="fdr_bh",
-)
-source_field = RadioField(
-    "Gene Set Source",
-    choices=[
-        ("go", "Gene Ontology"),
-        ("reactome", "Reactome"),
-        ("wikipathways", "WikiPathways"),
-        ("indra-upstream", "INDRA Upstream"),
-        ("indra-downstrea", "INDRA Downstream"),
-    ],
-    default="go",
-    description="The source of gene sets. Only one can be run at a time because"
-    " this analyis is computationally intensive",
-)
-
-file_field = FileField("File", validators=[DataRequired()])
-species_field = RadioField(
-    "Species",
-    choices=[
-        ("human", "Human"),
-        ("rat", "Rat"),
-        ("mouse", "Mouse"),
-    ],
-    default="human",
-)
-permutations_field = IntegerField(
-    "Permutations",
-    default=100,
-    validators=[DataRequired()],
-    description="The number of permutations used with GSEA",
-)
 
 
 def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a genes field"""
+    """Parse a gene field string."""
     records = {
         record.strip().strip('"').strip("'").strip()
         for line in s.strip().lstrip("[").rstrip("]").split()
@@ -186,6 +110,8 @@ class DiscreteForm(FlaskForm):
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
+    if INDRA_COGEX_WEB_LOCAL:
+        local_download = BooleanField("local_download")
     submit = SubmitField("Submit")
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
@@ -243,7 +169,7 @@ class ContinuousForm(FlaskForm):
         return scores
 
 
-@app.route("/discrete", methods=["GET", "POST"])
+@gene_blueprint.route("/discrete", methods=["GET", "POST"])
 def discretize_analysis():
     """Render the home page."""
     form = DiscreteForm()
@@ -300,8 +226,35 @@ def discretize_analysis():
             indra_upstream_results = None
             indra_downstream_results = None
 
+        if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
+            downloads = Path.home().joinpath("Downloads")
+            go_results.to_csv(
+                downloads.joinpath("go_results.tsv"), sep="\t", index=False
+            )
+            wikipathways_results.to_csv(
+                downloads.joinpath("wikipathways_results.tsv"), sep="\t", index=False
+            )
+            reactome_results.to_csv(
+                downloads.joinpath("reactome_results.tsv"), sep="\t", index=False
+            )
+            if form.indra_path_analysis.data:
+                indra_downstream_results.to_csv(
+                    downloads.joinpath("indra_downstream_results.tsv"),
+                    sep="\t",
+                    index=False,
+                )
+                indra_upstream_results.to_csv(
+                    downloads.joinpath("indra_upstream_results.tsv"),
+                    sep="\t",
+                    index=False,
+                )
+            flask.flash(f"Downloaded files to {downloads}")
+            return flask.redirect(
+                url_for(f".{discretize_analysis.__name__}")
+            )
+
         return flask.render_template(
-            "discrete_results.html",
+            "gene_analysis/discrete_results.html",
             genes=genes,
             errors=errors,
             method=method,
@@ -314,13 +267,13 @@ def discretize_analysis():
         )
 
     return flask.render_template(
-        "discrete_form.html",
+        "gene_analysis/discrete_form.html",
         form=form,
         example_hgnc_ids=", ".join(EXAMPLE_GENE_IDS),
     )
 
 
-@app.route("/signed", methods=["GET", "POST"])
+@gene_blueprint.route("/signed", methods=["GET", "POST"])
 def signed_analysis():
     """Render the signed gene set enrichment analysis form."""
     form = SignedForm()
@@ -339,7 +292,7 @@ def signed_analysis():
             minimum_belief=form.minimum_belief.data,
         )
         return flask.render_template(
-            "signed_results.html",
+            "gene_analysis/signed_results.html",
             positive_genes=positive_genes,
             positive_errors=positive_errors,
             negative_genes=negative_genes,
@@ -349,14 +302,14 @@ def signed_analysis():
             # alpha=alpha,
         )
     return flask.render_template(
-        "signed_form.html",
+        "gene_analysis/signed_form.html",
         form=form,
         example_positive_hgnc_ids=", ".join(EXAMPLE_POSITIVE_HGNC_IDS),
         example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
     )
 
 
-@app.route("/continuous", methods=["GET", "POST"])
+@gene_blueprint.route("/continuous", methods=["GET", "POST"])
 def continuous_analysis():
     """Render the continuous analysis form."""
     form = ContinuousForm()
@@ -414,105 +367,11 @@ def continuous_analysis():
             raise ValueError
 
         return flask.render_template(
-            "continuous_results.html",
+            "gene_analysis/continuous_results.html",
             source=source,
             results=results,
         )
     return flask.render_template(
-        "continuous_form.html",
+        "gene_analysis/continuous_form.html",
         form=form,
     )
-
-
-@lru_cache(1)
-def _get_counters() -> Tuple[Counter, Counter]:
-    prod = False
-    if prod:
-        node_counter = get_node_counter(client)
-        edge_counter = get_edge_counter(client)
-    else:
-        node_counter = Counter(
-            {
-                "ClinicalTrial": 364_937,
-                "Evidence": 18_326_675,
-                "BioEntity": 2_612_711,
-                "Publication": 33_369_469,
-            }
-        )
-        edge_counter = Counter(
-            {
-                "expressed_in": 4_725_039,
-                "copy_number_altered_in": 1_422_111,
-                "sensitive_to": 69_271,
-                "mutated_in": 1_140_475,
-                "has_indication": 45_902,
-                "tested_in": 253_578,
-                "has_trial": 536_104,
-                "indra_rel": 6_268_226,
-                "has_citation": 17_975_205,
-                "associated_with": 158_648,
-                "isa": 534_776,
-                "xref": 1_129_208,
-                "partof": 619_379,
-                "annotated_with": 290_131_450,
-                "haspart": 428_980,
-                "has_side_effect": 308_948,
-            }
-        )
-    return node_counter, edge_counter
-
-
-def _figure_number(n: int):
-    if n > 1_000_000:
-        lead = n / 1_000_000
-        if lead < 10:
-            return round(lead, 1), "M"
-        else:
-            return round(lead), "M"
-    if n > 1_000:
-        lead = n / 1_000
-        if lead < 10:
-            return round(lead, 1), "K"
-        else:
-            return round(lead), "K"
-    else:
-        return n, ""
-
-
-edge_labels = {
-    "annotated_with": "MeSH Annotations",
-    "associated_with": "GO Annotations",
-    "has_citation": "Citations",
-    "indra_rel": "Causal Relations",
-    "expressed_in": "Gene Expressions",
-    "copy_number_altered_in": "CNVs",
-    "mutated_in": "Mutations",
-    "xref": "Xrefs",
-    "partof": "Part Of",
-    "has_trial": "Disease Trials",
-    "isa": "Subclasses",
-    "haspart": "Has Part",
-    "has_side_effect": "Side Effects",
-    "tested_in": "Drug Trials",
-    "sensitive_to": "Sensitivities",
-    "has_indication": "Drug Indications",
-}
-
-
-@app.route("/")
-def home():
-    """Render the home page."""
-    node_counter, edge_counter = _get_counters()
-    return flask.render_template(
-        "home.html",
-        format_number=_figure_number,
-        node_counter=node_counter,
-        edge_counter=edge_counter,
-        edge_labels=edge_labels,
-    )
-
-
-cli = make_web_command(app=app)
-
-if __name__ == "__main__":
-    cli()

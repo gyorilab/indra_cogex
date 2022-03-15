@@ -643,7 +643,7 @@ def get_pmids_for_mesh(
         The PubMed IDs for the given MESH term and, optionally, its child terms.
     """
     if mesh_term[0] != "MESH":
-        raise ValueError(f"Expected MESH term, got %s" % str(mesh_term))
+        raise ValueError("Expected MESH term, got %s" % str(mesh_term))
     norm_mesh = norm_id(*mesh_term)
 
     # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
@@ -692,7 +692,7 @@ def get_mesh_ids_for_pmid(
         The MESH terms for the given PubMed ID.
     """
     if pmid_term[0] != "PUBMED":
-        raise ValueError(f"Expected PUBMED term, got %s" % str(pmid_term))
+        raise ValueError("Expected PUBMED term, got %s" % str(pmid_term))
 
     return client.get_targets(
         source=pmid_term,
@@ -724,7 +724,7 @@ def get_evidences_for_mesh(
         by statement hash.
     """
     if mesh_term[0] != "MESH":
-        raise ValueError(f"Expected MESH term, got %s" % str(mesh_term))
+        raise ValueError("Expected MESH term, got %s" % str(mesh_term))
 
     norm_mesh = norm_id(*mesh_term)
     if include_child_terms:

@@ -160,14 +160,10 @@ def get_entity_to_targets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if minimum_evidence_count is None or minimum_evidence_count == 1:
-        evidence_line = ""
-    else:
-        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
-    if minimum_belief is None or minimum_belief == 0.0:
-        belief_line = ""
-    else:
-        belief_line = f"AND r.belief >= {minimum_belief}"
+    evidence_line = minimum_evidence_helper(
+        minimum_evidence_count=minimum_evidence_count, name="r"
+    )
+    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
     query = dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
@@ -214,14 +210,10 @@ def get_entity_to_regulators(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if minimum_evidence_count is None or minimum_evidence_count == 1:
-        evidence_line = ""
-    else:
-        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
-    if minimum_belief is None or minimum_belief == 0.0:
-        belief_line = ""
-    else:
-        belief_line = f"AND r.belief >= {minimum_belief}"
+    evidence_line = minimum_evidence_helper(
+        minimum_evidence_count=minimum_evidence_count, name="r"
+    )
+    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
     query = dedent(
         f"""\
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
@@ -239,3 +231,19 @@ def get_entity_to_regulators(
     )
     logger.info("caching entity->regulators with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query)
+
+
+def minimum_evidence_helper(
+    minimum_evidence_count: Optional[float] = None, name: str = "r"
+) -> str:
+    if minimum_evidence_count is None or minimum_evidence_count == 1:
+        return ""
+    return f"AND {name}.evidence_count >= {minimum_evidence_count}"
+
+
+def minimum_belief_helper(
+    minimum_belief: Optional[float] = None, name: str = "r"
+) -> str:
+    if minimum_belief is None or minimum_belief == 0.0:
+        return ""
+    return f"AND {name}.belief >= {minimum_belief}"

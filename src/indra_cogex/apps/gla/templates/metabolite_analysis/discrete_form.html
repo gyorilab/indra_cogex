@@ -1,0 +1,20 @@
+{% extends "base_form.html" %}
+
+{% block title %}Metabolite Set Analysis{% endblock %}
+
+{% block header %}Metabolite Set Analysis{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        function exampleMetabolites() {
+            document.getElementById('{{ form.metabolites.name }}').value = "{{ example_chebi_curies }}";
+        }
+    </script>
+{% endblock %}
+
+{% block lead %}
+    This application performs metabolite set enrichment analysis using
+    INDRA CoGEx, <i>p</i>-values are calculated using Fisher's exact
+    test with different options available to adjust for multiple hypothesis testing.
+{% endblock %}

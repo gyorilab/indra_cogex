@@ -38,7 +38,6 @@ def _query(
     return dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        
         WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
             AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
             AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
@@ -114,20 +113,20 @@ def reverse_causal_reasoning(
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
     database_positive = collect_gene_sets(
-        client,
-        _query(
+        query=_query(
             positive_stmts or POSITIVE_STMTS,
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         ),
+        client=client,
     )
     database_negative = collect_gene_sets(
-        client,
-        _query(
+        query=_query(
             negative_stmts or NEGATIVE_STMTS,
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         ),
+        client=client,
     )
     entities = set(database_positive).union(database_negative)
 
