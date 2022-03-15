@@ -8,7 +8,7 @@ from indra.resources import load_resource_json
 from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
-from .neo4j_client import Neo4jClient
+from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
 
 __all__ = [
@@ -81,6 +81,7 @@ def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
     return df
 
 
+@autoclient()
 def get_go_curation_hashes(
     go_term: Tuple[str, str],
     *,
