@@ -1,19 +1,23 @@
-from typing import List, Tuple
+"""Queries that generate statement subnetworks."""
+
+from typing import Iterable, List, Tuple
 
 from indra.statements import Statement
 
-from .neo4j_client import Neo4jClient
-from .queries import get_genes_in_tissue
+from .neo4j_client import Neo4jClient, autoclient
+from .queries import get_genes_for_go_term, get_genes_in_tissue
 from ..representation import indra_stmts_from_relations, norm_id
 
 __all__ = [
     "indra_subnetwork",
+    "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
+    "indra_subnetwork_go",
 ]
 
 
 def indra_subnetwork(
-    client: Neo4jClient, nodes: List[Tuple[str, str]]
+    client: Neo4jClient, nodes: Iterable[Tuple[str, str]]
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
@@ -43,8 +47,151 @@ def indra_subnetwork(
     return stmts
 
 
+@autoclient()
+def indra_mediated_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced pairs of statements
+    between the given nodes.
+
+    For example, if gene A and gene B are given as the query, find statements
+    mediated by X such that A -> X -> B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return get_two_step_subnetwork(
+        client=client, nodes=nodes, first_forward=True, second_forward=True
+    )
+
+
+@autoclient()
+def indra_shared_downstream_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by shared downstream targets
+    of nodes in the query.
+
+    For example, if gene A and gene B are given as the query, find statements
+    to shared downstream entity X such that A -> X <- B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return get_two_step_subnetwork(
+        client=client, nodes=nodes, first_forward=True, second_forward=False
+    )
+
+
+@autoclient()
+def indra_shared_upstream_subnetwork(
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by shared upstream controllers
+    of nodes in the query.
+
+    For example, if gene A and gene B are given as the query, find statements
+    to shared upstream entity X such that A <- X -> B.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes.
+    """
+    return get_two_step_subnetwork(
+        client=client, nodes=nodes, first_forward=False, second_forward=True
+    )
+
+
+def get_two_step_subnetwork(
+    *,
+    nodes: Iterable[Tuple[str, str]],
+    client: Neo4jClient,
+    first_forward: bool = True,
+    second_forward: bool = True,
+) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by paths of length
+    two between nodes A and B in a query with intermediate nodes X such
+    that paths look like A-X-B.
+
+    Parameters
+    ----------
+    nodes :
+        The nodes to query (A and B are one of these nodes in
+        the following examples).
+    client :
+        The Neo4j client.
+    first_forward:
+        If true, query A->X otherwise query A<-X
+    second_forward:
+        If true, query X->B otherwise query X<-B
+
+    Returns
+    -------
+    :
+        The INDRA statement subnetwork induced by the query
+    """
+    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+    f1, f2 = ("-", "->") if first_forward else ("<-", "-")
+    s1, s2 = ("-", "->") if second_forward else ("<-", "-")
+    query = f"""\
+        MATCH p=(n1:BioEntity){f1}[r1:indra_rel]{f2}(n3:BioEntity){s1}[r2:indra_rel]{s2}(n2:BioEntity)
+        WHERE 
+            n1.id IN [{nodes_str}]
+            AND n2.id IN [{nodes_str}]
+            AND n1.id <> n2.id
+            AND NOT n3 IN [{nodes_str}]
+        RETURN p
+    """
+    return _paths_to_stmts(client=client, query=query)
+
+
+def _paths_to_stmts(*, client: Neo4jClient, query: str) -> List[Statement]:
+    """Generate INDRA statements from a query that returns paths of length > 1."""
+    return indra_stmts_from_relations(
+        relation
+        for path in client.query_tx(query)
+        for relation in client.neo4j_to_relations(path[0])
+    )
+
+
+@autoclient()
 def indra_subnetwork_tissue(
-    client: Neo4jClient, nodes: List[Tuple[str, str]], tissue: Tuple[str, str]
+    nodes: List[Tuple[str, str]],
+    tissue: Tuple[str, str],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes and expressed in the given tissue.
 
@@ -65,3 +212,55 @@ def indra_subnetwork_tissue(
     genes = get_genes_in_tissue(client=client, tissue=tissue)
     relevant_genes = {g.grounding() for g in genes} & set(nodes)
     return indra_subnetwork(client, relevant_genes)
+
+
+@autoclient()
+def indra_subnetwork_go(
+    go_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+    mediated: bool = False,
+    upstream_controllers: bool = False,
+    downstream_targets: bool = False,
+):
+    """Return the INDRA Statement subnetwork induced by the given GO term.
+
+    Parameters
+    ----------
+    go_term :
+        The GO term to query. Example: ``("GO", "GO:0006915")``
+    client :
+        The Neo4j client.
+    include_indirect :
+        Should ontological children of the given GO term
+        be queried as well? Defaults to False.
+    mediated:
+        Should relations A->X->B be included for X not associated
+        to the given GO term? Defaults to False.
+    upstream_controllers:
+        Should relations A<-X->B be included for upstream controller
+        X not associated to the given GO term? Defaults to False.
+    downstream_targets:
+        Should relations A->X<-B be included for downstream target
+        X not associated to the given GO term? Defaults to False.
+
+    Returns
+    -------
+    :
+        The INDRA statement subnetwork induced by GO term.
+    """
+    genes = get_genes_for_go_term(
+        client=client, go_term=go_term, include_indirect=include_indirect
+    )
+    nodes = {g.grounding() for g in genes}
+    rv = indra_subnetwork(client=client, nodes=nodes)
+    if mediated:
+        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes))
+    if upstream_controllers:
+        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes))
+    if downstream_targets:
+        rv.extend(indra_shared_downstream_subnetwork(client=client, nodes=nodes))
+    # No deduplication of statements based on the union of
+    # the queries should be necessary since each are disjoint
+    return rv
