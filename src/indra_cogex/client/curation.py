@@ -1,9 +1,10 @@
 """Tools for INDRA curation."""
 
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
+from indra.resources import load_resource_json
 from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
@@ -16,8 +17,12 @@ __all__ = [
     "get_go_curation_hashes",
 ]
 
-# TODO can this be imported from INDRA and auto-generated?
-DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
+# DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
+DATABASES: Set[str] = {
+    key
+    for key, value in load_resource_json("source_info.json").items()
+    if value["type"] == "database"
+}
 
 
 def _keep_by_source(source_counts) -> bool:
