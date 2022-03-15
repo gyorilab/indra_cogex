@@ -1,5 +1,6 @@
 """Tools for INDRA curation."""
 
+import logging
 from typing import Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
@@ -17,6 +18,8 @@ __all__ = [
     "get_go_curation_hashes",
 ]
 
+logger = logging.getLogger(__name__)
+
 # DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
 DATABASES: Set[str] = {
     key
@@ -33,8 +36,16 @@ def _get_text(stmt: Statement) -> Optional[str]:
     return stmt.evidence[0].text if stmt.evidence else None
 
 
-def _get_curated_statement_hashes() -> set[int]:
-    return set()  # FIXME implement!
+def _get_curated_statement_hashes(direct: bool = True) -> Set[int]:
+    if direct:
+        from indra_db.client.principal.curation import get_curations
+
+        stmt_jsons = get_curations()
+    else:
+        from indra.sources.indra_db_rest import get_curations
+
+        stmt_jsons = get_curations()
+    return {curation["pa_hash"] for curation in stmt_jsons}
 
 
 def get_prioritized_stmt_hashes(stmts: Iterable[Statement]) -> List[int]:
@@ -60,7 +71,9 @@ def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
 
     # Don't worry about curating statements that are already curated
     curated_statement_hashes = _get_curated_statement_hashes()
-    df = df[~df["stmt_hash"].isin(curated_statement_hashes)]
+    curated_idx = df["stmt_hash"].isin(curated_statement_hashes)
+    logger.info(f"removing {curated_idx.sum()} pre-curated statements")
+    df = df[~curated_idx]
 
     # Don't worry about curating statements
     # that already have database evidence
