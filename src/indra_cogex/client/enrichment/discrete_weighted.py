@@ -2,12 +2,15 @@
 
 """Weighted ORA."""
 
-from typing import Mapping, Tuple
 import pickle
+from typing import Iterable, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
 import pystow
+from scipy.stats import fisher_exact
+from statsmodels.stats.multitest import multipletests
+from tqdm.auto import tqdm
 
 from .utils import get_wikipathways
 from ..neo4j_client import Neo4jClient, autoclient
@@ -60,15 +63,15 @@ def get_lookup(
 
 
 @autoclient(cache=True, maxsize=1)
-def get_gene_universe(client: Neo4jClient) -> Set[str]:
+def get_gene_universe(*, client: Neo4jClient) -> Set[str]:
     return {row[0] for row in client.query_tx(ALL_GENES_CYPHER)}
 
 
 def get_weighted_contingency(
-    query_genes: set[str],
-    pathway_genes: set[str],
-    universe: set[str],  # all gene CURIEs
-    lookup: dict[tuple[str, str], float],
+    query_gene_set: Set[str],
+    pathway_gene_set: Set[str],
+    universe: Set[str],  # all gene CURIEs
+    lookup: Mapping[Tuple[str, str], float],
     query_is_source: bool = True,
 ) -> np.ndarray:
     a_11, a_12, a_21, a_22 = 0.0, 0.0, 0.0, 0.0
@@ -80,12 +83,12 @@ def get_weighted_contingency(
                 lookup.get(
                     (query_gene, gene) if query_is_source else (gene, query_gene), 0.0
                 )
-                for query_gene in query_genes
+                for query_gene in query_gene_set
             ]
         )
         m_query_v = 1.0 - query_v
 
-        if gene in pathway_genes:
+        if gene in pathway_gene_set:
             pathway_v = 1.0
             m_pathway_v = 0.0
         else:
@@ -101,24 +104,31 @@ def get_weighted_contingency(
 
 
 def _do_weighted_ora(
-    curie_to_hgnc_ids: Dict[Tuple[str, str], Set[str]],
+    *,
+    curie_to_hgnc_ids: Mapping[Tuple[str, str], Set[str]],
     gene_ids: Iterable[str],
     universe: Set[str],
+    lookup: Mapping[Tuple[str, str], float],
     method: Optional[str] = "fdr_bh",
     alpha: Optional[float] = None,
     keep_insignificant: bool = True,
     query_is_source: bool = True,
+    use_tqdm: bool = True,
 ) -> pd.DataFrame:
     if alpha is None:
         alpha = 0.05
     query_gene_set = set(gene_ids)
     rows = []
-    for (curie, name), pathway_hgnc_ids in curie_to_hgnc_ids.items():
+
+    _tqdm_kwargs = dict(desc="Weighted ORA", unit="pathway", unit_scale=True)
+    it = tqdm(curie_to_hgnc_ids.items(), disable=not use_tqdm, **_tqdm_kwargs)
+    for (curie, name), pathway_hgnc_ids in it:
         table = get_weighted_contingency(
             query_gene_set=query_gene_set,
             pathway_gene_set=pathway_hgnc_ids,
-            gene_universe=count,
+            universe=universe,
             query_is_source=query_is_source,
+            lookup=lookup,
         )
         _, pvalue = fisher_exact(table, alternative="greater")
         rows.append((curie, name, pvalue))
@@ -143,10 +153,12 @@ def _do_weighted_ora(
 
 def _ora(func, query_is_source, client: Neo4jClient, **kwargs):
     universe = get_gene_universe(client=client)
+    lookup = get_lookup(client=client)
     return _do_weighted_ora(
-        func(client=client),
+        curie_to_hgnc_ids=func(client=client),
         query_is_source=query_is_source,
         universe=universe,
+        lookup=lookup,
         **kwargs,
     )
 
@@ -177,7 +189,6 @@ def wikipathways_weighted_upstream_ora(
         client=client,
         query_is_source=True,
         gene_ids=gene_ids,
-        universe=universe,
         **kwargs,
     )
 
@@ -208,6 +219,5 @@ def wikipathways_weighted_downstream_ora(
         client=client,
         query_is_source=False,
         gene_ids=gene_ids,
-        universe=universe,
         **kwargs,
     )
