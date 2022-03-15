@@ -10,7 +10,8 @@ import logging
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
-from flask import Response, abort, jsonify, render_template, request
+from flask import Response, abort, jsonify, render_template, request, \
+    Blueprint, Flask
 from flask_jwt_extended import jwt_optional
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
@@ -18,19 +19,15 @@ from indra.util.statement_presentation import _get_available_ev_source_counts
 from indra_db.client import get_curations, submit_curation
 from indra_db.exceptions import BadHashError
 from indralab_auth_tools.auth import resolve_auth
-from more_click import make_web_command
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.apps.query_web_app import process_result
 from indra_cogex.client.curation import get_go_curation_hashes
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
-from .. import get_flask_app
-
 logger = logging.getLogger(__name__)
 
-# Setup Flask app
-app = get_flask_app(__name__)
+data_display_blueprint = Blueprint('data_display', __name__)
 
 # Derived types
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
@@ -168,7 +165,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
 
 
 # Endpoint for testing
-@app.route("/get_stmts", methods=["GET"])
+@data_display_blueprint.route("/get_stmts", methods=["GET"])
 def get_stmts():
     # Get the statements hash from the query string
     try:
@@ -181,7 +178,7 @@ def get_stmts():
 
 
 # Serve the statement display template
-@app.route("/statement_display", methods=["GET"])
+@data_display_blueprint.route("/statement_display", methods=["GET"])
 @jwt_optional
 def statement_display():
     user, roles = resolve_auth(dict(request.args))
@@ -223,7 +220,7 @@ def _get_user():
 
 
 # Curation endpoints
-@app.route("/curate/go/<term>", methods=["GET"])
+@data_display_blueprint.route("/curate/go/<term>", methods=["GET"])
 @jwt_optional
 def curate_go(term: str):
     user, roles = resolve_auth(dict(request.args))
@@ -244,7 +241,7 @@ def curate_go(term: str):
         abort(Response("Parameter 'term' unfilled", status=415))
 
 
-@app.route("/curate/<hash_val>", methods=["POST"])
+@data_display_blueprint.route("/curate/<hash_val>", methods=["POST"])
 @jwt_optional
 def submit_curation_endpoint(hash_val: str):
     email = _get_user()
@@ -273,14 +270,17 @@ def submit_curation_endpoint(hash_val: str):
     return jsonify(res)
 
 
-@app.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
+@data_display_blueprint.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
     curations = get_curations(pa_hash=stmt_hash, source_hash=src_hash)
     return jsonify(curations)
 
 
-# Create runnable cli command
-cli = make_web_command(app)
-
 if __name__ == "__main__":
+    from more_click import make_web_command
+    from indra_cogex.apps.wsgi import TEMPLATES_DIR, STATIC_DIR
+
+    app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
+    app.register_blueprint(data_display_blueprint)
+    cli = make_web_command(app)
     cli()
