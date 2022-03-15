@@ -171,8 +171,8 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
 def get_stmts():
     # Get the statements hash from the query string
     try:
-        stmt_hash = int(request.args.get("stmt_hash"))
-        stmts = get_stmts_for_stmt_hashes([stmt_hash])
+        stmt_hash_list = request.args.getlist("stmt_hash", type=int)
+        stmts = get_stmts_for_stmt_hashes(stmt_hash_list)
         return jsonify(process_result(stmts))
     except (TypeError, ValueError) as err:
         logger.exception(err)
