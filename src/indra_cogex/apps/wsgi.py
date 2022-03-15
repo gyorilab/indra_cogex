@@ -2,22 +2,18 @@
 
 """Full INDRA CoGEx web app suite."""
 import os
-from pathlib import Path
 
 from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
+from indra_cogex.apps import STATIC_DIR, TEMPLATES_DIR
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.landing_page import landing_blueprint
 from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION
 from indra_cogex.apps.query_web_app import api
 from indra_cogex.client.neo4j_client import Neo4jClient
-
-APPS_DIR = Path(__file__).parent.absolute()
-TEMPLATES_DIR = APPS_DIR / "templates"
-STATIC_DIR = APPS_DIR / "static"
 
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 app.register_blueprint(auth)
