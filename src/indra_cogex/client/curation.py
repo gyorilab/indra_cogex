@@ -109,7 +109,7 @@ def get_go_curation_hashes(
     Parameters
     ----------
     go_term :
-        The GO term to query
+        The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
         The Neo4j client.
     include_indirect :

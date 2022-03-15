@@ -207,7 +207,7 @@ def indra_subnetwork_go(
     Parameters
     ----------
     go_term :
-        The GO term to query
+        The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
         The Neo4j client.
     include_indirect :

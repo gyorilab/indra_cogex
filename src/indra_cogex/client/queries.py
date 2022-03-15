@@ -185,7 +185,7 @@ def get_genes_for_go_term(
     client :
         The Neo4j client.
     go_term :
-        The GO term to query.
+        The GO term to query. Example: ``("GO", "GO:0006915")``
     include_indirect :
         Should ontological children of the given GO term
         be queried as well? Defaults to False.
