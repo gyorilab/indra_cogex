@@ -2,207 +2,206 @@
 
 """Weighted ORA."""
 
-import pickle
-from functools import lru_cache
-from typing import Iterable, List, Mapping, Tuple
+from typing import Mapping, Tuple
 
 import numpy as np
 import pandas as pd
 import pystow
-from scipy.stats import fisher_exact
 
-from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS, count_human_genes
-from indra_cogex.client.neo4j_client import Neo4jClient
+from .utils import get_wikipathways
+from ..neo4j_client import Neo4jClient, autoclient
 
-ENTITY_TO_TARGETS_CYPHER = """\
-MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
+__all__ = [
+    "get_weighted_contingency",
+    "get_lookup",
+    "get_gene_universe",
+    # Pathway database functions
+    "wikipathways_weighted_downstream_ora",
+    "wikipathways_weighted_upstream_ora",
+]
+
+LOOKUP_CACHE_PATH = pystow.join("indra", name="weighted_ora_belief_cache.tsv")
+
+ALL_BELIEFS_CYPHER = """\
+MATCH (h:BioEntity)-[r:indra_rel]->(t:BioEntity)
 WHERE
-    gene.id STARTS WITH "hgnc"                  // Collecting human genes only
-    AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
-    AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-RETURN 
-    regulator.id,
-    regulator.name,
-    collect({gene:gene.id, evidence_count:r.evidence_count})
+    h.id STARTS WITH "hgnc"                  // Collecting human genes only
+    AND t.id STARTS WITH "hgnc"
+    AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
+RETURN DISTINCT
+    h.id, t.id, r.stmt_hash, r.belief
 """
 
-TEST_RESULTS_PATH = pystow.join("indra", "cogex", name="weighted_ora_test_results.tsv")
+ALL_GENES_CYPHER = """\
+MATCH (n:BioEntity)
+WHERE n.id STARTS WITH 'hgnc'
+RETURN n.id
+"""
 
 
-@lru_cache(maxsize=1)
-def _get_data(
-    *,
-    client: Neo4jClient,
-    reload: bool = False,
-    cutoff: int = 1,
-) -> List[Tuple[str, str, Mapping[str, int]]]:
-    cache_path = pystow.join(
-        "indra", "cogex", name=f"weighted_ora_test_{cutoff:03d}.pkl"
-    )
-    if cache_path.exists() and not reload:
-        with cache_path.open("rb") as file:
-            return pickle.load(file)
-    rv = [
-        (
-            curie,
-            name,
-            {
-                collection_row["gene"]: collection_row["evidence_count"]
-                for collection_row in collection_rows
-                if cutoff <= collection_row["evidence_count"]
-            },
-        )
-        for curie, name, collection_rows in client.query_tx(ENTITY_TO_TARGETS_CYPHER)
-    ]
-    with cache_path.open("wb") as file:
-        pickle.dump(rv, file, protocol=pickle.HIGHEST_PROTOCOL)
-    return rv
+@autoclient(cache=True, maxsize=1)
+def get_lookup(
+    *, client: Neo4jClient, force: bool = False
+) -> Mapping[Tuple[str, str], float]:
+    """Get the source/target to belief lookup table."""
+    if LOOKUP_CACHE_PATH.is_file() and not force:
+        df = pd.read_csv(LOOKUP_CACHE_PATH, sep="\t")
+    else:
+        res = client.query_tx(all_beliefs)
+        df = pd.DataFrame(res, columns=["source", "target", "stmt_hash", "belief"])
+        df.to_csv(LOOKUP_CACHE_PATH, sep="\t", index=False)
+    return df.groupby(["source", "target"])["belief"].max().to_dict()
 
 
-def indra_upstream_weighted_ora(
-    gene_ids: Iterable[str],
-    *,
-    client: Neo4jClient,
-    minimum_evidence_count: int = 1,
-):
-    gene_universe = count_human_genes(client=client)
-    query_weights = {
-        # TODO need some kind of pre-calculated global adjustment here
-        gene_id: 1
-        for gene_id in gene_ids
-    }
-    rows = []
-    debug_rows = []
-    for curie, name, pathway_weights in _get_data(client=client):
-        # print(pathway_curie, pathway_name)
-        # print(pathway_weights)
-        # The weight for all remaining pathways is estimated by this.
-        # Lots of room for improvemnt here. Maybe use label smoothing ideas?
-        estimated_average_weight = sum(pathway_weights.values()) / gene_universe
-        print(curie, estimated_average_weight)
-        intersection = sum(
-            pathway_weights[gene_id]
-            for gene_id in set(query_weights).intersection(pathway_weights)
-        )
-        pathway_minus_query = sum(
-            pathway_weights[gene_id]
-            for gene_id in set(pathway_weights).difference(query_weights)
-        )
-        query_minus_pathway = sum(
-            estimated_average_weight
-            for _ in set(query_weights).difference(pathway_weights)
-        )
-        union = sum((intersection, pathway_minus_query, query_minus_pathway))
-        total = gene_universe * estimated_average_weight
-        bottom_right = total - union
-        table = np.array(
+@autoclient(cache=True, maxsize=1)
+def get_gene_universe(client: Neo4jClient) -> Set[str]:
+    return {row[0] for row in client.query_tx(ALL_GENES_CYPHER)}
+
+
+def get_weighted_contingency(
+    query_genes: set[str],
+    pathway_genes: set[str],
+    universe: set[str],  # all gene CURIEs
+    lookup: dict[tuple[str, str], float],
+    query_is_source: bool = True,
+) -> np.ndarray:
+    a_11, a_12, a_21, a_22 = 0.0, 0.0, 0.0, 0.0
+
+    for gene in universe:
+        # TODO could also use mean or median
+        query_v = np.max(
             [
-                [
-                    intersection,
-                    query_minus_pathway,
-                ],
-                [
-                    pathway_minus_query,
-                    bottom_right,
-                ],
+                lookup.get(
+                    (query_gene, gene) if query_is_source else (gene, query_gene), 0.0
+                )
+                for query_gene in query_genes
             ]
         )
-        debug_rows.append(
-            (
-                curie,
-                intersection,
-                estimated_average_weight,
-                query_minus_pathway,
-                pathway_minus_query,
-                union,
-                total,
-                bottom_right,
-            )
+        m_query_v = 1.0 - query_v
+
+        if gene in pathway_genes:
+            pathway_v = 1.0
+            m_pathway_v = 0.0
+        else:
+            pathway_v = 0.0
+            m_pathway_v = 1.0
+
+        a_11 += query_v * pathway_v
+        a_12 += query_v * m_pathway_v
+        a_21 += m_query_v * pathway_v
+        a_22 += m_query_v * m_pathway_v
+
+    return np.array([[a_11, a_12], [a_21, a_22]])
+
+
+def _do_weighted_ora(
+    curie_to_hgnc_ids: Dict[Tuple[str, str], Set[str]],
+    gene_ids: Iterable[str],
+    universe: Set[str],
+    method: Optional[str] = "fdr_bh",
+    alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
+    query_is_source: bool = True,
+) -> pd.DataFrame:
+    if alpha is None:
+        alpha = 0.05
+    query_gene_set = set(gene_ids)
+    rows = []
+    for (curie, name), pathway_hgnc_ids in curie_to_hgnc_ids.items():
+        table = get_weighted_contingency(
+            query_gene_set=query_gene_set,
+            pathway_gene_set=pathway_hgnc_ids,
+            gene_universe=count,
+            query_is_source=query_is_source,
         )
         _, pvalue = fisher_exact(table, alternative="greater")
         rows.append((curie, name, pvalue))
-
     df = pd.DataFrame(rows, columns=["curie", "name", "p"]).sort_values(
         "p", ascending=True
     )
     df["mlp"] = -np.log10(df["p"])
+    if method:
+        correction_results = multipletests(
+            df["p"],
+            method=method,
+            is_sorted=True,
+            alpha=alpha,
+        )
+        df["q"] = correction_results[1]
+        df["mlq"] = -np.log10(df["q"])
+        df = df.sort_values("q", ascending=True)
+    if not keep_insignificant:
+        df = df[df["q"] < alpha]
     return df
 
 
-def indra_upstream_weighted_ora(
-    gene_ids: Iterable[str],
-    *,
-    client: Neo4jClient,
-    minimum_evidence_count: int = 1,
-):
-    gene_universe = count_human_genes(client=client)
-    query_weights = {
-        # TODO need some kind of pre-calculated global adjustment here
-        gene_id: 1
-        for gene_id in gene_ids
-    }
-    rows = []
-    debug_rows = []
-    for curie, name, pathway_weights in _get_data(client=client):
-        estimated_average_weight = np.mean(
-            np.fromiter(pathway_weights.values(), dtype=int)
-        ).item()
-        print(curie, estimated_average_weight)
-        intersection = sum(
-            pathway_weights[gene_id]
-            for gene_id in set(query_weights).intersection(pathway_weights)
-        )
-        pathway_minus_query = sum(
-            pathway_weights[gene_id]
-            for gene_id in set(pathway_weights).difference(query_weights)
-        )
-        query_minus_pathway = sum(
-            estimated_average_weight
-            for _ in set(query_weights).difference(pathway_weights)
-        )
-        union = sum((intersection, pathway_minus_query, query_minus_pathway))
-        total = gene_universe * estimated_average_weight
-        bottom_right = total - union
-        table = np.array(
-            [
-                [
-                    intersection,
-                    query_minus_pathway,
-                ],
-                [
-                    pathway_minus_query,
-                    bottom_right,
-                ],
-            ]
-        )
-        debug_rows.append(
-            (
-                curie,
-                intersection,
-                estimated_average_weight,
-                query_minus_pathway,
-                pathway_minus_query,
-                union,
-                total,
-                bottom_right,
-            )
-        )
-        _, pvalue = fisher_exact(table, alternative="greater")
-        rows.append((curie, name, pvalue))
-
-    df = pd.DataFrame(rows, columns=["curie", "name", "p"]).sort_values(
-        "p", ascending=True
+def _ora(func, query_is_source, client: Neo4jClient, **kwargs):
+    universe = get_gene_universe(client=client)
+    return _do_weighted_ora(
+        func(client=client),
+        query_is_source=query_is_source,
+        universe=universe,
+        **kwargs,
     )
-    df["mlp"] = -np.log10(df["p"])
-    return df
 
 
-def _main():
-    client = Neo4jClient()
-    rv = indra_upstream_weighted_ora(gene_ids=EXAMPLE_GENE_IDS, client=client)
-    rv.to_csv(TEST_RESULTS_PATH, sep="\t", index=False)
-    print(TEST_RESULTS_PATH)
+@autoclient()
+def wikipathways_weighted_upstream_ora(
+    gene_ids: Iterable[str], *, client: Neo4jClient, **kwargs
+) -> pd.DataFrame:
+    """Calculate weighted over-representation on all WikiPathway pathways.
+
+    Parameters
+    ----------
+    gene_ids :
+        List of gene identifiers
+    client :
+        Neo4jClient
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
+    return _ora(
+        func=get_wikipathways,
+        client=client,
+        query_is_source=True,
+        gene_ids=gene_ids,
+        universe=universe,
+        **kwargs,
+    )
 
 
-if __name__ == "__main__":
-    _main()
+@autoclient()
+def wikipathways_weighted_downstream_ora(
+    gene_ids: Iterable[str], *, client: Neo4jClient, **kwargs
+) -> pd.DataFrame:
+    """Calculate weighted over-representation on all WikiPathway pathways.
+
+    Parameters
+    ----------
+    gene_ids :
+        List of gene identifiers
+    client :
+        Neo4jClient
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
+    return _ora(
+        func=get_wikipathways,
+        client=client,
+        query_is_source=False,
+        gene_ids=gene_ids,
+        universe=universe,
+        **kwargs,
+    )
