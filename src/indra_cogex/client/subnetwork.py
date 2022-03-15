@@ -71,7 +71,7 @@ def indra_mediated_subnetwork(
     :
         The subnetwork induced by the given nodes.
     """
-    return _help_stepped_subnetwork(
+    return get_two_step_subnetwork(
         client=client, nodes=nodes, first_forward=True, second_forward=True
     )
 
@@ -100,7 +100,7 @@ def indra_shared_downstream_subnetwork(
     :
         The subnetwork induced by the given nodes.
     """
-    return _help_stepped_subnetwork(
+    return get_two_step_subnetwork(
         client=client, nodes=nodes, first_forward=True, second_forward=False
     )
 
@@ -129,18 +129,39 @@ def indra_shared_upstream_subnetwork(
     :
         The subnetwork induced by the given nodes.
     """
-    return _help_stepped_subnetwork(
+    return get_two_step_subnetwork(
         client=client, nodes=nodes, first_forward=False, second_forward=True
     )
 
 
-def _help_stepped_subnetwork(
+def get_two_step_subnetwork(
     *,
-    client: Neo4jClient,
     nodes: Iterable[Tuple[str, str]],
+    client: Neo4jClient,
     first_forward: bool = True,
     second_forward: bool = True,
 ) -> List[Statement]:
+    """Return the INDRA Statement subnetwork induced by paths of length
+    two between nodes A and B in a query with intermediate nodes X such
+    that paths look like A-X-B.
+
+    Parameters
+    ----------
+    nodes :
+        The nodes to query (A and B are one of these nodes in
+        the following examples).
+    client :
+        The Neo4j client.
+    first_forward:
+        If true, query A->X otherwise query A<-X
+    second_forward:
+        If true, query X->B otherwise query X<-B
+
+    Returns
+    -------
+    :
+        The INDRA statement subnetwork induced by the query
+    """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
     f1, f2 = ("-", "->") if first_forward else ("<-", "-")
     s1, s2 = ("-", "->") if second_forward else ("<-", "-")
@@ -157,6 +178,7 @@ def _help_stepped_subnetwork(
 
 
 def _paths_to_stmts(*, client: Neo4jClient, query: str) -> List[Statement]:
+    """Generate INDRA statements from a query that returns paths of length > 1."""
     return indra_stmts_from_relations(
         relation
         for path in client.query_tx(query)
