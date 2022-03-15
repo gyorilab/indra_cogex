@@ -11,6 +11,11 @@ from indra_cogex.client import Neo4jClient
 app = flask.Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 app.register_blueprint(auth)
 app.register_blueprint(landing_blueprint)
+
+if not hasattr(app, "extensions"):
+    print("no extensions?")
+    app.extensions = {}
+
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 SC, jwt = config_auth(app)
 cli = make_web_command(app)
