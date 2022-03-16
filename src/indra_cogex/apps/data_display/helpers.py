@@ -9,9 +9,11 @@ from indra.util.statement_presentation import _get_available_ev_source_counts
 
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
+CurationType = Any
+
 
 def count_curations(
-    curations, stmts_by_hash
+    curations: CurationType, stmts_by_hash: Dict[int, Statement]
 ) -> Dict[int, Dict[str, defaultdict[str, int]]]:
     correct_tags = ["correct", "act_vs_amt", "hypothesis"]
     cur_counts = {}
