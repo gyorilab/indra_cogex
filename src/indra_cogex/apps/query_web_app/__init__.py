@@ -5,7 +5,6 @@
 import logging
 from inspect import isfunction, signature
 
-import flask
 from flask import Response, abort, jsonify, request
 from flask_restx import Api, Resource, fields
 
@@ -131,12 +130,3 @@ for func_name in queries.__all__:
                 abort(Response(str(err), 500))
 
         post.__doc__ = fixed_doc
-
-
-if __name__ == "__main__":
-    from more_click import make_web_command
-
-    app = flask.Flask(__name__)
-    api.init_app(app)
-    cli = make_web_command(app=app)
-    cli()
