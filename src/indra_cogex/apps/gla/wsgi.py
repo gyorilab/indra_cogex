@@ -10,7 +10,7 @@ from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 from more_click import make_web_command
 
-from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION
+from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION
 
 from .gene_blueprint import gene_blueprint
 from .metabolite_blueprint import metabolite_blueprint
@@ -21,10 +21,6 @@ TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
 
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=STATIC_DIR)
-
-if not hasattr(app, "extensions"):
-    print("no extensions?")
-    app.extensions = {}
 
 bootstrap = Bootstrap4(app)
 

@@ -8,12 +8,11 @@ from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
-from indra_cogex.apps.constants import STATIC_DIR, TEMPLATES_DIR
+from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION, STATIC_DIR, TEMPLATES_DIR
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.landing_page import landing_blueprint
-from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION
 from indra_cogex.apps.query_web_app import api
 from indra_cogex.client.neo4j_client import Neo4jClient
 
@@ -24,10 +23,6 @@ app.register_blueprint(gene_blueprint)
 app.register_blueprint(metabolite_blueprint)
 app.register_blueprint(data_display_blueprint)
 api.init_app(app)
-
-if not hasattr(app, "extensions"):
-    print("no extensions?")
-    app.extensions = {}
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 

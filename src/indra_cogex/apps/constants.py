@@ -28,3 +28,4 @@ INDRA_COGEX_WEB_LOCAL = os.environ.get("INDRA_COGEX_WEB_LOCAL", "").lower() in {
 APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
+INDRA_COGEX_EXTENSION = "indra_cogex_client"
