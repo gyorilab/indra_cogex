@@ -3,22 +3,17 @@
 """An app for gene list analysis."""
 
 import os
-from pathlib import Path
 
 from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 from more_click import make_web_command
 
-from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION
+from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION, TEMPLATES_DIR, STATIC_DIR
 
 from .gene_blueprint import gene_blueprint
 from .metabolite_blueprint import metabolite_blueprint
 from ...client.neo4j_client import Neo4jClient
-
-APPS_DIR = Path(__file__).parent.parent.absolute()
-TEMPLATES_DIR = APPS_DIR / "templates"
-STATIC_DIR = APPS_DIR / "static"
 
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=STATIC_DIR)
 
