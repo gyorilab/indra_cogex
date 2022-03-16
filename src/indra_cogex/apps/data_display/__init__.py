@@ -15,7 +15,7 @@ from indra_db.exceptions import BadHashError
 from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client
-from indra_cogex.apps.query_web_app.helpers import process_result
+from indra_cogex.apps.queries_web.helpers import process_result
 from indra_cogex.client.curation import get_go_curation_hashes
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 

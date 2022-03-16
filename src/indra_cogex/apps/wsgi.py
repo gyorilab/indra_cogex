@@ -13,7 +13,7 @@ from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.home import home_blueprint
-from indra_cogex.apps.query_web_app import api
+from indra_cogex.apps.queries_web import api
 from indra_cogex.client.neo4j_client import Neo4jClient
 
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)

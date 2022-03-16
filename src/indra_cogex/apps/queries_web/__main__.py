@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Run the query web app with ``python -m indra_cogex.apps.query_web_app``."""
+"""Run the query web app with ``python -m indra_cogex.apps.queries_web``."""
 
 from . import cli
 
