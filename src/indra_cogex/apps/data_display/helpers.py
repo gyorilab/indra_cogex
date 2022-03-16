@@ -1,11 +1,11 @@
 import json
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
-from client import get_curations
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra_db.client import get_curations
 
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
