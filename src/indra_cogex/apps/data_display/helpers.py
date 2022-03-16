@@ -9,12 +9,27 @@ from indra_db.client import get_curations
 
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
-CurationType = Any
+CurationType = List[Dict]
 
 
 def count_curations(
     curations: CurationType, stmts_by_hash: Dict[int, Statement]
 ) -> Dict[int, Dict[str, defaultdict[str, int]]]:
+    """Count curations for each statement.
+
+    Parameters
+    ----------
+    curations :
+        An iterable of curation dictionaries.
+    stmts_by_hash :
+        A dictionary mapping statement hashes to statements.
+
+    Returns
+    -------
+    :
+        A dictionary mapping statement hashes to dictionaries mapping curation
+        types to counts.
+    """
     correct_tags = ["correct", "act_vs_amt", "hypothesis"]
     cur_counts = {}
     for cur in curations:
@@ -64,6 +79,16 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
              'color': '#28a745', 'symbol':  '\u270E',
              'title': 'Curated as correct in this model'},
 
+    Parameters
+    ----------
+    stmts :
+        An iterable of statements.
+
+    Returns
+    -------
+    :
+        A list of tuples of the form (evidence, english, hash, sources,
+        total_evidence, badges).
     """
 
     def stmt_to_row(

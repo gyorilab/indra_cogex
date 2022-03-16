@@ -43,6 +43,18 @@ def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def process_result(result) -> Any:
+    """Make the result of a query JSON-serializable.
+
+    Parameters
+    ----------
+    result :
+        The result of a query
+
+    Returns
+    -------
+    :
+        The processed result
+    """
     # Any fundamental type
     if isinstance(result, (int, str, bool, float)):
         return result
@@ -62,7 +74,18 @@ def process_result(result) -> Any:
 
 
 def get_web_return_annotation(sig: Signature) -> Type:
-    """Get and translate the return annotation of a function."""
+    """Get and translate the return annotation of a function
+
+    Parameters
+    ----------
+    sig :
+        The signature of the function
+
+    Returns
+    -------
+    :
+        The return annotation of the function
+    """
     # Get the return annotation
     return_annotation = sig.return_annotation
     if return_annotation is sig.empty:
@@ -96,6 +119,18 @@ def get_web_return_annotation(sig: Signature) -> Type:
 
 
 def get_docstring(fun: Callable) -> Tuple[str, str]:
+    """Get the docstring of a function
+
+    Parameters
+    ----------
+    fun :
+        The function whose docstring is to be retrieved
+
+    Returns
+    -------
+    :
+        The docstring of the function
+    """
     parsed_doc = parse(fun.__doc__)
     sig = signature(fun)
 
