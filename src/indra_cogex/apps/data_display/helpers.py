@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
