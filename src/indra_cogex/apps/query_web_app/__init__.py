@@ -13,6 +13,13 @@ from indra_cogex.client import queries
 
 from .helpers import get_docstring, parse_json, process_result
 
+__all__ = [
+    "api",
+    "query_ns",
+]
+
+logger = logging.getLogger(__name__)
+
 api = Api(
     title="INDRA CoGEx Query API",
     description="REST API for INDRA CoGEx queries",
@@ -20,8 +27,6 @@ api = Api(
 )
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
-
-logger = logging.getLogger(__name__)
 
 examples_dict = {
     "tissue": ["UBERON", "UBERON:0002349"],

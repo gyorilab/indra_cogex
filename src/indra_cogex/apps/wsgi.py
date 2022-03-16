@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """Full INDRA CoGEx web app suite."""
+
 import os
 
 from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
-from indra_cogex.apps import STATIC_DIR, TEMPLATES_DIR
+from indra_cogex.apps.constants import STATIC_DIR, TEMPLATES_DIR
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
@@ -30,7 +31,7 @@ if not hasattr(app, "extensions"):
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 
-SC, jwt = config_auth(app)
+config_auth(app)
 
 # Secret key must be set to use flask-wtf, but there's no *really*
 # secure information in this app so it's okay to set randomly

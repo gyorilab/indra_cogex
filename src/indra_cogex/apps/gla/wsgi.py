@@ -7,10 +7,10 @@ from pathlib import Path
 
 from flask import Flask
 from flask_bootstrap import Bootstrap4
+from indralab_auth_tools.auth import auth, config_auth
 from more_click import make_web_command
 
 from indra_cogex.apps.proxies import INDRA_COGEX_EXTENSION
-from indralab_auth_tools.auth import config_auth, auth
 
 from .gene_blueprint import gene_blueprint
 from .metabolite_blueprint import metabolite_blueprint

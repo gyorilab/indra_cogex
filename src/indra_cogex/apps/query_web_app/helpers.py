@@ -6,6 +6,13 @@ from indra.statements import Agent, Evidence, Statement
 
 from indra_cogex.representation import Node
 
+__all__ = [
+    "parse_json",
+    "process_result",
+    "get_web_return_annotation",
+    "get_docstring",
+]
+
 
 def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
     """Parse the incoming query

@@ -1,8 +1,9 @@
-import logging
 from functools import lru_cache
 from typing import Counter, Tuple
 
 from flask import Blueprint, current_app, render_template
+
+from indra_cogex.apps.constants import edge_labels
 from indra_cogex.apps.proxies import client
 
 from ...client.queries import get_edge_counter, get_node_counter
@@ -11,28 +12,7 @@ __all__ = [
     "landing_blueprint",
 ]
 
-logger = logging.getLogger(__name__)
-
 landing_blueprint = Blueprint("landing", __name__)
-
-edge_labels = {
-    "annotated_with": "MeSH Annotations",
-    "associated_with": "GO Annotations",
-    "has_citation": "Citations",
-    "indra_rel": "Causal Relations",
-    "expressed_in": "Gene Expressions",
-    "copy_number_altered_in": "CNVs",
-    "mutated_in": "Mutations",
-    "xref": "Xrefs",
-    "partof": "Part Of",
-    "has_trial": "Disease Trials",
-    "isa": "Subclasses",
-    "haspart": "Has Part",
-    "has_side_effect": "Side Effects",
-    "tested_in": "Drug Trials",
-    "sensitive_to": "Sensitivities",
-    "has_indication": "Drug Indications",
-}
 
 
 @lru_cache(1)

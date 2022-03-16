@@ -11,6 +11,7 @@ from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
@@ -21,7 +22,6 @@ from indra_cogex.client.enrichment.continuous import (
     wikipathways_gsea,
 )
 
-from .constants import INDRA_COGEX_WEB_LOCAL
 from .fields import (
     alpha_field,
     correction_field,
