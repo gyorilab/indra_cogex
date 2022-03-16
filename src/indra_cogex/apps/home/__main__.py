@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Run the landing page app with ``python -m indra_cogex.apps.landing_page``."""
+"""Run the landing page app with ``python -m indra_cogex.apps.home``."""
 
 from . import cli
 

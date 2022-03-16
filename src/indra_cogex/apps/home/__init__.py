@@ -9,10 +9,10 @@ from indra_cogex.apps.proxies import client
 from ...client.queries import get_edge_counter, get_node_counter
 
 __all__ = [
-    "landing_blueprint",
+    "home_blueprint",
 ]
 
-landing_blueprint = Blueprint("landing", __name__)
+home_blueprint = Blueprint("home", __name__)
 
 
 @lru_cache(1)
@@ -39,7 +39,7 @@ def _figure_number(n: int):
         return n, ""
 
 
-@landing_blueprint.route("/")
+@home_blueprint.route("/")
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
