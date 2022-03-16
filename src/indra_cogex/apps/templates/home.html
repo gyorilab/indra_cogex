@@ -3,6 +3,16 @@
 
 {% block title %}INDRA CoGEx{% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    <style>
+        .app-link {
+            margin: 0.5em;
+        }
+
+    </style>
+{% endblock %}
+
 
 
 {% macro count_column(counter, key, label, icon) -%}
@@ -43,8 +53,8 @@
             </div>
         </div>
     </div>
+    <p><h5 class="text-center">Apps and Services using INDRA CoGEx</h5></p>
     <div class="row">
-        {# todo: use programmatic links #}
         <div class="col-sm-6">
             <div class="card text-center">
                 <div class="card-body">
@@ -52,17 +62,20 @@
                     <div class="container border rounded">
                         <h5 class="card-title">Discrete Gene List Analysis</h5>
                         <p class="card-text">
-                            Discrete gene list analysis of a set of genes.
+                            Performs gene set enrichment analysis using INDRA CoGEx.
                         </p>
-                        <a href="/gene/discrete" class="btn btn-primary">Discrete</a>
+                        <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
+                           class="btn btn-primary app-link">Discrete</a>
                     </div>
 
                     <div class="container border rounded">
                         <h5 class="card-title">Signed Gene List Analysis</h5>
                         <p class="card-text">
-                            Signed gene list analysis of a set of genes.
+                            Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
+                            Reasoning algorithm.
                         </p>
-                        <a href="/gene/signed" class="btn btn-primary">Signed</a>
+                        <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
+                           class="btn btn-primary app-link">Signed</a>
                     </div>
 
                 </div>
@@ -73,20 +86,21 @@
                 <div class="card-body">
 
                     <div class="container border rounded">
-                        <h5 class="card-title">Continuous Gene List Analysis</h5>
+                        <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
                         <p class="card-text">
-                            Continuous gene list analysis of a set of genes.
+                            Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
                         </p>
-                        <a href="/gene/continuous" class="btn btn-primary">Continuous</a>
+                        <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
+                           class="btn btn-primary app-link">Continuous</a>
                     </div>
 
                     <div class="container border rounded">
                         <h5 class="card-title">Discrete Metabolite List Analysis</h5>
                         <p class="card-text">
-                            Discrete metabolite list analysis of a set of genes.
+                            Perform metabolite set enrichment analysis using INDRA CoGEx.
                         </p>
-                        <a href="/metabolite/discrete" class="btn btn-primary">Discrete</a>
-                    </div>
+                        <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
+                           class="btn btn-primary app-link">Discrete</a></div>
 
                 </div>
             </div>
@@ -110,7 +124,7 @@
 
                 let currentNumber = 0,
                     value = delta * changeTime / time;
-                var interval1;
+                let interval1;
                 const changeNumber = () => {
                     currentNumber += value;
                     //checks if currentNumber reached numberTo
