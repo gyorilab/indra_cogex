@@ -32,5 +32,6 @@ config_auth(app)
 # secure information in this app so it's okay to set randomly
 app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(32)
+app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 
 bootstrap = Bootstrap4(app)
