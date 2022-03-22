@@ -5,7 +5,12 @@ from typing import Iterable, List, Tuple
 from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
-from .queries import get_genes_for_go_term, get_genes_in_tissue
+from .queries import (
+    get_genes_for_go_term,
+    get_genes_in_tissue,
+    get_pmids_for_mesh,
+    get_stmts_for_pmid,
+)
 from ..representation import indra_stmts_from_relations, norm_id
 
 __all__ = [
@@ -265,13 +270,3 @@ def indra_subnetwork_go(
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
     return rv
-
-
-@autoclient()
-def indra_subnetwork_mesh_disease(
-    mesh_term: Tuple[str, str],
-    *,
-    client: Neo4jClient,
-    include_indirect: bool = False,
-) -> List[Statement]:
-    raise NotImplementedError

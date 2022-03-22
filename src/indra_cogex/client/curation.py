@@ -11,7 +11,8 @@ from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
-from .subnetwork import indra_subnetwork_go, indra_subnetwork_mesh_disease
+from .queries import get_stmts_for_mesh
+from .subnetwork import indra_subnetwork_go
 
 __all__ = [
     "get_prioritized_stmt_hashes",
@@ -159,9 +160,9 @@ def get_mesh_disease_curation_hashes(
     :
         A list of INDRA statement hashes prioritized for curation
     """
-    stmts = indra_subnetwork_mesh_disease(
+    stmts = get_stmts_for_mesh(
         mesh_term=mesh_term,
+        include_child_terms=include_indirect,
         client=client,
-        include_indirect=include_indirect,
     )
     return get_prioritized_stmt_hashes(stmts)
