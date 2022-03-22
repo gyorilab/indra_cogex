@@ -51,7 +51,7 @@ def gene_ontology():
 @jwt_optional
 def curate_go(term: str):
     hashes = get_go_curation_hashes(go_term=("GO", term), client=client)
-    return _render_hashes(hashes)
+    return _render_hashes(hashes, title=f"GO Curator: {term}")
 
 
 class MeshDiseaseForm(FlaskForm):
@@ -78,11 +78,11 @@ def mesh_disease():
 @jwt_optional
 def curate_mesh(term: str):
     hashes = get_mesh_disease_curation_hashes(mesh_term=("MESH", term), client=client)
-    return _render_hashes(hashes)
+    return _render_hashes(hashes, title=f"MeSH Curator: {term}")
 
 
-def _render_hashes(hashes: Iterable[int]) -> Response:
+def _render_hashes(hashes: Iterable[int], title: str) -> Response:
     max_results = request.args.get("max_results", type=int, default=25)
     stmts = get_stmts_for_stmt_hashes(hashes[max_results:])
     _, _, email = resolve_email()
-    return render_statements(stmts, user_email=email)
+    return render_statements(stmts, user_email=email, title=title)
