@@ -5,12 +5,7 @@ from typing import Iterable, List, Tuple
 from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
-from .queries import (
-    get_genes_for_go_term,
-    get_genes_in_tissue,
-    get_pmids_for_mesh,
-    get_stmts_for_pmid,
-)
+from .queries import get_genes_for_go_term, get_genes_in_tissue
 from ..representation import indra_stmts_from_relations, norm_id
 
 __all__ = [
@@ -18,7 +13,6 @@ __all__ = [
     "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
     "indra_subnetwork_go",
-    "indra_subnetwork_mesh_disease",
 ]
 
 
@@ -229,7 +223,7 @@ def indra_subnetwork_go(
     mediated: bool = False,
     upstream_controllers: bool = False,
     downstream_targets: bool = False,
-) -> List[Statement]:
+):
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
     Parameters
