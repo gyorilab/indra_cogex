@@ -49,26 +49,28 @@
     </style>
 {% endblock %}
 
-{% block main %}
-    <div class="container" id="vue-app">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="my-0 font-weight-normal">CoGEx Statements</h4>
+{% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
+
+{% block container %}
+    <div class="card">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">
+                {% if title %}{{ title }}{% else %}CoGEx Statements{% endif %}
+            </h4>
+        </div>
+        <div class="list-group">
+            {% raw %}
+            <div class="list-group-item" v-for="st_obj in this.$data.stmts">
+                <statement
+                        :evidence="st_obj.ev_array"
+                        :english="st_obj.english"
+                        :hash="st_obj.hash"
+                        :sources="st_obj.sources"
+                        :total_evidence="st_obj.total_evidence"
+                        :badges="st_obj.badges"
+                ></statement>
             </div>
-            <div class="list-group">
-                {% raw %}
-                <div class="list-group-item" v-for="st_obj in this.$data.stmts">
-                    <statement
-                            :evidence="st_obj.ev_array"
-                            :english="st_obj.english"
-                            :hash="st_obj.hash"
-                            :sources="st_obj.sources"
-                            :total_evidence="st_obj.total_evidence"
-                            :badges="st_obj.badges"
-                    ></statement>
-                </div>
-                {% endraw %}
-            </div>
+            {% endraw %}
         </div>
     </div>
 {% endblock %}

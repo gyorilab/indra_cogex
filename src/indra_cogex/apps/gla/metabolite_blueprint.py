@@ -139,4 +139,8 @@ def enzyme(ec_code: str):
     stmts = metabolomics_explanation(
         client=client, ec_code=identifier, chebi_ids=chebi_ids
     )
-    return render_statements(stmts, user_email=user.email if user else "")
+    return render_statements(
+        stmts,
+        user_email=user.email if user else "",
+        title=f"Statements for EC:{identifier}",
+    )

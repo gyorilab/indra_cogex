@@ -58,7 +58,7 @@ def count_curations(
 
 
 def render_statements(
-    stmts: List[Statement], user_email: Optional[str] = None
+    stmts: List[Statement], user_email: Optional[str] = None, **kwargs
 ) -> Response:
     """Render INDRA statements."""
     form_stmts = format_stmts(stmts)
@@ -66,6 +66,7 @@ def render_statements(
         "data_display/data_display_base.html",
         stmts=form_stmts,
         user_email=user_email or "",
+        **kwargs,
     )
 
 
