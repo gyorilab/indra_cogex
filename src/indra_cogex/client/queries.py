@@ -880,7 +880,7 @@ def get_stmts_for_stmt_hashes(
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     *,
     client: Neo4jClient,
-) -> Iterable[Statement]:
+) -> List[Statement]:
     """Return the statements for the given statement hashes.
 
     Parameters
