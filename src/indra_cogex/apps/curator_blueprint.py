@@ -83,6 +83,6 @@ def curate_mesh(term: str):
 
 def _render_hashes(hashes: Iterable[int], title: str) -> Response:
     max_results = request.args.get("max_results", type=int, default=25)
-    stmts = get_stmts_for_stmt_hashes(hashes[max_results:])
+    stmts = get_stmts_for_stmt_hashes(hashes[:max_results])
     _, _, email = resolve_email()
     return render_statements(stmts, user_email=email, title=title)
