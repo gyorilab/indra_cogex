@@ -53,60 +53,62 @@
             </div>
         </div>
     </div>
-    <p><h5 class="text-center">Apps and Services using INDRA CoGEx</h5></p>
     <div class="row">
-        <div class="col-sm-6">
-            <div class="card text-center">
+        <h3 class="text-center" style="margin: 1em auto;">Apps and Services using INDRA CoGEx</h3>
+        <div class="card-deck">
+            <div class="card">
+                {# <img class="card-img-top" src="..." alt="Card image cap"> #}
                 <div class="card-body">
-
-                    <div class="container border rounded" padding="10px">
-                        <h5 class="card-title">Discrete Gene List Analysis</h5>
-                        <p class="card-text">
-                            Performs gene set enrichment analysis using INDRA CoGEx.
-                        </p>
-                        <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
-                           class="btn btn-primary app-link">Start</a>
-                    </div>
-
-                    <p></p>
-                    <div class="container border rounded">
-                        <h5 class="card-title">Signed Gene List Analysis</h5>
-                        <p class="card-text">
-                            Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
-                            Reasoning algorithm.
-                        </p>
-                        <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
-                           class="btn btn-primary app-link">Start</a>
-                    </div>
-
+                    <h5 class="card-title">Discrete Gene List Analysis</h5>
+                    <p class="card-text">
+                        Performs gene set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-6">
-            <div class="card text-center">
+            <div class="card">
+                {# <img class="card-img-top" src="..." alt="Card image cap"> #}
                 <div class="card-body">
-
-                    <div class="container border rounded">
-                        <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
-                        <p class="card-text">
-                            Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
-                        </p>
-                        <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
-                           class="btn btn-primary app-link">Start</a>
-                    </div>
-
-                    <p></p>
-                    <div class="container border rounded">
-                        <h5 class="card-title">Discrete Metabolite List Analysis</h5>
-                        <p class="card-text">
-                            Perform metabolite set enrichment analysis using INDRA CoGEx.
-                        </p>
-                        <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
-                           class="btn btn-primary app-link">Start</a></div>
-
+                    <h5 class="card-title">Signed Gene List Analysis</h5>
+                    <p class="card-text">
+                        Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
+                        Reasoning algorithm.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-
+            <div class="card">
+                {# <img class="card-img-top" src="..." alt="Card image cap"> #}
+                <div class="card-body">
+                    <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
+                    <p class="card-text">
+                        Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                {# <img class="card-img-top" src="..." alt="Card image cap"> #}
+                <div class="card-body">
+                    <h5 class="card-title">Discrete Metabolite List Analysis</h5>
+                    <p class="card-text">
+                        Perform metabolite set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
