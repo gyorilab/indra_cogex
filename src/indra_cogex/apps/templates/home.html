@@ -54,6 +54,7 @@
         </div>
     </div>
     <div class="row">
+        {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
         <h3 class="text-center" style="margin: 1em auto;">Apps and Services using INDRA CoGEx</h3>
         <div class="card-deck">
             <div class="card">
@@ -110,6 +111,35 @@
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-deck">
+            <div class="card">
+                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <div class="card-body">
+                    <h5 class="card-title">GO Curator</h5>
+                    <p class="card-text">
+                        Curate networks induced by Gene Ontology terms for
+                        biological processes, cellular components, or molecular functions
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.gene_ontology') }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <div class="card-body">
+                    <h5 class="card-title">MeSH Disase Curator</h5>
+                    <p class="card-text">
+                        Curate networks induced by MeSH diseases
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.mesh_disease') }}"
                        class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>

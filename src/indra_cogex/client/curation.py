@@ -11,7 +11,7 @@ from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
-from .subnetwork import indra_subnetwork_go
+from .subnetwork import indra_subnetwork_go, indra_subnetwork_mesh_disease
 
 __all__ = [
     "get_prioritized_stmt_hashes",
@@ -132,5 +132,36 @@ def get_go_curation_hashes(
         mediated=mediated,
         upstream_controllers=upstream_controllers,
         downstream_targets=downstream_targets,
+    )
+    return get_prioritized_stmt_hashes(stmts)
+
+
+def get_mesh_disease_curation_hashes(
+    mesh_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+) -> List[int]:
+    """Get prioritized statement hashes to curate for a given MeSH term.
+
+    Parameters
+    ----------
+    mesh_term :
+        The medical subject heading (MeSH) disease term to query. Example: ``("MESH", "D006009")``
+    client :
+        The Neo4j client.
+    include_indirect :
+        Should hierarchical children of the given MeSH term
+        be queried as well? Defaults to False.
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    stmts = indra_subnetwork_mesh_disease(
+        mesh_term=mesh_term,
+        client=client,
+        include_indirect=include_indirect,
     )
     return get_prioritized_stmt_hashes(stmts)

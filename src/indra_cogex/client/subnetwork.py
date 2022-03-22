@@ -13,6 +13,7 @@ __all__ = [
     "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
     "indra_subnetwork_go",
+    "indra_subnetwork_mesh_disease",
 ]
 
 
@@ -223,7 +224,7 @@ def indra_subnetwork_go(
     mediated: bool = False,
     upstream_controllers: bool = False,
     downstream_targets: bool = False,
-):
+) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
     Parameters
@@ -264,3 +265,13 @@ def indra_subnetwork_go(
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
     return rv
+
+
+@autoclient()
+def indra_subnetwork_mesh_disease(
+    mesh_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+) -> List[Statement]:
+    raise NotImplementedError
