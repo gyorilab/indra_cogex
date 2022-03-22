@@ -59,15 +59,16 @@
             <div class="card text-center">
                 <div class="card-body">
 
-                    <div class="container border rounded">
+                    <div class="container border rounded" padding="10px">
                         <h5 class="card-title">Discrete Gene List Analysis</h5>
                         <p class="card-text">
                             Performs gene set enrichment analysis using INDRA CoGEx.
                         </p>
                         <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
-                           class="btn btn-primary app-link">Discrete</a>
+                           class="btn btn-primary app-link">Start</a>
                     </div>
 
+                    <p></p>
                     <div class="container border rounded">
                         <h5 class="card-title">Signed Gene List Analysis</h5>
                         <p class="card-text">
@@ -75,7 +76,7 @@
                             Reasoning algorithm.
                         </p>
                         <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
-                           class="btn btn-primary app-link">Signed</a>
+                           class="btn btn-primary app-link">Start</a>
                     </div>
 
                 </div>
@@ -91,16 +92,17 @@
                             Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
                         </p>
                         <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
-                           class="btn btn-primary app-link">Continuous</a>
+                           class="btn btn-primary app-link">Start</a>
                     </div>
 
+                    <p></p>
                     <div class="container border rounded">
                         <h5 class="card-title">Discrete Metabolite List Analysis</h5>
                         <p class="card-text">
                             Perform metabolite set enrichment analysis using INDRA CoGEx.
                         </p>
                         <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
-                           class="btn btn-primary app-link">Discrete</a></div>
+                           class="btn btn-primary app-link">Start</a></div>
 
                 </div>
             </div>
