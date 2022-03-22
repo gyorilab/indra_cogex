@@ -38,7 +38,7 @@
         <tbody>
         {% for ec_code, name, p, mlp, q, mlq in df.values %}
             <tr>
-                <td><a href="https://bioregistry.io/eccode:{{ ec_code }}">{{ ec_code }}</a></td>
+                <td><a href="https://bioregistry.io/eccode:{{ ec_code }}" target="_blank">{{ ec_code }}</a></td>
                 <td>{% if name %}{{ name }}{% endif %}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
@@ -64,7 +64,7 @@
             <h3>Query</h3>
             <p>
                 {% for chebi_id, name in metabolites.items() %}
-                    <a class="badge badge-info" href="https://bioregistry.io/chebi:{{ chebi_id }}">CHEBI:{{ chebi_id }}
+                    <a class="badge badge-info" href="https://bioregistry.io/chebi:{{ chebi_id }}" target="_blank">CHEBI:{{ chebi_id }}
                         ({{ name }})
                     </a>
                 {% endfor %}

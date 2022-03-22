@@ -11,6 +11,8 @@ from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
+from indra_cogex.apps.proxies import client
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
@@ -20,7 +22,6 @@ from indra_cogex.client.enrichment.continuous import (
     wikipathways_gsea,
 )
 
-from .constants import INDRA_COGEX_WEB_LOCAL
 from .fields import (
     alpha_field,
     correction_field,
@@ -33,7 +34,6 @@ from .fields import (
     source_field,
     species_field,
 )
-from .proxies import client
 from ...client.enrichment.continuous import get_rat_scores, go_gsea
 from ...client.enrichment.discrete import (
     EXAMPLE_GENE_IDS,
@@ -249,9 +249,7 @@ def discretize_analysis():
                     index=False,
                 )
             flask.flash(f"Downloaded files to {downloads}")
-            return flask.redirect(
-                url_for(f".{discretize_analysis.__name__}")
-            )
+            return flask.redirect(url_for(f".{discretize_analysis.__name__}"))
 
         return flask.render_template(
             "gene_analysis/discrete_results.html",

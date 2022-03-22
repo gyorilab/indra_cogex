@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {{ super() }}
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+
+    <!-- Indralab-vue, for access to <statement> component and its child components -->
+    <script src="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.umd.min.js"></script>
+    <link href="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.css" rel="stylesheet">
+
+    <style>
+        .badge-subject {
+            background-color: #4a36aa;
+            color: #FFFFFF;
+        }
+
+        .badge-object {
+            background-color: #2d8e4c;
+            color: #FFFFFF;
+        }
+
+        .badge-other {
+            background-color: #606060;
+            color: #FFFFFF;
+        }
+
+        .badge-source {
+            font-size: 8pt;
+            margin: 0;
+            padding-left: 5px;
+            cursor: pointer;
+        }
+
+        .nvm {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .col-1 {
+            flex: 12%;
+            max-width: 12%;
+        }
+
+        .col-10 {
+            flex: 76%;
+            max-width: 76%;
+        }
+    </style>
+{% endblock %}
+
+{% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
+
+{% block container %}
+    <div class="card">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">
+                {% if title %}{{ title }}{% else %}CoGEx Statements{% endif %}
+            </h4>
+        </div>
+        <div class="list-group">
+            {% raw %}
+            <div class="list-group-item" v-for="st_obj in this.$data.stmts">
+                <statement
+                        :evidence="st_obj.ev_array"
+                        :english="st_obj.english"
+                        :hash="st_obj.hash"
+                        :sources="st_obj.sources"
+                        :total_evidence="st_obj.total_evidence"
+                        :badges="st_obj.badges"
+                ></statement>
+            </div>
+            {% endraw %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        let app = new Vue({
+            el: '#vue-app',
+            data: {
+                stmts: [
+                    {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
+                        {
+                            ev_array: {{ ev_array|safe }},
+                            english: {{ english|safe }},
+                            hash: {{ hash_str|safe }},
+                            sources: {{ sources|safe }},
+                            total_evidence: {{ total_evidence|int }},
+                            badges: {{ badges|safe }}
+                        },
+                    {% endfor %}
+                ]
+            }
+        });
+        Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
+        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+    </script>
+{% endblock %}

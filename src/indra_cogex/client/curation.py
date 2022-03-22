@@ -16,6 +16,7 @@ __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
+    "get_curations",
 ]
 
 logger = logging.getLogger(__name__)
@@ -36,15 +37,19 @@ def _get_text(stmt: Statement) -> Optional[str]:
     return stmt.evidence[0].text if stmt.evidence else None
 
 
-def _get_curated_statement_hashes(direct: bool = True) -> Set[int]:
+def get_curations(direct: bool = True):
     if direct:
         from indra_db.client.principal.curation import get_curations
 
-        stmt_jsons = get_curations()
+        return get_curations()
     else:
         from indra.sources.indra_db_rest import get_curations
 
-        stmt_jsons = get_curations()
+        return get_curations()
+
+
+def _get_curated_statement_hashes(direct: bool = True) -> Set[int]:
+    stmt_jsons = get_curations(direct=direct)
     return {curation["pa_hash"] for curation in stmt_jsons}
 
 

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+
+{% block title %}INDRA CoGEx{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .app-link {
+            margin: 0.5em;
+        }
+
+    </style>
+{% endblock %}
+
+
+
+{% macro count_column(counter, key, label, icon) -%}
+    <div class="col">
+        {% set count, suffix = format_number(counter[key]) %}
+        <i class="fa fa-{{ icon }}"></i>
+        <h2><span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}</h2>
+        <p class="count-text ">{{ label }}</p>
+    </div>
+{% endmacro %}
+
+{% macro count_column_small(counter, key, label) -%}
+    <div class="col" style="margin-bottom: 1em">
+        {% set count, suffix = format_number(counter[key]) %}
+        <span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}<br/>
+        <small>{{ label|replace(" ", "&nbsp;")|safe }}</small>
+    </div>
+{% endmacro %}
+
+
+{% block container %}
+    <div class="row">
+        <div class="card card-body">
+            <h1 class="display-4">INDRA CoGEx</h1>
+            <p class="lead">
+                A graph database integrating causal relations, ontological relations, properties, and data.
+            </p>
+            <div class="row text-center stats">
+                {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
+                {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
+                {{ count_column(node_counter, "Publication", "Publications", "book") }}
+                {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
+            </div>
+            <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
+                {% for edge_type, _ in edge_counter.most_common() %}
+                    {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <h3 class="text-center" style="margin: 1em auto;">Apps and Services using INDRA CoGEx</h3>
+        <div class="card-deck">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}"
+                     alt="Over-representation analysis">
+                <div class="card-body">
+                    <h5 class="card-title">Discrete Gene List Analysis</h5>
+                    <p class="card-text">
+                        Performs gene set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="rcr.png") }}"
+                     alt="Reverse Causal Reasoning">
+                <div class="card-body">
+                    <h5 class="card-title">Signed Gene List Analysis</h5>
+                    <p class="card-text">
+                        Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
+                        Reasoning algorithm.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
+                     alt="GSEA">
+                <div class="card-body">
+                    <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
+                    <p class="card-text">
+                        Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="{{ url_for("static", filename="msea.png") }}" alt="Metabolite set enrichment analysis">
+                <div class="card-body">
+                    <h5 class="card-title">Discrete Metabolite List Analysis</h5>
+                    <p class="card-text">
+                        Perform metabolite set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
+                       class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        (function ($) {
+            $.fn.counter = function () {
+                const $this = $(this),
+                    numberFrom = 0,
+                    numberTo = parseInt($this.attr('data-to')),
+                    delta = numberTo - numberFrom,
+                    deltaPositive = delta > 0,
+                    time = parseInt($this.attr('data-time')),
+                    changeTime = 10;
+
+                let currentNumber = 0,
+                    value = delta * changeTime / time;
+                let interval1;
+                const changeNumber = () => {
+                    currentNumber += value;
+                    //checks if currentNumber reached numberTo
+                    (deltaPositive && currentNumber >= numberTo) || (!deltaPositive && currentNumber <= numberTo) ? currentNumber = numberTo : currentNumber;
+                    this.text(parseInt(currentNumber));
+                    currentNumber === numberTo ? clearInterval(interval1) : currentNumber;
+                }
+
+                interval1 = setInterval(changeNumber, changeTime);
+            }
+        }(jQuery));
+
+        $(document).ready(function () {
+            {% for key in node_counter %}
+                $('.count-{{ key }}').counter();
+            {% endfor %}
+            {% for key in edge_counter %}
+                $('.count-{{ key }}').counter();
+            {% endfor %}
+        });
+    </script>
+{% endblock %}

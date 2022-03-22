@@ -1,0 +1,165 @@
+{% from "auth_macros.html" import login_overlay %}
+<!doctype html>
+<html lang="en">
+<head>
+    {% block head %}
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="icon" href="https://bigmech.s3.amazonaws.com/indra-db/favicon.ico">
+
+        {% block styles %}
+            <!-- Bootstrap CSS -->
+            {{ bootstrap.load_css() }}
+            <style>
+                html, body {
+                    height: 100%;
+                }
+
+                body {
+                    display: flex;
+                    flex-flow: column;
+                }
+
+                .footer {
+                    margin-top: auto;
+                    padding-top: 1em;
+                    background-color: #f5f5f5;
+                }
+            </style>
+        {% endblock %}
+
+        <script src="https://kit.fontawesome.com/4c86883252.js" crossorigin="anonymous"></script>
+        <title>{% block title %}{% endblock %}</title>
+    {% endblock %}
+</head>
+<body {% block bodyattr %}{% endblock %}>
+{{ login_overlay(url_prefix="") }}
+<script>
+    function handle_success(type, resp_data) {
+        if (type === "login") {
+            const btn = document.querySelector("#loginout-button");
+            btn.innerHTML = 'Logout';
+            btn.onclick = () => {
+                return trigger_logout()
+            };
+            report_login_result(''); // clear the login result message
+        } else if (type === "register") {
+            trigger_login()
+        } else { // logout
+            const btn = document.querySelector("#loginout-button");
+            btn.innerHTML = 'Login';
+            btn.onclick = () => {
+                return trigger_login()
+            };
+        }
+    }
+
+    function trigger_login(type = null, data = null) {
+        return login(handle_success, trigger_unchecked_login)
+    }
+
+    function trigger_unchecked_login(type = null, data = null) {
+        return login(handle_success, trigger_unchecked_login, true)
+    }
+
+    function trigger_logout() {
+        return logout(handle_success)
+    }
+</script>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">
+        <img src="https://bigmech.s3.amazonaws.com/indra-db/indralab_bare_logo.png" width="30" height="30" alt="">
+        INDRA CoGEx
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        {# todo: set nav links programmatically #}
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                {#                <a class="nav-link" href="{{ url_for("gla.discretize_analysis") }}">Discrete GSEA</a>#}
+                <a class="nav-link" href="/gene/discrete">Discrete GSEA</a>
+            </li>
+            <li class="nav-item">
+                {#                <a class="nav-link" href="{{ url_for("gla.signed_analysis") }}">Signed GSEA</a>#}
+                <a class="nav-link" href="/gene/signed">Signed GSEA</a>
+            </li>
+            <li class="nav-item">
+                {#                <a class="nav-link" href="{{ url_for("gla.continuous_analysis") }}">Continuous GSEA</a>#}
+                <a class="nav-link" href="/gene/continuous">Continuous GSEA</a>
+            </li>
+            <li class="nav-item">
+                {#                <a class="nav-link" href="{{ url_for("mla.discrete_analysis") }}">Discrete MSEA</a>#}
+                <a class="nav-link" href="/metabolite/discrete">Discrete MSEA</a>
+            </li>
+            <li class="nav-item">
+                {#
+                {% if "restx_doc" in blueprints %}
+                    <a class="nav-link" href="{{ url_for("restx_doc.doc") }}">API</a>
+                {% else %}
+                    No API available
+                {% endif %}
+                #}
+                <a class="nav-link" href="/apidocs">API Docs</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#about">About</a>
+            </li>
+        </ul>
+    </div>
+    <div class="justify-content-end">
+        <button class="btn btn-primary"
+                onclick="return {% if user_email %}trigger_logout(){% else %}trigger_login(){% endif %};"
+                id="loginout-button">
+            {% if user_email %}
+                Logout
+            {% else %}
+                Login
+            {% endif %}
+        </button>
+    </div>
+</nav>
+
+{% block main %}
+    <div class="container" style="margin-top: 50px; margin-bottom: 50px">
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <div class="row alert alert-info" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+        <div class="row justify-content-center">
+            <div {% block containerattr %}class="col-md-10 col-lg-10"{% endblock %}>
+                {% block container %}{% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+<footer class="footer" id="about">
+    <div class="container">
+    <span class="float-right">
+        <a href="#">Back to top</a>
+    </span>
+    <p class="small text-center text-muted">
+        Developed by the <a href="https://indralab.github.io">INDRA Lab</a> in the
+        <a href="https://hits.harvard.edu">Harvard Program in Therapeutic Science (HiTS)</a>.<br/>
+        INDRA CoGEx (Context Graph Extension) is an automatically assembled biomedical knowledge graph which integrates
+        causal mechanisms from INDRA with non-causal contextual relations including properties, ontology, and data.<br/>
+        INDRA CoGEx is funded by the <b>DARPA Young Faculty Award W911NF2010255 (PI: Benjamin M. Gyori).</b><br/>
+    </p>
+    </div>
+</footer>
+
+{% block scripts %}
+    <!-- Optional JavaScript -->
+    {{ bootstrap.load_js() }}
+    <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js"></script>
+{% endblock %}
+</body>
+</html>
