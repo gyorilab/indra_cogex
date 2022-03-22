@@ -4,10 +4,11 @@ from typing import Dict, List, Mapping, Tuple
 
 import bioregistry
 import flask
-from flask import request
+from flask import redirect, request
 from flask_wtf import FlaskForm
 from indra.assemblers.html import HtmlAssembler
 from indra.databases import chebi_client
+from indralab_auth_tools.auth import resolve_auth
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
@@ -20,6 +21,7 @@ from .fields import (
     minimum_belief_field,
     minimum_evidence_field,
 )
+from ..utils import format_stmts, render_statements
 from ...client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,
@@ -128,6 +130,8 @@ def discrete_analysis():
 @metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
 def enzyme(ec_code: str):
     """Render the enzyme page."""
+    user, roles = resolve_auth(dict(request.args))
+
     chebi_ids = request.args.get("q").split(",") if "q" in request.args else None
     _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
     if identifier is None:
@@ -135,11 +139,4 @@ def enzyme(ec_code: str):
     stmts = metabolomics_explanation(
         client=client, ec_code=identifier, chebi_ids=chebi_ids
     )
-    # TODO only show statements with views centered on given entities?
-    #  e.g., there are lots of enzyme-water, enzyme-NAD, enzyme-NADH statements
-    #  that should be skipped showing since they weren't part of the query
-    html_assembler = HtmlAssembler(
-        stmts,
-        db_rest_url="https://db.indra.bio",
-    )
-    return html_assembler.make_model()
+    return render_statements(stmts, user_email=user.email if user else "")

@@ -1,7 +1,8 @@
 import json
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
+from flask import Response, render_template
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
@@ -54,6 +55,18 @@ def count_curations(
             cur_source = "other"
         cur_counts[stmt_hash][cur_source][cur_tag] += 1
     return cur_counts
+
+
+def render_statements(
+    stmts: List[Statement], user_email: Optional[str] = None
+) -> Response:
+    """Render INDRA statements."""
+    form_stmts = format_stmts(stmts)
+    return render_template(
+        "data_display/data_display_base.html",
+        stmts=form_stmts,
+        user_email=user_email or "",
+    )
 
 
 def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
