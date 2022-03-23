@@ -11,9 +11,9 @@ import logging
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
 from indra.sources.indra_db_rest import (
+    IndraDBRestAPIError,
     get_curations,
     submit_curation,
-    IndraDBRestAPIError,
 )
 from indralab_auth_tools.auth import resolve_auth
 

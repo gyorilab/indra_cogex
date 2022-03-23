@@ -4,9 +4,9 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 from flask import Response, render_template
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
+from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
-from indra.sources.indra_db_rest import get_curations
 
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
