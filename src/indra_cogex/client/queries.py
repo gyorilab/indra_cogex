@@ -1,7 +1,19 @@
 import json
 import logging
+import time
 from collections import Counter, defaultdict
-from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import (
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
@@ -781,7 +793,7 @@ def get_evidences_for_stmt_hash(
 
 @autoclient()
 def get_evidences_for_stmt_hashes(
-    stmt_hashes: Iterable[int], *, client: Neo4jClient
+    stmt_hashes: Iterable[int], *, client: Neo4jClient, limit: Optional[str] = None
 ) -> Dict[int, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -791,6 +803,8 @@ def get_evidences_for_stmt_hashes(
         The Neo4j client.
     stmt_hashes :
         The statement hashes to query, accepts integers and strings.
+    limit:
+        The optional maximum number of evidences returned for each statement hash
 
     Returns
     -------
@@ -799,16 +813,25 @@ def get_evidences_for_stmt_hashes(
         statement hashes.
     """
     stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
-    query = (
-        """
+    limit_box = "" if limit is None else f"[..{limit}]"
+    query = f"""\
         MATCH (n:Evidence)
-        WHERE n.stmt_hash IN [%s]
-        RETURN n.stmt_hash, n.evidence
+        WHERE n.stmt_hash IN [{stmt_hashes_str}]
+        RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
-        % stmt_hashes_str
-    )
-
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
+    # TODO use APOC to do medscan filter with apoc.convert.fromJsonMap(n.evidence).source_api != 'medscan'
+    result = client.query_tx(query)
+    # if result is None:
+    #     logger.warning("No result for hash, Evidence query, returning empty dict")
+    #     return {}
+    rv = defaultdict(list)
+    for stmt_hash, evidences in result:
+        for evidence_str in evidences:
+            evidence = json.loads(evidence_str)
+            if evidence["source_api"] == "medscan":
+                continue
+            rv[stmt_hash].append(Evidence._from_json(ev_json))
+    return dict(rv)
 
 
 @autoclient()
@@ -871,18 +894,18 @@ def get_stmts_for_mesh(
     :
         The statements for the given MESH ID.
     """
-    ev_dict = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
-    hashes = list(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(hashes, ev_dict, client=client)
+    evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
+    hashes = list(evidence_map.keys())
+    return get_stmts_for_stmt_hashes(hashes, evidence_map=evidence_map, client=client)
 
 
 @autoclient()
 def get_stmts_for_stmt_hashes(
-    stmt_hashes: Iterable[int],
-    evidence_map: Optional[Dict[int, List[Evidence]]] = None,
+    stmt_hashes: Collection[int],
     *,
+    evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     client: Neo4jClient,
-    limit: Optional[int] = None,
+    evidence_limit: Optional[int] = None,
 ) -> List[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -894,8 +917,8 @@ def get_stmts_for_stmt_hashes(
         The statement hashes to query.
     evidence_map :
         Optionally provide a mapping of stmt hash to a list of evidence objects
-    limit :
-        Optional limit on the number of statements returned
+    evidence_limit:
+        An optional maximum number of evidences to return
 
     Returns
     -------
@@ -903,39 +926,55 @@ def get_stmts_for_stmt_hashes(
         The statements for the given statement hashes.
     """
     stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
-    stmts_query = (
-        """
+    stmts_query = f"""\
         MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
-        WHERE r.stmt_hash IN [%s]
+        WHERE r.stmt_hash IN [{stmt_hashes_str}]
         RETURN p
     """
-        % stmt_hashes_str
-    )
+    logger.info(f"getting statements for {len(stmt_hashes)} hashes")
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
-    stmts: Dict[int, Statement] = {
-        s.get_hash(): s for s in indra_stmts_from_relations(rels)
-    }
+    stmts = indra_stmts_from_relations(rels)
+    return enrich_statements(
+        stmts, client=client, evidence_map=evidence_map, evidence_limit=evidence_limit
+    )
+
+
+@autoclient()
+def enrich_statements(
+    stmts: Sequence[Statement],
+    *,
+    client: Neo4jClient,
+    evidence_map: Optional[Dict[int, List[Evidence]]] = None,
+    evidence_limit: Optional[int] = None,
+) -> List[Statement]:
+    """Add additional evidence to the statements using the evidence graph."""
+    stmt_hash_to_stmt: Dict[int, Statement] = {stmt.get_hash(): stmt for stmt in stmts}
 
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
-    evidence_map = evidence_map or {}
-    if evidence_map:
-        missing_hashes = list(set(stmt_hashes) - set(evidence_map.keys()))
-    else:
-        missing_hashes = stmt_hashes
+    evidence_map: Dict[int, List[Evidence]] = evidence_map or {}
+    missing_stmt_hashes: List[int] = sorted(
+        set(stmt_hash_to_stmt).difference(evidence_map)
+    )
 
     # Get the evidence objects for the given statement hashes
-    if missing_hashes:
-        new_evidences = get_evidences_for_stmt_hashes(stmt_hashes, client=client)
-        if evidence_map:
-            evidence_map.update(new_evidences)
-        else:
-            evidence_map = new_evidences
+    if missing_stmt_hashes:
+        logger.info(f"looking up evidence for {len(missing_stmt_hashes)} statements")
+        start_time = time.time()
+        missing_evidences = get_evidences_for_stmt_hashes(
+            missing_stmt_hashes,
+            client=client,
+            limit=evidence_limit,
+        )
+        logger.info(
+            f"got {len(missing_evidences)} evidences in {time.time() - start_time:.2f} seconds"
+        )
+        evidence_map.update(missing_evidences)
 
-    # Add the evidence objects to the statements, if no result, keep the
-    # original statement evidence
-    for stmt_hash, stmt in stmts.items():
-        ev_list = evidence_map.get(stmt_hash, [])
+    logger.debug(f"Adding the evidence objects to {len(stmt_hash_to_stmt)} statements")
+    # if no result, keep the original statement evidence
+    for stmt_hash, stmt in stmt_hash_to_stmt.items():
+        ev_list: List[Evidence] = evidence_map.get(stmt_hash, [])
         if ev_list:
             stmt.evidence = ev_list
         else:
@@ -943,7 +982,7 @@ def get_stmts_for_stmt_hashes(
                 f"No evidence for stmt hash {stmt_hash}, keeping sample evidence"
             )
 
-    return list(stmts.values())
+    return list(stmt_hash_to_stmt.values())
 
 
 @autoclient()

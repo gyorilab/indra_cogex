@@ -1,7 +1,8 @@
 """Curation app for INDRA CoGEx."""
 
 import logging
-from typing import Iterable
+import time
+from typing import Collection, Iterable
 
 import flask
 from flask import Response, redirect, render_template, url_for
@@ -84,8 +85,11 @@ def curate_mesh(term: str):
     return _render_hashes(hashes, title=f"MeSH Curator: {term}")
 
 
-def _render_hashes(hashes: Iterable[int], title: str) -> Response:
-    stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit])
+def _render_hashes(hashes: Collection[int], title: str) -> Response:
+    logger.info(f"Getting statements for {len(hashes)} hashes")
+    start_time = time.time()
+    stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit], evidence_limit=10)
+    logger.info(f"Got statements in {time.time() - start_time:.2f} seconds")
     _, _, email = resolve_email()
     return render_statements(stmts, user_email=email, title=title)
 
