@@ -951,13 +951,11 @@ def enrich_statements(
     evidence_limit: Optional[int] = None,
 ) -> List[Statement]:
     """Add additional evidence to the statements using the evidence graph."""
-    stmt_hash_to_stmt: Dict[int, Statement] = {stmt.get_hash(): stmt for stmt in stmts}
-
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
     evidence_map: Dict[int, List[Evidence]] = evidence_map or {}
     missing_stmt_hashes: List[int] = sorted(
-        set(stmt_hash_to_stmt).difference(evidence_map)
+        {stmt.get_hash() for stmt in stmts}.difference(evidence_map)
     )
 
     # Get the evidence objects for the given statement hashes
@@ -975,10 +973,10 @@ def enrich_statements(
         )
         evidence_map.update(missing_evidences)
 
-    logger.debug(f"Adding the evidence objects to {len(stmt_hash_to_stmt)} statements")
+    logger.debug(f"Adding the evidence objects to {len(stmts)} statements")
     # if no result, keep the original statement evidence
-    for stmt_hash, stmt in stmt_hash_to_stmt.items():
-        ev_list: List[Evidence] = evidence_map.get(stmt_hash, [])
+    for stmt in stmts:
+        ev_list: List[Evidence] = evidence_map.get(stmt.get_hash(), [])
         if ev_list:
             stmt.evidence = ev_list
         else:
@@ -986,7 +984,7 @@ def enrich_statements(
                 f"No evidence for stmt hash {stmt_hash}, keeping sample evidence"
             )
 
-    return list(stmt_hash_to_stmt.values())
+    return stmts
 
 
 @autoclient()
