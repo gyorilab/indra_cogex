@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
+from typing import DefaultDict, Dict, Iterable, List, Optional, Set, Tuple, cast
 
 from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
@@ -9,8 +9,7 @@ from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
 from indralab_auth_tools.auth import resolve_auth
 
-StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
-
+StmtRow = Tuple[str, str, str, str, str, str]
 CurationType = List[Dict]
 
 
@@ -59,10 +58,14 @@ def count_curations(
 
 
 def render_statements(
-    stmts: List[Statement], user_email: Optional[str] = None, **kwargs
+    stmts: List[Statement],
+    user_email: Optional[str] = None,
+    filter_curated: bool = False,
+    stmt_hash_to_total_ec=None,
+    **kwargs,
 ) -> Response:
     """Render INDRA statements."""
-    form_stmts = format_stmts(stmts)
+    form_stmts = format_stmts(stmts, filter_curated=filter_curated)
     return render_template(
         "data_display/data_display_base.html",
         stmts=form_stmts,
@@ -71,7 +74,9 @@ def render_statements(
     )
 
 
-def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
+def format_stmts(
+    stmts: Iterable[Statement], filter_curated: bool = False
+) -> List[StmtRow]:
     """Format the statements for display
 
     Wanted objects:
@@ -108,7 +113,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
 
     def stmt_to_row(
         st: Statement,
-    ) -> List[str]:
+    ) -> StmtRow:
         ev_array = json.loads(
             json.dumps(
                 _format_evidence_text(
@@ -152,19 +157,28 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
                 }
             )
 
-        return [
-            json.dumps(e)
-            for e in [ev_array, english, str(hash_int), sources, total_evidence, badges]
-        ]
+        return cast(
+            StmtRow,
+            tuple(
+                json.dumps(e)
+                for e in (
+                    ev_array,
+                    english,
+                    str(hash_int),
+                    sources,
+                    total_evidence,
+                    badges,
+                )
+            ),
+        )
 
     all_pa_hashes = [st.get_hash() for st in stmts]
     curations = get_curations()
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
+    curated_pa_hashes: Set[int] = {cur["pa_hash"] for cur in curations}
     for cur in curations:
-        cur_dict[(cur["pa_hash"], cur["source_hash"])].append(
-            {"error_type": cur["tag"]}
-        )
+        cur_dict[cur["pa_hash"], cur["source_hash"]].append({"error_type": cur["tag"]})
 
     stmts_by_hash = {st.get_hash(): st for st in stmts}
     cur_counts = count_curations(curations, stmts_by_hash)
@@ -179,7 +193,9 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
 
     stmt_rows = []
     for stmt in stmts:
-        stmt_rows.append(list(stmt_to_row(stmt)))
+        if filter_curated and stmt.get_hash() in curated_pa_hashes:
+            continue
+        stmt_rows.append(stmt_to_row(stmt))
     return stmt_rows
 
 

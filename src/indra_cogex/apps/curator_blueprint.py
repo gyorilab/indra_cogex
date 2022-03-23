@@ -91,7 +91,7 @@ def _render_hashes(hashes: Collection[int], title: str) -> Response:
     stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit], evidence_limit=10)
     logger.info(f"Got statements in {time.time() - start_time:.2f} seconds")
     _, _, email = resolve_email()
-    return render_statements(stmts, user_email=email, title=title)
+    return render_statements(stmts, user_email=email, title=title, filter_curated=True)
 
 
 @curator_blueprint.route("/ppi", methods=["GET"])
