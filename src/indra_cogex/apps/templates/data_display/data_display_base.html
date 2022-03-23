@@ -59,18 +59,17 @@
             </h4>
         </div>
         <div class="list-group list-group-flush">
-            {% raw %}
-            <div class="list-group-item" v-for="st_obj in this.$data.stmts">
-                <statement
-                        :evidence="st_obj.ev_array"
-                        :english="st_obj.english"
-                        :hash="st_obj.hash"
-                        :sources="st_obj.sources"
-                        :total_evidence="st_obj.total_evidence"
-                        :badges="st_obj.badges"
-                ></statement>
-            </div>
-            {% endraw %}
+            <statement
+                    class="list-group-item"
+                    v-for="st_obj in this.$data.stmts"
+                    :key="st_obj.hash"
+                    :evidence="st_obj.ev_array"
+                    :english="st_obj.english"
+                    :hash="st_obj.hash"
+                    :sources="st_obj.sources"
+                    :total_evidence="st_obj.total_evidence"
+                    :badges="st_obj.badges"
+            ></statement>
         </div>
     </div>
 {% endblock %}
