@@ -38,8 +38,8 @@ def _get_text(stmt: Statement) -> Optional[str]:
     return stmt.evidence[0].text if stmt.evidence else None
 
 
-def _get_curated_statement_hashes(direct: bool = True) -> Set[int]:
-    stmt_jsons = get_curations(direct=direct)
+def _get_curated_statement_hashes() -> Set[int]:
+    stmt_jsons = get_curations()
     return {curation["pa_hash"] for curation in stmt_jsons}
 
 
