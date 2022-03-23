@@ -4,16 +4,18 @@ import logging
 from typing import Iterable
 
 import flask
-from flask import Response, redirect, render_template, request, url_for
+from flask import Response, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
     get_go_curation_hashes,
     get_mesh_disease_curation_hashes,
+    get_ppi_hashes,
 )
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
@@ -82,7 +84,14 @@ def curate_mesh(term: str):
 
 
 def _render_hashes(hashes: Iterable[int], title: str) -> Response:
-    max_results = request.args.get("max_results", type=int, default=25)
-    stmts = get_stmts_for_stmt_hashes(hashes[:max_results])
+    stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit])
     _, _, email = resolve_email()
     return render_statements(stmts, user_email=email, title=title)
+
+
+@curator_blueprint.route("/ppi", methods=["GET"])
+@jwt_optional
+def ppi():
+    """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
+    hashes = get_ppi_hashes(client=client, limit=proxies.limit)
+    return _render_hashes(hashes, title="PPI Curator")

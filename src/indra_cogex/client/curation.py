@@ -19,6 +19,7 @@ __all__ = [
     "get_curation_df",
     "get_go_curation_hashes",
     "get_curations",
+    "get_ppi_hashes",
 ]
 
 logger = logging.getLogger(__name__)
@@ -166,3 +167,43 @@ def get_mesh_disease_curation_hashes(
         client=client,
     )
     return get_prioritized_stmt_hashes(stmts)
+
+
+databases_str = ", ".join(f'"{d}"' for d in DATABASES)
+
+
+def get_ppi_hashes(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> List[int]:
+    """Get prioritized statement hashes for uncurated gene-gene relationships.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    limit :
+        Number of statements to return
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    if limit is None:
+        limit = 30
+    query = f"""\
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH 
+            a, b, r, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE 
+            a.id STARTS WITH 'hgnc'
+            and b.id STARTS WITH 'hgnc'
+            // This checks that no sources are database
+            and not apoc.coll.intersection(keys(sources), [{databases_str}])
+        RETURN r.stmt_hash
+        ORDER BY r.evidence_count DESC
+        LIMIT {limit}
+    """
+    return [stmt_hash for stmt_hash, in client.query_tx(query)]

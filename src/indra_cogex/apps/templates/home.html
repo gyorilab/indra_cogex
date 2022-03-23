@@ -143,7 +143,19 @@
                        class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-            <div class="card"></div>
+            <div class="card">
+                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <div class="card-body">
+                    <h5 class="card-title">PPI Curator</h5>
+                    <p class="card-text">
+                        Curate protein-protein interactions not already appearing in databases like BioGRID
+                        prioritized by evidence count.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
             <div class="card"></div>
         </div>
     </div>
