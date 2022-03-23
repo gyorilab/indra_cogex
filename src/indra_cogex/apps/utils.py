@@ -6,7 +6,7 @@ from flask import Response, render_template
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
-from indra_db.client import get_curations
+from indra.sources.indra_db_rest import get_curations
 
 StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
 
@@ -157,7 +157,8 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
         ]
 
     all_pa_hashes = [st.get_hash() for st in stmts]
-    curations = get_curations(pa_hash=all_pa_hashes)
+    curations = get_curations()
+    curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
     for cur in curations:
         cur_dict[(cur["pa_hash"], cur["source_hash"])].append(
