@@ -14,7 +14,8 @@ from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
     get_go_curation_hashes,
-    get_mesh_disease_curation_hashes,
+    get_goa_hashes,
+    get_mesh_curation_hashes,
     get_ppi_hashes,
 )
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
@@ -68,7 +69,7 @@ class MeshDiseaseForm(FlaskForm):
 
 
 @curator_blueprint.route("/mesh-disease/", methods=["GET", "POST"])
-def mesh_disease():
+def mesh():
     """A home page for MeSH Disease curation."""
     form = MeshDiseaseForm()
     if form.is_submitted():
@@ -79,7 +80,7 @@ def mesh_disease():
 @curator_blueprint.route("/mesh-disease/<term>", methods=["GET"])
 @jwt_optional
 def curate_mesh(term: str):
-    hashes = get_mesh_disease_curation_hashes(mesh_term=("MESH", term), client=client)
+    hashes = get_mesh_curation_hashes(mesh_term=("MESH", term), client=client)
     return _render_hashes(hashes, title=f"MeSH Curator: {term}")
 
 
@@ -95,3 +96,11 @@ def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
     hashes = get_ppi_hashes(client=client, limit=proxies.limit)
     return _render_hashes(hashes, title="PPI Curator")
+
+
+@curator_blueprint.route("/goa", methods=["GET"])
+@jwt_optional
+def goa():
+    """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
+    hashes = get_goa_hashes(client=client, limit=proxies.limit)
+    return _render_hashes(hashes, title="GO Annotation Curator")

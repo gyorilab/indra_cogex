@@ -121,8 +121,7 @@
                 <div class="card-body">
                     <h5 class="card-title">GO Curator</h5>
                     <p class="card-text">
-                        Curate networks induced by Gene Ontology terms for
-                        biological processes, cellular components, or molecular functions
+                        Curate networks induced by genes associated with a given Gene Ontology term.
                     </p>
                 </div>
                 <div class="card-footer text-center">
@@ -133,13 +132,13 @@
             <div class="card">
                 {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
                 <div class="card-body">
-                    <h5 class="card-title">Disease Curator</h5>
+                    <h5 class="card-title">MeSH Curator</h5>
                     <p class="card-text">
-                        Curate networks induced by MeSH diseases
+                        Curate statements from publications with the given MeSH term.
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.mesh_disease') }}"
+                    <a href="{{ url_for('curator.mesh') }}"
                        class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
@@ -148,15 +147,25 @@
                 <div class="card-body">
                     <h5 class="card-title">PPI Curator</h5>
                     <p class="card-text">
-                        Curate protein-protein interactions not already appearing in databases like BioGRID
-                        prioritized by evidence count.
+                        Curate protein-protein interactions not already appearing in databases like BioGRID.
                     </p>
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-            <div class="card"></div>
+            <div class="card">
+                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <div class="card-body">
+                    <h5 class="card-title">GO Annotation Curator</h5>
+                    <p class="card-text">
+                        Curate gene-GO term interactions that are not already available as GO annotations.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.goa') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

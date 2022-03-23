@@ -882,6 +882,7 @@ def get_stmts_for_stmt_hashes(
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     *,
     client: Neo4jClient,
+    limit: Optional[int] = None,
 ) -> List[Statement]:
     """Return the statements for the given statement hashes.
 
@@ -893,6 +894,8 @@ def get_stmts_for_stmt_hashes(
         The statement hashes to query.
     evidence_map :
         Optionally provide a mapping of stmt hash to a list of evidence objects
+    limit :
+        Optional limit on the number of statements returned
 
     Returns
     -------

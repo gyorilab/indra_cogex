@@ -20,6 +20,7 @@ __all__ = [
     "get_go_curation_hashes",
     "get_curations",
     "get_ppi_hashes",
+    "get_goa_hashes",
 ]
 
 logger = logging.getLogger(__name__)
@@ -138,7 +139,8 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-def get_mesh_disease_curation_hashes(
+@autoclient()
+def get_mesh_curation_hashes(
     mesh_term: Tuple[str, str],
     *,
     client: Neo4jClient,
@@ -172,6 +174,7 @@ def get_mesh_disease_curation_hashes(
 databases_str = ", ".join(f'"{d}"' for d in DATABASES)
 
 
+@autoclient()
 def get_ppi_hashes(
     *,
     client: Neo4jClient,
@@ -191,8 +194,6 @@ def get_ppi_hashes(
     :
         A list of INDRA statement hashes prioritized for curation
     """
-    if limit is None:
-        limit = 30
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH 
@@ -204,6 +205,42 @@ def get_ppi_hashes(
             and not apoc.coll.intersection(keys(sources), [{databases_str}])
         RETURN r.stmt_hash
         ORDER BY r.evidence_count DESC
-        LIMIT {limit}
+        LIMIT {limit or 30}
+    """
+    return [stmt_hash for stmt_hash, in client.query_tx(query)]
+
+
+@autoclient()
+def get_goa_hashes(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> List[int]:
+    """Get prioritized statement hashes for uncurated gene-GO annotations..
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    limit :
+        Number of statements to return
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    if limit is None:
+        limit = 30
+    query = f"""\
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE 
+            NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
+            and a.id STARTS WITH 'hgnc'
+            and b.id STARTS WITH 'go'
+            and r.evidence_count > 10
+        RETURN r.stmt_hash
+        ORDER BY r.evidence_count DESC
+        LIMIT {limit or 30}
     """
     return [stmt_hash for stmt_hash, in client.query_tx(query)]
