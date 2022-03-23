@@ -201,6 +201,7 @@ def get_ppi_hashes(
         WHERE 
             a.id STARTS WITH 'hgnc'
             and b.id STARTS WITH 'hgnc'
+            and r.stmt_type in ["Complex"]
             // This checks that no sources are database
             and not apoc.coll.intersection(keys(sources), [{databases_str}])
         RETURN r.stmt_hash
