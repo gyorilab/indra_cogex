@@ -830,7 +830,7 @@ def get_evidences_for_stmt_hashes(
             evidence = json.loads(evidence_str)
             if evidence["source_api"] == "medscan":
                 continue
-            rv[stmt_hash].append(Evidence._from_json(ev_json))
+            rv[stmt_hash].append(Evidence._from_json(evidence))
     return dict(rv)
 
 
@@ -966,8 +966,9 @@ def enrich_statements(
             client=client,
             limit=evidence_limit,
         )
+        evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(
-            f"got {len(missing_evidences)} evidences in {time.time() - start_time:.2f} seconds"
+            f"got {evidence_count} evidences in {time.time() - start_time:.2f} seconds"
         )
         evidence_map.update(missing_evidences)
 
