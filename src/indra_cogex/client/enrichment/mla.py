@@ -101,7 +101,7 @@ def get_metabolomics_sets(
     """
     )
     for hgnc_curie, chebi_curies in client.query_tx(query):
-        hgnc_id = hgnc_curie.removeprefix("hgnc:")
+        hgnc_id = hgnc_curie.replace("hgnc:", "", 1)
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         for ec_code in hgnc_to_enzymes.get(hgnc_id, []):
             rv[ec_code, pyobo.get_name("ec", ec_code)].update(chebi_ids)
