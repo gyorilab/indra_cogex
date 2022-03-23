@@ -88,10 +88,18 @@ def curate_mesh(term: str):
 def _render_hashes(hashes: Collection[int], title: str) -> Response:
     logger.info(f"Getting statements for {len(hashes)} hashes")
     start_time = time.time()
-    stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit], evidence_limit=10)
+    stmts, evidence_counts = get_stmts_for_stmt_hashes(
+        hashes[: proxies.limit], evidence_limit=10, return_evidence_counts=True
+    )
     logger.info(f"Got statements in {time.time() - start_time:.2f} seconds")
     _, _, email = resolve_email()
-    return render_statements(stmts, user_email=email, title=title, filter_curated=True)
+    return render_statements(
+        stmts,
+        user_email=email,
+        title=title,
+        filter_curated=True,
+        evidence_counts=evidence_counts,
+    )
 
 
 @curator_blueprint.route("/ppi", methods=["GET"])

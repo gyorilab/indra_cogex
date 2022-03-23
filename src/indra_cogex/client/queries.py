@@ -902,7 +902,8 @@ def get_stmts_for_stmt_hashes(
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     client: Neo4jClient,
     evidence_limit: Optional[int] = None,
-) -> List[Statement]:
+    return_evidence_counts: bool = False,
+) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements for the given statement hashes.
 
     Parameters
@@ -930,9 +931,15 @@ def get_stmts_for_stmt_hashes(
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
     stmts = indra_stmts_from_relations(rels)
-    return enrich_statements(
+    rv = enrich_statements(
         stmts, client=client, evidence_map=evidence_map, evidence_limit=evidence_limit
     )
+    if not return_evidence_counts:
+        return rv
+    evidence_counts = {
+        stmt.get_hash(): rel.data["evidence_count"] for rel, stmt in zip(rels, stmts)
+    }
+    return rv, evidence_counts
 
 
 @autoclient()

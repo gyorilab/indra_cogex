@@ -1,6 +1,16 @@
 import json
 from collections import defaultdict
-from typing import DefaultDict, Dict, Iterable, List, Optional, Set, Tuple, cast
+from typing import (
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    cast,
+)
 
 from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
@@ -61,11 +71,13 @@ def render_statements(
     stmts: List[Statement],
     user_email: Optional[str] = None,
     filter_curated: bool = False,
-    stmt_hash_to_total_ec=None,
+    evidence_counts: Optional[Mapping[int, int]] = None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
-    form_stmts = format_stmts(stmts, filter_curated=filter_curated)
+    form_stmts = format_stmts(
+        stmts, filter_curated=filter_curated, evidence_counts=evidence_counts
+    )
     return render_template(
         "data_display/data_display_base.html",
         stmts=form_stmts,
@@ -75,7 +87,9 @@ def render_statements(
 
 
 def format_stmts(
-    stmts: Iterable[Statement], filter_curated: bool = False
+    stmts: Iterable[Statement],
+    filter_curated: bool = False,
+    evidence_counts: Optional[Mapping[int, int]] = None,
 ) -> List[StmtRow]:
     """Format the statements for display
 
@@ -110,6 +124,8 @@ def format_stmts(
         A list of tuples of the form (evidence, english, hash, sources,
         total_evidence, badges).
     """
+    if evidence_counts is None:
+        evidence_counts = {}
 
     def stmt_to_row(
         st: Statement,
@@ -126,7 +142,7 @@ def format_stmts(
         english = _format_stmt_text(st)
         hash_int = st.get_hash()
         sources = _get_available_ev_source_counts(st.evidence)
-        total_evidence = len(st.evidence)
+        total_evidence = evidence_counts.get(st.get_hash(), len(st.evidence))
         badges = [
             {
                 "label": "evidence",
