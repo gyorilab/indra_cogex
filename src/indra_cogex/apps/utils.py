@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple, DefaultDict
 
 from flask import Response, render_template
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
@@ -15,7 +15,7 @@ CurationType = List[Dict]
 
 def count_curations(
     curations: CurationType, stmts_by_hash: Dict[int, Statement]
-) -> Dict[int, Dict[str, defaultdict[str, int]]]:
+) -> Dict[int, Dict[str, DefaultDict[str, int]]]:
     """Count curations for each statement.
 
     Parameters
