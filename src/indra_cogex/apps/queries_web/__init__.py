@@ -55,6 +55,8 @@ examples_dict = {
     "evidence_limit": 30,
 }
 
+SKIP_ARGUMENTS = {"get_stmts_for_stmt_hashes": {"return_evidence_counts"}}
+
 func_mapping = {fname: getattr(queries, fname) for fname in queries.__all__}
 
 # Create resource for each query function
@@ -76,6 +78,8 @@ for func_name in queries.__all__:
     model_name = f"{func_name}_model"
 
     for param_name in param_names:
+        if param_name in SKIP_ARGUMENTS.get(func_name, []):
+            continue
         if param_name not in examples_dict:
             raise KeyError(
                 f"Missing example for parameter {param_name} in function {func_name}"
@@ -87,6 +91,7 @@ for func_name in queries.__all__:
         {
             param_name: fields.List(fields.String, example=examples_dict[param_name])
             for param_name in param_names
+            if param_name not in SKIP_ARGUMENTS.get(func_name, [])
         },
     )
 
