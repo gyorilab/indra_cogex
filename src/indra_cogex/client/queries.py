@@ -816,22 +816,18 @@ def get_evidences_for_stmt_hashes(
     limit_box = "" if limit is None else f"[..{limit}]"
     query = f"""\
         MATCH (n:Evidence)
-        WHERE n.stmt_hash IN [{stmt_hashes_str}]
+        WHERE 
+            n.stmt_hash IN [{stmt_hashes_str}]
+            AND NOT apoc.convert.fromJsonMap(n.evidence)['source_api'] IN ['medscan']
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
-    # TODO use APOC to do medscan filter with apoc.convert.fromJsonMap(n.evidence).source_api != 'medscan'
     result = client.query_tx(query)
-    # if result is None:
-    #     logger.warning("No result for hash, Evidence query, returning empty dict")
-    #     return {}
-    rv = defaultdict(list)
-    for stmt_hash, evidences in result:
-        for evidence_str in evidences:
-            evidence = json.loads(evidence_str)
-            if evidence["source_api"] == "medscan":
-                continue
-            rv[stmt_hash].append(Evidence._from_json(evidence))
-    return dict(rv)
+    return {
+        stmt_hash: [
+            Evidence._from_json(json.loads(evidence_str)) for evidence_str in evidences
+        ]
+        for stmt_hash, evidences in result
+    }
 
 
 @autoclient()
