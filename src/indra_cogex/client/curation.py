@@ -5,22 +5,26 @@ from typing import Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
+from indra.databases.hgnc_client import get_current_hgnc_id, tfs
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
-from indra.statements import Statement
+from indra.statements import DecreaseAmount, IncreaseAmount, Statement
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .queries import get_stmts_for_mesh
 from .subnetwork import indra_subnetwork_go
+from ..representation import indra_stmts_from_relations
 
 __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
+    "get_mesh_curation_hashes",
     "get_curations",
     "get_ppi_hashes",
     "get_goa_hashes",
+    "get_tf_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -245,3 +249,34 @@ def get_goa_hashes(
         LIMIT {limit or 30}
     """
     return [stmt_hash for stmt_hash, in client.query_tx(query)]
+
+
+tf_curies = sorted(
+    f"hgnc:{get_current_hgnc_id(symbol)}"
+    for symbol in tfs
+    if get_current_hgnc_id(symbol)
+)
+tf_stmt_types = [IncreaseAmount, DecreaseAmount]
+
+
+@autoclient()
+def get_tf_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> List[Statement]:
+    """Get transcription factor increase amount / decrease amount."""
+    query = f"""\
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH 
+            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE
+            a.id in {tf_curies!r}
+            AND r.stmt_type in {[t.__name__ for t in tf_stmt_types]!r}
+            AND b.id STARTS WITH 'hgnc'
+            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+        RETURN p
+        ORDER BY r.evidence_count DESC
+        LIMIT {limit or 30}
+    """
+    return indra_stmts_from_relations(
+        client.neo4j_to_relation(res[0]) for res in client.query_tx(query)
+    )

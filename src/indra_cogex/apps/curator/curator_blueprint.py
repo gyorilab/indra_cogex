@@ -18,11 +18,12 @@ from indra_cogex.client.curation import (
     get_goa_hashes,
     get_mesh_curation_hashes,
     get_ppi_hashes,
+    get_tf_statements,
 )
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
-from .curator.utils import get_unfinished_hashes
-from .utils import render_statements, resolve_email
+from .utils import get_unfinished_hashes
+from ..utils import render_statements, resolve_email
 
 __all__ = [
     "curator_blueprint",
@@ -127,3 +128,12 @@ def conflicts():
     """Curate statements with conflicting prior curations."""
     hashes = get_unfinished_hashes(client=client)
     return _render_hashes(hashes, title="Conflict Resolver", filter_curated=False)
+
+
+@curator_blueprint.route("/tf", methods=["GET"])
+@jwt_optional
+def tf():
+    """Curate transcription factors."""
+    stmts = get_tf_statements(client=client, limit=proxies.limit)
+    hashes = [stmt.get_hash() for stmt in stmts]
+    return _render_hashes(hashes, title="Transcription Factor Curator")
