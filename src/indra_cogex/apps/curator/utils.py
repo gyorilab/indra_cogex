@@ -1,7 +1,7 @@
 """Utilities for the curation blueprint."""
 
 from collections import Counter, defaultdict
-from typing import Collection, List, Mapping
+from typing import Any, Iterable, List, Mapping
 
 from indra.sources.indra_db_rest import get_curations
 
@@ -14,9 +14,13 @@ __all__ = [
     "unfinished",
 ]
 
+Curation = Mapping[str, Any]
+
 
 @autoclient()
-def get_unfinished_hashes(*, curations=None, client: Neo4jClient) -> List[int]:
+def get_unfinished_hashes(
+    *, curations: List[Curation] = None, client: Neo4jClient
+) -> List[int]:
     """Get hashes of statements whose curations need resolving."""
     if curations is None:
         curations = get_curations()
@@ -25,30 +29,42 @@ def get_unfinished_hashes(*, curations=None, client: Neo4jClient) -> List[int]:
     return sorted(stmt_hash for stmt_hash, status in statuses.items() if status)
 
 
+def _group_curations(curations: List[Curation]) -> Mapping[int, Counter]:
+    stmt_hash_to_counter = defaultdict(Counter)
+    for curation in curations:
+        stmt_hash = curation.get("pa_hash")
+        if not stmt_hash:
+            continue
+        positive = curation["tag"] == "correct"
+        stmt_hash_to_counter[stmt_hash][positive] += 1
+    return dict(stmt_hash_to_counter)
+
+
 @autoclient()
-def get_statuses(curations, *, client: Neo4jClient) -> Mapping[int, bool]:
+def get_statuses(
+    curations: List[Curation], *, client: Neo4jClient
+) -> Mapping[int, bool]:
     """Get the hashes for statements and their status  where true means
     finished and false means it needs more curation.
     """
-    dd = defaultdict(Counter)
-    for curation in curations:
-        positive = curation["tag"] == "correct"
-        dd[curation["pa_hash"]][positive] += 1
-    stmt_evidence_counts = get_evidence_counts(list(dd), client=client)
+    stmt_hash_to_counter = _group_curations(curations)
+    stmt_evidence_counts = get_evidence_counts(stmt_hash_to_counter, client=client)
     return {
         stmt_hash: unfinished(
             correct=results[True],
             incorrect=results[False],
-            evidences=stmt_evidence_counts[stmt_hash],
+            # default to a big number in case it can't be looked up
+            evidences=stmt_evidence_counts.get(stmt_hash, 1000000),
         )
-        for stmt_hash, results in dd.items()
+        for stmt_hash, results in stmt_hash_to_counter.items()
     }
 
 
 @autoclient()
 def get_evidence_counts(
-    hashes: Collection[int], *, client: Neo4jClient
+    hashes: Iterable[int], *, client: Neo4jClient
 ) -> Mapping[int, int]:
+    """Get the number of evidences for each statement hash."""
     query = f"""\
         MATCH (:BioEntity)-[r:indra_rel]->(:BioEntity)
         WHERE

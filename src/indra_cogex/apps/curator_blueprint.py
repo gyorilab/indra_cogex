@@ -86,7 +86,9 @@ def curate_mesh(term: str):
     return _render_hashes(hashes, title=f"MeSH Curator: {term}")
 
 
-def _render_hashes(hashes: Collection[int], title: str) -> Response:
+def _render_hashes(
+    hashes: Collection[int], title: str, filter_curated: bool = True
+) -> Response:
     logger.info(f"Getting statements for {len(hashes)} hashes")
     start_time = time.time()
     stmts, evidence_counts = get_stmts_for_stmt_hashes(
@@ -98,7 +100,7 @@ def _render_hashes(hashes: Collection[int], title: str) -> Response:
         stmts,
         user_email=email,
         title=title,
-        filter_curated=True,
+        filter_curated=filter_curated,
         evidence_counts=evidence_counts,
     )
 
@@ -124,4 +126,4 @@ def goa():
 def conflicts():
     """Curate statements with conflicting prior curations."""
     hashes = get_unfinished_hashes(client=client)
-    return _render_hashes(hashes, title="Conflict Resolver")
+    return _render_hashes(hashes, title="Conflict Resolver", filter_curated=False)
