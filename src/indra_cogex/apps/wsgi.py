@@ -9,7 +9,7 @@ from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
 from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION, STATIC_DIR, TEMPLATES_DIR
-from indra_cogex.apps.curator_blueprint import curator_blueprint
+from indra_cogex.apps.curator import curator_blueprint
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
