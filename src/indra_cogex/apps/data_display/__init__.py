@@ -10,8 +10,11 @@ import logging
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
-from indra_db.client import get_curations, submit_curation
-from indra_db.exceptions import BadHashError
+from indra.sources.indra_db_rest import (
+    IndraDBRestAPIError,
+    get_curations,
+    submit_curation,
+)
 from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client
@@ -109,19 +112,23 @@ def submit_curation_endpoint(hash_val: str):
 
     logger.info("Adding curation for statement %s." % hash_val)
     ev_hash = request.json.get("ev_hash")
-    source_api = request.json.pop("source", "EMMAA")
+    source_api = request.json.pop("source", "CoGEx")
     tag = request.json.get("tag")
-    ip = request.remote_addr
     text = request.json.get("text")
     is_test = "test" in request.args
     if not is_test:
         assert tag != "test"
         try:
             dbid = submit_curation(
-                int(hash_val), tag, email, ip, text, ev_hash, source_api
+                hash_val=int(hash_val),
+                tag=tag,
+                curator_email=email,
+                text=text,
+                ev_hash=ev_hash,
+                source=source_api,
             )
-        except BadHashError as e:
-            abort(Response("Invalid hash: %s." % e.bad_hash, 400))
+        except IndraDBRestAPIError as e:
+            abort(Response("Could not submit curation: %s." % e, 400))
         res = {"result": "success", "ref": {"id": dbid}}
     else:
         res = {"result": "test passed", "ref": None}

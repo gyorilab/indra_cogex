@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 
-{% block title %}INDRA CoGEx{% endblock %}
+{% block title %}INDRA Biomedical Discovery Engine{% endblock %}
 
 {% block styles %}
     {{ super() }}
@@ -36,9 +36,9 @@
 {% block container %}
     <div class="row">
         <div class="card card-body">
-            <h1 class="display-4">INDRA CoGEx</h1>
+            <h1 class="display-4">INDRA Biomedical Discovery Engine</h1>
             <p class="lead">
-                A graph database integrating causal relations, ontological relations, properties, and data.
+                The INDRA Biomedical Discovery Engine is built on INDRA CoGEx, a graph database integrating causal relations, ontological relations, properties, and data, assembled at scale automatically from the scientific literature and structured sources.
             </p>
             <div class="row text-center stats">
                 {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}

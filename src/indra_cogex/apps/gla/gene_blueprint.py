@@ -87,7 +87,7 @@ def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     errors = []
     for entry in records:
         if entry.lower().startswith("hgnc:"):
-            hgnc_ids.append(entry.lower().removeprefix("hgnc:"))
+            hgnc_ids.append(entry.lower().replace("hgnc:", "", 1))
         elif entry.isnumeric():
             hgnc_ids.append(entry)
         else:  # probably a symbol

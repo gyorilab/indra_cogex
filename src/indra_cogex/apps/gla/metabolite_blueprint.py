@@ -50,9 +50,9 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
         if entry.isnumeric():
             chebi_ids.append(entry)
         elif entry.lower().startswith("chebi:chebi:"):
-            chebi_ids.append(entry.lower().removeprefix("chebi:chebi:"))
+            chebi_ids.append(entry.lower().replace("chebi:chebi:", "", 1))
         elif entry.lower().startswith("chebi:"):
-            chebi_ids.append(entry.lower().removeprefix("chebi:"))
+            chebi_ids.append(entry.lower().replace("chebi:", "", 1))
         else:  # probably a name, do our best
             chebi_id = chebi_client.get_chebi_id_from_name(entry)
             if chebi_id:

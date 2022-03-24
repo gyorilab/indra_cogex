@@ -6,6 +6,7 @@ from typing import Iterable, List, Optional, Set, Tuple
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.resources import load_resource_json
+from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from networkx.algorithms import edge_betweenness_centrality
 
@@ -37,19 +38,8 @@ def _get_text(stmt: Statement) -> Optional[str]:
     return stmt.evidence[0].text if stmt.evidence else None
 
 
-def get_curations(direct: bool = True):
-    if direct:
-        from indra_db.client.principal.curation import get_curations
-
-        return get_curations()
-    else:
-        from indra.sources.indra_db_rest import get_curations
-
-        return get_curations()
-
-
-def _get_curated_statement_hashes(direct: bool = True) -> Set[int]:
-    stmt_jsons = get_curations(direct=direct)
+def _get_curated_statement_hashes() -> Set[int]:
+    stmt_jsons = get_curations()
     return {curation["pa_hash"] for curation in stmt_jsons}
 
 
