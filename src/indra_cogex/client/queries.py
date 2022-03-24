@@ -195,7 +195,9 @@ def get_genes_for_go_term(
     :
         The genes associated with the given GO term.
     """
-    go_children = get_ontology_child_terms(client, go_term) if include_indirect else []
+    go_children = (
+        get_ontology_child_terms(go_term, client=client) if include_indirect else []
+    )
     gene_nodes = {}
     for term in [go_term] + go_children:
         genes = client.get_sources(
@@ -1018,7 +1020,7 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
 
     >>> from networkx.drawing.nx_agraph import to_agraph
     >>> client = ...
-    >>> graph = get_schema_graph(client)
+    >>> graph = get_schema_graph(client=client)
     >>> to_agraph(graph).draw("~/Desktop/cogex_schema.pdf", prog="dot")
     """
     query = "call db.schema.visualization();"
