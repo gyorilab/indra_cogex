@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Collection, Iterable
+from typing import Collection
 
 import flask
 from flask import Response, redirect, render_template, url_for
@@ -21,6 +21,7 @@ from indra_cogex.client.curation import (
 )
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
+from .curator.utils import get_unfinished_hashes
 from .utils import render_statements, resolve_email
 
 __all__ = [
@@ -116,3 +117,11 @@ def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     hashes = get_goa_hashes(client=client, limit=proxies.limit)
     return _render_hashes(hashes, title="GO Annotation Curator")
+
+
+@curator_blueprint.route("/conflicts", methods=["GET"])
+@jwt_optional
+def conflicts():
+    """Curate statements with conflicting prior curations."""
+    hashes = get_unfinished_hashes(client=client)
+    return _render_hashes(hashes, title="Conflict Resolver")
