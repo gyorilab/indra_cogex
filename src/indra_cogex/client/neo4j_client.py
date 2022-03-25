@@ -727,8 +727,8 @@ class Neo4jClient:
         db_ns, db_id = process_identifier(node_id)
         return Node(db_ns, db_id, neo4j_node.labels, props)
 
-    @staticmethod
-    def neo4j_to_relation(neo4j_path: neo4j.graph.Path) -> Relation:
+    @classmethod
+    def neo4j_to_relation(cls, neo4j_path: neo4j.graph.Path) -> Relation:
         """Return a Relation from a neo4j internal single-relation path.
 
         Parameters
@@ -742,7 +742,7 @@ class Neo4jClient:
         relation :
             A Relation object with the INDRA standard identifier scheme.
         """
-        return Neo4jClient.neo4j_to_relations(neo4j_path)[0]
+        return cls.neo4j_to_relations(neo4j_path)[0]
 
     @staticmethod
     def neo4j_to_relations(neo4j_path: neo4j.graph.Path) -> List[Relation]:
