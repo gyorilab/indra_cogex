@@ -5,10 +5,17 @@ from typing import Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
-from indra.databases.hgnc_client import get_current_hgnc_id, tfs
+from indra.databases.hgnc_client import get_current_hgnc_id, kinases, tfs
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
-from indra.statements import DecreaseAmount, IncreaseAmount, Statement
+from indra.statements import (
+    Autophosphorylation,
+    DecreaseAmount,
+    IncreaseAmount,
+    Phosphorylation,
+    Statement,
+    Transphosphorylation,
+)
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
@@ -251,11 +258,15 @@ def get_goa_hashes(
     return [stmt_hash for stmt_hash, in client.query_tx(query)]
 
 
-tf_curies = sorted(
-    f"hgnc:{get_current_hgnc_id(symbol)}"
-    for symbol in tfs
-    if get_current_hgnc_id(symbol)
-)
+def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
+    return sorted(
+        f"hgnc:{get_current_hgnc_id(symbol)}"
+        for symbol in symbols
+        if get_current_hgnc_id(symbol)
+    )
+
+
+tf_curies = _get_symbol_curies(tfs)
 tf_stmt_types = [IncreaseAmount, DecreaseAmount]
 
 
@@ -271,6 +282,33 @@ def get_tf_statements(
         WHERE
             a.id in {tf_curies!r}
             AND r.stmt_type in {[t.__name__ for t in tf_stmt_types]!r}
+            AND b.id STARTS WITH 'hgnc'
+            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+        RETURN p
+        ORDER BY r.evidence_count DESC
+        LIMIT {limit or 30}
+    """
+    return indra_stmts_from_relations(
+        client.neo4j_to_relation(res[0]) for res in client.query_tx(query)
+    )
+
+
+KINASE_CURIES = _get_symbol_curies(kinases)
+KINASE_STMT_TYPES = [Phosphorylation, Autophosphorylation, Transphosphorylation]
+
+
+@autoclient()
+def get_kinase_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> List[Statement]:
+    """Get kinase statements."""
+    query = f"""\
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH 
+            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE
+            a.id in {KINASE_CURIES!r}
+            AND r.stmt_type in {[t.__name__ for t in KINASE_STMT_TYPES]!r}
             AND b.id STARTS WITH 'hgnc'
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
         RETURN p

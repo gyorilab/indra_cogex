@@ -16,6 +16,7 @@ from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
     get_go_curation_hashes,
     get_goa_hashes,
+    get_kinase_statements,
     get_mesh_curation_hashes,
     get_ppi_hashes,
     get_tf_statements,
@@ -137,3 +138,12 @@ def tf():
     stmts = get_tf_statements(client=client, limit=proxies.limit)
     hashes = [stmt.get_hash() for stmt in stmts]
     return _render_hashes(hashes, title="Transcription Factor Curator")
+
+
+@curator_blueprint.route("/kinase", methods=["GET"])
+@jwt_optional
+def kinase():
+    """Curate kinases."""
+    stmts = get_kinase_statements(client=client, limit=proxies.limit)
+    hashes = [stmt.get_hash() for stmt in stmts]
+    return _render_hashes(hashes, title="Kinase Curator")
