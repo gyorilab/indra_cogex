@@ -3,18 +3,6 @@
 
 {% block title %}INDRA Biomedical Discovery Engine{% endblock %}
 
-{% block styles %}
-    {{ super() }}
-    <style>
-        .app-link {
-            margin: 0.5em;
-        }
-
-    </style>
-{% endblock %}
-
-
-
 {% macro count_column(counter, key, label, icon) -%}
     <div class="col">
         {% set count, suffix = format_number(counter[key]) %}
@@ -70,7 +58,7 @@
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -85,7 +73,7 @@
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -99,7 +87,7 @@
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -113,7 +101,7 @@
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
         </div>
@@ -122,28 +110,28 @@
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://conceptdraw.com/a708c3/p1/preview/256/pict--metabolic-pathway-map-key-metabolic-processes-biochemical-pathway-map">
                 <div class="card-body">
-                    <h5 class="card-title">GO Curator</h5>
+                    <h5 class="card-title">Pathway Curator</h5>
                     <p class="card-text">
                         Curate networks induced by genes associated with a given Gene Ontology term.
                     </p>
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('curator.gene_ontology') }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://i.pinimg.com/originals/62/69/1d/62691dff8b3005c8064a0738ddb35aa0.jpg">
                 <div class="card-body">
-                    <h5 class="card-title">MeSH Curator</h5>
+                    <h5 class="card-title">Topic Curator</h5>
                     <p class="card-text">
-                        Curate statements from publications with the given MeSH term.
+                        Curate statements from publications annotated with the given MeSH term.
                     </p>
                 </div>
                 <div class="card-footer text-center">
                     <a href="{{ url_for('curator.mesh') }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -156,7 +144,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.goa') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.goa') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -169,7 +157,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.conflicts') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.conflicts') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
         </div>
@@ -184,7 +172,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -198,7 +186,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.tf') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.tf') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -212,7 +200,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.kinase') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.kinase') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
             <div class="card">
@@ -226,7 +214,8 @@
                     </p>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.phosphatase') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                    <a href="{{ url_for('curator.phosphatase') }}"
+                       class="btn btn-sm btn-primary stretched-link">Start</a>
                 </div>
             </div>
         </div>
