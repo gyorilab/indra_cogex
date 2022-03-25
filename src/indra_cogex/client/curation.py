@@ -1,16 +1,17 @@
 """Tools for INDRA curation."""
 
 import logging
-from typing import Iterable, List, Optional, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple, Type
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
-from indra.databases.hgnc_client import get_current_hgnc_id, kinases, tfs
+from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Autophosphorylation,
     DecreaseAmount,
+    Dephosphorylation,
     IncreaseAmount,
     Phosphorylation,
     Statement,
@@ -32,6 +33,8 @@ __all__ = [
     "get_ppi_hashes",
     "get_goa_hashes",
     "get_tf_statements",
+    "get_kinase_statements",
+    "get_phosphatase_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -266,8 +269,8 @@ def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
     )
 
 
-tf_curies = _get_symbol_curies(tfs)
-tf_stmt_types = [IncreaseAmount, DecreaseAmount]
+TF_CURIES = _get_symbol_curies(tfs)
+TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 
 
 @autoclient()
@@ -275,21 +278,11 @@ def get_tf_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
 ) -> List[Statement]:
     """Get transcription factor increase amount / decrease amount."""
-    query = f"""\
-        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH 
-            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
-        WHERE
-            a.id in {tf_curies!r}
-            AND r.stmt_type in {[t.__name__ for t in tf_stmt_types]!r}
-            AND b.id STARTS WITH 'hgnc'
-            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
-        RETURN p
-        ORDER BY r.evidence_count DESC
-        LIMIT {limit or 30}
-    """
-    return indra_stmts_from_relations(
-        client.neo4j_to_relation(res[0]) for res in client.query_tx(query)
+    return _help(
+        sources=TF_CURIES,
+        stmt_types=TF_STMT_TYPES,
+        client=client,
+        limit=limit,
     )
 
 
@@ -302,13 +295,45 @@ def get_kinase_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
 ) -> List[Statement]:
     """Get kinase statements."""
+    return _help(
+        sources=KINASE_CURIES,
+        stmt_types=KINASE_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+PHOSPHATASE_CURIES = _get_symbol_curies(phosphatases)
+PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
+
+
+@autoclient()
+def get_phosphatase_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> List[Statement]:
+    """Get phosphatase statements."""
+    return _help(
+        sources=PHOSPHATASE_CURIES,
+        stmt_types=PHOSPHATASE_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+def _help(
+    *,
+    sources: List[str],
+    stmt_types: List[Type[Statement]],
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> List[Statement]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH 
             a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
-            a.id in {KINASE_CURIES!r}
-            AND r.stmt_type in {[t.__name__ for t in KINASE_STMT_TYPES]!r}
+            a.id in {sources!r}
+            AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH 'hgnc'
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
         RETURN p

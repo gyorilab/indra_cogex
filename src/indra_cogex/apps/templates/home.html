@@ -145,18 +145,6 @@
             <div class="card">
                 {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
                 <div class="card-body">
-                    <h5 class="card-title">PPI Curator</h5>
-                    <p class="card-text">
-                        Curate protein-protein interactions not already appearing in databases like BioGRID.
-                    </p>
-                </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary app-link">Start</a>
-                </div>
-            </div>
-            <div class="card">
-                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
-                <div class="card-body">
                     <h5 class="card-title">GO Annotation Curator</h5>
                     <p class="card-text">
                         Curate gene-GO term interactions that are not already available as GO annotations.
@@ -166,8 +154,6 @@
                     <a href="{{ url_for('curator.goa') }}" class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-        </div>
-        <div class="card-deck" style="margin-top: 1em;">
             <div class="card">
                 {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
                 <div class="card-body">
@@ -180,8 +166,24 @@
                     <a href="{{ url_for('curator.conflicts') }}" class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
+        </div>
+        <div class="card-deck" style="margin-top: 1em;">
             <div class="card">
-                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">PPI Curator</h5>
+                    <p class="card-text">
+                        Curate protein-protein interactions not already appearing in databases like BioGRID.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://www2.lbl.gov/Science-Articles/Archive/images1/TF-proteins.gif">
                 <div class="card-body">
                     <h5 class="card-title">TF Curator</h5>
                     <p class="card-text">
@@ -194,7 +196,8 @@
                 </div>
             </div>
             <div class="card">
-                {# <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}" alt="Over-representation analysis"> #}
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/2/24/Riboflavin_kinase.png?20140204011711">
                 <div class="card-body">
                     <h5 class="card-title">Kinase Curator</h5>
                     <p class="card-text">
@@ -206,7 +209,20 @@
                     <a href="{{ url_for('curator.kinase') }}" class="btn btn-sm btn-primary app-link">Start</a>
                 </div>
             </div>
-            <div class="card"></div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/7/79/Calcineurin.png?20070203003651">
+                <div class="card-body">
+                    <h5 class="card-title">Phosphatase Curator</h5>
+                    <p class="card-text">
+                        Curate statements about phosphatases dephosphorylating targets not
+                        already appearing in databases like Pathway Commons.
+                    </p>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('curator.phosphatase') }}" class="btn btn-sm btn-primary app-link">Start</a>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

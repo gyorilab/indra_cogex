@@ -18,6 +18,7 @@ from indra_cogex.client.curation import (
     get_goa_hashes,
     get_kinase_statements,
     get_mesh_curation_hashes,
+    get_phosphatase_statements,
     get_ppi_hashes,
     get_tf_statements,
 )
@@ -147,3 +148,12 @@ def kinase():
     stmts = get_kinase_statements(client=client, limit=proxies.limit)
     hashes = [stmt.get_hash() for stmt in stmts]
     return _render_hashes(hashes, title="Kinase Curator")
+
+
+@curator_blueprint.route("/phosphatase", methods=["GET"])
+@jwt_optional
+def phosphatase():
+    """Curate phosphatases."""
+    stmts = get_phosphatase_statements(client=client, limit=proxies.limit)
+    hashes = [stmt.get_hash() for stmt in stmts]
+    return _render_hashes(hashes, title="Phosphatase Curator")
