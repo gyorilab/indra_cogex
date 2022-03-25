@@ -73,7 +73,7 @@ class MeshDiseaseForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
-@curator_blueprint.route("/mesh-disease/", methods=["GET", "POST"])
+@curator_blueprint.route("/mesh/", methods=["GET", "POST"])
 def mesh():
     """A home page for MeSH Disease curation."""
     form = MeshDiseaseForm()
@@ -82,7 +82,7 @@ def mesh():
     return render_template("curation/mesh_form.html", form=form)
 
 
-@curator_blueprint.route("/mesh-disease/<term>", methods=["GET"])
+@curator_blueprint.route("/mesh/<term>", methods=["GET"])
 @jwt_optional
 def curate_mesh(term: str):
     hashes = get_mesh_curation_hashes(mesh_term=("MESH", term), client=client)
