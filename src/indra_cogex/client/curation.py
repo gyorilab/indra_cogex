@@ -1,6 +1,7 @@
 """Tools for INDRA curation."""
 
 import logging
+from itertools import chain
 from typing import Iterable, List, Optional, Set, Tuple, Type
 
 import pandas as pd
@@ -9,10 +10,12 @@ from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatas
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
+    Activation,
     Autophosphorylation,
     DecreaseAmount,
     Dephosphorylation,
     IncreaseAmount,
+    Inhibition,
     Phosphorylation,
     Statement,
     Transphosphorylation,
@@ -35,6 +38,7 @@ __all__ = [
     "get_tf_statements",
     "get_kinase_statements",
     "get_phosphatase_statements",
+    "get_conflicting_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -342,4 +346,43 @@ def _help(
     """
     return indra_stmts_from_relations(
         client.neo4j_to_relation(res[0]) for res in client.query_tx(query)
+    )
+
+
+@autoclient()
+def get_conflicting_statements(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    positive_stmt_type: Type[Statement] = Activation,
+    negative_stmt_type: Type[Statement] = Inhibition,
+):
+    """Get statements that conflict in activation/inhibition.
+
+    .. warning:: This takes about 10 minutes to run ATM
+    """
+    query = f"""\
+        MATCH 
+            p=(a:BioEntity)-[r1:indra_rel]->(b:BioEntity)<-[r2:indra_rel]-(a:BioEntity)
+        WITH 
+            a, b, p,
+            r1, apoc.convert.fromJsonMap(r1.source_counts) as r1_sources,
+            r2, apoc.convert.fromJsonMap(r1.source_counts) as r2_sources,
+            r1.evidence_count + r2.evidence_count as total_evidence_count
+        WHERE
+            a.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH 'hgnc'
+            AND r1.stmt_type in ['{positive_stmt_type.__name__}']
+            AND r2.stmt_type in ['{negative_stmt_type.__name__}']
+            AND (
+                NOT apoc.coll.intersection(keys(r1_sources), [{databases_str}])
+                OR NOT apoc.coll.intersection(keys(r2_sources), [{databases_str}])
+            )
+        RETURN p
+        ORDER BY total_evidence_count DESC
+        LIMIT {limit or 30}
+    """
+    res = client.query_tx(query)
+    return indra_stmts_from_relations(
+        chain.from_iterable(client.neo4j_to_relations(row[0]) for row in res)
     )
