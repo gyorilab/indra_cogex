@@ -11,14 +11,12 @@ from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
-    Autophosphorylation,
     DecreaseAmount,
     Dephosphorylation,
     IncreaseAmount,
     Inhibition,
     Phosphorylation,
     Statement,
-    Transphosphorylation,
 )
 from networkx.algorithms import edge_betweenness_centrality
 
@@ -291,7 +289,11 @@ def get_tf_statements(
 
 
 KINASE_CURIES = _get_symbol_curies(kinases)
-KINASE_STMT_TYPES = [Phosphorylation, Autophosphorylation, Transphosphorylation]
+KINASE_STMT_TYPES = [
+    Phosphorylation,
+    # Autophosphorylation,
+    # #Transphosphorylation,
+]
 
 
 @autoclient()
@@ -340,6 +342,7 @@ def _help(
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH 'hgnc'
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND a.id <> b.id
         RETURN p
         ORDER BY r.evidence_count DESC
         LIMIT {limit or 30}
