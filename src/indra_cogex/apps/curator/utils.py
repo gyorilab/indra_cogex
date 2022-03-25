@@ -44,7 +44,7 @@ def _group_curations(curations: List[Curation]) -> Mapping[int, Counter]:
 def get_statuses(
     curations: List[Curation], *, client: Neo4jClient
 ) -> Mapping[int, bool]:
-    """Get the hashes for statements and their status  where true means
+    """Get the hashes for statements and their status where true means
     finished and false means it needs more curation.
     """
     stmt_hash_to_counter = _group_curations(curations)
