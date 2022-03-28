@@ -48,30 +48,19 @@ def get_statuses(
     needs more curation and false means it's finished.
     """
     stmt_hash_to_counter = _group_curations(curations)
-    stmt_evidence_counts = get_evidence_counts(stmt_hash_to_counter, client=client)
-    return {
-        stmt_hash: unfinished(
-            correct=results[True],
-            incorrect=results[False],
-            # default to a big number in case it can't be looked up
-            evidences=stmt_evidence_counts.get(stmt_hash, 1000000),
-        )
-        for stmt_hash, results in stmt_hash_to_counter.items()
-    }
-
-
-@autoclient()
-def get_evidence_counts(
-    hashes: Iterable[int], *, client: Neo4jClient
-) -> Mapping[int, int]:
-    """Get the number of evidences for each statement hash."""
     query = f"""\
         MATCH (:BioEntity)-[r:indra_rel]->(:BioEntity)
         WHERE
-            r.stmt_hash IN {sorted(hashes)!r}
+            r.stmt_hash IN {sorted(stmt_hash_to_counter)!r}
         RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
     """
-    return dict(client.query_tx(query))
+    for stmt_hash, evidence_count in client.query_tx(query):
+        yield stmt_hash, unfinished(
+            correct=stmt_hash_to_counter[stmt_hash][True],
+            incorrect=stmt_hash_to_counter[stmt_hash][False],
+            evidences=evidence_count,
+        )
 
 
 def unfinished(correct: int, incorrect: int, evidences: int) -> bool:
