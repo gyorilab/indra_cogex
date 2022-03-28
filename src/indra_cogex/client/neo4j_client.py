@@ -3,7 +3,7 @@
 import inspect
 import logging
 from functools import lru_cache, wraps
-from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j.graph
 from indra.config import get_config
@@ -90,6 +90,10 @@ class Neo4jClient:
             logger.error(e)
         finally:
             tx.close()
+
+    def query_dict(self, query: str) -> Dict:
+        """Run a read-only query that generates a dictionary."""
+        return dict(self.query_tx(query))
 
     def query_tx(self, query: str) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.

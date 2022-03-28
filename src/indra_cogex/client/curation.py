@@ -2,7 +2,7 @@
 
 import logging
 from itertools import chain
-from typing import Iterable, List, Optional, Set, Tuple, Type
+from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
@@ -31,8 +31,8 @@ __all__ = [
     "get_go_curation_hashes",
     "get_mesh_curation_hashes",
     "get_curations",
-    "get_ppi_hashes",
-    "get_goa_hashes",
+    "get_ppi_evidence_counts",
+    "get_goa_evidence_counts",
     "get_tf_statements",
     "get_kinase_statements",
     "get_phosphatase_statements",
@@ -191,11 +191,11 @@ databases_str = ", ".join(f'"{d}"' for d in DATABASES)
 
 
 @autoclient()
-def get_ppi_hashes(
+def get_ppi_evidence_counts(
     *,
     client: Neo4jClient,
     limit: Optional[int] = None,
-) -> List[int]:
+) -> Mapping[int, int]:
     """Get prioritized statement hashes for uncurated gene-gene relationships.
 
     Parameters
@@ -220,19 +220,19 @@ def get_ppi_hashes(
             and r.stmt_type in ["Complex"]
             // This checks that no sources are database
             and not apoc.coll.intersection(keys(sources), [{databases_str}])
-        RETURN r.stmt_hash
+        RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
         LIMIT {limit or 30}
     """
-    return [stmt_hash for stmt_hash, in client.query_tx(query)]
+    return client.query_dict(query)
 
 
 @autoclient()
-def get_goa_hashes(
+def get_goa_evidence_counts(
     *,
     client: Neo4jClient,
     limit: Optional[int] = None,
-) -> List[int]:
+) -> Mapping[int, int]:
     """Get prioritized statement hashes for uncurated gene-GO annotations..
 
     Parameters
@@ -247,8 +247,6 @@ def get_goa_hashes(
     :
         A list of INDRA statement hashes prioritized for curation
     """
-    if limit is None:
-        limit = 30
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE 
@@ -256,11 +254,11 @@ def get_goa_hashes(
             and a.id STARTS WITH 'hgnc'
             and b.id STARTS WITH 'go'
             and r.evidence_count > 10
-        RETURN r.stmt_hash
+        RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
         LIMIT {limit or 30}
     """
-    return [stmt_hash for stmt_hash, in client.query_tx(query)]
+    return client.query_dict(query)
 
 
 def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:

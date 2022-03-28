@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Collection
+from typing import Collection, Mapping
 
 import flask
 from flask import Response, redirect, render_template, url_for
@@ -15,11 +15,11 @@ from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
     get_go_curation_hashes,
-    get_goa_hashes,
+    get_goa_evidence_counts,
     get_kinase_statements,
     get_mesh_curation_hashes,
     get_phosphatase_statements,
-    get_ppi_hashes,
+    get_ppi_evidence_counts,
     get_tf_statements,
 )
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
@@ -108,20 +108,39 @@ def _render_hashes(
     )
 
 
+def _render_evidence_counts(
+    evidence_counts: Mapping[int, int], title: str, filter_curated: bool = True
+) -> Response:
+    hashes = sorted(evidence_counts, key=evidence_counts.get, reverse=True)
+    start_time = time.time()
+    stmts = get_stmts_for_stmt_hashes(hashes[: proxies.limit], evidence_limit=10)
+    end_time = time.time() - start_time
+    logger.info(f"Got statements in {end_time:.2f} seconds")
+    _, _, email = resolve_email()
+    return render_statements(
+        stmts,
+        user_email=email,
+        title=title,
+        filter_curated=filter_curated,
+        evidence_counts=evidence_counts,
+        evidence_lookup_time=end_time,
+    )
+
+
 @curator_blueprint.route("/ppi", methods=["GET"])
 @jwt_optional
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
-    hashes = get_ppi_hashes(client=client, limit=proxies.limit)
-    return _render_hashes(hashes, title="PPI Curator")
+    evidence_counts = get_ppi_evidence_counts(client=client, limit=proxies.limit)
+    return _render_evidence_counts(evidence_counts, title="PPI Curator")
 
 
 @curator_blueprint.route("/goa", methods=["GET"])
 @jwt_optional
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
-    hashes = get_goa_hashes(client=client, limit=proxies.limit)
-    return _render_hashes(hashes, title="GO Annotation Curator")
+    evidence_counts = get_goa_evidence_counts(client=client, limit=proxies.limit)
+    return _render_evidence_counts(evidence_counts, title="GO Annotation Curator")
 
 
 @curator_blueprint.route("/conflicts", methods=["GET"])
