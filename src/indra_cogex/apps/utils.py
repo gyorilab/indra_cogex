@@ -126,6 +126,9 @@ def format_stmts(
     """
     if evidence_counts is None:
         evidence_counts = {}
+    else:
+        # Make sure statements are sorted by highest evidence counts first
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
     def stmt_to_row(
         st: Statement,
