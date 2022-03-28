@@ -1,4 +1,5 @@
 import json
+import time
 from collections import defaultdict
 from typing import (
     DefaultDict,
@@ -72,16 +73,27 @@ def render_statements(
     user_email: Optional[str] = None,
     filter_curated: bool = False,
     evidence_counts: Optional[Mapping[int, int]] = None,
+    evidence_lookup_time: Optional[float] = None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
+    start_time = time.time()
     form_stmts = format_stmts(
         stmts, filter_curated=filter_curated, evidence_counts=evidence_counts
     )
+    end_time = time.time() - start_time
+
+    if evidence_lookup_time:
+        footer = f"Got evidences in {evidence_lookup_time:.2f} seconds. "
+    else:
+        footer = ""
+    footer += f"Formatted statements in {end_time:.2f} seconds."
+
     return render_template(
         "data_display/data_display_base.html",
         stmts=form_stmts,
         user_email=user_email or "",
+        footer=footer,
         **kwargs,
     )
 
@@ -191,7 +203,7 @@ def format_stmts(
             ),
         )
 
-    all_pa_hashes = [st.get_hash() for st in stmts]
+    all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     curations = get_curations()
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)

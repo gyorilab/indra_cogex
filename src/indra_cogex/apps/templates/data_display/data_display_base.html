@@ -71,6 +71,11 @@
                     :badges="st_obj.badges"
             ></statement>
         </div>
+        {% if footer %}
+            <div class="card-footer">
+                <small>{{ footer }}</small>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
 
