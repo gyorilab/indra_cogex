@@ -6,18 +6,52 @@ from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
 from .queries import get_genes_for_go_term, get_genes_in_tissue
-from ..representation import indra_stmts_from_relations, norm_id
+from ..representation import indra_stmts_from_relations, norm_id, Relation
 
 __all__ = [
     "indra_subnetwork",
+    "indra_subnetwork_relations",
     "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
     "indra_subnetwork_go",
 ]
 
 
+@autoclient()
+def indra_subnetwork_relations(
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+) -> List[Relation]:
+    """Return the subnetwork induced by the given nodes as a set of Relations.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes represented as Relation
+        objects.
+    """
+    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+    query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+            WHERE n1.id IN [%s]
+            AND n2.id IN [%s]
+            AND n1.id <> n2.id
+            RETURN p""" % (
+        nodes_str,
+        nodes_str,
+    )
+    rels = [client.neo4j_to_relation(p[0]) for p in client.query_tx(query)]
+    return rels
+
+
+@autoclient()
 def indra_subnetwork(
-    client: Neo4jClient, nodes: Iterable[Tuple[str, str]]
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
@@ -33,16 +67,7 @@ def indra_subnetwork(
     :
         The subnetwork induced by the given nodes.
     """
-    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
-    query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-            WHERE n1.id IN [%s]
-            AND n2.id IN [%s]
-            AND n1.id <> n2.id
-            RETURN p""" % (
-        nodes_str,
-        nodes_str,
-    )
-    rels = [client.neo4j_to_relation(p[0]) for p in client.query_tx(query)]
+    rels = indra_subnetwork_relations(nodes=nodes, client=client)
     stmts = indra_stmts_from_relations(rels)
     return stmts
 

@@ -9,7 +9,7 @@ from flask import Response, abort, jsonify, request
 from flask_restx import Api, Resource, fields
 
 from indra_cogex.apps.proxies import client
-from indra_cogex.client import queries
+from indra_cogex.client import queries, subnetwork
 
 from .helpers import get_docstring, parse_json, process_result
 
@@ -53,19 +53,25 @@ examples_dict = {
     "filter_medscan": True,
     "limit": 30,
     "evidence_limit": 30,
+    "nodes": [["FPLX", "MEK"], ["FPLX", "ERK"]],
 }
 
 SKIP_GLOBAL = {"return_evidence_counts", "kwargs", "subject_prefix", "object_prefix"}
 SKIP_ARGUMENTS = {"get_stmts_for_stmt_hashes": {"return_evidence_counts"}}
 
-func_mapping = {fname: getattr(queries, fname) for fname in queries.__all__}
+# This is the list of functions to be included
+module_functions = [(queries, fn) for fn in queries.__all__] + [
+    (subnetwork, fn) for fn in ["indra_subnetwork_relations"]
+]
+
+func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
 
 # Create resource for each query function
-for func_name in queries.__all__:
-    if not isfunction(getattr(queries, func_name)) or func_name == "get_schema_graph":
+for module, func_name in module_functions:
+    if not isfunction(getattr(module, func_name)) or func_name == "get_schema_graph":
         continue
 
-    func = getattr(queries, func_name)
+    func = getattr(module, func_name)
     func_sig = signature(func)
     client_param = func_sig.parameters.get("client")
     if client_param is None:
