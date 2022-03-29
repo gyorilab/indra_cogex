@@ -51,7 +51,12 @@ examples_dict = {
     "include_indirect": True,
     "evidence_map": {},
     "filter_medscan": True,
+    "limit": 30,
+    "evidence_limit": 30,
 }
+
+SKIP_GLOBAL = {"return_evidence_counts", "kwargs", "subject_prefix", "object_prefix"}
+SKIP_ARGUMENTS = {"get_stmts_for_stmt_hashes": {"return_evidence_counts"}}
 
 func_mapping = {fname: getattr(queries, fname) for fname in queries.__all__}
 
@@ -73,38 +78,26 @@ for func_name in queries.__all__:
 
     model_name = f"{func_name}_model"
 
-    # Create query model, separate between one and two parameter expectations
-    try:
-        if len(func_sig.parameters) == 2:
-            # Get the parameters name for the other parameter that is not 'client'
-            query_model = api.model(
-                model_name,
-                {
-                    param_names[0]: fields.List(
-                        fields.String, example=examples_dict[param_names[0]]
-                    )
-                },
+    for param_name in param_names:
+        if param_name in SKIP_GLOBAL:
+            continue
+        if param_name in SKIP_ARGUMENTS.get(func_name, []):
+            continue
+        if param_name not in examples_dict:
+            raise KeyError(
+                f"Missing example for parameter {param_name} in function {func_name}"
             )
-        elif len(func_sig.parameters) == 3:
 
-            query_model = api.model(
-                model_name,
-                {
-                    param_names[0]: fields.List(
-                        fields.String, example=examples_dict[param_names[0]]
-                    ),
-                    param_names[1]: fields.List(
-                        fields.String, example=examples_dict[param_names[1]]
-                    ),
-                },
-            )
-        else:
-            raise ValueError(
-                f"Query function {func_name} has an unexpected number of "
-                f"parameters ({len(func_sig.parameters)})"
-            )
-    except KeyError as err:
-        raise KeyError(f"No examples for {func_name}, please add one") from err
+    # Get the parameters name for the other parameter that is not 'client'
+    query_model = api.model(
+        model_name,
+        {
+            param_name: fields.List(fields.String, example=examples_dict[param_name])
+            for param_name in param_names
+            if param_name not in SKIP_GLOBAL
+            and param_name not in SKIP_ARGUMENTS.get(func_name, [])
+        },
+    )
 
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})

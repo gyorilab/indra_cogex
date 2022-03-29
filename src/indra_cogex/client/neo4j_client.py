@@ -3,7 +3,7 @@
 import inspect
 import logging
 from functools import lru_cache, wraps
-from typing import Any, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import neo4j.graph
 from indra.config import get_config
@@ -90,6 +90,10 @@ class Neo4jClient:
             logger.error(e)
         finally:
             tx.close()
+
+    def query_dict(self, query: str) -> Dict:
+        """Run a read-only query that generates a dictionary."""
+        return dict(self.query_tx(query))
 
     def query_tx(self, query: str) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
@@ -727,8 +731,8 @@ class Neo4jClient:
         db_ns, db_id = process_identifier(node_id)
         return Node(db_ns, db_id, neo4j_node.labels, props)
 
-    @staticmethod
-    def neo4j_to_relation(neo4j_path: neo4j.graph.Path) -> Relation:
+    @classmethod
+    def neo4j_to_relation(cls, neo4j_path: neo4j.graph.Path) -> Relation:
         """Return a Relation from a neo4j internal single-relation path.
 
         Parameters
@@ -742,7 +746,7 @@ class Neo4jClient:
         relation :
             A Relation object with the INDRA standard identifier scheme.
         """
-        return Neo4jClient.neo4j_to_relations(neo4j_path)[0]
+        return cls.neo4j_to_relations(neo4j_path)[0]
 
     @staticmethod
     def neo4j_to_relations(neo4j_path: neo4j.graph.Path) -> List[Relation]:

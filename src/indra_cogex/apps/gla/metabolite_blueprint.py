@@ -4,9 +4,8 @@ from typing import Dict, List, Mapping, Tuple
 
 import bioregistry
 import flask
-from flask import redirect, request
+from flask import request
 from flask_wtf import FlaskForm
-from indra.assemblers.html import HtmlAssembler
 from indra.databases import chebi_client
 from indralab_auth_tools.auth import resolve_auth
 from wtforms import SubmitField, TextAreaField
@@ -21,7 +20,7 @@ from .fields import (
     minimum_belief_field,
     minimum_evidence_field,
 )
-from ..utils import format_stmts, render_statements
+from ..utils import render_statements
 from ...client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,
@@ -141,6 +140,5 @@ def enzyme(ec_code: str):
     )
     return render_statements(
         stmts,
-        user_email=user.email if user else "",
         title=f"Statements for EC:{identifier}",
     )

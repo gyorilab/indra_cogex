@@ -6,14 +6,17 @@
 {% block styles %}
     {{ super() }}
     <style>
-        .app-link {
-            margin: 0.5em;
+        .card-deck > .card {
+            box-shadow: 0 6px 10px rgba(0, 0, 0, .08), 0 0 6px rgba(0, 0, 0, .05);
+            transition: .3s transform cubic-bezier(.155, 1.105, .295, 1.12), .3s box-shadow, .3s -webkit-transform cubic-bezier(.155, 1.105, .295, 1.12);
         }
 
+        .card-deck > .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, .12), 0 4px 8px rgba(0, 0, 0, .06);
+        }
     </style>
 {% endblock %}
-
-
 
 {% macro count_column(counter, key, label, icon) -%}
     <div class="col">
@@ -32,13 +35,20 @@
     </div>
 {% endmacro %}
 
+{% macro start_button(url, default=None) -%}
+    <div class="card-footer text-center">
+        <a href="{{ url_for(url) or default }}" class="stretched-link" target="_blank">Click to Start</a>
+    </div>
+{% endmacro %}
 
 {% block container %}
     <div class="row">
         <div class="card card-body">
             <h1 class="display-4">INDRA Biomedical Discovery Engine</h1>
             <p class="lead">
-                The INDRA Biomedical Discovery Engine is built on INDRA CoGEx, a graph database integrating causal relations, ontological relations, properties, and data, assembled at scale automatically from the scientific literature and structured sources.
+                The INDRA Biomedical Discovery Engine is built on INDRA CoGEx, a graph database integrating causal
+                relations, ontological relations, properties, and data, assembled at scale automatically from the
+                scientific literature and structured sources.
             </p>
             <div class="row text-center stats">
                 {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
@@ -54,6 +64,7 @@
         </div>
     </div>
     <div class="row">
+        {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
         <h3 class="text-center" style="margin: 1em auto;">Apps and Services using INDRA CoGEx</h3>
         <div class="card-deck">
             <div class="card">
@@ -65,10 +76,7 @@
                         Performs gene set enrichment analysis using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
-                </div>
+                {{ start_button('gla.discretize_analysis', '/gene/discrete') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="rcr.png") }}"
@@ -80,10 +88,7 @@
                         Reasoning algorithm.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
-                </div>
+                {{ start_button('gla.signed_analysis', '/gene/signed') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
@@ -94,10 +99,7 @@
                         Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
-                </div>
+                {{ start_button('gla.continuous_analysis', '/gene/continuous') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -108,10 +110,113 @@
                         Perform metabolite set enrichment analysis using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
-                       class="btn btn-sm btn-primary app-link">Start</a>
+                {{ start_button('mla.discrete_analysis', '/metabolite/discrete') }}
+            </div>
+        </div>
+        <div class="card-deck" style="margin-top: 1em;">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://conceptdraw.com/a708c3/p1/preview/256/pict--metabolic-pathway-map-key-metabolic-processes-biochemical-pathway-map">
+                <div class="card-body">
+                    <h5 class="card-title">GO Pathway Curator</h5>
+                    <p class="card-text">
+                        Curate networks induced by genes associated with a given Gene Ontology term.
+                    </p>
                 </div>
+                {{ start_button('curator.gene_ontology') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://i.pinimg.com/originals/62/69/1d/62691dff8b3005c8064a0738ddb35aa0.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">Topic Curator</h5>
+                    <p class="card-text">
+                        Curate statements from publications annotated with the given MeSH term.
+                    </p>
+                </div>
+                {{ start_button('curator.mesh') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://www.researchgate.net/profile/Abdullah-Kahtani/publication/328653994/figure/fig1/AS:688061251870722@1541057994885/Gene-Oncology-Structure-The-Gene-Ontology-2011_W640.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">GO Annotation Curator</h5>
+                    <p class="card-text">
+                        Curate gene-GO term interactions that are not already available as GO annotations.
+                    </p>
+                </div>
+                {{ start_button('curator.goa') }}
+            </div>
+            {# <div class="card">
+                <img class="card-img-top" style="max-height: 100px" alt="conflict resolution image"
+                     src="https://www.gabek.com/wp-content/uploads/2013/02/konfliktloesung.png">
+                <div class="card-body">
+                    <h5 class="card-title">Conflict Resolver</h5>
+                    <p class="card-text">
+                        Continue curating statements that have conflicts in prior curations.
+                    </p>
+                </div>
+                {{ start_button('curator.conflicts') }}
+            </div> #}
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">PPI Curator</h5>
+                    <p class="card-text">
+                        Curate protein-protein interactions not already appearing in databases like BioGRID.
+                    </p>
+                </div>
+                {{ start_button('curator.ppi') }}
+            </div>
+        </div>
+        <div class="card-deck" style="margin-top: 1em;">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://www2.lbl.gov/Science-Articles/Archive/images1/TF-proteins.gif">
+                <div class="card-body">
+                    <h5 class="card-title">TF Curator</h5>
+                    <p class="card-text">
+                        Curate statements about transcription factors regulating the amounts of their targets not
+                        already appearing in databases like Pathway Commons.
+                    </p>
+                </div>
+                {{ start_button('curator.tf') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/2/24/Riboflavin_kinase.png?20140204011711">
+                <div class="card-body">
+                    <h5 class="card-title">Kinase Curator</h5>
+                    <p class="card-text">
+                        Curate statements about kinases phosphorylating targets not
+                        already appearing in databases like PhosphoSitePlus.
+                    </p>
+                </div>
+                {{ start_button('curator.kinase') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/7/79/Calcineurin.png?20070203003651">
+                <div class="card-body">
+                    <h5 class="card-title">Phosphatase Curator</h5>
+                    <p class="card-text">
+                        Curate statements about phosphatases dephosphorylating targets not
+                        already appearing in databases like Pathway Commons.
+                    </p>
+                </div>
+                {{ start_button('curator.phosphatase') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://labsyspharm.github.io/dubportal/dubwheel.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">Deubiquitinase Curator</h5>
+                    <p class="card-text">
+                        Curate statements about deubiquitinating enzymes.
+                    </p>
+                </div>
+                {{ start_button('curator.deubiquitinase') }}
             </div>
         </div>
     </div>

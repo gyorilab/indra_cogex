@@ -1,16 +1,28 @@
 import json
+import time
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Tuple, DefaultDict
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    cast,
+)
 
-from flask import Response, render_template
+from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
+from indralab_auth_tools.auth import resolve_auth
 
-StmtRow = Tuple[List[Dict], str, str, Dict[str, int], int, List[Dict]]
-
-CurationType = List[Dict]
+StmtRow = Tuple[str, str, str, str, str, str]
+CurationType = List[Mapping[str, Any]]
 
 
 def count_curations(
@@ -58,19 +70,46 @@ def count_curations(
 
 
 def render_statements(
-    stmts: List[Statement], user_email: Optional[str] = None, **kwargs
+    stmts: List[Statement],
+    evidence_counts: Optional[Mapping[int, int]] = None,
+    evidence_lookup_time: Optional[float] = None,
+    limit: Optional[int] = None,
+    curations=None,
+    **kwargs,
 ) -> Response:
     """Render INDRA statements."""
-    form_stmts = format_stmts(stmts)
+    _, _, user_email = resolve_email()
+
+    start_time = time.time()
+    formatted_stmts = format_stmts(
+        stmts=stmts,
+        evidence_counts=evidence_counts,
+        limit=limit,
+        curations=curations,
+    )
+    end_time = time.time() - start_time
+
+    if evidence_lookup_time:
+        footer = f"Got evidences in {evidence_lookup_time:.2f} seconds. "
+    else:
+        footer = ""
+    footer += f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds."
+
     return render_template(
         "data_display/data_display_base.html",
-        stmts=form_stmts,
-        user_email=user_email or "",
+        stmts=formatted_stmts,
+        user_email=user_email,
+        footer=footer,
         **kwargs,
     )
 
 
-def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
+def format_stmts(
+    stmts: Iterable[Statement],
+    evidence_counts: Optional[Mapping[int, int]] = None,
+    limit: Optional[int] = None,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> List[StmtRow]:
     """Format the statements for display
 
     Wanted objects:
@@ -104,10 +143,15 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
         A list of tuples of the form (evidence, english, hash, sources,
         total_evidence, badges).
     """
+    if evidence_counts is None:
+        evidence_counts = {}
+    else:
+        # Make sure statements are sorted by highest evidence counts first
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
     def stmt_to_row(
         st: Statement,
-    ) -> List[str]:
+    ) -> StmtRow:
         ev_array = json.loads(
             json.dumps(
                 _format_evidence_text(
@@ -120,7 +164,7 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
         english = _format_stmt_text(st)
         hash_int = st.get_hash()
         sources = _get_available_ev_source_counts(st.evidence)
-        total_evidence = len(st.evidence)
+        total_evidence = evidence_counts.get(st.get_hash(), len(st.evidence))
         badges = [
             {
                 "label": "evidence",
@@ -151,19 +195,28 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
                 }
             )
 
-        return [
-            json.dumps(e)
-            for e in [ev_array, english, str(hash_int), sources, total_evidence, badges]
-        ]
+        return cast(
+            StmtRow,
+            tuple(
+                json.dumps(e)
+                for e in (
+                    ev_array,
+                    english,
+                    str(hash_int),
+                    sources,
+                    total_evidence,
+                    badges,
+                )
+            ),
+        )
 
-    all_pa_hashes = [st.get_hash() for st in stmts]
-    curations = get_curations()
+    all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
+    if curations is None:
+        curations = get_curations()
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
     for cur in curations:
-        cur_dict[(cur["pa_hash"], cur["source_hash"])].append(
-            {"error_type": cur["tag"]}
-        )
+        cur_dict[cur["pa_hash"], cur["source_hash"]].append({"error_type": cur["tag"]})
 
     stmts_by_hash = {st.get_hash(): st for st in stmts}
     cur_counts = count_curations(curations, stmts_by_hash)
@@ -176,7 +229,36 @@ def format_stmts(stmts: Iterable[Statement]) -> List[StmtRow]:
             list(cur_counts[key].keys())[0], str
         ), f"{list(cur_counts[key].keys())[0]} is not an str"
 
-    stmt_rows = []
-    for stmt in stmts:
-        stmt_rows.append(list(stmt_to_row(stmt)))
-    return stmt_rows
+    stmt_rows = [stmt_to_row(stmt) for stmt in stmts]
+    return stmt_rows[:limit] if limit else stmt_rows
+
+
+def resolve_email():
+    user, roles = resolve_auth(dict(request.args))
+    email = user.email if user else ""
+    return user, roles, email
+
+
+def get_curated_pa_hashes(curations=None) -> Set[int]:
+    """Get a set of hashes for statements that have been curated."""
+    if curations is None:
+        curations = get_curations()
+    return {curation["pa_hash"] for curation in curations if curation["pa_hash"]}
+
+
+def remove_curated_pa_hashes(pa_hashes: Iterable[int], curations=None) -> List[int]:
+    """Remove all hashes from the list that have already been curated."""
+    curated_pa_hashes = get_curated_pa_hashes(curations=curations)
+    return [pa_hash for pa_hash in pa_hashes if pa_hash not in curated_pa_hashes]
+
+
+def remove_curated_statements(
+    statements: Iterable[Statement], curations=None
+) -> List[Statement]:
+    """Remove all hashes from the list that have already been curated."""
+    curated_pa_hashes = get_curated_pa_hashes(curations=curations)
+    return [
+        statement
+        for statement in statements
+        if statement.get_hash() not in curated_pa_hashes
+    ]

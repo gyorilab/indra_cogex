@@ -1,23 +1,43 @@
 """Tools for INDRA curation."""
 
 import logging
-from typing import Iterable, List, Optional, Set, Tuple
+from itertools import chain
+from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
+import famplex
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
+from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
-from indra.statements import Statement
+from indra.statements import (
+    Activation,
+    DecreaseAmount,
+    Dephosphorylation,
+    Deubiquitination,
+    IncreaseAmount,
+    Inhibition,
+    Phosphorylation,
+    Statement,
+)
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
+from ..representation import indra_stmts_from_relations
 
 __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
     "get_curations",
+    "get_ppi_evidence_counts",
+    "get_goa_evidence_counts",
+    "get_tf_statements",
+    "get_kinase_statements",
+    "get_phosphatase_statements",
+    "get_conflicting_statements",
+    "get_dub_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -134,3 +154,234 @@ def get_go_curation_hashes(
         downstream_targets=downstream_targets,
     )
     return get_prioritized_stmt_hashes(stmts)
+
+
+databases_str = ", ".join(f'"{d}"' for d in DATABASES)
+
+
+def _limit_line(limit: Optional[int] = None) -> str:
+    if limit is None:
+        return ""
+    if limit <= 0:
+        raise ValueError("Limit must be above 0")
+    return f"LIMIT {limit}"
+
+
+@autoclient()
+def get_ppi_evidence_counts(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> Mapping[int, int]:
+    """Get prioritized statement hashes for uncurated gene-gene relationships.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    limit :
+        Number of statements to return
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    query = f"""\
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH
+            a, b, r, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE
+            a.id STARTS WITH 'hgnc'
+            and b.id STARTS WITH 'hgnc'
+            and r.stmt_type in ["Complex"]
+            // This checks that no sources are database
+            and not apoc.coll.intersection(keys(sources), [{databases_str}])
+        RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
+        {_limit_line(limit)}
+    """
+    return client.query_dict(query)
+
+
+@autoclient()
+def get_goa_evidence_counts(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> Mapping[int, int]:
+    """Get prioritized statement hashes for uncurated gene-GO annotations..
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    limit :
+        Number of statements to return
+
+    Returns
+    -------
+    :
+        A list of INDRA statement hashes prioritized for curation
+    """
+    query = f"""\
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE
+            NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
+            and a.id STARTS WITH 'hgnc'
+            and b.id STARTS WITH 'go'
+            and r.evidence_count > 10
+        RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
+        {_limit_line(limit)}
+    """
+    return client.query_dict(query)
+
+
+def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
+    return sorted(
+        f"hgnc:{get_current_hgnc_id(symbol)}"
+        for symbol in symbols
+        if get_current_hgnc_id(symbol)
+    )
+
+
+TF_CURIES = _get_symbol_curies(tfs)
+TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
+
+
+@autoclient()
+def get_tf_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get transcription factor increase amount / decrease amount."""
+    return _help(
+        sources=TF_CURIES,
+        stmt_types=TF_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+KINASE_CURIES = _get_symbol_curies(kinases)
+KINASE_STMT_TYPES = [
+    Phosphorylation,
+    # Autophosphorylation,
+    # #Transphosphorylation,
+]
+
+
+@autoclient()
+def get_kinase_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get kinase statements."""
+    return _help(
+        sources=KINASE_CURIES,
+        stmt_types=KINASE_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+PHOSPHATASE_CURIES = _get_symbol_curies(phosphatases)
+PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
+
+
+@autoclient()
+def get_phosphatase_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get phosphatase statements."""
+    return _help(
+        sources=PHOSPHATASE_CURIES,
+        stmt_types=PHOSPHATASE_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+DUB_CURIES = _get_symbol_curies(
+    {
+        identifier
+        for prefix, identifier in famplex.descendant_terms("FPLX", "Deubiquitinase")
+        if prefix == "HGNC"
+    }
+)
+DUB_STMT_TYPES = [Deubiquitination]
+
+
+@autoclient()
+def get_dub_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get deubiquitinase statements."""
+    return _help(
+        sources=DUB_CURIES,
+        stmt_types=DUB_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+def _help(
+    *,
+    sources: List[str],
+    stmt_types: List[Type[Statement]],
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> Mapping[int, int]:
+    query = f"""\
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH
+            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE
+            a.id in {sources!r}
+            AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
+            AND b.id STARTS WITH 'hgnc'
+            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND a.id <> b.id
+        RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
+        {_limit_line(limit)}
+    """
+    return client.query_dict(query)
+
+
+@autoclient()
+def get_conflicting_statements(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    positive_stmt_type: Type[Statement] = Activation,
+    negative_stmt_type: Type[Statement] = Inhibition,
+):
+    """Get statements that conflict in activation/inhibition.
+
+    .. warning:: This takes about 10 minutes to run ATM
+    """
+    query = f"""\
+        MATCH
+            p=(a:BioEntity)-[r1:indra_rel]->(b:BioEntity)<-[r2:indra_rel]-(a:BioEntity)
+        WITH
+            a, b, p,
+            r1, apoc.convert.fromJsonMap(r1.source_counts) as r1_sources,
+            r2, apoc.convert.fromJsonMap(r1.source_counts) as r2_sources,
+            r1.evidence_count + r2.evidence_count as total_evidence_count
+        WHERE
+            a.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH 'hgnc'
+            AND r1.stmt_type in ['{positive_stmt_type.__name__}']
+            AND r2.stmt_type in ['{negative_stmt_type.__name__}']
+            AND (
+                NOT apoc.coll.intersection(keys(r1_sources), [{databases_str}])
+                OR NOT apoc.coll.intersection(keys(r2_sources), [{databases_str}])
+            )
+        RETURN p
+        ORDER BY total_evidence_count DESC
+        {_limit_line(limit)}
+    """
+    res = client.query_tx(query)
+    return indra_stmts_from_relations(
+        chain.from_iterable(client.neo4j_to_relations(row[0]) for row in res)
+    )

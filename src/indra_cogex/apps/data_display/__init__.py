@@ -19,10 +19,9 @@ from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.apps.queries_web.helpers import process_result
-from indra_cogex.client.curation import get_go_curation_hashes
 from indra_cogex.client.queries import get_stmts_for_stmt_hashes
 
-from ..utils import format_stmts, render_statements
+from ..utils import format_stmts
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def get_stmts():
     # Get the statements hash from the query string
     try:
         stmt_hash_list = request.args.getlist("stmt_hash", type=int)
-        stmts = get_stmts_for_stmt_hashes(stmt_hash_list)
+        stmts = get_stmts_for_stmt_hashes(stmt_hash_list, client=client)
         return jsonify(process_result(stmts))
     except (TypeError, ValueError) as err:
         logger.exception(err)
@@ -55,7 +54,7 @@ def statement_display():
         print(stmt_hash_list)
         if not stmt_hash_list:
             abort(Response("Parameter 'stmt_hash' unfilled", status=415))
-        stmts = format_stmts(get_stmts_for_stmt_hashes(stmt_hash_list))
+        stmts = format_stmts(get_stmts_for_stmt_hashes(stmt_hash_list, client=client))
         return render_template(
             "data_display/data_display_base.html", stmts=stmts, user_email=email
         )
@@ -82,25 +81,6 @@ def _get_user():
             return jsonify(res_dict), 400
 
     return email
-
-
-# Curation endpoints
-@data_display_blueprint.route("/curate/go/<term>", methods=["GET"])
-@jwt_optional
-def curate_go(term: str):
-    user, roles = resolve_auth(dict(request.args))
-    email = user.email if user else ""
-    max_results = request.args.get("max_results", type=int, default=25)
-
-    # Get the statements for go term
-    try:
-        # Example: 'GO:0003677'
-        hashes = get_go_curation_hashes(go_term=("GO", term), client=client)
-        stmts = get_stmts_for_stmt_hashes(hashes[:max_results])
-        return render_statements(stmts, user_email=email)
-    except (TypeError, ValueError) as err:
-        logger.exception(err)
-        return abort(Response("Parameter 'term' unfilled", status=415))
 
 
 @data_display_blueprint.route("/curate/<hash_val>", methods=["POST"])
@@ -138,5 +118,5 @@ def submit_curation_endpoint(hash_val: str):
 
 @data_display_blueprint.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
-    curations = get_curations(pa_hash=stmt_hash, source_hash=src_hash)
+    curations = get_curations(stmt_hash, source_hash=src_hash)
     return jsonify(curations)
