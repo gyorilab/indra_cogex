@@ -3,15 +3,16 @@
 """An app wrapping the query module of indra_cogex."""
 
 import logging
+from http import HTTPStatus
 from inspect import isfunction, signature
 
-from flask import Response, abort, jsonify, request
-from flask_restx import Api, Resource, fields
+from flask import jsonify, request
+from flask_restx import Api, Resource, fields, abort
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
 
-from .helpers import get_docstring, parse_json, process_result
+from .helpers import get_docstring, parse_json, process_result, ParseError
 
 __all__ = [
     "api",
@@ -116,7 +117,10 @@ for module, func_name in module_functions:
             """Get a query."""
             json_dict = request.json
             if json_dict is None:
-                abort(Response("Missing application/json header.", 415))
+                abort(
+                    code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                    message="Missing application/json header or json body",
+                )
             try:
                 parsed_query = parse_json(json_dict)
                 result = func_mapping[self.func_name](**parsed_query, client=client)
@@ -125,12 +129,12 @@ for module, func_name in module_functions:
                     return jsonify({self.func_name: result})
                 else:
                     return jsonify(process_result(result))
-            except TypeError as err:
+            except ParseError as err:
                 logger.error(err)
-                abort(Response(str(err), 415))
+                abort(code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, message=str(err))
 
             except Exception as err:
                 logger.error(err)
-                abort(Response(str(err), 500))
+                abort(code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
         post.__doc__ = fixed_doc
