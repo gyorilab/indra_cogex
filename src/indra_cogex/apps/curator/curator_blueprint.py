@@ -179,6 +179,7 @@ def _render_evidence_counts(
     evidence_counts: Mapping[int, int],
     title: str,
     filter_curated: bool = True,
+    description: Optional[str] = None,
 ) -> Response:
     curations = get_curations()
     # Prepare prioritized statement hash list sorted by decreasing evidence count
@@ -198,6 +199,7 @@ def _render_evidence_counts(
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
+        description=description,
         # no limit necessary here since it was already applied above
     )
 
@@ -251,7 +253,18 @@ def kinase():
 def phosphatase():
     """Curate phosphatases."""
     evidence_counts = get_phosphatase_statements(client=client, limit=proxies.limit)
-    return _render_evidence_counts(evidence_counts, title="Phosphatase Curator")
+    return _render_evidence_counts(
+        evidence_counts,
+        title="Phosphatase Curator",
+        description="""\
+            The phosphatase curator identifies INDRA statements using INDRA
+            CoGEx whose subjects are human phosphatase genes and whose
+            statements are "dephosphorylates". INDRA statements already
+            appearing in high-quality reference databases like Pathway Commons
+            and statements that have already been curated are filtered out such
+            that only novel, potentially interesting statements are displayed. 
+        """,
+    )
 
 
 @curator_blueprint.route("/dub", methods=["GET"])

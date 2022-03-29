@@ -58,6 +58,11 @@
                 {% if title %}{{ title }}{% else %}CoGEx Statements{% endif %}
             </h4>
         </div>
+        {% if description %}
+            <div class="card-body">
+                <p class="card-text">{{ description }}</p>
+            </div>
+        {% endif %}
         <div class="list-group list-group-flush">
             <statement
                     class="list-group-item"
