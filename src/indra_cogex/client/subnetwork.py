@@ -223,7 +223,7 @@ def indra_subnetwork_go(
     mediated: bool = False,
     upstream_controllers: bool = False,
     downstream_targets: bool = False,
-):
+) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
     Parameters
