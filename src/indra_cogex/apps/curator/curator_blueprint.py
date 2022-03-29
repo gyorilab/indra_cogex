@@ -2,12 +2,13 @@
 
 import logging
 import time
-from typing import Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 import flask
 from flask import Response, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
+from indra.sources.indra_db_rest import get_curations
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 
@@ -21,7 +22,11 @@ from indra_cogex.client.curation import (
     get_ppi_evidence_counts,
     get_tf_statements,
 )
-from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes
+from indra_cogex.client.queries import (
+    enrich_statements,
+    get_stmts_for_mesh,
+    get_stmts_for_stmt_hashes,
+)
 
 from .utils import get_conflict_evidence_counts
 from ..utils import (
@@ -67,21 +72,26 @@ def curate_go(term: str):
         go_term=("GO", term),
         client=client,
     )
-    stmts = remove_curated_statements(stmts)
+    curations = get_curations()
+    stmts = remove_curated_statements(stmts, curations=curations)
     stmts = stmts[: proxies.limit]
 
     logger.info(f"Enriching {len(stmts)} statements")
     start_time = time.time()
-    stmts, evidence_counts = get_stmts_for_stmt_hashes(
-        pa_hashes, evidence_limit=10, return_evidence_counts=True
+
+    enriched_stmts, evidence_counts = get_stmts_for_stmt_hashes(
+        [stmt.get_hash() for stmt in stmts],
+        evidence_limit=10,
+        return_evidence_counts=True,
     )
     evidence_lookup_time = time.time() - start_time
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
     return render_statements(
-        stmts,
+        enriched_stmts,
         title=f"GO Curator: {term}",
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
+        curations=curations,
         # no limit necessary here since it was already applied above
     )
 
@@ -132,7 +142,13 @@ def _curate_mesh_helper(
     subject_prefix: Optional[str] = None,
     object_prefix: Optional[str] = None,
     filter_curated: bool = True,
+    curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> Response:
+    if curations is None:
+        logger.info(f"Getting curations")
+        curations = get_curations()
+        logger.debug(f"Got {len(curations)} curations")
+
     logger.info(f"Getting statements for mesh:{term}")
     start_time = time.time()
     stmts, evidence_counts = get_stmts_for_mesh(
@@ -147,7 +163,7 @@ def _curate_mesh_helper(
     evidence_lookup_time = time.time() - start_time
 
     if filter_curated:
-        stmts = remove_curated_statements(stmts)
+        stmts = remove_curated_statements(stmts, curations=curations)
 
     return render_statements(
         stmts,
@@ -155,20 +171,24 @@ def _curate_mesh_helper(
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         limit=proxies.limit,
+        curations=curations,
     )
 
 
 def _render_evidence_counts(
-    evidence_counts: Mapping[int, int], title: str, filter_curated: bool = True
+    evidence_counts: Mapping[int, int],
+    title: str,
+    filter_curated: bool = True,
 ) -> Response:
+    curations = get_curations()
     # Prepare prioritized statement hash list sorted by decreasing evidence count
     pa_hashes = sorted(evidence_counts, key=evidence_counts.get, reverse=True)
     if filter_curated:
-        pa_hashes = remove_curated_pa_hashes(pa_hashes)
+        pa_hashes = remove_curated_pa_hashes(pa_hashes, curations=curations)
     pa_hashes = pa_hashes[: proxies.limit]
 
     start_time = time.time()
-    stmts = get_stmts_for_stmt_hashes(pa_hashes, evidence_limit=10)
+    stmts = get_stmts_for_stmt_hashes(pa_hashes, evidence_limit=10, client=client)
     evidence_lookup_time = time.time() - start_time
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
 
@@ -177,6 +197,7 @@ def _render_evidence_counts(
         title=title,
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
+        curations=curations,
         # no limit necessary here since it was already applied above
     )
 

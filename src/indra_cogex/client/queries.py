@@ -999,7 +999,8 @@ def enrich_statements(
     logger.debug(f"Adding the evidence objects to {len(stmts)} statements")
     # if no result, keep the original statement evidence
     for stmt in stmts:
-        ev_list: List[Evidence] = evidence_map.get(stmt.get_hash(), [])
+        stmt_hash = stmt.get_hash()
+        ev_list: List[Evidence] = evidence_map.get(stmt_hash)
         if ev_list:
             stmt.evidence = ev_list
         else:

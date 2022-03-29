@@ -76,6 +76,7 @@ def render_statements(
     evidence_counts: Optional[Mapping[int, int]] = None,
     evidence_lookup_time: Optional[float] = None,
     limit: Optional[int] = None,
+    curations=None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
@@ -86,6 +87,7 @@ def render_statements(
         stmts=stmts,
         evidence_counts=evidence_counts,
         limit=limit,
+        curations=curations,
     )
     end_time = time.time() - start_time
 

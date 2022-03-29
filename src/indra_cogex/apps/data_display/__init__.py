@@ -118,5 +118,5 @@ def submit_curation_endpoint(hash_val: str):
 
 @data_display_blueprint.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
-    curations = get_curations(pa_hash=stmt_hash, source_hash=src_hash)
+    curations = get_curations(stmt_hash, source_hash=src_hash)
     return jsonify(curations)
