@@ -21,7 +21,6 @@ from indra.statements import (
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
-from .queries import get_stmts_for_mesh
 from .subnetwork import indra_subnetwork_go
 from ..representation import indra_stmts_from_relations
 
@@ -29,7 +28,6 @@ __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
-    "get_mesh_curation_hashes",
     "get_curations",
     "get_ppi_evidence_counts",
     "get_goa_evidence_counts",
@@ -155,39 +153,15 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-@autoclient()
-def get_mesh_curation_hashes(
-    mesh_term: Tuple[str, str],
-    *,
-    client: Neo4jClient,
-    include_indirect: bool = False,
-) -> List[int]:
-    """Get prioritized statement hashes to curate for a given MeSH term.
-
-    Parameters
-    ----------
-    mesh_term :
-        The medical subject heading (MeSH) disease term to query. Example: ``("MESH", "D006009")``
-    client :
-        The Neo4j client.
-    include_indirect :
-        Should hierarchical children of the given MeSH term
-        be queried as well? Defaults to False.
-
-    Returns
-    -------
-    :
-        A list of INDRA statement hashes prioritized for curation
-    """
-    stmts = get_stmts_for_mesh(
-        mesh_term=mesh_term,
-        include_child_terms=include_indirect,
-        client=client,
-    )
-    return get_prioritized_stmt_hashes(stmts)
-
-
 databases_str = ", ".join(f'"{d}"' for d in DATABASES)
+
+
+def _limit_line(limit: Optional[int] = None) -> str:
+    if limit is None:
+        return ""
+    if limit <= 0:
+        raise ValueError("Limit must be above 0")
+    return f"LIMIT {limit}"
 
 
 @autoclient()
@@ -222,7 +196,7 @@ def get_ppi_evidence_counts(
             and not apoc.coll.intersection(keys(sources), [{databases_str}])
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
-        LIMIT {limit or 30}
+        {_limit_line(limit)}
     """
     return client.query_dict(query)
 
@@ -256,7 +230,7 @@ def get_goa_evidence_counts(
             and r.evidence_count > 10
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
-        LIMIT {limit or 30}
+        {_limit_line(limit)}
     """
     return client.query_dict(query)
 
@@ -276,7 +250,7 @@ TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 @autoclient()
 def get_tf_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> List[Statement]:
+) -> Mapping[int, int]:
     """Get transcription factor increase amount / decrease amount."""
     return _help(
         sources=TF_CURIES,
@@ -297,7 +271,7 @@ KINASE_STMT_TYPES = [
 @autoclient()
 def get_kinase_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> List[Statement]:
+) -> Mapping[int, int]:
     """Get kinase statements."""
     return _help(
         sources=KINASE_CURIES,
@@ -314,7 +288,7 @@ PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
 @autoclient()
 def get_phosphatase_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> List[Statement]:
+) -> Mapping[int, int]:
     """Get phosphatase statements."""
     return _help(
         sources=PHOSPHATASE_CURIES,
@@ -330,7 +304,7 @@ def _help(
     stmt_types: List[Type[Statement]],
     client: Neo4jClient,
     limit: Optional[int] = None,
-) -> List[Statement]:
+) -> Mapping[int, int]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH 
@@ -341,13 +315,11 @@ def _help(
             AND b.id STARTS WITH 'hgnc'
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
             AND a.id <> b.id
-        RETURN p
+        RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
-        LIMIT {limit or 30}
+        {_limit_line(limit)}
     """
-    return indra_stmts_from_relations(
-        client.neo4j_to_relation(res[0]) for res in client.query_tx(query)
-    )
+    return client.query_dict(query)
 
 
 @autoclient()
@@ -381,7 +353,7 @@ def get_conflicting_statements(
             )
         RETURN p
         ORDER BY total_evidence_count DESC
-        LIMIT {limit or 30}
+        {_limit_line(limit)}
     """
     res = client.query_tx(query)
     return indra_stmts_from_relations(

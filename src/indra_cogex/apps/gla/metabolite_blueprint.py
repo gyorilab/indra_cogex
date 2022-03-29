@@ -141,6 +141,5 @@ def enzyme(ec_code: str):
     )
     return render_statements(
         stmts,
-        user_email=user.email if user else "",
         title=f"Statements for EC:{identifier}",
     )

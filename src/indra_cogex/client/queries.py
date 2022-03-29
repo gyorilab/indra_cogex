@@ -872,7 +872,11 @@ def get_stmts_for_pmid(
 
 @autoclient()
 def get_stmts_for_mesh(
-    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
+    mesh_term: Tuple[str, str],
+    include_child_terms: bool = True,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> Iterable[Statement]:
     """Return the statements with evidence for the given MESH ID.
 
@@ -884,6 +888,9 @@ def get_stmts_for_mesh(
         The MESH ID to query.
     include_child_terms :
         If True, also match against the children of the given MESH ID.
+    kwargs:
+        Additional keyword arguments to forward to
+        :func:`get_stmts_for_stmt_hashes`
 
     Returns
     -------
@@ -892,7 +899,12 @@ def get_stmts_for_mesh(
     """
     evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
     hashes = list(evidence_map.keys())
-    return get_stmts_for_stmt_hashes(hashes, evidence_map=evidence_map, client=client)
+    return get_stmts_for_stmt_hashes(
+        hashes,
+        evidence_map=evidence_map,
+        client=client,
+        **kwargs,
+    )
 
 
 @autoclient()
@@ -903,6 +915,8 @@ def get_stmts_for_stmt_hashes(
     client: Neo4jClient,
     evidence_limit: Optional[int] = None,
     return_evidence_counts: bool = False,
+    subject_prefix: Optional[str] = None,
+    object_prefix: Optional[str] = None,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements for the given statement hashes.
 
@@ -923,9 +937,18 @@ def get_stmts_for_stmt_hashes(
         The statements for the given statement hashes.
     """
     stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
+    subject_constraint = (
+        f"AND a.id STARTS WITH '{subject_prefix}'" if subject_prefix else ""
+    )
+    object_constraint = (
+        f"AND b.id STARTS WITH '{object_prefix}'" if object_prefix else ""
+    )
     stmts_query = f"""\
-        MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
-        WHERE r.stmt_hash IN [{stmt_hashes_str}]
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE 
+            r.stmt_hash IN [{stmt_hashes_str}]
+            {subject_constraint}
+            {object_constraint}
         RETURN p
     """
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
