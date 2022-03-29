@@ -4,6 +4,7 @@ import logging
 from itertools import chain
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
+import famplex
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
@@ -13,6 +14,7 @@ from indra.statements import (
     Activation,
     DecreaseAmount,
     Dephosphorylation,
+    Deubiquitination,
     IncreaseAmount,
     Inhibition,
     Phosphorylation,
@@ -35,6 +37,7 @@ __all__ = [
     "get_kinase_statements",
     "get_phosphatase_statements",
     "get_conflicting_statements",
+    "get_dub_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -293,6 +296,29 @@ def get_phosphatase_statements(
     return _help(
         sources=PHOSPHATASE_CURIES,
         stmt_types=PHOSPHATASE_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+DUB_CURIES = _get_symbol_curies(
+    {
+        identifier
+        for prefix, identifier in famplex.descendant_terms("FPLX", "Deubiquitinase")
+        if prefix == "HGNC"
+    }
+)
+DUB_STMT_TYPES = [Deubiquitination]
+
+
+@autoclient()
+def get_dub_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get deubiquitinase statements."""
+    return _help(
+        sources=DUB_CURIES,
+        stmt_types=DUB_STMT_TYPES,
         client=client,
         limit=limit,
     )

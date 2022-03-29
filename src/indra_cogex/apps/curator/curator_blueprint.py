@@ -15,6 +15,7 @@ from wtforms.validators import DataRequired
 from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
+    get_dub_statements,
     get_goa_evidence_counts,
     get_kinase_statements,
     get_phosphatase_statements,
@@ -251,3 +252,11 @@ def phosphatase():
     """Curate phosphatases."""
     evidence_counts = get_phosphatase_statements(client=client, limit=proxies.limit)
     return _render_evidence_counts(evidence_counts, title="Phosphatase Curator")
+
+
+@curator_blueprint.route("/dub", methods=["GET"])
+@jwt_optional
+def deubiquitinase():
+    """Curate deubiquitinases."""
+    evidence_counts = get_dub_statements(client=client, limit=proxies.limit)
+    return _render_evidence_counts(evidence_counts, title="Deubiquitinase Curator")

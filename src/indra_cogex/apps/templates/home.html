@@ -35,6 +35,11 @@
     </div>
 {% endmacro %}
 
+{% macro start_button(url, default=None) -%}
+    <div class="card-footer text-center">
+        <a href="{{ url_for(url) or default }}" class="stretched-link" target="_blank">Click to Start</a>
+    </div>
+{% endmacro %}
 
 {% block container %}
     <div class="row">
@@ -71,10 +76,7 @@
                         Performs gene set enrichment analysis using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.discretize_analysis') or '/gene/discrete' }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.deubiquitinase', '/gene/discrete') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="rcr.png") }}"
@@ -86,10 +88,7 @@
                         Reasoning algorithm.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.signed_analysis') or '/gene/signed' }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('gla.signed_analysis', '/gene/signed') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
@@ -100,10 +99,7 @@
                         Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('gla.continuous_analysis') or '/gene/continuous' }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('gla.continuous_analysis', '/gene/continuous') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -114,10 +110,7 @@
                         Perform metabolite set enrichment analysis using INDRA CoGEx.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('mla.discrete_analysis') or '/metabolite/discrete' }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('mla.discrete_analysis', '/metabolite/discrete') }}
             </div>
         </div>
         <div class="card-deck" style="margin-top: 1em;">
@@ -125,15 +118,12 @@
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://conceptdraw.com/a708c3/p1/preview/256/pict--metabolic-pathway-map-key-metabolic-processes-biochemical-pathway-map">
                 <div class="card-body">
-                    <h5 class="card-title">Pathway Curator</h5>
+                    <h5 class="card-title">GO Pathway Curator</h5>
                     <p class="card-text">
                         Curate networks induced by genes associated with a given Gene Ontology term.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.gene_ontology') }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.gene_ontology') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -144,10 +134,7 @@
                         Curate statements from publications annotated with the given MeSH term.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.mesh') }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.mesh') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -158,12 +145,9 @@
                         Curate gene-GO term interactions that are not already available as GO annotations.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.goa') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.goa') }}
             </div>
-            <!--
-            <div class="card">
+            {# <div class="card">
                 <img class="card-img-top" style="max-height: 100px" alt="conflict resolution image"
                      src="https://www.gabek.com/wp-content/uploads/2013/02/konfliktloesung.png">
                 <div class="card-body">
@@ -172,13 +156,8 @@
                         Continue curating statements that have conflicts in prior curations.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.conflicts') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
-            </div>
-            -->
-        </div>
-        <div class="card-deck" style="margin-top: 1em;">
+                {{ start_button('curator.conflicts') }}
+            </div> #}
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
@@ -188,10 +167,10 @@
                         Curate protein-protein interactions not already appearing in databases like BioGRID.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.ppi') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.ppi') }}
             </div>
+        </div>
+        <div class="card-deck" style="margin-top: 1em;">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://www2.lbl.gov/Science-Articles/Archive/images1/TF-proteins.gif">
@@ -202,9 +181,7 @@
                         already appearing in databases like Pathway Commons.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.tf') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.tf') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -213,12 +190,10 @@
                     <h5 class="card-title">Kinase Curator</h5>
                     <p class="card-text">
                         Curate statements about kinases phosphorylating targets not
-                        already appearing in databases like Pathway Commons.
+                        already appearing in databases like PhosphoSitePlus.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.kinase') }}" class="btn btn-sm btn-primary stretched-link">Start</a>
-                </div>
+                {{ start_button('curator.kinase') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -230,10 +205,18 @@
                         already appearing in databases like Pathway Commons.
                     </p>
                 </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('curator.phosphatase') }}"
-                       class="btn btn-sm btn-primary stretched-link">Start</a>
+                {{ start_button('curator.phosphatase') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://labsyspharm.github.io/dubportal/dubwheel.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">Deubiquitinase Curator</h5>
+                    <p class="card-text">
+                        Curate statements about deubiquitinating enzymes.
+                    </p>
                 </div>
+                {{ start_button('curator.deubiquitinase') }}
             </div>
         </div>
     </div>
