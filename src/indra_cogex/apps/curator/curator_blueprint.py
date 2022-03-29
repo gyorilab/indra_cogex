@@ -40,6 +40,20 @@ from ...client import indra_subnetwork_go
 logger = logging.getLogger(__name__)
 curator_blueprint = flask.Blueprint("curator", __name__, url_prefix="/curate")
 
+EVIDENCE_TEXT = """\
+Statements are listed in descending order by number of textual evidences
+such that entries appearing earlier should be easier to curate.
+"""
+
+
+def _database_text(s: str) -> str:
+    return f"""\
+    INDRA statements already
+    appearing in high-quality reference databases like {s}
+    and statements that have already been curated are filtered out such
+    that only novel, potentially interesting statements are displayed.
+    """
+
 
 class GeneOntologyForm(FlaskForm):
     """A form for choosing a GO term."""
@@ -89,6 +103,13 @@ def curate_go(term: str):
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
+        description=f"""\
+            The GO Pathway curator identifies a list of genes associated with
+            the given GO term then INDRA statements where the subject and
+            object are both from the list using INDRA CoGEx.
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
         # no limit necessary here since it was already applied above
     )
 
@@ -172,6 +193,14 @@ def _curate_mesh_helper(
         evidence_lookup_time=evidence_lookup_time,
         limit=proxies.limit,
         curations=curations,
+        description=f"""\
+            The topic curator identifies INDRA Statements in publications
+            annotated with the given Medical Subject Headings (MeSH) term
+            using INDRA CoGEx. INDRA statements already appearing in
+            high-quality reference databases and statements that have already
+            been curated are filtered out such that only novel, potentially
+            interesting statements are displayed. {EVIDENCE_TEXT}
+        """,
     )
 
 
@@ -209,7 +238,18 @@ def _render_evidence_counts(
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
     evidence_counts = get_ppi_evidence_counts(client=client)
-    return _render_evidence_counts(evidence_counts, title="PPI Curator")
+    return _render_evidence_counts(
+        evidence_counts,
+        title="PPI Curator",
+        description=f"""\
+            The protein-protein interaction (PPI) curator identifies INDRA
+            statements using INDRA CoGEx whose subjects and objects are human
+            gene products (i.e., RNA or proteins) and whose statements are
+            "binds". 
+            {_database_text("BioGRID, SIGNOR, and Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
+    )
 
 
 @curator_blueprint.route("/goa", methods=["GET"])
@@ -217,7 +257,19 @@ def ppi():
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     evidence_counts = get_goa_evidence_counts(client=client, limit=proxies.limit)
-    return _render_evidence_counts(evidence_counts, title="GO Annotation Curator")
+    return _render_evidence_counts(
+        evidence_counts,
+        title="GO Annotation Curator",
+        description=f"""\
+            The Gene Ontology annotation curator identifiers INDRA statements
+            using INDRA CoGEx whose subjects are human genes/proteins and whose
+            objects are Gene Ontology terms. Statements whose gene-GO term pair
+            already appear in the Gene Ontology Annotation database and statements
+            that have already been curated are filtered out such that only novel,
+            potentially interesting statements are displayed. 
+            {EVIDENCE_TEXT}
+        """,
+    )
 
 
 @curator_blueprint.route("/conflicts", methods=["GET"])
@@ -236,7 +288,15 @@ def tf():
     """Curate transcription factors."""
     evidence_counts = get_tf_statements(client=client, limit=proxies.limit)
     return _render_evidence_counts(
-        evidence_counts, title="Transcription Factor Curator"
+        evidence_counts,
+        title="Transcription Factor Curator",
+        description=f"""\
+            The transcription factor curator identifies INDRA statements using
+            INDRA CoGEx whose subjects are human transcription factors and whose
+            statements are "increases amount of" or "decreases amount of".
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
     )
 
 
@@ -245,7 +305,17 @@ def tf():
 def kinase():
     """Curate kinases."""
     evidence_counts = get_kinase_statements(client=client, limit=proxies.limit)
-    return _render_evidence_counts(evidence_counts, title="Kinase Curator")
+    return _render_evidence_counts(
+        evidence_counts,
+        title="Kinase Curator",
+        description=f"""\
+            The kinase curator identifies INDRA statements using INDRA
+            CoGEx whose subjects are human protein kinases and whose
+            statements are "phosphorylates". 
+            {_database_text("PhosphoSitePlus")}
+            {EVIDENCE_TEXT}
+        """,
+    )
 
 
 @curator_blueprint.route("/phosphatase", methods=["GET"])
@@ -256,13 +326,12 @@ def phosphatase():
     return _render_evidence_counts(
         evidence_counts,
         title="Phosphatase Curator",
-        description="""\
+        description=f"""\
             The phosphatase curator identifies INDRA statements using INDRA
             CoGEx whose subjects are human phosphatase genes and whose
-            statements are "dephosphorylates". INDRA statements already
-            appearing in high-quality reference databases like Pathway Commons
-            and statements that have already been curated are filtered out such
-            that only novel, potentially interesting statements are displayed. 
+            statements are "dephosphorylates".
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
         """,
     )
 
@@ -272,4 +341,14 @@ def phosphatase():
 def deubiquitinase():
     """Curate deubiquitinases."""
     evidence_counts = get_dub_statements(client=client, limit=proxies.limit)
-    return _render_evidence_counts(evidence_counts, title="Deubiquitinase Curator")
+    return _render_evidence_counts(
+        evidence_counts,
+        title="Deubiquitinase Curator",
+        description=f"""\
+            The deubiquitinase curator identifies INDRA statements using INDRA
+            CoGEx whose subjects are human deubiquitinase genes and whose
+            statements are "deubiquinates".
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
+    )
