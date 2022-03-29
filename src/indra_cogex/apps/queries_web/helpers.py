@@ -47,7 +47,7 @@ def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
         elif key == "nodes":
             if isinstance(value, list):
                 if len(value) > MAX_NODES:
-                    raise ParseError(f"Number of {key} must be less than {MAX_NODES}")
+                    raise ValueError(f"Number of {key} must be less than {MAX_NODES}")
                 parsed_query[key] = value
             else:
                 raise ParseError(f"{key} must be a list")

@@ -121,6 +121,7 @@ for module, func_name in module_functions:
                     code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
                     message="Missing application/json header or json body",
                 )
+
             try:
                 parsed_query = parse_json(json_dict)
                 result = func_mapping[self.func_name](**parsed_query, client=client)
@@ -129,9 +130,14 @@ for module, func_name in module_functions:
                     return jsonify({self.func_name: result})
                 else:
                     return jsonify(process_result(result))
+
             except ParseError as err:
                 logger.error(err)
                 abort(code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, message=str(err))
+
+            except ValueError as err:
+                logger.error(err)
+                abort(code=HTTPStatus.BAD_REQUEST, message=str(err))
 
             except Exception as err:
                 logger.error(err)
