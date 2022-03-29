@@ -21,8 +21,6 @@ from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
 from indralab_auth_tools.auth import resolve_auth
 
-from indra_cogex.apps import proxies
-
 StmtRow = Tuple[str, str, str, str, str, str]
 CurationType = List[Mapping[str, Any]]
 

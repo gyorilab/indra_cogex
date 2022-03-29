@@ -186,9 +186,9 @@ def get_ppi_evidence_counts(
     """
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH 
+        WITH
             a, b, r, apoc.convert.fromJsonMap(r.source_counts) as sources
-        WHERE 
+        WHERE
             a.id STARTS WITH 'hgnc'
             and b.id STARTS WITH 'hgnc'
             and r.stmt_type in ["Complex"]
@@ -223,7 +223,7 @@ def get_goa_evidence_counts(
     """
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WHERE 
+        WHERE
             NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
             and a.id STARTS WITH 'hgnc'
             and b.id STARTS WITH 'go'
@@ -307,7 +307,7 @@ def _help(
 ) -> Mapping[int, int]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH 
+        WITH
             a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
             a.id in {sources!r}
@@ -335,9 +335,9 @@ def get_conflicting_statements(
     .. warning:: This takes about 10 minutes to run ATM
     """
     query = f"""\
-        MATCH 
+        MATCH
             p=(a:BioEntity)-[r1:indra_rel]->(b:BioEntity)<-[r2:indra_rel]-(a:BioEntity)
-        WITH 
+        WITH
             a, b, p,
             r1, apoc.convert.fromJsonMap(r1.source_counts) as r1_sources,
             r2, apoc.convert.fromJsonMap(r1.source_counts) as r2_sources,

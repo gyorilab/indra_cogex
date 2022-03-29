@@ -816,7 +816,7 @@ def get_evidences_for_stmt_hashes(
     limit_box = "" if limit is None else f"[..{limit}]"
     query = f"""\
         MATCH (n:Evidence)
-        WHERE 
+        WHERE
             n.stmt_hash IN [{stmt_hashes_str}]
             AND NOT apoc.convert.fromJsonMap(n.evidence)['source_api'] IN ['medscan']
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
@@ -865,9 +865,11 @@ def get_stmts_for_pmid(
         % pmid_norm
     )
     result = client.query_tx(hash_query)
-    ev_dict = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
-    stmt_hashes = set(ev_dict.keys())
-    return get_stmts_for_stmt_hashes(stmt_hashes, ev_dict, client=client)
+    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+    stmt_hashes = set(evidence_map.keys())
+    return get_stmts_for_stmt_hashes(
+        stmt_hashes, evidence_map=evidence_map, client=client
+    )
 
 
 @autoclient()
@@ -945,7 +947,7 @@ def get_stmts_for_stmt_hashes(
     )
     stmts_query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WHERE 
+        WHERE
             r.stmt_hash IN [{stmt_hashes_str}]
             {subject_constraint}
             {object_constraint}

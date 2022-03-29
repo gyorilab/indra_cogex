@@ -167,7 +167,7 @@ def get_two_step_subnetwork(
     s1, s2 = ("-", "->") if second_forward else ("<-", "-")
     query = f"""\
         MATCH p=(n1:BioEntity){f1}[r1:indra_rel]{f2}(n3:BioEntity){s1}[r2:indra_rel]{s2}(n2:BioEntity)
-        WHERE 
+        WHERE
             n1.id IN [{nodes_str}]
             AND n2.id IN [{nodes_str}]
             AND n1.id <> n2.id

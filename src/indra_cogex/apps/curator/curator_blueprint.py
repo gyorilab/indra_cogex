@@ -5,7 +5,7 @@ import time
 from typing import Any, List, Mapping, Optional
 
 import flask
-from flask import Response, redirect, render_template, url_for
+from flask import Response, abort, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
 from indra.sources.indra_db_rest import get_curations
@@ -15,18 +15,13 @@ from wtforms.validators import DataRequired
 from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
-    get_go_curation_hashes,
     get_goa_evidence_counts,
     get_kinase_statements,
     get_phosphatase_statements,
     get_ppi_evidence_counts,
     get_tf_statements,
 )
-from indra_cogex.client.queries import (
-    enrich_statements,
-    get_stmts_for_mesh,
-    get_stmts_for_stmt_hashes,
-)
+from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes
 
 from .utils import get_conflict_evidence_counts
 from ..utils import (
@@ -51,7 +46,8 @@ class GeneOntologyForm(FlaskForm):
     term = StringField(
         "Gene Ontology Term",
         validators=[DataRequired()],
-        description='Choose a gene ontology term to curate (e.g., <a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
+        description="Choose a gene ontology term to curate (e.g., "
+        '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
     submit = SubmitField("Submit")
 
@@ -116,25 +112,28 @@ def mesh():
     return render_template("curation/mesh_form.html", form=form)
 
 
+MESH_CURATION_SUBSETS = {
+    "ppi": ("hgnc", "hgnc"),
+    "pmi": ("hgnc", "chebi"),
+}
+
+
 @curator_blueprint.route("/mesh/<term>", methods=["GET"])
+@curator_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
 @jwt_optional
-def curate_mesh(term: str):
+def curate_mesh(term: str, subset: Optional[str] = None):
     """Curate all statements for papers with a given MeSH annotation."""
-    return _curate_mesh_helper(term=term)
-
-
-@curator_blueprint.route("/mesh/<term>/ppi", methods=["GET"])
-@jwt_optional
-def curate_mesh_ppis(term: str):
-    """Curate protein-protein statements for papers with a given MeSH annotation."""
-    return _curate_mesh_helper(term=term, subject_prefix="hgnc", object_prefix="hgnc")
-
-
-@curator_blueprint.route("/mesh/<term>/pmi", methods=["GET"])
-@jwt_optional
-def curate_mesh_pmi(term: str):
-    """Curate protein-metabolite statements for papers with a given MeSH annotation."""
-    return _curate_mesh_helper(term=term, subject_prefix="hgnc", object_prefix="chebi")
+    if subset is None:
+        return _curate_mesh_helper(term=term)
+    elif subset not in MESH_CURATION_SUBSETS:
+        return abort(
+            f"Invalid subset: {subset}. Choose one of {sorted(MESH_CURATION_SUBSETS)}"
+        )
+    else:
+        subject_prefix, object_prefix = MESH_CURATION_SUBSETS[subset]
+        return _curate_mesh_helper(
+            term=term, subject_prefix=subject_prefix, object_prefix=object_prefix
+        )
 
 
 def _curate_mesh_helper(
@@ -145,7 +144,7 @@ def _curate_mesh_helper(
     curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> Response:
     if curations is None:
-        logger.info(f"Getting curations")
+        logger.info("Getting curations")
         curations = get_curations()
         logger.debug(f"Got {len(curations)} curations")
 
