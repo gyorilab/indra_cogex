@@ -11,7 +11,15 @@ __all__ = [
     "process_result",
     "get_web_return_annotation",
     "get_docstring",
+    "ParseError",
 ]
+
+
+class ParseError(ValueError):
+    """Raised when the JSON cannot be parsed or is not valid."""
+
+
+MAX_NODES = 400
 
 
 def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
@@ -35,7 +43,14 @@ def parse_json(query_json: Dict[str, Any]) -> Dict[str, Any]:
             elif isinstance(value, list):
                 parsed_query[key] = [int(v) for v in value]
             else:
-                raise ValueError(f"{key} must be a string or list of strings")
+                raise ParseError(f"{key} must be a string or list of strings")
+        elif key == "nodes":
+            if isinstance(value, list):
+                if len(value) > MAX_NODES:
+                    raise ValueError(f"Number of {key} must be less than {MAX_NODES}")
+                parsed_query[key] = value
+            else:
+                raise ParseError(f"{key} must be a list")
         else:
             parsed_query[key] = value
 
