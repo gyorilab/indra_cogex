@@ -38,6 +38,7 @@ __all__ = [
     "get_phosphatase_statements",
     "get_conflicting_statements",
     "get_dub_statements",
+    "get_entity_evidence_counts",
 ]
 
 logger = logging.getLogger(__name__)
@@ -338,6 +339,29 @@ def _help(
             a.id in {sources!r}
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH 'hgnc'
+            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND a.id <> b.id
+        RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
+        {_limit_line(limit)}
+    """
+    return client.query_dict(query)
+
+
+@autoclient()
+def get_entity_evidence_counts(
+    prefix: str,
+    identifier: str,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+) -> Mapping[int, int]:
+    query = f"""\
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH
+            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
+        WHERE
+            a.id = "{prefix}:{identifier}"
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count

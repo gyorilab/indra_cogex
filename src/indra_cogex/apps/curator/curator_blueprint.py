@@ -17,6 +17,7 @@ from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
     get_dub_statements,
+    get_entity_evidence_counts,
     get_goa_evidence_counts,
     get_kinase_statements,
     get_phosphatase_statements,
@@ -382,6 +383,23 @@ def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
     if prefix in {"pubmed", "pmc", "doi", "trid"}:
         return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated)
+    if prefix in {"hgnc"}:
+        evidence_counts = get_entity_evidence_counts(
+            prefix=prefix,
+            identifier=identifier,
+            client=client,
+            limit=proxies.limit,
+        )
+        return _render_evidence_counts(
+            evidence_counts,
+            title="Entity Curator",
+            description=f"""\
+                Curate statements where <code>{prefix}:{identifier}</code> is the
+                subject.
+                {_database_text("Pathway Commons")}
+                {EVIDENCE_TEXT}
+            """,
+        )
     else:
         return abort(404, f"Unhandled prefix: {prefix}")
 
