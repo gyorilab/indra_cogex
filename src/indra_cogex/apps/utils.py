@@ -239,15 +239,16 @@ def resolve_email():
     return user, roles, email
 
 
-def get_curated_pa_hashes(curations=None) -> Set[int]:
-    """Get a set of hashes for statements that have been curated."""
+def get_curated_pa_hashes(curations=None, only_correct: bool = True) -> Mapping[int, Set[int]]:
+    """Get a mapping from statement hashes to evidence hashes."""
     if curations is None:
         curations = get_curations()
-    return {
-        curation["pa_hash"]
-        for curation in curations
-        if curation["pa_hash"] and curation["pa_hash"] == "correct"
-    }
+    rv = defaultdict(set)
+    for curation in curations:
+        pa_hash = curation["pa_hash"]
+        if not only_correct or pa_hash == "correct":
+            rv[pa_hash].add(curation["source_hash"])
+    return dict(rv)
 
 
 def remove_curated_pa_hashes(pa_hashes: Iterable[int], curations=None) -> List[int]:
@@ -266,3 +267,25 @@ def remove_curated_statements(
         for statement in statements
         if statement.get_hash() not in curated_pa_hashes
     ]
+
+
+def remove_curated_evidences(
+    statements: List[Statement], curations=None
+) -> List[Statement]:
+    """Remove evidences that are already curated, and if none remain, remove the statement."""
+    curated_pa_hashes = get_curated_pa_hashes(curations=curations, only_correct=False)
+    rv = []
+    for stmt in statements:
+        ev_hashes = curated_pa_hashes.get(stmt.get_hash(), set())
+        if not ev_hashes:
+            rv.append(stmt)
+        else:
+            evidences = [
+                evidence
+                for evidence in stmt.evidence
+                if evidence.get_source_hash() not in ev_hashes
+            ]
+            if evidences:
+                stmt.evidence = evidences
+                rv.append(rv)
+    return rv

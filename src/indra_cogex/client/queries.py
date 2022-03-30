@@ -49,7 +49,7 @@ __all__ = [
     "get_evidences_for_mesh",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
-    "get_stmts_for_pmid",
+    "get_stmts_for_paper",
     "get_stmts_for_mesh",
     "get_stmts_for_stmt_hashes",
     "is_gene_mutated",
@@ -831,17 +831,17 @@ def get_evidences_for_stmt_hashes(
 
 
 @autoclient()
-def get_stmts_for_pmid(
-    pmid_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
-) -> Iterable[Statement]:
+def get_stmts_for_paper(
+    term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
     Parameters
     ----------
     client :
         The Neo4j client.
-    pmid_term :
-        The PubMed ID to query.
+    term :
+        The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
 
     Returns
     -------
@@ -855,15 +855,23 @@ def get_stmts_for_pmid(
 
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
-    pmid_norm = norm_id(*pmid_term)
-    # Get the hashes and evidences for the given PubMed ID
-    hash_query = (
-        """
-        MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "%s"})
+
+    if term[0].lower() in {"pmid", "pubmed"}:
+        curie = norm_id(*term)
+        publication_props = f"{{id: '{curie}'}}"
+    elif term[0].lower() == "doi":
+        publication_props = f"{{doi: '{term[1]}'}}"
+    elif term[0].lower() in {"pmc", "pmcid"}:
+        publication_props = f"{{pmcid: '{term[1]}'}}"
+    elif term[0].lower() == "trid":
+        publication_props = f"{{trid: '{term[1]}'}}"
+    else:
+        raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
+
+    hash_query = f"""\
+        MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-        % pmid_norm
-    )
     result = client.query_tx(hash_query)
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())

@@ -5,12 +5,12 @@ import time
 from typing import Any, List, Mapping, Optional, Tuple
 
 import flask
-from flask import Response, abort, redirect, render_template, url_for
+from flask import Response, abort, redirect, render_template, request, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
-from wtforms import StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps import proxies
@@ -27,11 +27,12 @@ from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_ha
 
 from .utils import get_conflict_evidence_counts
 from ..utils import (
+    remove_curated_evidences,
     remove_curated_pa_hashes,
     remove_curated_statements,
     render_statements,
 )
-from ...client import get_stmts_for_pmid, indra_subnetwork, indra_subnetwork_go
+from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
 
 __all__ = [
     "curator_blueprint",
@@ -379,8 +380,9 @@ def modulator():
 @jwt_optional
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
-    if prefix == "pubmed":
-        return _curate_pubmed(identifier)
+    filter_curated = request.args.get("filter_curated", default="true").lower() in {"true", "t"}
+    if prefix in {"pubmed", "pmc", "doi", "trid"}:
+        return _curate_paper(prefix, identifier, filter_curated=filter_curated)
     else:
         return abort(404, f"Unhandled prefix: {prefix}")
 
@@ -388,12 +390,51 @@ def entity(prefix: str, identifier: str):
 class PaperForm(FlaskForm):
     """A form for choosing a MeSH disease term."""
 
-    pubmed_id = StringField(
-        "PubMed Identifier",
+    identifier = StringField(
+        "Publication identifier or CURIE",
         validators=[DataRequired()],
-        description="Choose a PubMed to curate)",
+        description="""\
+            This field accepts identifiers from PubMed, PubMed Central, and DOI
+            as either a CURIEs that looks like <code>pubmed:1234</code>,
+            <code>pmc:PMC3084216</code>, or <code>doi:10.1038/nbt1156</code>
+            <strong>or</strong> as a local unique identifier that looks like
+            <code>1234</code>, <code>PMC3084216</code>, or
+            <code>10.1038/nbt1156</code>.
+        """,
+    )
+    filter_curated = BooleanField(
+        "Filter Curated",
+        default=True,
+        description="Do not show statements that have been previously curated as correct",
     )
     submit = SubmitField("Submit")
+
+    def get_term(self) -> Tuple[str, str]:
+        s: str = self.identifier.data
+        if s.isnumeric():
+            return "pubmed", s
+        if s.startswith("PMC"):
+            return "pmc", s
+        if "." in s:
+            return "doi", s
+        if ":" not in s:
+            raise ValueError(f"Can not prefix for {s}. Consider writing as a CURIE.")
+        prefix, identifier = s.split(":", 1)
+        prefix = prefix.lower()
+        if prefix in {"pmid", "pubmed"}:
+            return "pubmed", identifier
+        if prefix == "doi":
+            return "doi", identifier
+        if prefix in {"pmc", "pmcid"}:
+            if identifier.startswith("PMC"):
+                return "pmc", identifier
+            elif identifier.isnumeric():
+                return "pmc", f"PMC{identifier}"
+            else:
+                raise ValueError
+        if prefix == "trid":
+            return prefix, identifier
+        raise ValueError(f"Unhandled prefix in CURIE {s}")
 
 
 @curator_blueprint.route("/paper", methods=["GET", "POST"])
@@ -401,29 +442,53 @@ class PaperForm(FlaskForm):
 def paper():
     """Get all statements for the given paper."""
     form = PaperForm()
-    if form.is_submitted():
-        return redirect(
-            url_for(
-                f".{entity.__name__}", prefix="pubmed", identifier=form.pubmed_id.data
-            )
+    if not form.is_submitted():
+        return render_template("curation/paper_form.html", form=form)
+
+    prefix, identifier = form.get_term()
+
+    if form.filter_curated.data:
+        url = url_for(f".{entity.__name__}", prefix=prefix, identifier=identifier)
+    else:
+        url = url_for(
+            f".{entity.__name__}",
+            prefix=prefix,
+            identifier=identifier,
+            filter_curated=False,
         )
-    return render_template("curation/paper_form.html", form=form)
+    return redirect(url)
 
 
-def _curate_pubmed(pubmed_id: str) -> Response:
-    stmts, evidence_counts = get_stmts_for_pmid(
-        ("pubmed", pubmed_id), return_evidence_counts=True
+def _curate_paper(
+    prefix: str,
+    identifier: str,
+    filter_curated: bool = True,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> Response:
+    stmts, evidence_counts = get_stmts_for_paper(
+        (prefix, identifier), return_evidence_counts=True
     )
+    if curations is None:
+        curations = get_curations()
+    if filter_curated:
+        stmts = remove_curated_evidences(stmts, curations=curations)
     return render_statements(
         stmts,
-        title=f"PubMed Curator: {pubmed_id}",
+        title=f"Publication Curator: {prefix}:{identifier}",
         evidence_counts=evidence_counts,
         limit=proxies.limit,
+        curations=curations,
         description=f"""
             Curate statements with evidences occurring in 
-            <a href="https://bioregistry.io/pubmed:{pubmed_id}">
-            <code>pubmed:{pubmed_id}</code></a>.
+            <a href="https://bioregistry.io/{prefix}:{identifier}">
+            <code>{prefix}:{identifier}</code></a>.
         """,
+        revealed_curations_url=url_for(
+            f".{entity.__name__}",
+            prefix=prefix,
+            identifier=identifier,
+            filter_curated=False,
+        ),
     )
 
 
