@@ -239,7 +239,9 @@ def resolve_email():
     return user, roles, email
 
 
-def get_curated_pa_hashes(curations=None, only_correct: bool = True) -> Mapping[int, Set[int]]:
+def get_curated_pa_hashes(
+    curations: Optional[List[Mapping[str, Any]]] = None, only_correct: bool = True
+) -> Mapping[int, Set[int]]:
     """Get a mapping from statement hashes to evidence hashes."""
     if curations is None:
         curations = get_curations()
@@ -251,14 +253,18 @@ def get_curated_pa_hashes(curations=None, only_correct: bool = True) -> Mapping[
     return dict(rv)
 
 
-def remove_curated_pa_hashes(pa_hashes: Iterable[int], curations=None) -> List[int]:
+def remove_curated_pa_hashes(
+    pa_hashes: Iterable[int],
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> List[int]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
     return [pa_hash for pa_hash in pa_hashes if pa_hash not in curated_pa_hashes]
 
 
 def remove_curated_statements(
-    statements: Iterable[Statement], curations=None
+    statements: Iterable[Statement],
+    curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[Statement]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
@@ -270,7 +276,8 @@ def remove_curated_statements(
 
 
 def remove_curated_evidences(
-    statements: List[Statement], curations=None
+    statements: List[Statement],
+    curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[Statement]:
     """Remove evidences that are already curated, and if none remain, remove the statement."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations, only_correct=False)

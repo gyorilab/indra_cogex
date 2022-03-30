@@ -14,9 +14,13 @@ from indra_cogex.client.neo4j_client import Neo4jClient
 __all__ = [
     "client",
     "limit",
+    "filter_curated",
 ]
 
 client: Neo4jClient = LocalProxy(lambda: current_app.extensions[INDRA_COGEX_EXTENSION])
 
-
 limit: int = LocalProxy(lambda: request.args.get("limit", type=int, default=25))
+
+filter_curated: bool = LocalProxy(
+    lambda: request.args.get("filter_curated", default="true").lower() in {"true", "t"}
+)

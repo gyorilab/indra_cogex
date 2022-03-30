@@ -380,9 +380,8 @@ def modulator():
 @jwt_optional
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
-    filter_curated = request.args.get("filter_curated", default="true").lower() in {"true", "t"}
     if prefix in {"pubmed", "pmc", "doi", "trid"}:
-        return _curate_paper(prefix, identifier, filter_curated=filter_curated)
+        return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated)
     else:
         return abort(404, f"Unhandled prefix: {prefix}")
 
@@ -403,9 +402,9 @@ class PaperForm(FlaskForm):
         """,
     )
     filter_curated = BooleanField(
-        "Filter Curated",
+        "Filter Curated Evidences",
         default=True,
-        description="Do not show statements that have been previously curated as correct",
+        description="Do not show evidences that have been previously curated",
     )
     submit = SubmitField("Submit")
 
