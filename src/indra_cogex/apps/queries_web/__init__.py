@@ -7,12 +7,12 @@ from http import HTTPStatus
 from inspect import isfunction, signature
 
 from flask import jsonify, request
-from flask_restx import Api, Resource, fields, abort
+from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
 
-from .helpers import get_docstring, parse_json, process_result, ParseError
+from .helpers import ParseError, get_docstring, parse_json, process_result
 
 __all__ = [
     "api",

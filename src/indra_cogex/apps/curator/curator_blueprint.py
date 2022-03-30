@@ -2,14 +2,15 @@
 
 import logging
 import time
-from typing import Any, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional, Tuple
 
 import flask
 from flask import Response, abort, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
 from indra.sources.indra_db_rest import get_curations
-from wtforms import StringField, SubmitField
+from indra.statements import Statement
+from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps import proxies
@@ -30,12 +31,11 @@ from ..utils import (
     remove_curated_statements,
     render_statements,
 )
+from ...client import get_stmts_for_pmid, indra_subnetwork, indra_subnetwork_go
 
 __all__ = [
     "curator_blueprint",
 ]
-
-from ...client import indra_subnetwork_go
 
 logger = logging.getLogger(__name__)
 curator_blueprint = flask.Blueprint("curator", __name__, url_prefix="/curate")
@@ -83,7 +83,27 @@ def curate_go(term: str):
         go_term=("GO", term),
         client=client,
     )
-    curations = get_curations()
+    return _enrich_render_statements(
+        stmts,
+        title=f"GO Curator: {term}",
+        description=f"""\
+            The GO Pathway curator identifies a list of genes associated with
+            the given GO term then INDRA statements where the subject and
+            object are both from the list using INDRA CoGEx.
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
+    )
+
+
+def _enrich_render_statements(
+    stmts: List[Statement],
+    title: str,
+    description: str,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> Response:
+    if curations is None:
+        curations = get_curations()
     stmts = remove_curated_statements(stmts, curations=curations)
     stmts = stmts[: proxies.limit]
 
@@ -99,17 +119,11 @@ def curate_go(term: str):
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
     return render_statements(
         enriched_stmts,
-        title=f"GO Curator: {term}",
+        title=title,
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
-        description=f"""\
-            The GO Pathway curator identifies a list of genes associated with
-            the given GO term then INDRA statements where the subject and
-            object are both from the list using INDRA CoGEx.
-            {_database_text("Pathway Commons")}
-            {EVIDENCE_TEXT}
-        """,
+        description=description,
         # no limit necessary here since it was already applied above
     )
 
@@ -350,5 +364,108 @@ def deubiquitinase():
             statements are "deubiquinates".
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
+        """,
+    )
+
+
+@curator_blueprint.route("/modulator/", methods=["GET"])
+@jwt_optional
+def modulator():
+    """Get small molecule modulators for the given protein."""
+    raise NotImplementedError
+
+
+@curator_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
+@jwt_optional
+def entity(prefix: str, identifier: str):
+    """Get all statements about the given entity."""
+    if prefix == "pubmed":
+        return _curate_pubmed(identifier)
+    else:
+        return abort(404, f"Unhandled prefix: {prefix}")
+
+
+class PaperForm(FlaskForm):
+    """A form for choosing a MeSH disease term."""
+
+    pubmed_id = StringField(
+        "PubMed Identifier",
+        validators=[DataRequired()],
+        description="Choose a PubMed to curate)",
+    )
+    submit = SubmitField("Submit")
+
+
+@curator_blueprint.route("/paper", methods=["GET", "POST"])
+@jwt_optional
+def paper():
+    """Get all statements for the given paper."""
+    form = PaperForm()
+    if form.is_submitted():
+        return redirect(
+            url_for(
+                f".{entity.__name__}", prefix="pubmed", identifier=form.pubmed_id.data
+            )
+        )
+    return render_template("curation/paper_form.html", form=form)
+
+
+def _curate_pubmed(pubmed_id: str) -> Response:
+    stmts, evidence_counts = get_stmts_for_pmid(
+        ("pubmed", pubmed_id), return_evidence_counts=True
+    )
+    return render_statements(
+        stmts,
+        title=f"PubMed Curator: {pubmed_id}",
+        evidence_counts=evidence_counts,
+        limit=proxies.limit,
+        description=f"""
+            Curate statements with evidences occurring in 
+            <a href="https://bioregistry.io/pubmed:{pubmed_id}">
+            <code>pubmed:{pubmed_id}</code></a>.
+        """,
+    )
+
+
+class NodesForm(FlaskForm):
+    """A form for inputting multiple nodes."""
+
+    curies = TextAreaField(
+        "Biomedical Entity CURIEs",
+        validators=[DataRequired()],
+        description="TODO",
+    )
+    submit = SubmitField("Submit")
+
+    def get_nodes(self) -> List[Tuple[str, str]]:
+        """Get the CURIEs from the form."""
+        return sorted(
+            {
+                tuple(entry.strip().split(":", 1))
+                for line in self.curies.data.split("\n")
+                for entry in line.strip().split(",")
+            }
+        )
+
+
+@curator_blueprint.route("/subnetwork", methods=["GET", "POST"])
+@jwt_optional
+def subnetwork():
+    """Get all statements induced by the nodes."""
+    form = NodesForm()
+    if not form.is_submitted():
+        return render_template("curation/node_form.html", form=form)
+
+    nodes = form.get_nodes()
+    if len(nodes) > 30:
+        flask.flash("Can not query more than 30 nodes.")
+        return render_template("curation/node_form.html", form=NodesForm())
+
+    stmts = indra_subnetwork(nodes=nodes, client=client)
+    return _enrich_render_statements(
+        stmts,
+        title="Subnetwork Curator",
+        description=f"""\
+        {nodes}
         """,
     )

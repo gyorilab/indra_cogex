@@ -60,7 +60,7 @@
         </div>
         {% if description %}
             <div class="card-body">
-                <p class="card-text">{{ description }}</p>
+                <p class="card-text">{{ description | safe }}</p>
             </div>
         {% endif %}
         <div class="list-group list-group-flush">

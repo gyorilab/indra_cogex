@@ -832,7 +832,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_pmid(
-    pmid_term: Tuple[str, str], *, client: Neo4jClient
+    pmid_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
 ) -> Iterable[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -868,7 +868,7 @@ def get_stmts_for_pmid(
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
-        stmt_hashes, evidence_map=evidence_map, client=client
+        stmt_hashes, evidence_map=evidence_map, client=client, **kwargs
     )
 
 

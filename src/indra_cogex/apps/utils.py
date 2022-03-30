@@ -74,7 +74,7 @@ def render_statements(
     evidence_counts: Optional[Mapping[int, int]] = None,
     evidence_lookup_time: Optional[float] = None,
     limit: Optional[int] = None,
-    curations=None,
+    curations: Optional[List[Mapping[str, Any]]] = None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
@@ -243,7 +243,11 @@ def get_curated_pa_hashes(curations=None) -> Set[int]:
     """Get a set of hashes for statements that have been curated."""
     if curations is None:
         curations = get_curations()
-    return {curation["pa_hash"] for curation in curations if curation["pa_hash"]}
+    return {
+        curation["pa_hash"]
+        for curation in curations
+        if curation["pa_hash"] and curation["pa_hash"] == "correct"
+    }
 
 
 def remove_curated_pa_hashes(pa_hashes: Iterable[int], curations=None) -> List[int]:

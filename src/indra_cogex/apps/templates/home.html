@@ -113,6 +113,8 @@
                 {{ start_button('mla.discrete_analysis', '/metabolite/discrete') }}
             </div>
         </div>
+        <h3 class="text-center" style="margin: 1em auto;">Directed Curation</h3>
+
         <div class="card-deck" style="margin-top: 1em;">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -138,38 +140,29 @@
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
-                     src="https://www.researchgate.net/profile/Abdullah-Kahtani/publication/328653994/figure/fig1/AS:688061251870722@1541057994885/Gene-Oncology-Structure-The-Gene-Ontology-2011_W640.jpg">
+                     src="https://images.theconversation.com/files/45159/original/rptgtpxd-1396254731.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=754&fit=clip">
                 <div class="card-body">
-                    <h5 class="card-title">GO Annotation Curator</h5>
+                    <h5 class="card-title">Publication Curator</h5>
                     <p class="card-text">
-                        Curate gene-GO term interactions that are not already available as GO annotations.
+                        Curate statements from a given publication.
                     </p>
                 </div>
-                {{ start_button('curator.goa') }}
+                {{ start_button('curator.paper') }}
             </div>
-            {# <div class="card">
-                <img class="card-img-top" style="max-height: 100px" alt="conflict resolution image"
-                     src="https://www.gabek.com/wp-content/uploads/2013/02/konfliktloesung.png">
-                <div class="card-body">
-                    <h5 class="card-title">Conflict Resolver</h5>
-                    <p class="card-text">
-                        Continue curating statements that have conflicts in prior curations.
-                    </p>
-                </div>
-                {{ start_button('curator.conflicts') }}
-            </div> #}
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
-                     src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
+                     src="https://www.keysight.com/content/dam/keysight/en/img/prd/ixia-homepage-redirect/network-visibility-and-network-test-products/Network-Monitoring.jpg">
                 <div class="card-body">
-                    <h5 class="card-title">PPI Curator</h5>
+                    <h5 class="card-title">Subnetwork Curator</h5>
                     <p class="card-text">
-                        Curate protein-protein interactions not already appearing in databases like BioGRID.
+                        Curate statements for the subnetwork induced by given entities.
                     </p>
                 </div>
-                {{ start_button('curator.ppi') }}
+                {{ start_button('curator.subnetwork') }}
             </div>
         </div>
+
+        <h3 class="text-center" style="margin: 1em auto;">Undirected Curation</h3>
         <div class="card-deck" style="margin-top: 1em;">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -218,6 +211,54 @@
                 </div>
                 {{ start_button('curator.deubiquitinase') }}
             </div>
+        </div>
+
+        <div class="card-deck" style="margin-top: 1em;">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://www.researchgate.net/profile/Abdullah-Kahtani/publication/328653994/figure/fig1/AS:688061251870722@1541057994885/Gene-Oncology-Structure-The-Gene-Ontology-2011_W640.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">GO Annotation Curator</h5>
+                    <p class="card-text">
+                        Curate gene-GO term associations that are not already available as GO annotations.
+                    </p>
+                </div>
+                {{ start_button('curator.goa') }}
+            </div>
+            {# <div class="card">
+                <img class="card-img-top" style="max-height: 100px" alt="conflict resolution image"
+                     src="https://www.gabek.com/wp-content/uploads/2013/02/konfliktloesung.png">
+                <div class="card-body">
+                    <h5 class="card-title">Conflict Resolver</h5>
+                    <p class="card-text">
+                        Continue curating statements that have conflicts in prior curations.
+                    </p>
+                </div>
+                {{ start_button('curator.conflicts') }}
+            </div> #}
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">PPI Curator</h5>
+                    <p class="card-text">
+                        Curate protein-protein interactions not already appearing in databases like BioGRID.
+                    </p>
+                </div>
+                {{ start_button('curator.ppi') }}
+            </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="https://council.science/wp-content/uploads/2017/04/IUPAC-feature-image-1400x600.jpg">
+                <div class="card-body">
+                    <h5 class="card-title">Modulator Curator</h5>
+                    <p class="card-text">
+                        Curate chemical-protein inhibition and modulation not already appearing in databases like ChEMBL.
+                    </p>
+                </div>
+                {{ start_button('curator.modulator') }}
+            </div>
+            <div class="card"></div>
         </div>
     </div>
 {% endblock %}
