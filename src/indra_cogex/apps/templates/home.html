@@ -15,6 +15,14 @@
             transform: scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, .12), 0 4px 8px rgba(0, 0, 0, .06);
         }
+
+        #home-decks > .card-deck {
+            margin-bottom: 1em;
+        }
+
+        #home-decks > h3 {
+            margin: 0.5em auto 1em;
+        }
     </style>
 {% endblock %}
 
@@ -43,7 +51,7 @@
 
 {% block container %}
     <div class="row">
-        <div class="card card-body">
+        <div class="card card-body" style="margin-bottom: 1em;">
             <h1 class="display-4">INDRA Biomedical Discovery Engine</h1>
             <p class="lead">
                 The INDRA Biomedical Discovery Engine is built on INDRA CoGEx, a graph database integrating causal
@@ -63,9 +71,9 @@
             </div>
         </div>
     </div>
-    <div class="row">
+    <div class="row" id="home-decks">
         {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
-        <h3 class="text-center" style="margin: 1em auto;">Apps and Services using INDRA CoGEx</h3>
+        <h3 class="text-center">Apps and Services using INDRA CoGEx</h3>
         <div class="card-deck">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}"
@@ -113,9 +121,9 @@
                 {{ start_button('mla.discrete_analysis', '/metabolite/discrete') }}
             </div>
         </div>
-        <h3 class="text-center" style="margin: 1em auto;">Directed Curation</h3>
 
-        <div class="card-deck" style="margin-top: 1em;">
+        <h3 class="text-center">Directed Curation</h3>
+        <div class="card-deck">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://conceptdraw.com/a708c3/p1/preview/256/pict--metabolic-pathway-map-key-metabolic-processes-biochemical-pathway-map">
@@ -162,8 +170,8 @@
             </div>
         </div>
 
-        <h3 class="text-center" style="margin: 1em auto;">Undirected Curation</h3>
-        <div class="card-deck" style="margin-top: 1em;">
+        <h3 class="text-center">Proteocentric Curation</h3>
+        <div class="card-deck">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://www2.lbl.gov/Science-Articles/Archive/images1/TF-proteins.gif">
@@ -212,8 +220,7 @@
                 {{ start_button('curator.deubiquitinase') }}
             </div>
         </div>
-
-        <div class="card-deck" style="margin-top: 1em;">
+        <div class="card-deck">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://www.researchgate.net/profile/Abdullah-Kahtani/publication/328653994/figure/fig1/AS:688061251870722@1541057994885/Gene-Oncology-Structure-The-Gene-Ontology-2011_W640.jpg">
@@ -247,17 +254,26 @@
                 </div>
                 {{ start_button('curator.ppi') }}
             </div>
+            <div class="card"></div>
+            <div class="card"></div>
+        </div>
+
+        <h3 class="text-center">Chemocentric Curation</h3>
+        <div class="card-deck">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
                      src="https://council.science/wp-content/uploads/2017/04/IUPAC-feature-image-1400x600.jpg">
                 <div class="card-body">
                     <h5 class="card-title">Modulator Curator</h5>
                     <p class="card-text">
-                        Curate chemical-protein inhibition and modulation not already appearing in databases like ChEMBL.
+                        Curate chemical-protein inhibition and modulation not already appearing in databases like
+                        ChEMBL.
                     </p>
                 </div>
                 {{ start_button('curator.modulator') }}
             </div>
+            <div class="card"></div>
+            <div class="card"></div>
             <div class="card"></div>
         </div>
     </div>
