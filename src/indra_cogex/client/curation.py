@@ -4,10 +4,10 @@ import logging
 from itertools import chain
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
-import famplex
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
+from indra.ontology.bio import bio_ontology
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
@@ -301,12 +301,11 @@ def get_phosphatase_statements(
     )
 
 
-DUB_CURIES = _get_symbol_curies(
-    {
-        identifier
-        for prefix, identifier in famplex.descendant_terms("FPLX", "Deubiquitinase")
-        if prefix == "HGNC"
-    }
+DUB_CURIES = sorted(
+    f"hgnc:{identifier}"
+    for prefix, identifier in bio_ontology.get_children(
+        "FPLX", "Deubiquitinase", ns_filter="HGNC"
+    )
 )
 DUB_STMT_TYPES = [Deubiquitination]
 
