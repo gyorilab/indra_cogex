@@ -30,7 +30,7 @@ api = Api(
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 examples_dict = {
-    "tissue": ["UBERON", "UBERON:0002349"],
+    "tissue": ["UBERON", "UBERON:0001162"],
     "gene": ["HGNC", "9896"],
     "go_term": ["GO", "GO:0000978"],
     "drug": ["CHEBI", "CHEBI:27690"],
