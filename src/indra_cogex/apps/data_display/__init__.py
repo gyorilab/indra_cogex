@@ -7,6 +7,9 @@ https://emmaa.indra.bio/evidence?model=covid19&source=model_statement&stmt_hash=
 """
 
 import logging
+from http import HTTPStatus
+from os import environ
+from typing import Union, Iterable
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
@@ -26,6 +29,33 @@ from ..utils import format_stmts
 logger = logging.getLogger(__name__)
 
 data_display_blueprint = Blueprint("data_display", __name__)
+
+MORE_EVIDENCES_LIMIT = 10
+LOCAL_VUE: Union[str, bool] = environ.get(
+    "LOCAL_VUE", False
+)  # Path to local vue dist
+
+
+# Serve Vue components locally for testing
+# If not testing, use the "latest" version (or some other deployment) of the Vue app from S3
+if LOCAL_VUE:
+    from flask import send_from_directory
+
+    @data_display_blueprint.route("/vue/<path:file>", methods=["GET"])
+    def serve_indralab_vue(file):
+        return send_from_directory(LOCAL_VUE, file)
+
+    VUE_SRC_JS = False
+    VUE_SRC_CSS = False
+else:
+    vue_deployment = environ.get("VUE_DEPLOYMENT", "latest")
+    vue_base = (
+        f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{vue_deployment}/"
+    )
+    VUE_SRC_JS = f"{vue_base}IndralabVue.umd.min.js"
+    VUE_SRC_CSS = f"{vue_base}IndralabVue.css"
+
+logger.info(f"Using Vue deployment at: {VUE_SRC_JS}")
 
 
 # Endpoint for testing
