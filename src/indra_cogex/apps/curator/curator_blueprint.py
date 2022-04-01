@@ -5,7 +5,7 @@ import time
 from typing import Any, List, Mapping, Optional, Tuple
 
 import flask
-from flask import Response, abort, redirect, render_template, request, url_for
+from flask import Response, abort, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
 from indra.sources.indra_db_rest import get_curations
@@ -550,4 +550,26 @@ def subnetwork():
         description=f"""\
         {nodes}
         """,
+    )
+
+
+@curator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
+@jwt_optional
+def curate_statement(stmt_hash: int):
+    """Curate all evidences for the statement."""
+    start_time = time.time()
+    enriched_stmts, evidence_counts = get_stmts_for_stmt_hashes(
+        [stmt_hash],
+        evidence_limit=10,
+        return_evidence_counts=True,
+    )
+    evidence_lookup_time = time.time() - start_time
+    logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
+    # TODO either auto-expand or use a slightly different template
+    return render_statements(
+        enriched_stmts,
+        title=f"Statment Curator: {stmt_hash}",
+        evidence_counts=evidence_counts,
+        evidence_lookup_time=evidence_lookup_time,
+        description="Curate evidences from a single statement",
     )
