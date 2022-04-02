@@ -20,6 +20,7 @@ from indra_cogex.client.curation import (
     get_entity_evidence_counts,
     get_goa_evidence_counts,
     get_kinase_statements,
+    get_mirna_statements,
     get_phosphatase_statements,
     get_ppi_evidence_counts,
     get_tf_statements,
@@ -365,6 +366,24 @@ def deubiquitinase():
             CoGEx whose subjects are human deubiquitinase genes and whose
             statements are "deubiquinates".
             {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
+    )
+
+
+@curator_blueprint.route("/mirna", methods=["GET"])
+@jwt_optional
+def mirna():
+    """Curate miRNAs."""
+    evidence_counts = get_mirna_statements(client=client, limit=proxies.limit)
+    return _render_evidence_counts(
+        evidence_counts,
+        title="miRNA Curator",
+        description=f"""\
+            The miRNA curator identifies INDRA statements using INDRA
+            CoGEx whose subjects are micro-RNAs and whose
+            statements are "increases amount" or "decreases amount".
+            {_database_text("miRTarBase")}
             {EVIDENCE_TEXT}
         """,
     )

@@ -7,6 +7,7 @@ from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
+from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
@@ -39,6 +40,7 @@ __all__ = [
     "get_conflicting_statements",
     "get_dub_statements",
     "get_entity_evidence_counts",
+    "get_mirna_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -319,6 +321,27 @@ def get_dub_statements(
     return _help(
         sources=DUB_CURIES,
         stmt_types=DUB_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+def _get_mirnas() -> List[str]:
+    return [f"hgnc:{hgnc_id}" for hgnc_id in _hgnc_id_to_mirbase_id]
+
+
+MIRNA_CURIES = _get_mirnas()
+MIRNA_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
+
+
+@autoclient()
+def get_mirna_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get miRNA statements."""
+    return _help(
+        sources=MIRNA_CURIES,
+        stmt_types=MIRNA_STMT_TYPES,
         client=client,
         limit=limit,
     )
