@@ -166,7 +166,8 @@ def curate_mesh(term: str, subset: Optional[str] = None):
         return _curate_mesh_helper(term=term)
     elif subset not in MESH_CURATION_SUBSETS:
         return abort(
-            f"Invalid subset: {subset}. Choose one of {sorted(MESH_CURATION_SUBSETS)}"
+            400,
+            f"Invalid subset: {subset}. Choose one of {sorted(MESH_CURATION_SUBSETS)}",
         )
     else:
         subject_prefix, object_prefix = MESH_CURATION_SUBSETS[subset]
@@ -184,7 +185,7 @@ def _curate_mesh_helper(
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
-        curations = get_curations()
+        curations = list(get_curations())
         logger.debug(f"Got {len(curations)} curations")
 
     logger.info(f"Getting statements for mesh:{term}")
@@ -587,7 +588,7 @@ def curate_statement(stmt_hash: int):
     # TODO either auto-expand or use a slightly different template
     return render_statements(
         enriched_stmts,
-        title=f"Statment Curator: {stmt_hash}",
+        title=f"Statement Curator: {stmt_hash}",
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         description="Curate evidences from a single statement",

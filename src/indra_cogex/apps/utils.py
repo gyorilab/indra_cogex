@@ -173,8 +173,9 @@ def format_stmts(
             stmt,
             cur_dict=cur_dict,
             evidence_counts=evidence_counts,
-            cur_counts=cur_counts
-        ) for stmt in stmts
+            cur_counts=cur_counts,
+        )
+        for stmt in stmts
     ]
     return stmt_rows[:limit] if limit else stmt_rows
 
