@@ -25,6 +25,7 @@ from indra.statements import (
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
+from .resources import ensure_disprot
 from .subnetwork import indra_subnetwork_go
 from ..representation import indra_stmts_from_relations
 
@@ -42,6 +43,7 @@ __all__ = [
     "get_dub_statements",
     "get_entity_evidence_counts",
     "get_mirna_statements",
+    "get_disprot_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -307,9 +309,9 @@ def get_phosphatase_statements(
 
 @lru_cache(maxsize=1)
 def _get_dub_curies():
-    return sorted(
-        f"hgnc:{identifier}"
-        for prefix, identifier in bio_ontology.get_children(
+    return _make_curies(
+        hgnc_id
+        for _, hgnc_id in bio_ontology.get_children(
             "FPLX", "Deubiquitinase", ns_filter="HGNC"
         )
     )
@@ -331,8 +333,12 @@ def get_dub_statements(
     )
 
 
+def _make_curies(hgnc_ids: List[str]) -> List[str]:
+    return [f"hgnc:{hgnc_id}" for hgnc_id in sorted(hgnc_ids, key=int)]
+
+
 def _get_mirnas() -> List[str]:
-    return [f"hgnc:{hgnc_id}" for hgnc_id in _hgnc_id_to_mirbase_id]
+    return _make_curies(_hgnc_id_to_mirbase_id)
 
 
 MIRNA_CURIES = _get_mirnas()
@@ -347,6 +353,23 @@ def get_mirna_statements(
     return _help(
         sources=MIRNA_CURIES,
         stmt_types=MIRNA_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+DISPROT_CURIES = _make_curies(ensure_disprot())
+DISPROT_STMT_TYPES = [IncreaseAmount, DecreaseAmount, Activation, Inhibition]
+
+
+@autoclient()
+def get_disprot_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get statements about disordered proteins."""
+    return _help(
+        sources=DISPROT_CURIES,
+        stmt_types=DISPROT_STMT_TYPES,
         client=client,
         limit=limit,
     )

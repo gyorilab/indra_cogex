@@ -16,6 +16,7 @@ from wtforms.validators import DataRequired
 from indra_cogex.apps import proxies
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.curation import (
+    get_disprot_statements,
     get_dub_statements,
     get_entity_evidence_counts,
     get_goa_evidence_counts,
@@ -385,6 +386,22 @@ def mirna():
             CoGEx whose subjects are micro-RNAs and whose
             statements are "increases amount" or "decreases amount".
             {_database_text("miRTarBase")}
+            {EVIDENCE_TEXT}
+        """,
+    )
+
+
+@curator_blueprint.route("/disprot", methods=["GET"])
+@jwt_optional
+def disprot():
+    """Curate intrensically disordered proteins."""
+    evidence_counts = get_disprot_statements(client=client, limit=proxies.limit)
+    return _render_evidence_counts(
+        evidence_counts,
+        title="DisProt Curator",
+        description=f"""\
+            The DisProt curator identifies INDRA statements using INDRA
+            CoGEx whose subjects are intrensically disordered proteins.
             {EVIDENCE_TEXT}
         """,
     )
