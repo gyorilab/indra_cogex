@@ -139,6 +139,12 @@ def format_stmts(
     ----------
     stmts :
         An iterable of statements.
+    evidence_counts :
+        A dictionary mapping statement hashes to evidence counts.
+    limit :
+        The maximum number of statements to return.
+    curations :
+        A list of curations.
 
     Returns
     -------
@@ -188,6 +194,8 @@ def _stmt_to_row(
     evidence_counts,
     cur_counts,
 ) -> StmtRow:
+    # Todo: Refactor this function so that evidences can be passed on their
+    #  own without having to be passed in as part of the statement.
     ev_array = json.loads(
         json.dumps(
             _format_evidence_text(
@@ -197,6 +205,11 @@ def _stmt_to_row(
             )
         )
     )
+    # Translate OrderedDict to dict
+    for ev in ev_array:
+        org_json = ev["original_json"]
+        ev["original_json"] = dict(org_json)
+
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
     sources = _get_available_ev_source_counts(stmt.evidence)
