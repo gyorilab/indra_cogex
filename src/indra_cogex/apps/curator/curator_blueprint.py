@@ -537,12 +537,10 @@ def _curate_paper(
             <a href="https://bioregistry.io/{prefix}:{identifier}">
             <code>{prefix}:{identifier}</code></a>.
         """,
-        revealed_curations_url=url_for(
-            f".{entity.__name__}",
-            prefix=prefix,
-            identifier=identifier,
-            filter_curated=False,
-        ),
+        endpoint=f".{entity.__name__}",
+        prefix=prefix,
+        identifier=identifier,
+        filter_curated=filter_curated,
     )
 
 

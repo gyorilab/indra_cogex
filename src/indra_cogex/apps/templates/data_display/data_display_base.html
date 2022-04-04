@@ -60,10 +60,20 @@
         </div>
         {% if stmts|length == 0 %}
             <div class="card-body">
-                <p class="card-text">
-                    There are no statements left to be curated!
-                </p>
-                <a class="btn btn-primary btn-hover" href="{{ revealed_curations_url }}">Reveal curated content</a>
+                {% if filter_curated %}
+                    {# The statements were filtered, so allow for revealing rest #}
+                    <p class="card-text">
+                        There are no statements left to be curated!
+                    </p>
+                    <a class="btn btn-primary btn-hover"
+                       href="{{ url_for(endpoint, prefix=prefix, identifier=identifier, filter_curated=False) }}">
+                        Reveal curated content
+                    </a>
+                {% else %}
+                    <p class="card-text">
+                        There are no statements for this publication.
+                    </p>
+                {% endif %}
             </div>
         {% else %}
             {% if description %}
