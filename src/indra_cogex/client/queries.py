@@ -766,7 +766,12 @@ def get_evidences_for_mesh(
 
 @autoclient()
 def get_evidences_for_stmt_hash(
-    stmt_hash: int, *, client: Neo4jClient
+    stmt_hash: int,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    remove_medscan: bool = True,
 ) -> Iterable[Evidence]:
     """Return the matching evidence objects for the given statement hash.
 
@@ -776,6 +781,12 @@ def get_evidences_for_stmt_hash(
         The Neo4j client.
     stmt_hash :
         The statement hash to query, accepts both string and integer.
+    limit :
+        The maximum number of results to return.
+    offset :
+        The number of results to skip before returning the first result.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -787,8 +798,14 @@ def get_evidences_for_stmt_hash(
                RETURN n.evidence"""
         % stmt_hash
     )
+
+    # Add limit and offset
+    if offset > 0:
+        query += "\nSKIP %d" % offset
+    if limit is not None:
+        query += "\nLIMIT %d" % limit
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=remove_medscan)
 
 
 @autoclient()
