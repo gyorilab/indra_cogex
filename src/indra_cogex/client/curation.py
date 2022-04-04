@@ -1,6 +1,7 @@
 """Tools for INDRA curation."""
 
 import logging
+from functools import lru_cache
 from itertools import chain
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
@@ -304,12 +305,16 @@ def get_phosphatase_statements(
     )
 
 
-DUB_CURIES = sorted(
-    f"hgnc:{identifier}"
-    for prefix, identifier in bio_ontology.get_children(
-        "FPLX", "Deubiquitinase", ns_filter="HGNC"
+@lru_cache(maxsize=1)
+def _get_dub_curies():
+    return sorted(
+        f"hgnc:{identifier}"
+        for prefix, identifier in bio_ontology.get_children(
+            "FPLX", "Deubiquitinase", ns_filter="HGNC"
+        )
     )
-)
+
+
 DUB_STMT_TYPES = [Deubiquitination]
 
 
@@ -319,7 +324,7 @@ def get_dub_statements(
 ) -> Mapping[int, int]:
     """Get deubiquitinase statements."""
     return _help(
-        sources=DUB_CURIES,
+        sources=_get_dub_curies(),
         stmt_types=DUB_STMT_TYPES,
         client=client,
         limit=limit,
