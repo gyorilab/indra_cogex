@@ -155,6 +155,7 @@ def mesh():
 MESH_CURATION_SUBSETS = {
     "ppi": ("hgnc", "hgnc"),
     "pmi": ("hgnc", "chebi"),
+    "go": ("hgnc", "go"),
 }
 
 
@@ -392,10 +393,14 @@ def mirna():
 
 
 @curator_blueprint.route("/disprot", methods=["GET"])
+@curator_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
 @jwt_optional
-def disprot():
+def disprot(object_prefix: Optional[str] = None):
     """Curate intrensically disordered proteins."""
-    evidence_counts = get_disprot_statements(client=client, limit=proxies.limit)
+    assert object_prefix in {None, "hgnc", "go", "chebi"}
+    evidence_counts = get_disprot_statements(
+        client=client, limit=proxies.limit, object_prefix=object_prefix
+    )
     return _render_evidence_counts(
         evidence_counts,
         title="DisProt Curator",

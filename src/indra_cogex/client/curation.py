@@ -17,6 +17,7 @@ from indra.statements import (
     DecreaseAmount,
     Dephosphorylation,
     Deubiquitination,
+ Complex,
     IncreaseAmount,
     Inhibition,
     Phosphorylation,
@@ -25,9 +26,9 @@ from indra.statements import (
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
-from .resources import ensure_disprot
 from .subnetwork import indra_subnetwork_go
 from ..representation import indra_stmts_from_relations
+from ..resources import ensure_disprot
 
 __all__ = [
     "get_prioritized_stmt_hashes",
@@ -359,19 +360,27 @@ def get_mirna_statements(
 
 
 DISPROT_CURIES = _make_curies(ensure_disprot())
-DISPROT_STMT_TYPES = [IncreaseAmount, DecreaseAmount, Activation, Inhibition]
+DISPROT_STMT_TYPES = {
+    "hgnc": [IncreaseAmount, DecreaseAmount, Activation, Inhibition],
+    "chebi": [Complex, IncreaseAmount, DecreaseAmount],
+    "go": [Complex, Activation, Inhibition],
+}
 
 
 @autoclient()
 def get_disprot_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    object_prefix: Optional[str] = None,
 ) -> Mapping[int, int]:
     """Get statements about disordered proteins."""
     return _help(
         sources=DISPROT_CURIES,
-        stmt_types=DISPROT_STMT_TYPES,
+        stmt_types=DISPROT_STMT_TYPES[object_prefix or "hgnc"],
         client=client,
         limit=limit,
+        object_prefix=object_prefix,
     )
 
 
@@ -381,7 +390,10 @@ def _help(
     stmt_types: List[Type[Statement]],
     client: Neo4jClient,
     limit: Optional[int] = None,
+    object_prefix: Optional[str] = None,
 ) -> Mapping[int, int]:
+    if object_prefix is None:
+        object_prefix = "hgnc"
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH
@@ -389,7 +401,7 @@ def _help(
         WHERE
             a.id in {sources!r}
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
-            AND b.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH '{object_prefix}'
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count
