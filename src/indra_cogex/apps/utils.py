@@ -149,67 +149,6 @@ def format_stmts(
         # Make sure statements are sorted by highest evidence counts first
         stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
-    def stmt_to_row(
-        st: Statement,
-    ) -> StmtRow:
-        ev_array = json.loads(
-            json.dumps(
-                _format_evidence_text(
-                    st,
-                    curation_dict=cur_dict,
-                    correct_tags=["correct", "act_vs_amt", "hypothesis"],
-                )
-            )
-        )
-        english = _format_stmt_text(st)
-        hash_int = st.get_hash()
-        sources = _get_available_ev_source_counts(st.evidence)
-        total_evidence = evidence_counts.get(st.get_hash(), len(st.evidence))
-        badges = [
-            {
-                "label": "evidence",
-                "num": total_evidence,
-                "color": "grey",
-                "symbol": None,
-                "title": "Evidence count for this statement",
-                "loc": "right",
-            },
-            {
-                "label": "belief",
-                "num": st.belief,
-                "color": "#ffc266",
-                "symbol": None,
-                "title": "Belief score for this statement",
-                "loc": "right",
-            },
-        ]
-        if cur_counts and hash_int in cur_counts:
-            num = cur_counts[hash_int]["this"]["correct"]
-            badges.append(
-                {
-                    "label": "correct_this",
-                    "num": num,
-                    "color": "#28a745",
-                    "symbol": "\u270E",
-                    "title": f"{num} evidences curated as correct",
-                }
-            )
-
-        return cast(
-            StmtRow,
-            tuple(
-                json.dumps(e)
-                for e in (
-                    ev_array,
-                    english,
-                    str(hash_int),
-                    sources,
-                    total_evidence,
-                    badges,
-                )
-            ),
-        )
-
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
         curations = get_curations()
@@ -229,8 +168,80 @@ def format_stmts(
             list(cur_counts[key].keys())[0], str
         ), f"{list(cur_counts[key].keys())[0]} is not an str"
 
-    stmt_rows = [stmt_to_row(stmt) for stmt in stmts]
+    stmt_rows = [
+        _stmt_to_row(
+            stmt,
+            cur_dict=cur_dict,
+            evidence_counts=evidence_counts,
+            cur_counts=cur_counts
+        ) for stmt in stmts
+    ]
     return stmt_rows[:limit] if limit else stmt_rows
+
+
+def _stmt_to_row(
+    stmt: Statement,
+    cur_dict,
+    evidence_counts,
+    cur_counts,
+) -> StmtRow:
+    ev_array = json.loads(
+        json.dumps(
+            _format_evidence_text(
+                stmt,
+                curation_dict=cur_dict,
+                correct_tags=["correct", "act_vs_amt", "hypothesis"],
+            )
+        )
+    )
+    english = _format_stmt_text(stmt)
+    hash_int = stmt.get_hash()
+    sources = _get_available_ev_source_counts(stmt.evidence)
+    total_evidence = evidence_counts.get(hash_int, len(stmt.evidence))
+    badges = [
+        {
+            "label": "evidence",
+            "num": total_evidence,
+            "color": "grey",
+            "symbol": None,
+            "title": "Evidence count for this statement",
+            "loc": "right",
+        },
+        {
+            "label": "belief",
+            "num": stmt.belief,
+            "color": "#ffc266",
+            "symbol": None,
+            "title": "Belief score for this statement",
+            "loc": "right",
+        },
+    ]
+    if cur_counts and hash_int in cur_counts:
+        num = cur_counts[hash_int]["this"]["correct"]
+        badges.append(
+            {
+                "label": "correct_this",
+                "num": num,
+                "color": "#28a745",
+                "symbol": "\u270E",
+                "title": f"{num} evidences curated as correct",
+            }
+        )
+
+    return cast(
+        StmtRow,
+        tuple(
+            json.dumps(e)
+            for e in (
+                ev_array,
+                english,
+                str(hash_int),
+                sources,
+                total_evidence,
+                badges,
+            )
+        ),
+    )
 
 
 def resolve_email():
