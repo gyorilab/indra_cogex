@@ -124,7 +124,7 @@
                 ]
             }
         });
-        Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
+        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
         Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
         Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
     </script>
