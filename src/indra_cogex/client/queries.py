@@ -1014,9 +1014,17 @@ def get_stmts_for_stmt_hashes(
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
     stmts = indra_stmts_from_relations(rels)
-    rv = enrich_statements(
-        stmts, client=client, evidence_map=evidence_map, evidence_limit=evidence_limit
-    )
+
+    if evidence_limit == 1:
+        rv = stmts
+    else:
+        rv = enrich_statements(
+            stmts,
+            client=client,
+            evidence_map=evidence_map,
+            evidence_limit=evidence_limit,
+        )
+
     if not return_evidence_counts:
         return rv
     evidence_counts = {
