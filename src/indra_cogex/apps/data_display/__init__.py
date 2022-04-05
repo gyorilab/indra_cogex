@@ -81,16 +81,31 @@ def statement_display():
     # Get the statements hash from the query string
     try:
         stmt_hash_list = request.args.getlist("stmt_hash", type=int)
-        print(stmt_hash_list)
         if not stmt_hash_list:
-            abort(Response("Parameter 'stmt_hash' unfilled", status=415))
-        stmts = format_stmts(get_stmts_for_stmt_hashes(stmt_hash_list, client=client))
-        return render_template(
-            "data_display/data_display_base.html", stmts=stmts, user_email=email
+            abort(
+                Response(
+                    "Parameter 'stmt_hash' unfilled", status=HTTPStatus.BAD_REQUEST
+                )
+            )
+        relations: Iterable[Relation] = get_stmts_meta_for_stmt_hashes(
+            stmt_hash_list, client=client
         )
-    except (TypeError, ValueError) as err:
+
+        stmt_iter = [
+            Statement._from_json(json.loads(r.data["stmt_json"])) for r in relations
+        ]
+        ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
+        stmts = format_stmts(stmts=stmt_iter, evidence_counts=ev_counts)
+        return render_template(
+            "data_display/data_display_base.html",
+            stmts=stmts,
+            user_email=email,
+            vue_src_js=VUE_SRC_JS,
+            vue_src_css=VUE_SRC_CSS,
+        )
+    except Exception as err:
         logger.exception(err)
-        abort(Response("Parameter 'stmt_hash' unfilled", status=415))
+        abort(status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def _get_user():
