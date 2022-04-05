@@ -687,7 +687,7 @@ def get_pmids_for_mesh(
         )
         query = "%s RETURN k" % match_clause
 
-    return [client.neo4j_to_node(r[0]) for r in client.query_tx(query)]
+    return client.query_nodes(query)
 
 
 @autoclient()
@@ -814,8 +814,8 @@ def get_evidences_for_stmt_hash(
         query += "\nSKIP %d" % offset
     if limit is not None:
         query += "\nLIMIT %d" % limit
-    ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=remove_medscan)
+    ev_jsons = [json.loads(r) for r in client.query_tx(query, squeeze=True)]
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
 
 
 @autoclient()
@@ -1027,7 +1027,7 @@ def get_stmts_for_stmt_hashes(
         RETURN p
     """
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
-    rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
+    rels = client.query_relations(query)
     stmts = indra_stmts_from_relations(rels)
 
     if evidence_limit == 1:
@@ -1121,7 +1121,7 @@ def _get_mesh_child_terms(
     """
         % meshid_norm
     )
-    return {c[0] for c in client.query_tx(query)}
+    return set(client.query_tx(query, squeeze=True))
 
 
 @autoclient(cache=True)
@@ -1144,8 +1144,8 @@ def get_node_counter(*, client: Neo4jClient) -> Counter:
     """
     return Counter(
         {
-            label[0]: client.query_tx(f"MATCH (n:{label[0]}) RETURN count(*)")[0][0]
-            for label in client.query_tx("call db.labels();")
+            label: client.query_tx(f"MATCH (n:{label}) RETURN count(*)")[0]
+            for label in client.query_tx("call db.labels();", squeeze=True)
         }
     )
 
@@ -1155,10 +1155,10 @@ def get_edge_counter(*, client: Neo4jClient) -> Counter:
     """Get a count of each edge type."""
     return Counter(
         {
-            relation[0]: client.query_tx(
+            relation: client.query_tx(
                 f"MATCH ()-[r:{relation[0]}]->() RETURN count(*)"
-            )[0][0]
-            for relation in client.query_tx("call db.relationshipTypes();")
+            )[0]
+            for relation in client.query_tx("call db.relationshipTypes();", squeeze=True)
         }
     )
 

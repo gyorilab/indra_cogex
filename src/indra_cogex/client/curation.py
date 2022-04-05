@@ -461,7 +461,7 @@ def get_conflicting_statements(
         ORDER BY total_evidence_count DESC
         {_limit_line(limit)}
     """
-    res = client.query_tx(query)
+    res = client.query_tx(query, squeeze=True)
     return indra_stmts_from_relations(
-        chain.from_iterable(client.neo4j_to_relations(row[0]) for row in res)
+        chain.from_iterable(client.neo4j_to_relations(row) for row in res)
     )

@@ -95,13 +95,16 @@ class Neo4jClient:
         """Run a read-only query that generates a dictionary."""
         return dict(self.query_tx(query))
 
-    def query_tx(self, query: str) -> Union[List[List[Any]], None]:
+    def query_tx(self, query: str, squeeze: bool = False) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
         Parameters
         ----------
         query :
             The query string to be executed.
+        squeeze:
+            If true, unpacks the 0-indexed element in each value returned.
+            Useful when only returning value per row of the results.
 
         Returns
         -------
@@ -118,7 +121,43 @@ class Neo4jClient:
             return
         values = res.values()
         tx.close()
+        if squeeze:
+            values = [value[0] for value in values]
         return values
+
+    def query_nodes(self, query: str) -> List[Node]:
+        """Run a read-only query for nodes.
+
+        Parameters
+        ----------
+        query :
+            The query string to be executed.
+
+        Returns
+        -------
+        values :
+            A list of :class:`Node` instances corresponding
+            to the results of the query
+        """
+        return [self.neo4j_to_node(res) for res in self.query_tx(query, squeeze=True)]
+
+    def query_relations(self, query: str) -> List[Relation]:
+        """Run a read-only query for relations.
+
+        Parameters
+        ----------
+        query :
+            The query string to be executed. Must have a ``RETURN``
+            with a single element ``p`` where in the ``MATCH`` part
+            of the query it has something like ``p=(h)-[r]->(t)``.
+
+        Returns
+        -------
+        values :
+            A list of :class:`Relation` instances corresponding
+            to the results of the query
+        """
+        return [self.neo4j_to_relation(res) for res in self.query_tx(query, squeeze=True)]
 
     def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
         """Return an existing session or create one if needed.
@@ -237,8 +276,7 @@ class Neo4jClient:
             match,
             "" if not limit else "LIMIT %s" % limit,
         )
-        rels = [self.neo4j_to_relation(res[0]) for res in self.query_tx(query)]
-        return rels
+        return self.query_relations(query)
 
     def get_source_relations(
         self,
@@ -332,8 +370,8 @@ class Neo4jClient:
         from collections import defaultdict
 
         rels = defaultdict(list)
-        for res in self.query_tx(query):
-            rel = self.neo4j_to_relation(res[0])
+        for res in self.query_tx(query, squeeze=True):
+            rel = self.neo4j_to_relation(res)
             rels[(rel.source_ns, rel.source_id)].append(rel)
         return rels
 
@@ -363,8 +401,8 @@ class Neo4jClient:
         from collections import defaultdict
 
         rels = defaultdict(list)
-        for res in self.query_tx(query):
-            rel = self.neo4j_to_relation(res[0])
+        for res in self.query_tx(query, squeeze=True):
+            rel = self.neo4j_to_relation(res)
             rels[(rel.target_ns, rel.target_id)].append(rel)
         return rels
 
@@ -574,8 +612,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
-        return nodes
+        return self.query_nodes(query)
 
     def get_target_agents(
         self,
@@ -666,8 +703,7 @@ class Neo4jClient:
         """
             % match
         )
-        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
-        return nodes
+        return self.query_nodes(query)
 
     def get_successors(
         self,
@@ -708,8 +744,7 @@ class Neo4jClient:
         """
             % match
         )
-        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
-        return nodes
+        return self.query_nodes(query)
 
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
