@@ -95,7 +95,9 @@ class Neo4jClient:
         """Run a read-only query that generates a dictionary."""
         return dict(self.query_tx(query))
 
-    def query_tx(self, query: str, squeeze: bool = False) -> Union[List[List[Any]], None]:
+    def query_tx(
+        self, query: str, squeeze: bool = False
+    ) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
         Parameters
@@ -157,7 +159,9 @@ class Neo4jClient:
             A list of :class:`Relation` instances corresponding
             to the results of the query
         """
-        return [self.neo4j_to_relation(res) for res in self.query_tx(query, squeeze=True)]
+        return [
+            self.neo4j_to_relation(res) for res in self.query_tx(query, squeeze=True)
+        ]
 
     def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
         """Return an existing session or create one if needed.
