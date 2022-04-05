@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from collections import Counter, defaultdict
+from textwrap import dedent
 from typing import (
     Collection,
     Dict,
@@ -51,6 +52,7 @@ __all__ = [
     "get_evidences_for_stmt_hashes",
     "get_stmts_for_paper",
     "get_stmts_for_mesh",
+    "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
     "is_gene_mutated",
     "get_drugs_for_target",
@@ -932,6 +934,37 @@ def get_stmts_for_mesh(
         client=client,
         **kwargs,
     )
+
+
+@autoclient()
+def get_stmts_meta_for_stmt_hashes(
+    stmt_hashes: Iterable[int],
+    *,
+    client: Neo4jClient,
+) -> Iterable[Relation]:
+    """Return the metadata and statements for a given list of hashes
+
+    Parameters
+    ----------
+    stmt_hashes :
+        The list of statement hashes to query.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dict of statements with their metadata
+    """
+    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
+    query = dedent(
+        f"""
+        MATCH p=(a)-[r:indra_rel]->(b)
+        WHERE r.stmt_hash IN [{stmt_hashes_str}]
+        RETURN p"""
+    )
+    result = client.query_tx(query)
+    return [client.neo4j_to_relation(r[0]) for r in result]
 
 
 @autoclient()
