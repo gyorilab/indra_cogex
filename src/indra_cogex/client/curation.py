@@ -361,7 +361,7 @@ def get_mirna_statements(
 
 DISPROT_CURIES = _make_curies(ensure_disprot())
 DISPROT_STMT_TYPES = {
-    "hgnc": [IncreaseAmount, DecreaseAmount, Activation, Inhibition],
+    "hgnc": [Complex, Activation, Inhibition],
     "chebi": [Complex, IncreaseAmount, DecreaseAmount],
     "go": [Complex, Activation, Inhibition],
 }
