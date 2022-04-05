@@ -812,7 +812,11 @@ def get_evidences_for_stmt_hash(
 
 @autoclient()
 def get_evidences_for_stmt_hashes(
-    stmt_hashes: Iterable[int], *, client: Neo4jClient, limit: Optional[str] = None
+    stmt_hashes: Iterable[int],
+    *,
+    client: Neo4jClient,
+    limit: Optional[str] = None,
+    remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -824,6 +828,8 @@ def get_evidences_for_stmt_hashes(
         The statement hashes to query, accepts integers and strings.
     limit:
         The optional maximum number of evidences returned for each statement hash
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -842,9 +848,10 @@ def get_evidences_for_stmt_hashes(
     """
     result = client.query_tx(query)
     return {
-        stmt_hash: [
-            Evidence._from_json(json.loads(evidence_str)) for evidence_str in evidences
-        ]
+        stmt_hash: _filter_out_medscan_evidence(
+            (json.loads(evidence_str) for evidence_str in evidences),
+            remove_medscan=remove_medscan,
+        )
         for stmt_hash, evidences in result
     }
 
