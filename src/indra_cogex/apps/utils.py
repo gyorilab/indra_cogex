@@ -199,19 +199,22 @@ def _stmt_to_row(
 ) -> StmtRow:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
-    ev_array = json.loads(
-        json.dumps(
-            _format_evidence_text(
-                stmt,
-                curation_dict=cur_dict,
-                correct_tags=["correct", "act_vs_amt", "hypothesis"],
-            )
-        )
+    ev_array = _format_evidence_text(
+        stmt,
+        curation_dict=cur_dict,
+        correct_tags=["correct", "act_vs_amt", "hypothesis"],
     )
-    # Translate OrderedDict to dict
+
     for ev in ev_array:
+        # Translate OrderedDict to dict
         org_json = ev["original_json"]
         ev["original_json"] = dict(org_json)
+
+        # Fix unicode escaping
+        text = ev["text"]
+        ev["text"] = bytes(
+            bytes(text, "ascii").decode("unicode-escape"), "ascii"
+        ).decode("unicode-escape")
 
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
@@ -222,7 +225,7 @@ def _stmt_to_row(
             "label": "evidence",
             "num": total_evidence,
             "color": "grey",
-            "symbol": None,
+            "symbol": "",
             "title": "Evidence count for this statement",
             "loc": "right",
         },
@@ -230,7 +233,7 @@ def _stmt_to_row(
             "label": "belief",
             "num": stmt.belief,
             "color": "#ffc266",
-            "symbol": None,
+            "symbol": "",
             "title": "Belief score for this statement",
             "loc": "right",
         },
