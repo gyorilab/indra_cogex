@@ -39,19 +39,6 @@ data_display_blueprint = Blueprint("data_display", __name__)
 MORE_EVIDENCES_LIMIT = 10
 
 
-# Get curations stores globally for now
-curations = get_curations()
-
-curations_by_stmt_hash: Dict[int, Dict[int, List[Dict[str, any]]]] = {}
-for c in curations:
-    if c["pa_hash"] not in curations_by_stmt_hash:
-        curations_by_stmt_hash[c["pa_hash"]] = {}
-    if c["source_hash"] not in curations_by_stmt_hash[c["pa_hash"]]:
-        curations_by_stmt_hash[c["pa_hash"]][c["source_hash"]] = []
-
-    curations_by_stmt_hash[c["pa_hash"]][c["source_hash"]].append(c)
-
-
 def format_ev_json(
     ev_list: Iterable[Dict[str, Any]],
     curations_for_stmt: Dict[int, List[Dict[str, any]]],
