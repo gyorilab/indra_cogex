@@ -20,6 +20,7 @@ from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS
 from indralab_auth_tools.auth import resolve_auth
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,8 @@ def render_statements(
         stmts=formatted_stmts,
         user_email=user_email,
         footer=footer,
+        vue_src_js=VUE_SRC_JS,
+        vue_src_css=VUE_SRC_CSS,
         **kwargs,
     )
 
