@@ -83,6 +83,7 @@ def render_statements(
 ) -> Response:
     """Render INDRA statements."""
     _, _, user_email = resolve_email()
+    remove_medscan = not bool(user_email)
 
     start_time = time.time()
     formatted_stmts = format_stmts(
@@ -90,6 +91,7 @@ def render_statements(
         evidence_counts=evidence_counts,
         limit=limit,
         curations=curations,
+        remove_medscan=remove_medscan,
     )
     end_time = time.time() - start_time
 
@@ -122,6 +124,7 @@ def format_stmts(
     evidence_counts: Optional[Mapping[int, int]] = None,
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    remove_medscan: bool = True,
 ) -> List[StmtRow]:
     """Format the statements for display
 
@@ -155,6 +158,8 @@ def format_stmts(
         The maximum number of statements to return.
     curations :
         A list of curations.
+    remove_medscan :
+        Whether to remove MedScan evidences.
 
     Returns
     -------
@@ -186,15 +191,18 @@ def format_stmts(
             list(cur_counts[key].keys())[0], str
         ), f"{list(cur_counts[key].keys())[0]} is not an str"
 
-    stmt_rows = [
-        _stmt_to_row(
+    stmt_rows = []
+    for stmt in stmts:
+        row = _stmt_to_row(
             stmt,
             cur_dict=cur_dict,
             evidence_counts=evidence_counts,
             cur_counts=cur_counts,
+            remove_medscan=remove_medscan,
         )
-        for stmt in stmts
-    ]
+        if row is not None:
+            stmt_rows.append(row)
+
     return stmt_rows[:limit] if limit else stmt_rows
 
 
@@ -203,7 +211,8 @@ def _stmt_to_row(
     cur_dict,
     evidence_counts,
     cur_counts,
-) -> StmtRow:
+    remove_medscan: bool = True,
+) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
     ev_array = _format_evidence_text(
@@ -211,6 +220,11 @@ def _stmt_to_row(
         curation_dict=cur_dict,
         correct_tags=["correct", "act_vs_amt", "hypothesis"],
     )
+
+    if remove_medscan:
+        ev_array = [e for e in ev_array if e["source_api"] != "medscan"]
+        if not ev_array:
+            return None
 
     for ev in ev_array:
         # Translate OrderedDict to dict
