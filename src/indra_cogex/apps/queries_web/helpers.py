@@ -1,5 +1,17 @@
 from inspect import Signature, signature
-from typing import Any, Callable, Counter, Dict, Iterable, List, Mapping, Tuple, Type
+from typing import (
+    Any,
+    Callable,
+    Counter,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Tuple,
+    Type,
+    Optional,
+    Set,
+)
 
 from docstring_parser import parse
 from indra.statements import Agent, Evidence, Statement
@@ -133,13 +145,17 @@ def get_web_return_annotation(sig: Signature) -> Type:
         return return_annotation
 
 
-def get_docstring(fun: Callable) -> Tuple[str, str]:
+def get_docstring(
+    fun: Callable, skip_params: Optional[Set[str]] = None
+) -> Tuple[str, str]:
     """Get the docstring of a function
 
     Parameters
     ----------
     fun :
         The function whose docstring is to be retrieved
+    skip_params :
+        The parameters to skip docstring generation for
 
     Returns
     -------
@@ -170,7 +186,7 @@ Returns
     param_list = []
     for param in parsed_doc.params:
         # Skip client, evidence_map,
-        if param.arg_name in ("client", "evidence_map"):
+        if param.arg_name in skip_params:
             continue
 
         if param.arg_name == "stmt_hash":
