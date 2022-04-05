@@ -14,10 +14,10 @@ from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
+    Complex,
     DecreaseAmount,
     Dephosphorylation,
     Deubiquitination,
- Complex,
     IncreaseAmount,
     Inhibition,
     Phosphorylation,
