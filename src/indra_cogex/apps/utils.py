@@ -110,6 +110,13 @@ def render_statements(
     )
 
 
+def unicode_double_escape(s: str) -> str:
+    """Remove double escaped unicode characters in a string."""
+    return bytes(bytes(s, "ascii").decode("unicode-escape"), "ascii").decode(
+        "unicode_escape"
+    )
+
+
 def format_stmts(
     stmts: Iterable[Statement],
     evidence_counts: Optional[Mapping[int, int]] = None,
@@ -212,9 +219,7 @@ def _stmt_to_row(
 
         # Fix unicode escaping
         text = ev["text"]
-        ev["text"] = bytes(
-            bytes(text, "ascii").decode("unicode-escape"), "ascii"
-        ).decode("unicode-escape")
+        ev["text"] = unicode_double_escape(text)
 
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
