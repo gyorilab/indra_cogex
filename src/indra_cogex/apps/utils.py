@@ -144,10 +144,9 @@ def format_stmts(
         total_evidence, badges).
     """
     if evidence_counts is None:
-        evidence_counts = {}
-    else:
-        # Make sure statements are sorted by highest evidence counts first
-        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
+        evidence_counts = {stmt.get_hash(): len(stmt.evidence) for stmt in stmts}
+    # Make sure statements are sorted by highest evidence counts first
+    stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
