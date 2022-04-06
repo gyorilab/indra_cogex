@@ -226,6 +226,7 @@ def _stmt_to_row(
         if not ev_array:
             return None
 
+    unicode_errors = 0
     for ev in ev_array:
         # Translate OrderedDict to dict
         org_json = ev["original_json"]
@@ -233,7 +234,13 @@ def _stmt_to_row(
 
         # Fix unicode escaping
         text = ev["text"]
-        ev["text"] = unicode_double_escape(text)
+        try:
+            ev["text"] = unicode_double_escape(text)
+        except UnicodeEncodeError:
+            unicode_errors += 1
+
+    if unicode_errors:
+        logger.warning(f"{unicode_errors} unicode errors in {stmt.get_hash()}")
 
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
