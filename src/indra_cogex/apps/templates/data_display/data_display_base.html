@@ -108,6 +108,14 @@
 {% block scripts %}
     {{ super() }}
     <script>
+        // Define globals
+        // Sources dict = {databases: [...], readers: [...]}
+        Vue.prototype.$sources = {{ sources_dict|safe }};
+        // Define endpoints
+        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
+        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+
         let app = new Vue({
             el: '#vue-app',
             data: {
@@ -125,8 +133,5 @@
                 ]
             }
         });
-        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
-        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
-        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
     </script>
 {% endblock %}
