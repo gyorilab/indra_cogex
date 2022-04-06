@@ -276,7 +276,7 @@ def ppi():
 @jwt_optional
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
-    evidence_counts = get_goa_evidence_counts(client=client, limit=proxies.limit)
+    evidence_counts = get_goa_evidence_counts(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="GO Annotation Curator",
@@ -306,7 +306,7 @@ def conflicts():
 @jwt_optional
 def tf():
     """Curate transcription factors."""
-    evidence_counts = get_tf_statements(client=client, limit=proxies.limit)
+    evidence_counts = get_tf_statements(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="Transcription Factor Curator",
@@ -324,7 +324,7 @@ def tf():
 @jwt_optional
 def kinase():
     """Curate kinases."""
-    evidence_counts = get_kinase_statements(client=client, limit=proxies.limit)
+    evidence_counts = get_kinase_statements(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="Kinase Curator",
@@ -342,7 +342,7 @@ def kinase():
 @jwt_optional
 def phosphatase():
     """Curate phosphatases."""
-    evidence_counts = get_phosphatase_statements(client=client, limit=proxies.limit)
+    evidence_counts = get_phosphatase_statements(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="Phosphatase Curator",
@@ -360,7 +360,7 @@ def phosphatase():
 @jwt_optional
 def deubiquitinase():
     """Curate deubiquitinases."""
-    evidence_counts = get_dub_statements(client=client, limit=proxies.limit)
+    evidence_counts = get_dub_statements(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="Deubiquitinase Curator",
@@ -378,7 +378,7 @@ def deubiquitinase():
 @jwt_optional
 def mirna():
     """Curate miRNAs."""
-    evidence_counts = get_mirna_statements(client=client, limit=proxies.limit)
+    evidence_counts = get_mirna_statements(client=client)
     return _render_evidence_counts(
         evidence_counts,
         title="miRNA Curator",
@@ -398,9 +398,7 @@ def mirna():
 def disprot(object_prefix: Optional[str] = None):
     """Curate intrensically disordered proteins."""
     assert object_prefix in {None, "hgnc", "go", "chebi"}
-    evidence_counts = get_disprot_statements(
-        client=client, limit=proxies.limit, object_prefix=object_prefix
-    )
+    evidence_counts = get_disprot_statements(client=client, object_prefix=object_prefix)
     return _render_evidence_counts(
         evidence_counts,
         title="DisProt Curator",
