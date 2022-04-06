@@ -10,6 +10,9 @@
     <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
           rel="stylesheet">
 
+    <!-- Source badge CSS -->
+    <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
+
     <style>
         .badge-subject {
             background-color: #4a36aa;
