@@ -224,6 +224,14 @@ def _curate_mesh_helper(
     )
 
 
+def _render_func(func, title, description, func_kwargs=None, **kwargs):
+    evidence_counts = func(client=client)
+    return _render_evidence_counts(
+        evidence_counts,
+        **kwargs,
+    )
+
+
 def _render_evidence_counts(
     evidence_counts: Mapping[int, int],
     title: str,
@@ -257,9 +265,8 @@ def _render_evidence_counts(
 @jwt_optional
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
-    evidence_counts = get_ppi_evidence_counts(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_ppi_evidence_counts,
         title="PPI Curator",
         description=f"""\
             The protein-protein interaction (PPI) curator identifies INDRA
@@ -276,9 +283,8 @@ def ppi():
 @jwt_optional
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
-    evidence_counts = get_goa_evidence_counts(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_goa_evidence_counts,
         title="GO Annotation Curator",
         description=f"""\
             The Gene Ontology annotation curator identifiers INDRA statements
@@ -296,9 +302,8 @@ def goa():
 @jwt_optional
 def conflicts():
     """Curate statements with conflicting prior curations."""
-    evidence_counts = get_conflict_evidence_counts(client=client)
-    return _render_evidence_counts(
-        evidence_counts, title="Conflict Resolver", filter_curated=False
+    return _render_func(
+        get_conflict_evidence_counts, title="Conflict Resolver", filter_curated=False
     )
 
 
@@ -306,9 +311,8 @@ def conflicts():
 @jwt_optional
 def tf():
     """Curate transcription factors."""
-    evidence_counts = get_tf_statements(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_tf_statements,
         title="Transcription Factor Curator",
         description=f"""\
             The transcription factor curator identifies INDRA statements using
@@ -324,9 +328,8 @@ def tf():
 @jwt_optional
 def kinase():
     """Curate kinases."""
-    evidence_counts = get_kinase_statements(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_kinase_statements,
         title="Kinase Curator",
         description=f"""\
             The kinase curator identifies INDRA statements using INDRA
@@ -342,9 +345,8 @@ def kinase():
 @jwt_optional
 def phosphatase():
     """Curate phosphatases."""
-    evidence_counts = get_phosphatase_statements(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_phosphatase_statements,
         title="Phosphatase Curator",
         description=f"""\
             The phosphatase curator identifies INDRA statements using INDRA
@@ -360,9 +362,8 @@ def phosphatase():
 @jwt_optional
 def deubiquitinase():
     """Curate deubiquitinases."""
-    evidence_counts = get_dub_statements(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_dub_statements,
         title="Deubiquitinase Curator",
         description=f"""\
             The deubiquitinase curator identifies INDRA statements using INDRA
@@ -378,9 +379,8 @@ def deubiquitinase():
 @jwt_optional
 def mirna():
     """Curate miRNAs."""
-    evidence_counts = get_mirna_statements(client=client)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_mirna_statements,
         title="miRNA Curator",
         description=f"""\
             The miRNA curator identifies INDRA statements using INDRA
@@ -398,9 +398,9 @@ def mirna():
 def disprot(object_prefix: Optional[str] = None):
     """Curate intrensically disordered proteins."""
     assert object_prefix in {None, "hgnc", "go", "chebi"}
-    evidence_counts = get_disprot_statements(client=client, object_prefix=object_prefix)
-    return _render_evidence_counts(
-        evidence_counts,
+    return _render_func(
+        get_disprot_statements,
+        func_kwargs=dict(object_prefix=object_prefix),
         title="DisProt Curator",
         description=f"""\
             The DisProt curator identifies INDRA statements using INDRA
@@ -428,7 +428,6 @@ def entity(prefix: str, identifier: str):
             prefix=prefix,
             identifier=identifier,
             client=client,
-            limit=proxies.limit,
         )
         return _render_evidence_counts(
             evidence_counts,
