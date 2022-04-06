@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Any, List, Mapping, Optional, Tuple
+from typing import Any, Callable, List, Mapping, Optional, Tuple
 
 import flask
 from flask import Response, abort, redirect, render_template, url_for
@@ -258,11 +258,13 @@ def _render_func(
     start = time.time()
     evidence_counts = func(client=client, **(func_kwargs or {}))
     time_delta = time.time() - start
-    logger.debug(
+    logger.info(
         f"got evidence counts for {len(evidence_counts)} statements in {time_delta:.2f} seconds."
     )
     return _render_evidence_counts(
         evidence_counts,
+        title=title,
+        description=description,
         **kwargs,
     )
 
