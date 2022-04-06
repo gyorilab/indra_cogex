@@ -973,7 +973,7 @@ def get_stmts_meta_for_stmt_hashes(
     stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     query = dedent(
         f"""
-        MATCH p=(a)-[r:indra_rel]->(b)
+        MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
         WHERE r.stmt_hash IN [{stmt_hashes_str}]
         RETURN p"""
     )
