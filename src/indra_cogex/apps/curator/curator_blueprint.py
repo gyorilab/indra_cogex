@@ -593,7 +593,7 @@ class NodesForm(FlaskForm):
     curies = TextAreaField(
         "Biomedical Entity CURIEs",
         validators=[DataRequired()],
-        description="TODO",
+        description="Please enter INDRA-flavored CURIEs separated by commas or new lines.",
     )
     submit = SubmitField("Submit")
 
@@ -621,12 +621,25 @@ def subnetwork():
         flask.flash("Can not query more than 30 nodes.")
         return render_template("curation/node_form.html", form=NodesForm())
 
+    nodes_html = " ".join(
+        f"""\
+        <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
+            {prefix}:{identifier}
+        </a>"""
+        for prefix, identifier in nodes
+    )
+
     stmts = indra_subnetwork(nodes=nodes, client=client)
     return _enrich_render_statements(
         stmts,
         title="Subnetwork Curator",
         description=f"""\
-        {nodes}
+        The subnetwork curator shows statements between the following nodes.
+        {_database_text("Pathway Commons")}
+        {EVIDENCE_TEXT}
+        </p>
+        <p>
+        {nodes_html}
         """,
     )
 
