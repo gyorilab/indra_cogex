@@ -259,9 +259,8 @@ def get_curated_pa_hashes(
         curations = get_curations()
     rv = defaultdict(set)
     for curation in curations:
-        pa_hash = curation["pa_hash"]
         if not only_correct or curation["tag"] == "correct":
-            rv[pa_hash].add(curation["source_hash"])
+            rv[curation["pa_hash"]].add(curation["source_hash"])
     return dict(rv)
 
 
