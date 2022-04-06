@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from collections import defaultdict
 from typing import (
@@ -20,6 +21,8 @@ from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
 from indralab_auth_tools.auth import resolve_auth
+
+logger = logging.getLogger(__name__)
 
 StmtRow = Tuple[str, str, str, str, str, str]
 CurationType = List[Mapping[str, Any]]
@@ -292,17 +295,26 @@ def remove_curated_evidences(
     """Remove evidences that are already curated, and if none remain, remove the statement."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations, only_correct=False)
     rv = []
+    removed_statements = 0
+    removed_evidences = 0
     for stmt in statements:
         ev_hashes = curated_pa_hashes.get(stmt.get_hash(), set())
         if not ev_hashes:
             rv.append(stmt)
         else:
+            pre_count = len(stmt.evidence)
             evidences = [
                 evidence
                 for evidence in stmt.evidence
                 if evidence.get_source_hash() not in ev_hashes
             ]
+            removed_evidences += pre_count - len(evidences)
             if evidences:
                 stmt.evidence = evidences
                 rv.append(rv)
+            else:
+                removed_statements += 1
+    logger.debug(
+        f"filtered {removed_evidences} curated evidences and {removed_statements} fully curated statements"
+    )
     return rv
