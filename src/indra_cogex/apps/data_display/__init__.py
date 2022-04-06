@@ -234,11 +234,28 @@ def statement_display():
             stmt_hash_list, client=client
         )
 
-        stmt_iter = [
-            Statement._from_json(json.loads(r.data["stmt_json"])) for r in relations
-        ]
+        # Get statements and assign belief from the meta data
+        stmt_iter = []
+        for rel in relations:
+            stmt = Statement._from_json(json.loads(rel.data["stmt_json"]))
+            stmt.belief = rel.data["belief"]
+            stmt_iter.append(stmt)
+
+        # Get the evidence counts
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
-        stmts = format_stmts(stmts=stmt_iter, evidence_counts=ev_counts)
+
+        # Get the source counts
+        source_counts = {
+            int(r.data["stmt_hash"]): json.loads(r.data["source_counts"])
+            for r in relations
+        }
+
+        # Get the formatted evidence rows
+        stmts = format_stmts(
+            stmts=stmt_iter,
+            evidence_counts=ev_counts,
+            source_counts_per_hash=source_counts,
+        )
         return render_template(
             "data_display/data_display_base.html",
             stmts=stmts,
