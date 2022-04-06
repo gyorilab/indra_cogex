@@ -126,6 +126,7 @@ def format_stmts(
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
     remove_medscan: bool = True,
+    source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
     """Format the statements for display
 
@@ -161,6 +162,8 @@ def format_stmts(
         A list of curations.
     remove_medscan :
         Whether to remove MedScan evidences.
+    source_counts_per_hash :
+        A dictionary mapping statement hashes to source counts for that statement.
 
     Returns
     -------
@@ -200,6 +203,9 @@ def format_stmts(
             evidence_counts=evidence_counts,
             cur_counts=cur_counts,
             remove_medscan=remove_medscan,
+            source_counts=source_counts_per_hash.get(stmt.get_hash())
+            if source_counts_per_hash
+            else None,
         )
         if row is not None:
             stmt_rows.append(row)
@@ -213,6 +219,7 @@ def _stmt_to_row(
     evidence_counts,
     cur_counts,
     remove_medscan: bool = True,
+    source_counts: Dict[str, int] = None,
 ) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
@@ -245,7 +252,15 @@ def _stmt_to_row(
 
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
-    sources = _get_available_ev_source_counts(stmt.evidence)
+    if source_counts is None:
+        sources = _get_available_ev_source_counts(stmt.evidence)
+    else:
+        sources = source_counts
+
+    # Remove medscan sources from the count if requested
+    if remove_medscan:
+        sources = {k: v for k, v in sources.items() if k != "medscan"}
+
     total_evidence = evidence_counts.get(hash_int, len(stmt.evidence))
     badges = [
         {
