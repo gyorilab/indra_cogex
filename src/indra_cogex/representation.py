@@ -3,7 +3,7 @@
 """Representations for nodes and relations to upload to Neo4j."""
 
 
-__all__ = ["Node", "Relation"]
+__all__ = ["Node", "Relation", "indra_stmts_from_relations"]
 
 from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, \
     Dict, Union
