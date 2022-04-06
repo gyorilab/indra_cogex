@@ -27,7 +27,7 @@ from indra_cogex.client.queries import (
     get_evidences_for_stmt_hash,
     get_stmts_meta_for_stmt_hashes,
 )
-from ..constants import LOCAL_VUE, VUE_SRC_JS, VUE_SRC_CSS
+from ..constants import LOCAL_VUE, VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 
 from ..utils import format_stmts
 from ...representation import Relation
@@ -245,6 +245,7 @@ def statement_display():
             user_email=email,
             vue_src_js=VUE_SRC_JS,
             vue_src_css=VUE_SRC_CSS,
+            sources_dict=sources_dict,
         )
     except Exception as err:
         logger.exception(err)
