@@ -802,6 +802,13 @@ def get_evidences_for_stmt_hash(
     )
 
     # Add limit and offset
+    if offset > 0 or limit is not None:
+        # Order by the node internal ID to ensure that results are returned
+        # in a persistent order. Do NOT expose the internal ID to the
+        # user as the id is not guaranteed to be persistent when nodes are
+        # added or removed.
+        query += "\nORDER BY id(n)"
+
     if offset > 0:
         query += "\nSKIP %d" % offset
     if limit is not None:
