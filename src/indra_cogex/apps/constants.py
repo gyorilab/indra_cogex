@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Union
+from indra.util.statement_presentation import db_sources, reader_sources
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
@@ -32,11 +33,15 @@ STATIC_DIR = APPS_DIR / "static"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
 
 # Set VUE parameters
+sources_dict = {
+    "reading": [r for r in reader_sources],
+    "databases": [d for d in db_sources],
+}
 
 # Path to locally built package of indralab-vue
 LOCAL_VUE: Union[str, bool] = os.environ.get("LOCAL_VUE", False)
 
-# Set up built package of indralab-vue on S3
+# Set up indralab-vue Vue components, either from local build or from S3
 VUE_DEPLOYMENT = os.environ.get("VUE_DEPLOYMENT", "latest")
 VUE_BASE = f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{VUE_DEPLOYMENT}/"
 VUE_JS = "IndralabVue.umd.min.js"
