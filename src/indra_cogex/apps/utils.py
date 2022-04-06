@@ -273,7 +273,7 @@ def _stmt_to_row(
         },
         {
             "label": "belief",
-            "num": stmt.belief,
+            "num": round(stmt.belief, 2),  # max two sig figs
             "color": "#ffc266",
             "symbol": "",
             "title": "Belief score for this statement",
