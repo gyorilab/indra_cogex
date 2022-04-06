@@ -397,12 +397,13 @@ def _help(
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH
-            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
+            a, b, r, p, keys(apoc.convert.fromJsonMap(r.source_counts)) as sources
         WHERE
             a.id in {sources!r}
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH '{object_prefix}'
-            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND NOT apoc.coll.intersection(sources, [{databases_str}])
+            AND NOT sources = ['medscan']
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
