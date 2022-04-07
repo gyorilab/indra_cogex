@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Union
 from indra.util.statement_presentation import db_sources, reader_sources
+from pusher import pusher
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
@@ -61,3 +62,18 @@ if LOCAL_VUE:
 else:
     VUE_SRC_JS = f"{VUE_BASE}{VUE_JS}"
     VUE_SRC_CSS = f"{VUE_BASE}{VUE_CSS}"
+
+# Pusher parameters
+pusher_app_id = os.environ.get("CLARE_PUSHER_APP_ID")
+pusher_key = os.environ.get("CLARE_PUSHER_KEY")
+pusher_secret = os.environ.get("CLARE_PUSHER_SECRET")
+pusher_cluster = os.environ.get("CLARE_PUSHER_CLUSTER")
+
+# Pusher app
+pusher_app = pusher_client = pusher.Pusher(
+    app_id=pusher_app_id,
+    key=pusher_key,
+    secret=pusher_secret,
+    cluster=pusher_cluster,
+    ssl=True,
+)

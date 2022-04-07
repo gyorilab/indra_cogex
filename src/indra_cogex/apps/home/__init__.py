@@ -1,9 +1,10 @@
+import json
 from functools import lru_cache
 from typing import Counter, Tuple
 
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, current_app, render_template, request
 
-from indra_cogex.apps.constants import edge_labels
+from indra_cogex.apps.constants import edge_labels, pusher_key, pusher_app
 from indra_cogex.apps.proxies import client
 
 from ...client.queries import get_edge_counter, get_node_counter
@@ -50,4 +51,33 @@ def home():
         edge_counter=edge_counter,
         edge_labels=edge_labels,
         blueprints=current_app.blueprints,
+        pusher_app_key=pusher_key,
     )
+
+
+# Todo: remove this route after demo
+# @home_blueprint.route("/admin")
+# def admin():
+#     """Render the admin page."""
+#     return render_template("admin.html")
+
+
+@home_blueprint.route("/new/guest", methods=["POST"])
+def guestUser():
+    data = request.json
+
+    pusher_app.trigger(
+        u"general-channel",
+        u"new-guest-details",
+        {"name": data["name"], "email": data["email"]},
+    )
+
+    return json.dumps(data)
+
+
+@home_blueprint.route("/pusher/auth", methods=["POST"])
+def pusher_authentication():
+    auth = pusher_app.authenticate(
+        channel=request.form["channel_name"], socket_id=request.form["socket_id"]
+    )
+    return json.dumps(auth)
