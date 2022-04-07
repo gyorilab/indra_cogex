@@ -287,8 +287,8 @@ def test_get_evidence_obj_for_stmt_hashes():
 def test_get_stmts_for_pmid():
     # Two queries: first evidences, then the statements
     client = _get_client()
-    pmid = ("PUBMED", "14898026")
-    stmts = get_stmts_for_pmid(pmid, client=client)
+    term = ("PUBMED", "14898026")
+    stmts = get_stmts_for_paper(term, client=client)
     assert stmts
     assert isinstance(stmts[0], Statement)
 

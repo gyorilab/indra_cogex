@@ -7,12 +7,12 @@ from http import HTTPStatus
 from inspect import isfunction, signature
 
 from flask import jsonify, request
-from flask_restx import Api, Resource, fields, abort
+from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
 
-from .helpers import get_docstring, parse_json, process_result, ParseError
+from .helpers import ParseError, get_docstring, parse_json, process_result
 
 __all__ = [
     "api",
@@ -30,7 +30,7 @@ api = Api(
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 examples_dict = {
-    "tissue": ["UBERON", "UBERON:0002349"],
+    "tissue": ["UBERON", "UBERON:0001162"],
     "gene": ["HGNC", "9896"],
     "go_term": ["GO", "GO:0000978"],
     "drug": ["CHEBI", "CHEBI:27690"],
@@ -50,15 +50,23 @@ examples_dict = {
     "cell_line": ["CCLE", "BT20_BREAST"],
     "target": ["HGNC", "6840"],
     "include_indirect": True,
-    "evidence_map": {},
     "filter_medscan": True,
     "limit": 30,
     "evidence_limit": 30,
     "nodes": [["FPLX", "MEK"], ["FPLX", "ERK"]],
+    "offset": 5,
 }
 
-SKIP_GLOBAL = {"return_evidence_counts", "kwargs", "subject_prefix", "object_prefix"}
-SKIP_ARGUMENTS = {"get_stmts_for_stmt_hashes": {"return_evidence_counts"}}
+# Parameters to always skip in the examples and in the documentation
+SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
+               "subject_prefix", "object_prefix"}
+
+# Parameters to skip for specific functions
+SKIP_ARGUMENTS = {
+    "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
+    "get_evidences_for_stmt_hash": {"remove_medscan"},
+    "get_evidences_for_stmt_hashes": {"remove_medscan"},
+}
 
 # This is the list of functions to be included
 module_functions = [(queries, fn) for fn in queries.__all__] + [
@@ -78,7 +86,9 @@ for module, func_name in module_functions:
     if client_param is None:
         continue
 
-    short_doc, fixed_doc = get_docstring(func)
+    short_doc, fixed_doc = get_docstring(
+        func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
+    )
 
     param_names = list(func_sig.parameters.keys())
     param_names.remove("client")
@@ -88,7 +98,7 @@ for module, func_name in module_functions:
     for param_name in param_names:
         if param_name in SKIP_GLOBAL:
             continue
-        if param_name in SKIP_ARGUMENTS.get(func_name, []):
+        if param_name in SKIP_ARGUMENTS.get(func_name, set()):
             continue
         if param_name not in examples_dict:
             raise KeyError(

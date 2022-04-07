@@ -1,17 +1,20 @@
 """Tools for INDRA curation."""
 
 import logging
+from functools import lru_cache
 from itertools import chain
 from typing import Iterable, List, Mapping, Optional, Set, Tuple, Type
 
 import pandas as pd
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
+from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
 from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
+    Complex,
     DecreaseAmount,
     Dephosphorylation,
     Deubiquitination,
@@ -25,6 +28,7 @@ from networkx.algorithms import edge_betweenness_centrality
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
 from ..representation import indra_stmts_from_relations
+from ..resources import ensure_disprot
 
 __all__ = [
     "get_prioritized_stmt_hashes",
@@ -38,6 +42,9 @@ __all__ = [
     "get_phosphatase_statements",
     "get_conflicting_statements",
     "get_dub_statements",
+    "get_entity_evidence_counts",
+    "get_mirna_statements",
+    "get_disprot_statements",
 ]
 
 logger = logging.getLogger(__name__)
@@ -301,12 +308,16 @@ def get_phosphatase_statements(
     )
 
 
-DUB_CURIES = sorted(
-    f"hgnc:{identifier}"
-    for prefix, identifier in bio_ontology.get_children(
-        "FPLX", "Deubiquitinase", ns_filter="HGNC"
+@lru_cache(maxsize=1)
+def _get_dub_curies():
+    return _make_curies(
+        hgnc_id
+        for _, hgnc_id in bio_ontology.get_children(
+            "FPLX", "Deubiquitinase", ns_filter="HGNC"
+        )
     )
-)
+
+
 DUB_STMT_TYPES = [Deubiquitination]
 
 
@@ -316,10 +327,60 @@ def get_dub_statements(
 ) -> Mapping[int, int]:
     """Get deubiquitinase statements."""
     return _help(
-        sources=DUB_CURIES,
+        sources=_get_dub_curies(),
         stmt_types=DUB_STMT_TYPES,
         client=client,
         limit=limit,
+    )
+
+
+def _make_curies(hgnc_ids: List[str]) -> List[str]:
+    return [f"hgnc:{hgnc_id}" for hgnc_id in sorted(hgnc_ids, key=int)]
+
+
+def _get_mirnas() -> List[str]:
+    return _make_curies(_hgnc_id_to_mirbase_id)
+
+
+MIRNA_CURIES = _get_mirnas()
+MIRNA_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
+
+
+@autoclient()
+def get_mirna_statements(
+    *, client: Neo4jClient, limit: Optional[int] = None
+) -> Mapping[int, int]:
+    """Get miRNA statements."""
+    return _help(
+        sources=MIRNA_CURIES,
+        stmt_types=MIRNA_STMT_TYPES,
+        client=client,
+        limit=limit,
+    )
+
+
+DISPROT_CURIES = _make_curies(ensure_disprot())
+DISPROT_STMT_TYPES = {
+    "hgnc": [Complex, Activation, Inhibition],
+    "chebi": [Complex, IncreaseAmount, DecreaseAmount],
+    "go": [Complex, Activation, Inhibition],
+}
+
+
+@autoclient()
+def get_disprot_statements(
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    object_prefix: Optional[str] = None,
+) -> Mapping[int, int]:
+    """Get statements about disordered proteins."""
+    return _help(
+        sources=DISPROT_CURIES,
+        stmt_types=DISPROT_STMT_TYPES[object_prefix or "hgnc"],
+        client=client,
+        limit=limit,
+        object_prefix=object_prefix,
     )
 
 
@@ -329,15 +390,42 @@ def _help(
     stmt_types: List[Type[Statement]],
     client: Neo4jClient,
     limit: Optional[int] = None,
+    object_prefix: Optional[str] = None,
+) -> Mapping[int, int]:
+    if object_prefix is None:
+        object_prefix = "hgnc"
+    query = f"""\
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WITH
+            a, b, r, p, keys(apoc.convert.fromJsonMap(r.source_counts)) as sources
+        WHERE
+            a.id in {sources!r}
+            AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
+            AND b.id STARTS WITH '{object_prefix}'
+            AND NOT apoc.coll.intersection(sources, [{databases_str}])
+            AND NOT sources = ['medscan']
+            AND a.id <> b.id
+        RETURN r.stmt_hash, r.evidence_count
+        ORDER BY r.evidence_count DESC
+        {_limit_line(limit)}
+    """
+    return client.query_dict(query)
+
+
+@autoclient()
+def get_entity_evidence_counts(
+    prefix: str,
+    identifier: str,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
 ) -> Mapping[int, int]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WITH
             a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
-            a.id in {sources!r}
-            AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
-            AND b.id STARTS WITH 'hgnc'
+            a.id = "{prefix}:{identifier}"
             AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count

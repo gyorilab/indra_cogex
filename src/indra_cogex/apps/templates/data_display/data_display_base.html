@@ -6,8 +6,12 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
     <!-- Indralab-vue, for access to <statement> component and its child components -->
-    <script src="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.umd.min.js"></script>
-    <link href="https://bigmech.s3.amazonaws.com/indra-db/indralabvue-latest/IndralabVue.css" rel="stylesheet">
+    <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
+    <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
+          rel="stylesheet">
+
+    <!-- Source badge CSS -->
+    <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
 
     <style>
         .badge-subject {
@@ -57,29 +61,51 @@
             <h4 class="my-0 font-weight-normal">
                 {% if title %}{{ title }}{% else %}CoGEx Statements{% endif %}
             </h4>
+            Readers - <source-display></source-display> - Databases
         </div>
-        {% if description %}
+        {% if stmts|length == 0 %}
             <div class="card-body">
-                <p class="card-text">{{ description }}</p>
+                {% if filter_curated %}
+                    {# The statements were filtered, so allow for revealing rest #}
+                    <p class="card-text">
+                        There are no statements left to be curated!
+                    </p>
+                    <a class="btn btn-primary btn-hover"
+                       href="{{ url_for(endpoint, prefix=prefix, identifier=identifier, filter_curated=False) }}">
+                        Reveal curated content
+                    </a>
+                {% else %}
+                    <p class="card-text">
+                        There are no statements for this publication.
+                    </p>
+                {% endif %}
             </div>
-        {% endif %}
-        <div class="list-group list-group-flush">
-            <statement
-                    class="list-group-item"
-                    v-for="st_obj in this.$data.stmts"
-                    :key="st_obj.hash"
-                    :evidence="st_obj.ev_array"
-                    :english="st_obj.english"
-                    :hash="st_obj.hash"
-                    :sources="st_obj.sources"
-                    :total_evidence="st_obj.total_evidence"
-                    :badges="st_obj.badges"
-            ></statement>
-        </div>
-        {% if footer %}
-            <div class="card-footer">
-                <small>{{ footer }}</small>
+        {% else %}
+            {% if description %}
+                <div class="card-body">
+                    <p class="card-text">{{ description | safe }}</p>
+                </div>
+            {% endif %}
+            <div class="list-group list-group-flush">
+                <statement
+                        class="list-group-item"
+                        v-for="st_obj in this.$data.stmts"
+                        :key="st_obj.hash"
+                        :evidence="st_obj.ev_array"
+                        :english="st_obj.english"
+                        :hash="st_obj.hash"
+                        :sources="st_obj.sources"
+                        :total_evidence="st_obj.total_evidence"
+                        :badges="st_obj.badges"
+                        :loadable="true"
+                        :sources_left_of_badges="true"
+                ></statement>
             </div>
+            {% if footer %}
+                <div class="card-footer">
+                    <small>{{ footer }}</small>
+                </div>
+            {% endif %}
         {% endif %}
     </div>
 {% endblock %}
@@ -87,6 +113,14 @@
 {% block scripts %}
     {{ super() }}
     <script>
+        // Define globals
+        // Sources dict = {databases: [...], readers: [...]}
+        Vue.prototype.$sources = {{ sources_dict|safe }};
+        // Define endpoints
+        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
+        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+
         let app = new Vue({
             el: '#vue-app',
             data: {
@@ -104,8 +138,5 @@
                 ]
             }
         });
-        Vue.prototype.$stmt_hash_url = "/";  // Should not be needed as all evidences come with the query result
-        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
-        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
     </script>
 {% endblock %}

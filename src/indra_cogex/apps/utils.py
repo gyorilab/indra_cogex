@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from collections import defaultdict
 from typing import (
@@ -19,7 +20,10 @@ from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 from indralab_auth_tools.auth import resolve_auth
+
+logger = logging.getLogger(__name__)
 
 StmtRow = Tuple[str, str, str, str, str, str]
 CurationType = List[Mapping[str, Any]]
@@ -74,11 +78,12 @@ def render_statements(
     evidence_counts: Optional[Mapping[int, int]] = None,
     evidence_lookup_time: Optional[float] = None,
     limit: Optional[int] = None,
-    curations=None,
+    curations: Optional[List[Mapping[str, Any]]] = None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
     _, _, user_email = resolve_email()
+    remove_medscan = not bool(user_email)
 
     start_time = time.time()
     formatted_stmts = format_stmts(
@@ -86,6 +91,7 @@ def render_statements(
         evidence_counts=evidence_counts,
         limit=limit,
         curations=curations,
+        remove_medscan=remove_medscan,
     )
     end_time = time.time() - start_time
 
@@ -100,7 +106,17 @@ def render_statements(
         stmts=formatted_stmts,
         user_email=user_email,
         footer=footer,
+        vue_src_js=VUE_SRC_JS,
+        vue_src_css=VUE_SRC_CSS,
+        sources_dict=sources_dict,
         **kwargs,
+    )
+
+
+def unicode_double_escape(s: str) -> str:
+    """Remove double escaped unicode characters in a string."""
+    return bytes(bytes(s, "ascii").decode("unicode-escape"), "ascii").decode(
+        "unicode_escape"
     )
 
 
@@ -109,6 +125,8 @@ def format_stmts(
     evidence_counts: Optional[Mapping[int, int]] = None,
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    remove_medscan: bool = True,
+    source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
     """Format the statements for display
 
@@ -136,6 +154,16 @@ def format_stmts(
     ----------
     stmts :
         An iterable of statements.
+    evidence_counts :
+        A dictionary mapping statement hashes to evidence counts.
+    limit :
+        The maximum number of statements to return.
+    curations :
+        A list of curations.
+    remove_medscan :
+        Whether to remove MedScan evidences.
+    source_counts_per_hash :
+        A dictionary mapping statement hashes to source counts for that statement.
 
     Returns
     -------
@@ -144,71 +172,9 @@ def format_stmts(
         total_evidence, badges).
     """
     if evidence_counts is None:
-        evidence_counts = {}
-    else:
-        # Make sure statements are sorted by highest evidence counts first
-        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
-
-    def stmt_to_row(
-        st: Statement,
-    ) -> StmtRow:
-        ev_array = json.loads(
-            json.dumps(
-                _format_evidence_text(
-                    st,
-                    curation_dict=cur_dict,
-                    correct_tags=["correct", "act_vs_amt", "hypothesis"],
-                )
-            )
-        )
-        english = _format_stmt_text(st)
-        hash_int = st.get_hash()
-        sources = _get_available_ev_source_counts(st.evidence)
-        total_evidence = evidence_counts.get(st.get_hash(), len(st.evidence))
-        badges = [
-            {
-                "label": "evidence",
-                "num": total_evidence,
-                "color": "grey",
-                "symbol": None,
-                "title": "Evidence count for this statement",
-                "loc": "right",
-            },
-            {
-                "label": "belief",
-                "num": st.belief,
-                "color": "#ffc266",
-                "symbol": None,
-                "title": "Belief score for this statement",
-                "loc": "right",
-            },
-        ]
-        if cur_counts and hash_int in cur_counts:
-            num = cur_counts[hash_int]["this"]["correct"]
-            badges.append(
-                {
-                    "label": "correct_this",
-                    "num": num,
-                    "color": "#28a745",
-                    "symbol": "\u270E",
-                    "title": f"{num} evidences curated as correct",
-                }
-            )
-
-        return cast(
-            StmtRow,
-            tuple(
-                json.dumps(e)
-                for e in (
-                    ev_array,
-                    english,
-                    str(hash_int),
-                    sources,
-                    total_evidence,
-                    badges,
-                )
-            ),
-        )
+        evidence_counts = {stmt.get_hash(): len(stmt.evidence) for stmt in stmts}
+    # Make sure statements are sorted by highest evidence counts first
+    stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
@@ -229,8 +195,121 @@ def format_stmts(
             list(cur_counts[key].keys())[0], str
         ), f"{list(cur_counts[key].keys())[0]} is not an str"
 
-    stmt_rows = [stmt_to_row(stmt) for stmt in stmts]
+    stmt_rows = []
+    for stmt in stmts:
+        row = _stmt_to_row(
+            stmt,
+            cur_dict=cur_dict,
+            evidence_counts=evidence_counts,
+            cur_counts=cur_counts,
+            remove_medscan=remove_medscan,
+            source_counts=source_counts_per_hash.get(stmt.get_hash())
+            if source_counts_per_hash
+            else None,
+        )
+        if row is not None:
+            stmt_rows.append(row)
+
     return stmt_rows[:limit] if limit else stmt_rows
+
+
+def _stmt_to_row(
+    stmt: Statement,
+    cur_dict,
+    evidence_counts,
+    cur_counts,
+    remove_medscan: bool = True,
+    source_counts: Dict[str, int] = None,
+    include_belief_badge: bool = False,
+) -> Optional[StmtRow]:
+    # Todo: Refactor this function so that evidences can be passed on their
+    #  own without having to be passed in as part of the statement.
+    ev_array = _format_evidence_text(
+        stmt,
+        curation_dict=cur_dict,
+        correct_tags=["correct", "act_vs_amt", "hypothesis"],
+    )
+
+    if remove_medscan:
+        ev_array = [e for e in ev_array if e["source_api"] != "medscan"]
+        if not ev_array:
+            return None
+
+    unicode_errors = 0
+    for ev in ev_array:
+        # Translate OrderedDict to dict
+        org_json = ev["original_json"]
+        ev["original_json"] = dict(org_json)
+
+        # Fix unicode escaping
+        text = ev["text"]
+        try:
+            ev["text"] = unicode_double_escape(text)
+        except UnicodeEncodeError:
+            unicode_errors += 1
+
+    if unicode_errors:
+        logger.warning(f"{unicode_errors} unicode errors in {stmt.get_hash()}")
+
+    english = _format_stmt_text(stmt)
+    hash_int = stmt.get_hash()
+    if source_counts is None:
+        sources = _get_available_ev_source_counts(stmt.evidence)
+    else:
+        sources = source_counts
+
+    # Remove medscan sources from the count if requested
+    if remove_medscan:
+        sources = {k: v for k, v in sources.items() if k != "medscan"}
+
+    total_evidence = evidence_counts.get(hash_int, len(stmt.evidence))
+    badges = [
+        {
+            "label": "evidence",
+            "num": total_evidence,
+            "color": "grey",
+            "symbol": "",
+            "title": "Evidence count for this statement",
+            "loc": "right",
+        },
+    ]
+    if include_belief_badge:
+        badges.append(
+            {
+                "label": "belief",
+                "num": round(stmt.belief, 2),  # max two sig figs
+                "color": "#ffc266",
+                "symbol": "",
+                "title": "Belief score for this statement",
+                "loc": "right",
+            },
+        )
+    if cur_counts and hash_int in cur_counts:
+        num = cur_counts[hash_int]["this"]["correct"]
+        badges.append(
+            {
+                "label": "correct_this",
+                "num": num,
+                "color": "#28a745",
+                "symbol": "\u270E",
+                "title": f"{num} evidences curated as correct",
+            }
+        )
+
+    return cast(
+        StmtRow,
+        tuple(
+            json.dumps(e)
+            for e in (
+                ev_array,
+                english,
+                str(hash_int),
+                sources,
+                total_evidence,
+                badges,
+            )
+        ),
+    )
 
 
 def resolve_email():
@@ -239,21 +318,31 @@ def resolve_email():
     return user, roles, email
 
 
-def get_curated_pa_hashes(curations=None) -> Set[int]:
-    """Get a set of hashes for statements that have been curated."""
+def get_curated_pa_hashes(
+    curations: Optional[List[Mapping[str, Any]]] = None, only_correct: bool = True
+) -> Mapping[int, Set[int]]:
+    """Get a mapping from statement hashes to evidence hashes."""
     if curations is None:
         curations = get_curations()
-    return {curation["pa_hash"] for curation in curations if curation["pa_hash"]}
+    rv = defaultdict(set)
+    for curation in curations:
+        if not only_correct or curation["tag"] == "correct":
+            rv[curation["pa_hash"]].add(curation["source_hash"])
+    return dict(rv)
 
 
-def remove_curated_pa_hashes(pa_hashes: Iterable[int], curations=None) -> List[int]:
+def remove_curated_pa_hashes(
+    pa_hashes: Iterable[int],
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> List[int]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
     return [pa_hash for pa_hash in pa_hashes if pa_hash not in curated_pa_hashes]
 
 
 def remove_curated_statements(
-    statements: Iterable[Statement], curations=None
+    statements: Iterable[Statement],
+    curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[Statement]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
@@ -262,3 +351,35 @@ def remove_curated_statements(
         for statement in statements
         if statement.get_hash() not in curated_pa_hashes
     ]
+
+
+def remove_curated_evidences(
+    statements: List[Statement],
+    curations: Optional[List[Mapping[str, Any]]] = None,
+) -> List[Statement]:
+    """Remove evidences that are already curated, and if none remain, remove the statement."""
+    curated_pa_hashes = get_curated_pa_hashes(curations=curations, only_correct=False)
+    rv = []
+    removed_statements = 0
+    removed_evidences = 0
+    for stmt in statements:
+        ev_hashes = curated_pa_hashes.get(stmt.get_hash(), set())
+        if not ev_hashes:
+            rv.append(stmt)
+        else:
+            pre_count = len(stmt.evidence)
+            evidences = [
+                evidence
+                for evidence in stmt.evidence
+                if evidence.get_source_hash() not in ev_hashes
+            ]
+            removed_evidences += pre_count - len(evidences)
+            if evidences:
+                stmt.evidence = evidences
+                rv.append(rv)
+            else:
+                removed_statements += 1
+    logger.debug(
+        f"filtered {removed_evidences} curated evidences and {removed_statements} fully curated statements"
+    )
+    return rv

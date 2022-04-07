@@ -6,7 +6,7 @@ from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
 from .queries import get_genes_for_go_term, get_genes_in_tissue
-from ..representation import indra_stmts_from_relations, norm_id, Relation
+from ..representation import Relation, indra_stmts_from_relations, norm_id
 
 __all__ = [
     "indra_subnetwork",

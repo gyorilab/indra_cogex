@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from collections import Counter, defaultdict
+from textwrap import dedent
 from typing import (
     Collection,
     Dict,
@@ -49,8 +50,9 @@ __all__ = [
     "get_evidences_for_mesh",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
-    "get_stmts_for_pmid",
+    "get_stmts_for_paper",
     "get_stmts_for_mesh",
+    "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
     "is_gene_mutated",
     "get_drugs_for_target",
@@ -766,7 +768,12 @@ def get_evidences_for_mesh(
 
 @autoclient()
 def get_evidences_for_stmt_hash(
-    stmt_hash: int, *, client: Neo4jClient
+    stmt_hash: int,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    remove_medscan: bool = True,
 ) -> Iterable[Evidence]:
     """Return the matching evidence objects for the given statement hash.
 
@@ -776,6 +783,12 @@ def get_evidences_for_stmt_hash(
         The Neo4j client.
     stmt_hash :
         The statement hash to query, accepts both string and integer.
+    limit :
+        The maximum number of results to return.
+    offset :
+        The number of results to skip before returning the first result.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -787,13 +800,30 @@ def get_evidences_for_stmt_hash(
                RETURN n.evidence"""
         % stmt_hash
     )
+
+    # Add limit and offset
+    if offset > 0 or limit is not None:
+        # Order by the node internal ID to ensure that results are returned
+        # in a persistent order. Do NOT expose the internal ID to the
+        # user as the id is not guaranteed to be persistent when nodes are
+        # added or removed.
+        query += "\nORDER BY id(n)"
+
+    if offset > 0:
+        query += "\nSKIP %d" % offset
+    if limit is not None:
+        query += "\nLIMIT %d" % limit
     ev_jsons = [json.loads(r[0]) for r in client.query_tx(query)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=remove_medscan)
 
 
 @autoclient()
 def get_evidences_for_stmt_hashes(
-    stmt_hashes: Iterable[int], *, client: Neo4jClient, limit: Optional[str] = None
+    stmt_hashes: Iterable[int],
+    *,
+    client: Neo4jClient,
+    limit: Optional[str] = None,
+    remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -805,6 +835,8 @@ def get_evidences_for_stmt_hashes(
         The statement hashes to query, accepts integers and strings.
     limit:
         The optional maximum number of evidences returned for each statement hash
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -823,25 +855,26 @@ def get_evidences_for_stmt_hashes(
     """
     result = client.query_tx(query)
     return {
-        stmt_hash: [
-            Evidence._from_json(json.loads(evidence_str)) for evidence_str in evidences
-        ]
+        stmt_hash: _filter_out_medscan_evidence(
+            (json.loads(evidence_str) for evidence_str in evidences),
+            remove_medscan=remove_medscan,
+        )
         for stmt_hash, evidences in result
     }
 
 
 @autoclient()
-def get_stmts_for_pmid(
-    pmid_term: Tuple[str, str], *, client: Neo4jClient
-) -> Iterable[Statement]:
+def get_stmts_for_paper(
+    term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
     Parameters
     ----------
     client :
         The Neo4j client.
-    pmid_term :
-        The PubMed ID to query.
+    term :
+        The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
 
     Returns
     -------
@@ -855,20 +888,28 @@ def get_stmts_for_pmid(
 
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
-    pmid_norm = norm_id(*pmid_term)
-    # Get the hashes and evidences for the given PubMed ID
-    hash_query = (
-        """
-        MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "%s"})
+
+    if term[0].lower() in {"pmid", "pubmed"}:
+        curie = norm_id(*term)
+        publication_props = f"{{id: '{curie}'}}"
+    elif term[0].lower() == "doi":
+        publication_props = f"{{doi: '{term[1]}'}}"
+    elif term[0].lower() in {"pmc", "pmcid"}:
+        publication_props = f"{{pmcid: '{term[1]}'}}"
+    elif term[0].lower() == "trid":
+        publication_props = f"{{trid: '{term[1]}'}}"
+    else:
+        raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
+
+    hash_query = f"""\
+        MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-        % pmid_norm
-    )
     result = client.query_tx(hash_query)
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
-        stmt_hashes, evidence_map=evidence_map, client=client
+        stmt_hashes, evidence_map=evidence_map, client=client, **kwargs
     )
 
 
@@ -907,6 +948,37 @@ def get_stmts_for_mesh(
         client=client,
         **kwargs,
     )
+
+
+@autoclient()
+def get_stmts_meta_for_stmt_hashes(
+    stmt_hashes: Iterable[int],
+    *,
+    client: Neo4jClient,
+) -> Iterable[Relation]:
+    """Return the metadata and statements for a given list of hashes
+
+    Parameters
+    ----------
+    stmt_hashes :
+        The list of statement hashes to query.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dict of statements with their metadata
+    """
+    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
+    query = dedent(
+        f"""
+        MATCH p=(:BioEntity)-[r:indra_rel]->(:BioEntity)
+        WHERE r.stmt_hash IN [{stmt_hashes_str}]
+        RETURN p"""
+    )
+    result = client.query_tx(query)
+    return [client.neo4j_to_relation(r[0]) for r in result]
 
 
 @autoclient()
@@ -956,9 +1028,17 @@ def get_stmts_for_stmt_hashes(
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
     rels = [client.neo4j_to_relation(r[0]) for r in client.query_tx(stmts_query)]
     stmts = indra_stmts_from_relations(rels)
-    rv = enrich_statements(
-        stmts, client=client, evidence_map=evidence_map, evidence_limit=evidence_limit
-    )
+
+    if evidence_limit == 1:
+        rv = stmts
+    else:
+        rv = enrich_statements(
+            stmts,
+            client=client,
+            evidence_map=evidence_map,
+            evidence_limit=evidence_limit,
+        )
+
     if not return_evidence_counts:
         return rv
     evidence_counts = {

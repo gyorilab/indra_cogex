@@ -35,5 +35,6 @@ config_auth(app)
 app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(32)
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
+app.config["EXPLAIN_TEMPLATE_LOADING"] = False
 
 bootstrap = Bootstrap4(app)
