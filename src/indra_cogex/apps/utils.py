@@ -220,6 +220,7 @@ def _stmt_to_row(
     cur_counts,
     remove_medscan: bool = True,
     source_counts: Dict[str, int] = None,
+    include_belief_badge: bool = False,
 ) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
@@ -271,15 +272,18 @@ def _stmt_to_row(
             "title": "Evidence count for this statement",
             "loc": "right",
         },
-        {
-            "label": "belief",
-            "num": round(stmt.belief, 2),  # max two sig figs
-            "color": "#ffc266",
-            "symbol": "",
-            "title": "Belief score for this statement",
-            "loc": "right",
-        },
     ]
+    if include_belief_badge:
+        badges.append(
+            {
+                "label": "belief",
+                "num": round(stmt.belief, 2),  # max two sig figs
+                "color": "#ffc266",
+                "symbol": "",
+                "title": "Belief score for this statement",
+                "loc": "right",
+            },
+        )
     if cur_counts and hash_int in cur_counts:
         num = cur_counts[hash_int]["this"]["correct"]
         badges.append(
