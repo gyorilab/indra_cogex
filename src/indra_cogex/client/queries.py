@@ -55,6 +55,7 @@ __all__ = [
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
     "is_gene_mutated",
+    "get_mutated_genes",
     "get_drugs_for_target",
     "get_targets_for_drug",
     "is_drug_target",
@@ -1215,6 +1216,29 @@ def is_gene_mutated(
     return client.has_relation(
         gene,
         cell_line,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def get_mutated_genes(cell_line: Tuple[str, str], *, client: Neo4jClient) -> List[Node]:
+    """Return the list of genes that are mutated in a given cell line.
+
+    Parameters
+    client:
+        The Neo4j client.
+    cell_line :
+        The cell line to query.
+
+    Returns
+    -------
+    :
+        The list of genes that are mutated in the given cell line.
+    """
+    return client.get_sources(
+        target=cell_line,
         relation="mutated_in",
         source_type="BioEntity",
         target_type="BioEntity",
