@@ -75,11 +75,12 @@ class CurationCache:
         :
             A list of curations
         """
+        if source_hash is not None and pa_hash is None:
+            raise ValueError("Must provide a pa_hash if source_hash is provided")
+
         # Update the curation cache if it is too old or if asked
         if refresh or self.last_update + self.update_interval < datetime.utcnow():
             self.refresh_curations()
-        if source_hash is not None and pa_hash is None:
-            raise ValueError("Must provide a pa_hash if source_hash is provided")
 
         temp_df = self.curations_df
         if pa_hash is not None:
