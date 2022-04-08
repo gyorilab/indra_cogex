@@ -22,11 +22,11 @@ from indra.statements import (
     Phosphorylation,
     Statement,
 )
+from indra.util.statement_presentation import db_sources
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
-from ..constants import DATABASES
 from ..representation import indra_stmts_from_relations
 from ..resources import ensure_disprot
 
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 def _keep_by_source(source_counts) -> bool:
-    return all(k not in DATABASES for k in source_counts)
+    return all(k not in db_sources for k in source_counts)
 
 
 def _get_text(stmt: Statement) -> Optional[str]:
@@ -156,7 +156,7 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-databases_str = ", ".join(f'"{d}"' for d in DATABASES)
+databases_str = ", ".join(f'"{d}"' for d in sorted(db_sources))
 
 
 def _limit_line(limit: Optional[int] = None) -> str:
