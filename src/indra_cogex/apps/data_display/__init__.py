@@ -12,11 +12,7 @@ from typing import Iterable, Any, Dict, List, Optional, Set
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
-from indra.sources.indra_db_rest import (
-    IndraDBRestAPIError,
-    get_curations,
-    submit_curation,
-)
+from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.statements import Statement
 from indralab_auth_tools.auth import resolve_auth
 
@@ -27,6 +23,8 @@ from indra_cogex.client.queries import (
     get_evidences_for_stmt_hash,
     get_stmts_meta_for_stmt_hashes,
 )
+from indra_cogex.apps.curator import CurationCache
+
 from ..constants import LOCAL_VUE, VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 
 from ..utils import format_stmts
@@ -37,6 +35,7 @@ logger = logging.getLogger(__name__)
 data_display_blueprint = Blueprint("data_display", __name__)
 
 MORE_EVIDENCES_LIMIT = 10
+curation_cache = CurationCache()
 
 
 def format_ev_json(
@@ -305,17 +304,17 @@ def submit_curation_endpoint(hash_val: str):
     if not is_test:
         assert tag != "test"
         try:
-            dbid = submit_curation(
+            dbid = curation_cache.submit_curation(
                 hash_val=int(hash_val),
                 tag=tag,
-                curator_email=email,
+                email=email,
                 text=text,
                 ev_hash=ev_hash,
-                source=source_api,
+                source_api=source_api,
             )
+            res = {"result": "success", "ref": {"id": dbid}}
         except IndraDBRestAPIError as e:
             abort(Response("Could not submit curation: %s." % e, 400))
-        res = {"result": "success", "ref": {"id": dbid}}
     else:
         res = {"result": "test passed", "ref": None}
     logger.info("Got result: %s" % str(res))
@@ -324,5 +323,5 @@ def submit_curation_endpoint(hash_val: str):
 
 @data_display_blueprint.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
-    curations_list = get_curations(stmt_hash, source_hash=src_hash)
+    curations_list = curation_cache.get_curations(stmt_hash, source_hash=src_hash)
     return jsonify(curations_list)
