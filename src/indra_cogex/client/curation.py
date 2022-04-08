@@ -10,7 +10,6 @@ from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
-from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
@@ -27,6 +26,7 @@ from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
+from ..constants import DATABASES
 from ..representation import indra_stmts_from_relations
 from ..resources import ensure_disprot
 
@@ -48,13 +48,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-# DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
-DATABASES: Set[str] = {
-    key
-    for key, value in load_resource_json("source_info.json").items()
-    if value["type"] == "database"
-}
 
 
 def _keep_by_source(source_counts) -> bool:
