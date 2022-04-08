@@ -26,7 +26,7 @@ from indra.databases.identifiers import ensure_prefix_if_needed
 from indra.util import batch_iter
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
-from indra_cogex.constants import READERS, DATABASES
+from indra.util.statement_presentation import db_sources, reader_sources
 
 logger = logging.getLogger(__name__)
 tqdm.pandas()
@@ -191,10 +191,10 @@ class DbProcessor(Processor):
                             "belief:float": values["belief"],
                             "stmt_json:string": json.dumps(stmt_json),
                             "has_database_evidence:bool": any(
-                                source in DATABASES for source in source_counts
+                                source in db_sources for source in source_counts
                             ),
                             "has_reader_evidence:bool": any(
-                                source in READERS for source in source_counts
+                                source in reader_sources for source in source_counts
                             ),
                             "medscan_only:bool": medscan_only,
                         }
