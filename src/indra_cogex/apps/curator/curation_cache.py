@@ -81,13 +81,13 @@ class CurationCache:
         if source_hash is not None and pa_hash is None:
             raise ValueError("Must provide a pa_hash if source_hash is provided")
 
-        temp_df = self.curations_df.copy()
+        temp_df = self.curations_df
         if pa_hash is not None:
             temp_df = temp_df[temp_df.pa_hash == pa_hash]
         if source_hash is not None:
             temp_df = temp_df[temp_df.source_hash == source_hash]
 
-        return temp_df.to_dict(orient="records")
+        return temp_df.copy().to_dict(orient="records")
 
     def submit_curation(
         self,
