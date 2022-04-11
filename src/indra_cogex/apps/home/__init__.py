@@ -1,10 +1,9 @@
-import json
 from functools import lru_cache
 from typing import Counter, Tuple
 
-from flask import Blueprint, current_app, render_template, request
+from flask import Blueprint, current_app, render_template
 
-from indra_cogex.apps.constants import edge_labels, pusher_key, pusher_app
+from indra_cogex.apps.constants import edge_labels
 from indra_cogex.apps.proxies import client
 
 from ...client.queries import get_edge_counter, get_node_counter
