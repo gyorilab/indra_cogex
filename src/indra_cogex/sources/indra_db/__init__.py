@@ -197,6 +197,7 @@ class DbProcessor(Processor):
                                 source in reader_sources for source in source_counts
                             ),
                             "medscan_only:bool": medscan_only,
+                            "sparser_only:bool": set(source_counts) == {"sparser"},
                         }
                         total_count += 1
                         hashes_yielded.add(stmt_hash)
