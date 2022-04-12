@@ -1,8 +1,13 @@
+import logging
 import os
 from pathlib import Path
 from typing import Union
 from indra.util.statement_presentation import db_sources, reader_sources
 from pusher import pusher
+
+
+logger = logging.getLogger(__name__)
+
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
@@ -79,4 +84,7 @@ if pusher_app_id and pusher_key and pusher_secret and pusher_cluster:
         ssl=True,
     )
 else:
+    logger.warning("Pusher app not configured. Please set the environment variables "
+                   "CLARE_PUSHER_APP_ID, CLARE_PUSHER_KEY, CLARE_PUSHER_SECRET, "
+                   "and CLARE_PUSHER_CLUSTER.")
     pusher_app = None
