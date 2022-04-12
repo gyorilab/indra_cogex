@@ -2,28 +2,29 @@
 
 """Processor for the INDRA database."""
 
+import codecs
 import csv
 import gzip
 import json
 import logging
-import pickle
-import click
-import codecs
 import os
+import pickle
 import textwrap
 from collections import defaultdict
-from more_click import verbose_option
 from pathlib import Path
-from tqdm import tqdm
-from typing import Tuple, Union, Optional, Iterable
+from typing import Iterable, Optional, Tuple, Union
 
+import click
 import humanize
 import pandas as pd
 import pystow
-
-from indra.ontology.bio import bio_ontology
 from indra.databases.identifiers import ensure_prefix_if_needed
+from indra.ontology.bio import bio_ontology
 from indra.util import batch_iter
+from indra.util.statement_presentation import db_sources, reader_sources
+from more_click import verbose_option
+from tqdm import tqdm
+
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -189,6 +190,14 @@ class DbProcessor(Processor):
                             "stmt_type:string": values["stmt_type"],
                             "belief:float": values["belief"],
                             "stmt_json:string": json.dumps(stmt_json),
+                            "has_database_evidence:bool": any(
+                                source in db_sources for source in source_counts
+                            ),
+                            "has_reader_evidence:bool": any(
+                                source in reader_sources for source in source_counts
+                            ),
+                            "medscan_only:bool": medscan_only,
+                            "sparser_only:bool": set(source_counts) == {"sparser"},
                         }
                         total_count += 1
                         hashes_yielded.add(stmt_hash)

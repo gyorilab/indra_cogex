@@ -10,7 +10,6 @@ from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
-from indra.resources import load_resource_json
 from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
@@ -23,6 +22,7 @@ from indra.statements import (
     Phosphorylation,
     Statement,
 )
+from indra.util.statement_presentation import db_sources
 from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
@@ -49,16 +49,9 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-# DATABASES = {"biogrid", "hprd", "signor", "phosphoelm", "signor", "biopax"}
-DATABASES: Set[str] = {
-    key
-    for key, value in load_resource_json("source_info.json").items()
-    if value["type"] == "database"
-}
-
 
 def _keep_by_source(source_counts) -> bool:
-    return all(k not in DATABASES for k in source_counts)
+    return all(k not in db_sources for k in source_counts)
 
 
 def _get_text(stmt: Statement) -> Optional[str]:
@@ -163,7 +156,7 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-databases_str = ", ".join(f'"{d}"' for d in DATABASES)
+databases_str = ", ".join(f'"{d}"' for d in sorted(db_sources))
 
 
 def _limit_line(limit: Optional[int] = None) -> str:
