@@ -55,13 +55,6 @@ def home():
     )
 
 
-# Todo: remove this route after demo
-# @home_blueprint.route("/admin")
-# def admin():
-#     """Render the admin page."""
-#     return render_template("admin.html")
-
-
 @home_blueprint.route("/new/guest", methods=["POST"])
 def guestUser():
     data = request.json
