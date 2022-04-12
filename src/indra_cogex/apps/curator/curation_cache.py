@@ -14,8 +14,6 @@ import pandas as pd
 
 
 Curations = List[Dict[str, Optional[Union[str, int]]]]
-# Store curations in a pandas dataframe
-CurationDict: pd.DataFrame
 
 
 class CurationCache:
