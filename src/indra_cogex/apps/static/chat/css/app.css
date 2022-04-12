@@ -130,6 +130,7 @@ a:hover {
 
 .chatbubble {
     position: fixed;
+    z-index: 5;
     bottom: 0;
     right: 30px;
     transform: translateY(var(--chat-height));
