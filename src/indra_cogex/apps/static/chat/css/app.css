@@ -140,6 +140,7 @@ a:hover {
 }
 .chatbubble .unexpanded {
     display: block;
+    /* Top bar color */
     background-color: #007bff;
     padding: 10px 15px 10px;
     position: relative;
@@ -177,6 +178,7 @@ a:hover {
     padding: 10px;
     border-radius: 5px 5px 5px 0;
     font-size: 14px;
+    /* Sender/user chat bubble color */
     background: #e9ecef;
     margin-bottom: 10px;
 }
@@ -186,6 +188,7 @@ a:hover {
 .chatbubble .messages li.support {
     float: right;
     text-align: right;
+    /* Clare chat bubble color */
     color: #fff;
     background-color: #adb5bd;
     border-radius: 5px 5px 0 5px;
