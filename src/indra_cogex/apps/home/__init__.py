@@ -52,7 +52,6 @@ def home():
         edge_labels=edge_labels,
         blueprints=current_app.blueprints,
         pusher_app_key=pusher_key,
-        pusher_app=pusher_app,
     )
 
 
