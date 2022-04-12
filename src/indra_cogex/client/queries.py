@@ -1158,7 +1158,7 @@ def get_edge_counter(*, client: Neo4jClient) -> Counter:
     return Counter(
         {
             relation: client.query_tx(
-                f"MATCH ()-[r:{relation[0]}]->() RETURN count(*)"
+                f"MATCH ()-[r:{relation}]->() RETURN count(*)", squeeze=True
             )[0]
             for relation in client.query_tx(
                 "call db.relationshipTypes();", squeeze=True
