@@ -51,12 +51,15 @@ def home():
         edge_counter=edge_counter,
         edge_labels=edge_labels,
         blueprints=current_app.blueprints,
-        pusher_app_key=pusher_key,
+        pusher_app=pusher_app,
     )
 
 
 @home_blueprint.route("/new/guest", methods=["POST"])
 def guestUser():
+    if pusher_app is None:
+        return json.dumps({})
+
     data = request.json
 
     pusher_app.trigger(
@@ -70,6 +73,8 @@ def guestUser():
 
 @home_blueprint.route("/pusher/auth", methods=["POST"])
 def pusher_authentication():
+    if pusher_app is None:
+        return json.dumps({})
     auth = pusher_app.authenticate(
         channel=request.form["channel_name"], socket_id=request.form["socket_id"]
     )

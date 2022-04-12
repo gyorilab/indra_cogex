@@ -70,10 +70,13 @@ pusher_secret = os.environ.get("CLARE_PUSHER_SECRET")
 pusher_cluster = os.environ.get("CLARE_PUSHER_CLUSTER")
 
 # Pusher app
-pusher_app = pusher_client = pusher.Pusher(
-    app_id=pusher_app_id,
-    key=pusher_key,
-    secret=pusher_secret,
-    cluster=pusher_cluster,
-    ssl=True,
-)
+if pusher_app_id and pusher_key and pusher_secret and pusher_cluster:
+    pusher_app = pusher.Pusher(
+        app_id=pusher_app_id,
+        key=pusher_key,
+        secret=pusher_secret,
+        cluster=pusher_cluster,
+        ssl=True,
+    )
+else:
+    pusher_app = None
