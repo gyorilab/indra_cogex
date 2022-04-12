@@ -186,10 +186,11 @@ a:hover {
 .chatbubble .messages li .sender {
     font-weight: 600;
 }
+
+/* Clare chat bubble */
 .chatbubble .messages li.support {
     float: right;
-    text-align: right;
-    /* Clare chat bubble color */
+    text-align: left;
     color: #fff;
     background-color: #adb5bd;
     border-radius: 5px 5px 0 5px;
