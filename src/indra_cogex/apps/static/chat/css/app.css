@@ -173,13 +173,13 @@ a:hover {
     margin: 0 0 50px;
     padding: 0;
 }
+/* Uuser chat bubble */
 .chatbubble .messages li {
     width: 85%;
     float: left;
     padding: 10px;
     border-radius: 5px 5px 5px 0;
     font-size: 14px;
-    /* Sender/user chat bubble color */
     background: #e9ecef;
     margin-bottom: 10px;
 }
