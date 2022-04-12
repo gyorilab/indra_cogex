@@ -45,8 +45,7 @@ def indra_subnetwork_relations(
         nodes_str,
         nodes_str,
     )
-    rels = [client.neo4j_to_relation(p[0]) for p in client.query_tx(query)]
-    return rels
+    return client.query_relations(query)
 
 
 @autoclient()
