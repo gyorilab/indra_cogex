@@ -1027,7 +1027,7 @@ def get_stmts_for_stmt_hashes(
         RETURN p
     """
     logger.info(f"getting statements for {len(stmt_hashes)} hashes")
-    rels = client.query_relations(query)
+    rels = client.query_relations(stmts_query)
     stmts = indra_stmts_from_relations(rels)
 
     if evidence_limit == 1:
