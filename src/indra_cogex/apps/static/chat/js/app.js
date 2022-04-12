@@ -35,7 +35,7 @@
         ToggleChatWindow: function () {
             chatWindow.toggleClass('opened')
             chatHeader.find('.title').text(
-                chatWindow.hasClass('opened') ? 'Minimize Chat Window' : 'Chat with Support'
+                chatWindow.hasClass('opened') ? 'Minimize Chat Window' : 'Chat with INDRA CoGEx'
             )
         },
     // --------------------------------------------------------------------
