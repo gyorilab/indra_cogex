@@ -10,10 +10,12 @@
     {{ super() }}
     <div class="chatbubble">
         <div class="unexpanded">
-            <div class="title">Chat with Support</div>
+            <div class="title">Chat with INDRA CoGEx</div>
         </div>
         <div class="expanded chat-window">
+
             <div class="login-screen container">
+                <p>Log in to chat with INDRA CoGEx.</p>
                 <form id="loginScreenForm">
                     <div class="form-group">
                         <input type="text" class="form-control" id="fullname" placeholder="Name*" required>
@@ -24,6 +26,7 @@
                     <button type="submit" class="btn btn-block btn-primary">Start Chat</button>
                 </form>
             </div>
+
             <div class="chats">
                 <div class="loader-wrapper">
                     <div class="loader">
@@ -42,6 +45,7 @@
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 {% endblock %}
