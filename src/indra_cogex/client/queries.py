@@ -1144,7 +1144,9 @@ def get_node_counter(*, client: Neo4jClient) -> Counter:
     """
     return Counter(
         {
-            label: client.query_tx(f"MATCH (n:{label}) RETURN count(*)")[0]
+            label: client.query_tx(f"MATCH (n:{label}) RETURN count(*)", squeeze=True)[
+                0
+            ]
             for label in client.query_tx("call db.labels();", squeeze=True)
         }
     )
