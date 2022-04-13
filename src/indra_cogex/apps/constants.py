@@ -47,7 +47,7 @@ sources_dict = {
 
 # Check for source_badges.css, and generate if it doesn't exist
 if not SOURCE_BADGES_CSS.exists():
-    print("Generating source_badges.css")
+    logger.info("Generating source_badges.css")
     from indra.assemblers.html.assembler import generate_source_css
 
     generate_source_css(SOURCE_BADGES_CSS.absolute().as_posix())
