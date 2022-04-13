@@ -122,31 +122,19 @@
   }
 }
 
-.chatbubble {
-    position: fixed;
-    z-index: 5;
-    bottom: 0;
-    right: 30px;
-    transform: translateY(var(--chat-height));
-    transition: transform .3s ease-in-out;
-}
-.chatbubble.opened {
-    transform: translateY(0)
-}
-.chatbubble .unexpanded {
+.chatbubble .chat-title {
     display: block;
     /* Top bar color */
     background-color: #007bff;
     padding: 10px 15px 10px;
     position: relative;
     cursor: pointer;
-    width: var(--chat-width);
+    width: 100%;
     border-radius: 10px 10px 0 0;
-    color: #fff;
 }
 .chatbubble .expanded {
-    height: var(--chat-height);
-    width: var(--chat-width);
+    height: 100%;
+    width: 100%;
     background-color: #fff;
     text-align: left;
     padding: 10px;

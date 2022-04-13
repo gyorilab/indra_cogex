@@ -6,22 +6,26 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='chat/css/app.css') }}">
 {% endblock %}
 
-{% block main %}
+{% block container %}
     {{ super() }}
-    <div class="chatbubble">
-        <div class="unexpanded">
-            <div class="title">Chat with Support</div>
+    <div class="chatbubble opened">
+        <div class="chat-title">
+            <div class="title">Chat with INDRA CoGEx</div>
         </div>
         <div class="expanded chat-window">
             <div class="login-screen container">
                 <form id="loginScreenForm">
-                    <div class="form-group">
-                        <input type="text" class="form-control" id="fullname" placeholder="Name*" required>
+                    <div class="form-row">
+                        <div class="col-md-6 form-group">
+                            <input type="text" class="form-control" id="fullname" placeholder="Name*" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <input type="email" class="form-control" id="email" placeholder="Email Address*" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <input type="email" class="form-control" id="email" placeholder="Email Address*" required>
+                    <div class="form-row">
+                        <button type="submit" class="btn btn-block btn-primary">Start Chat</button>
                     </div>
-                    <button type="submit" class="btn btn-block btn-primary">Start Chat</button>
                 </form>
             </div>
             <div class="chats">
@@ -57,6 +61,7 @@
             encrypted: true
         });
         console.log(typeof window.Popper === 'undefined' ? 'Popper is loaded' : 'Popper is loaded');
+        console.log(Boolean('{{ pusher_app_key }}') ? 'Pusher app key defined' : 'Pusher app key not defined');
     </script>
     <script type="text/javascript" src="{{ url_for('static', filename='chat/js/axios.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='chat/js/app.js') }}"></script>
