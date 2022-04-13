@@ -150,7 +150,6 @@
     // ----------------------------------------------------
 
     chatPage.ready(helpers.ShowAppropriateChatDisplay)
-    chatHeader.on('click', helpers.ToggleChatWindow) // Toggle chat window
     chatBody.find('#loginScreenForm').on('submit', helpers.LogIntoChatSession)
     chatBody.find('#messageSupport').on('submit', helpers.SendMessageToSupport)
 }())
