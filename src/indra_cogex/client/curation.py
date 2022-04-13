@@ -427,7 +427,7 @@ def get_conflicting_statements(
     limit: Optional[int] = None,
     positive_stmt_type: Type[Statement] = Activation,
     negative_stmt_type: Type[Statement] = Inhibition,
-):
+) -> Mapping[int, int]:
     """Get statements that conflict in activation/inhibition.
 
     .. warning:: This takes about 10 minutes to run ATM
@@ -444,11 +444,12 @@ def get_conflicting_statements(
             AND r1.stmt_type in ['{positive_stmt_type.__name__}']
             AND r2.stmt_type in ['{negative_stmt_type.__name__}']
             AND (NOT r1.has_database_evidence OR NOT r2.has_database_evidence)
-        RETURN p
+        RETURN r1.stmt_hash, r1.evidence_count, r2.stmt_hash, r2.evidence_count
         ORDER BY total_evidence_count DESC
         {_limit_line(limit)}
     """
-    res = client.query_tx(query, squeeze=True)
-    return indra_stmts_from_relations(
-        chain.from_iterable(client.neo4j_to_relations(row) for row in res)
-    )
+    rv = {}
+    for k1, v1, k2, v2 in client.query_tx(query):
+        rv[k1] = v1
+        rv[k2] = v2
+    return rv

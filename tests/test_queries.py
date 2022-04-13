@@ -1,15 +1,15 @@
 import json
 
 import pytest
-from indra.statements import Statement, Evidence
 
+from indra.statements import Evidence, Statement
+from indra_cogex.client.curation import get_ppi_evidence_counts, get_kinase_statements, get_conflicting_statements
 from indra_cogex.client.queries import *
 from indra_cogex.client.queries import (
     _filter_out_medscan_evidence,
     _get_ev_dict_from_hash_ev_query,
 )
 from indra_cogex.representation import Node
-
 from .test_neo4j_client import _get_client
 
 
@@ -412,3 +412,36 @@ def test_get_ev_dict_from_hash_ev_query():
     )
     assert 654321 not in ev_dict
     assert not ev_dict
+
+
+@pytest.mark.nonpublic
+def test_ppi_curator():
+    """Test getting PPI evidences to curate."""
+    client = _get_client()
+    limit = 5
+    results = get_ppi_evidence_counts(client=client, limit=5)
+    assert len(results) == limit
+    assert all(isinstance(key, int) for key in results)
+    assert all(isinstance(value, int) for value in results.values())
+
+
+@pytest.mark.nonpublic
+def test_kinase_curator():
+    """Test getting kinase evidences to curate."""
+    client = _get_client()
+    limit = 5
+    results = get_kinase_statements(client=client, limit=5)
+    assert len(results) == limit
+    assert all(isinstance(key, int) for key in results)
+    assert all(isinstance(value, int) for value in results.values())
+
+
+@pytest.mark.nonpublic
+def test_conflict_curator():
+    """Test getting conflicting evidences to curate."""
+    client = _get_client()
+    limit = 5
+    results = get_conflicting_statements(client=client, limit=5)
+    assert len(results) == limit
+    assert all(isinstance(key, int) for key in results)
+    assert all(isinstance(value, int) for value in results.values())
