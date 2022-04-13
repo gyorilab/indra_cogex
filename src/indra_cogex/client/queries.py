@@ -4,7 +4,6 @@ import time
 from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import (
-    Collection,
     Dict,
     Iterable,
     List,
@@ -984,7 +983,7 @@ def get_stmts_meta_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_stmt_hashes(
-    stmt_hashes: Collection[int],
+    stmt_hashes: Iterable[int],
     *,
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     client: Neo4jClient,
@@ -1026,7 +1025,9 @@ def get_stmts_for_stmt_hashes(
             {object_constraint}
         RETURN p
     """
-    logger.info(f"getting statements for {len(stmt_hashes)} hashes")
+    logger.info(
+        f"Getting statements for {stmt_hashes_str.count(',') + 1} hashes"
+    )
     rels = client.query_relations(stmts_query)
     stmts = indra_stmts_from_relations(rels)
 
