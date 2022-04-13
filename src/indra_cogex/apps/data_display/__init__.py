@@ -138,7 +138,8 @@ else:
 def get_stmts():
     # Get the statements hash from the query string
     try:
-        stmt_hash_list = request.args.getlist("stmt_hash", type=int)
+        stmt_hash_list_str = request.args.get("stmt_hash")
+        stmt_hash_list = map(int, stmt_hash_list_str.split(","))
         stmts = get_stmts_for_stmt_hashes(stmt_hash_list, client=client)
         return jsonify(process_result(stmts))
     except (TypeError, ValueError) as err:
@@ -222,13 +223,15 @@ def statement_display():
 
     # Get the statements hash from the query string
     try:
-        stmt_hash_list = request.args.getlist("stmt_hash", type=int)
-        if not stmt_hash_list:
+        stmt_hash_list_str = request.args.get("stmt_hash")
+        if not stmt_hash_list_str:
             abort(
                 Response(
                     "Parameter 'stmt_hash' unfilled", status=HTTPStatus.BAD_REQUEST
                 )
             )
+        # Map the stringified comma separated hashes to a list of int hashes
+        stmt_hash_list = map(int, stmt_hash_list_str.split(","))
         relations: Iterable[Relation] = get_stmts_meta_for_stmt_hashes(
             stmt_hash_list, client=client
         )

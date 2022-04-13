@@ -1,7 +1,13 @@
-import os
+import logging
 from pathlib import Path
 from typing import Union
 from indra.util.statement_presentation import db_sources, reader_sources
+from indra.config import get_config
+from pusher import pusher
+
+
+logger = logging.getLogger(__name__)
+
 
 edge_labels = {
     "annotated_with": "MeSH Annotations",
@@ -22,7 +28,7 @@ edge_labels = {
     "has_indication": "Drug Indications",
 }
 
-INDRA_COGEX_WEB_LOCAL = os.environ.get("INDRA_COGEX_WEB_LOCAL", "").lower() in {
+INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
     "t",
     "true",
 }
@@ -41,17 +47,17 @@ sources_dict = {
 
 # Check for source_badges.css, and generate if it doesn't exist
 if not SOURCE_BADGES_CSS.exists():
-    print("Generating source_badges.css")
+    logger.info("Generating source_badges.css")
     from indra.assemblers.html.assembler import generate_source_css
 
     generate_source_css(SOURCE_BADGES_CSS.absolute().as_posix())
 
 
 # Path to locally built package of indralab-vue
-LOCAL_VUE: Union[str, bool] = os.environ.get("LOCAL_VUE", False)
+LOCAL_VUE: Union[str, bool] = get_config("LOCAL_VUE") or False
 
 # Set up indralab-vue Vue components, either from local build or from S3
-VUE_DEPLOYMENT = os.environ.get("VUE_DEPLOYMENT", "latest")
+VUE_DEPLOYMENT = get_config("VUE_DEPLOYMENT", "latest")
 VUE_BASE = f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{VUE_DEPLOYMENT}/"
 VUE_JS = "IndralabVue.umd.min.js"
 VUE_CSS = "IndralabVue.css"
@@ -61,3 +67,26 @@ if LOCAL_VUE:
 else:
     VUE_SRC_JS = f"{VUE_BASE}{VUE_JS}"
     VUE_SRC_CSS = f"{VUE_BASE}{VUE_CSS}"
+
+# Pusher parameters
+pusher_app_id = get_config("CLARE_PUSHER_APP_ID")
+pusher_key = get_config("CLARE_PUSHER_KEY")
+pusher_secret = get_config("CLARE_PUSHER_SECRET")
+pusher_cluster = get_config("CLARE_PUSHER_CLUSTER")
+
+# Pusher app
+if pusher_app_id and pusher_key and pusher_secret and pusher_cluster:
+    pusher_app = pusher.Pusher(
+        app_id=pusher_app_id,
+        key=pusher_key,
+        secret=pusher_secret,
+        cluster=pusher_cluster,
+        ssl=True,
+    )
+else:
+    logger.warning(
+        "Pusher app not configured. Please set the environment variables "
+        "CLARE_PUSHER_APP_ID, CLARE_PUSHER_KEY, CLARE_PUSHER_SECRET, "
+        "and CLARE_PUSHER_CLUSTER."
+    )
+    pusher_app = None
