@@ -144,12 +144,13 @@
     margin-top: 50px;
     text-align: center;
 }
+/* Messages list */
 .chatbubble .messages {
-    display: none;
     list-style: none;
     bottom: 0;
     margin: 0 0 50px;
     padding: 0;
+    height: 70vh;
 }
 /* User chat bubble */
 .chatbubble .messages li {
