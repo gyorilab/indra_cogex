@@ -28,7 +28,7 @@ edge_labels = {
     "has_indication": "Drug Indications",
 }
 
-INDRA_COGEX_WEB_LOCAL = get_config("INDRA_COGEX_WEB_LOCAL", "").lower() in {
+INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
     "t",
     "true",
 }
