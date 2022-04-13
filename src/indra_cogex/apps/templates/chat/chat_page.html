@@ -56,8 +56,8 @@
             cluster: 'mt1',
             encrypted: true
         });
+        console.log(typeof window.Popper === 'undefined' ? 'Popper is loaded' : 'Popper is loaded');
     </script>
-    <script type="text/javascript" src="{{ url_for('static', filename='chat/js/popper.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='chat/js/axios.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='chat/js/app.js') }}"></script>
 {% endblock %}
