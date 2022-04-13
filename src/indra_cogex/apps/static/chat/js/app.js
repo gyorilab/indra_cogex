@@ -18,7 +18,6 @@
 
     const chatPage   = $(document)
     const chatWindow = $('.chatbubble')
-    const chatHeader = chatWindow.find('.chat-title')
     const chatBody   = chatWindow.find('.chat-window')
 
 
@@ -60,14 +59,14 @@
         },
 
     // ----------------------------------------------------
-    // Append a message to the chat messages UI.
+    // Prepend a message to the chat messages UI.
     // ----------------------------------------------------
 
         NewChatMessage: function (message) {
             if (message !== undefined) {
                 const messageClass = message.sender !== chat.email ? 'support' : 'user'
 
-                chatBody.find('ul.messages').append(
+                chatBody.find('ul.messages').prepend(
                     `<li class="clearfix message ${messageClass}">
                         <div class="sender">${message.name}</div>
                         <div class="message">${message.text}</div>
