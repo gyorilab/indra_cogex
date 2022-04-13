@@ -233,6 +233,7 @@ class DbProcessor(Processor):
                     "evidence_count:int": evidence_count,
                     "stmt_type:string": stmt_type,
                     "belief:float": belief,
+                    # TODO also add here?
                 }
                 total_count += 1
                 yield Relation(
@@ -366,6 +367,7 @@ class EvidenceProcessor(Processor):
                             {
                                 "evidence:string": json.dumps(evidence),
                                 "stmt_hash:long": stmt_hash,
+                                # TODO add source API
                             },
                         )
                     )

@@ -847,6 +847,7 @@ def get_evidences_for_stmt_hashes(
     """
     stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     limit_box = "" if limit is None else f"[..{limit}]"
+    # TODO additional flag in evidence for medscan
     query = f"""\
         MATCH (n:Evidence)
         WHERE
