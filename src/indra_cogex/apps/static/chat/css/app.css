@@ -1,8 +1,3 @@
-:root {
-  --chat-height: 400px;
-  --chat-width: 600px;
-}
-
 .btn-secondary,
 .btn-secondary:hover,
 .btn-secondary:focus {
@@ -152,6 +147,7 @@
 .chatbubble .messages {
     display: none;
     list-style: none;
+    bottom: 0;
     margin: 0 0 50px;
     padding: 0;
 }
@@ -179,12 +175,10 @@
     border-radius: 5px 5px 0 5px;
 }
 .chatbubble .chats .input {
-    position: absolute;
     bottom: 0;
     padding: 10px;
     left: 0;
     width: 100%;
-    background: #f0f0f0;
     display: none;
 }
 .chatbubble .chats .input .form-group {
