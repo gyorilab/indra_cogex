@@ -227,12 +227,21 @@ class DbProcessor(Processor):
             ) in (
                 self.df[columns].drop_duplicates().values
             ):
+                source_counts_parsed = json.loads(source_counts)
                 data = {
                     "stmt_hash:long": stmt_hash,
                     "source_counts:string": source_counts,
                     "evidence_count:int": evidence_count,
                     "stmt_type:string": stmt_type,
                     "belief:float": belief,
+                    "has_database_evidence:bool": any(
+                        source in db_sources for source in source_counts_parsed
+                    ),
+                    "has_reader_evidence:bool": any(
+                        source in reader_sources for source in source_counts_parsed
+                    ),
+                    "medscan_only:bool": set(source_counts_parsed) == {"medscan"},
+                    "sparser_only:bool": set(source_counts_parsed) == {"sparser"},
                 }
                 total_count += 1
                 yield Relation(
@@ -366,6 +375,7 @@ class EvidenceProcessor(Processor):
                             {
                                 "evidence:string": json.dumps(evidence),
                                 "stmt_hash:long": stmt_hash,
+                                "source_api:str": evidence["source_api"],
                             },
                         )
                     )
