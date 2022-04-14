@@ -243,10 +243,11 @@ def _stmt_to_row(
 
         # Fix unicode escaping
         text = ev["text"]
-        try:
-            ev["text"] = unicode_double_escape(text)
-        except UnicodeEncodeError:
-            unicode_errors += 1
+        if text:
+            try:
+                ev["text"] = unicode_double_escape(text)
+            except UnicodeEncodeError:
+                unicode_errors += 1
 
     if unicode_errors:
         logger.warning(f"{unicode_errors} unicode errors in {stmt.get_hash()}")
