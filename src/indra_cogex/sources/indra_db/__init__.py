@@ -161,10 +161,10 @@ class DbProcessor(Processor):
                     stmt_json = load_statement_json(pa_json_str)
                     try:
                         values = df_dict[stmt_hash]
-                        source_counts = json.loads(values["source_counts"])
+                        sources = set(json.loads(values["source_counts"]))
                         # For statements with only evidence from medscan,
                         # we don't add an evidence and yield the statement
-                        medscan_only = set(source_counts) == {"medscan"}
+                        medscan_only = sources == {"medscan"}
                         if medscan_only:
                             stmt_json["evidence"] = []
                         # Otherwise, we know that eventually we will bump into
@@ -191,13 +191,13 @@ class DbProcessor(Processor):
                             "belief:float": values["belief"],
                             "stmt_json:string": json.dumps(stmt_json),
                             "has_database_evidence:bool": any(
-                                source in db_sources for source in source_counts
+                                source in db_sources for source in sources
                             ),
                             "has_reader_evidence:bool": any(
-                                source in reader_sources for source in source_counts
+                                source in reader_sources for source in sources
                             ),
                             "medscan_only:bool": medscan_only,
-                            "sparser_only:bool": set(source_counts) == {"sparser"},
+                            "sparser_only:bool": sources == {"sparser"},
                         }
                         total_count += 1
                         hashes_yielded.add(stmt_hash)
@@ -227,7 +227,7 @@ class DbProcessor(Processor):
             ) in (
                 self.df[columns].drop_duplicates().values
             ):
-                source_counts_parsed = json.loads(source_counts)
+                sources = set(json.loads(source_counts))
                 data = {
                     "stmt_hash:long": stmt_hash,
                     "source_counts:string": source_counts,
@@ -235,13 +235,13 @@ class DbProcessor(Processor):
                     "stmt_type:string": stmt_type,
                     "belief:float": belief,
                     "has_database_evidence:bool": any(
-                        source in db_sources for source in source_counts_parsed
+                        source in db_sources for source in sources
                     ),
                     "has_reader_evidence:bool": any(
-                        source in reader_sources for source in source_counts_parsed
+                        source in reader_sources for source in sources
                     ),
-                    "medscan_only:bool": set(source_counts_parsed) == {"medscan"},
-                    "sparser_only:bool": set(source_counts_parsed) == {"sparser"},
+                    "medscan_only:bool": sources == {"medscan"},
+                    "sparser_only:bool": sources == {"sparser"},
                 }
                 total_count += 1
                 yield Relation(
