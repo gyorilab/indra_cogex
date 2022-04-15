@@ -21,7 +21,11 @@ import pystow
 from indra.databases.identifiers import ensure_prefix_if_needed
 from indra.ontology.bio import bio_ontology
 from indra.util import batch_iter
-from indra.util.statement_presentation import db_sources, reader_sources
+from indra.util.statement_presentation import (
+    db_sources,
+    internal_source_mappings,
+    reader_sources,
+)
 from more_click import verbose_option
 from tqdm import tqdm
 
@@ -367,6 +371,9 @@ class EvidenceProcessor(Processor):
                                 evidence["pmid"],
                                 ["Publication"],
                             )
+
+                    source_api = evidence["source_api"]
+                    source_api = internal_source_mappings.get(source_api, source_api)
                     node_batch.append(
                         Node(
                             "indra_evidence",
@@ -375,7 +382,7 @@ class EvidenceProcessor(Processor):
                             {
                                 "evidence:string": json.dumps(evidence),
                                 "stmt_hash:long": stmt_hash,
-                                "source_api:str": evidence["source_api"],
+                                "source_api:str": source_api,
                             },
                         )
                     )
