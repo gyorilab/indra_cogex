@@ -1,16 +1,34 @@
 """Chat page app for INDRA CoGEx"""
 import json
+import logging
 
 import flask
 from flask import request
 
-from indra_cogex.apps.constants import pusher_key, pusher_app
+from indra_cogex.apps.constants import pusher_key, pusher_app, LOCAL_VUE, STATIC_DIR
+
+logger = logging.getLogger(__name__)
 
 chat_blueprint = flask.Blueprint("chat", __name__, url_prefix="/chat")
 
 __all__ = [
     "chat_blueprint",
 ]
+
+# Serve vue app locally for testing
+if LOCAL_VUE:
+    from flask import send_from_directory
+
+    DIST = STATIC_DIR / "vue-chat" / "dist"
+
+    logger.info(f"Serving vue app locally from {DIST}")
+
+    @chat_blueprint.route("/vue/<path:file>")
+    def serve_vue(file):
+        return send_from_directory(DIST.absolute().as_posix(), file)
+
+else:
+    logger.info("Serving vue app from [not implemented]")
 
 
 @chat_blueprint.route("/")
