@@ -35,6 +35,16 @@ else:
     logger.info("Serving vue app from [not implemented]")
 
 
+# Serve templated JS file with constants that should not be added to version control
+@chat_blueprint.route("/js/constants.js")
+def js_contants():
+    return flask.render_template(
+        "chat/chat_constants.js",
+        pusher_app_key=pusher_key,
+    )
+
+
+
 @chat_blueprint.route("/")
 def chat_page():
     """Chat page"""
