@@ -84,11 +84,19 @@
       </li>
     </ul>
   </div>
+  <div class="container">
+    <DiscoveryApp />
+  </div>
 </template>
 
 <script>
+import DiscoveryApp from "@/components/DiscoveryApp";
+
 export default {
   name: "HelloWorld",
+  components: {
+    DiscoveryApp,
+  },
   props: {
     msg: String,
   },
