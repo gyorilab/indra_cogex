@@ -1,6 +1,7 @@
 """Chat page app for INDRA CoGEx"""
 import json
 import logging
+from pathlib import Path
 
 import flask
 from flask import request
@@ -19,7 +20,10 @@ __all__ = [
 if LOCAL_VUE:
     from flask import send_from_directory
 
-    DIST = STATIC_DIR / "vue-chat" / "dist"
+    if (isinstance(LOCAL_VUE, str) and not Path(LOCAL_VUE).is_dir()) or isinstance(LOCAL_VUE, bool):
+        DIST = STATIC_DIR / "vue-chat" / "dist"
+    else:
+        DIST = Path(LOCAL_VUE)
 
     logger.info(f"Serving vue app locally from {DIST}")
 
