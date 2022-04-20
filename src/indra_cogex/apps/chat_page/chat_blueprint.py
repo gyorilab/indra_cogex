@@ -38,7 +38,7 @@ else:
 # Return simple json with pusher app key
 @chat_blueprint.route("/pusher_info", methods=["GET"])
 def pusher_info():
-    return json.dumps({"pusher_app_key": pusher_key})
+    return json.dumps({"pusher_app_key": pusher_key or ""})
 
 
 @chat_blueprint.route("/")
