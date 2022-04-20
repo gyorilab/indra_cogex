@@ -4,9 +4,15 @@ import logging
 from pathlib import Path
 
 import flask
-from flask import request
+from flask import request, url_for
 
-from indra_cogex.apps.constants import pusher_key, pusher_app, LOCAL_VUE, STATIC_DIR
+from indra_cogex.apps.constants import (
+    pusher_key,
+    pusher_app,
+    LOCAL_VUE,
+    STATIC_DIR,
+    pusher_cluster,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +47,16 @@ else:
 # Return simple json with pusher app key
 @chat_blueprint.route("/pusher_info", methods=["GET"])
 def pusher_info():
-    return json.dumps({"pusher_app_key": pusher_key or ""})
+    return json.dumps(
+        {
+            "pusher_app_opt": {
+                "pusher_key": pusher_key or "",
+                "pusher_cluster": pusher_cluster or "",
+            },
+            "auth_endpoint": url_for(".pusher_authentication"),
+            "new_user_endpoint": url_for(".guestUser"),
+        }
+    )
 
 
 @chat_blueprint.route("/")
