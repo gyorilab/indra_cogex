@@ -41,8 +41,8 @@ SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 
 # Set VUE parameters
 sources_dict = {
-    "reading": [r for r in reader_sources],
     "databases": [d for d in db_sources],
+    "reading": [r for r in reader_sources],
 }
 
 # Check for source_badges.css, and generate if it doesn't exist
