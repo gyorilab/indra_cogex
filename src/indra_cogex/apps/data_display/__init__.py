@@ -251,6 +251,7 @@ def statement_display():
             int(r.data["stmt_hash"]): json.loads(r.data["source_counts"])
             for r in relations
         }
+        available_sources = set().union(*source_counts.values())
 
         # Get the formatted evidence rows
         stmts = format_stmts(
@@ -258,13 +259,19 @@ def statement_display():
             evidence_counts=ev_counts,
             source_counts_per_hash=source_counts,
         )
+
+        available_sources_dict = {}
+        for src_type, sources in sources_dict.items():
+            available_sources_dict[src_type] = [
+                src for src in sources if src in available_sources
+            ]
         return render_template(
             "data_display/data_display_base.html",
             stmts=stmts,
             user_email=email,
             vue_src_js=VUE_SRC_JS,
             vue_src_css=VUE_SRC_CSS,
-            sources_dict=sources_dict,
+            sources_dict=available_sources_dict,
         )
     except Exception as err:
         logger.exception(err)
