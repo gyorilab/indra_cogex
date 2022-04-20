@@ -20,7 +20,9 @@ __all__ = [
 if LOCAL_VUE:
     from flask import send_from_directory
 
-    if (isinstance(LOCAL_VUE, str) and not Path(LOCAL_VUE).is_dir()) or isinstance(LOCAL_VUE, bool):
+    if (isinstance(LOCAL_VUE, str) and not Path(LOCAL_VUE).is_dir()) or isinstance(
+        LOCAL_VUE, bool
+    ):
         DIST = STATIC_DIR / "vue-chat" / "dist"
     else:
         DIST = Path(LOCAL_VUE)
@@ -30,6 +32,7 @@ if LOCAL_VUE:
     @chat_blueprint.route("/vue/<path:file>")
     def serve_vue(file):
         return send_from_directory(DIST.absolute().as_posix(), file)
+
 
 else:
     logger.info("Serving vue app from [not implemented]")
