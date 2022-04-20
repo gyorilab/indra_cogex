@@ -10,8 +10,8 @@ export default {
       app_key: "",
     };
   },
-  mounted() {
-    this.getAppKey();
+  async mounted() {
+    await this.getAppKey();
   },
   methods: {
     async getAppKey() {
