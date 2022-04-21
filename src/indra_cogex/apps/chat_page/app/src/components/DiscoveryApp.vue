@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import Pusher from "pusher-js/with-encryption";
+import Pusher from "pusher-js";
 
 export default {
   name: "DiscoveryApp.vue",
