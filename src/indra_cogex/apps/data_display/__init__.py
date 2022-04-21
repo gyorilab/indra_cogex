@@ -220,6 +220,7 @@ def get_evidence(stmt_hash):
 def statement_display():
     user, roles = resolve_auth(dict(request.args))
     email = user.email if user else ""
+    remove_medscan = user is None
 
     # Get the statements hash from the query string
     try:
@@ -262,9 +263,15 @@ def statement_display():
 
         available_sources_dict = {}
         for src_type, sources in sources_dict.items():
-            available_sources_dict[src_type] = [
-                src for src in sources if src in available_sources
-            ]
+            available_sources_dict[src_type] = []
+            for source in sources:
+                if source in available_sources:
+                    # If not logged in, skip medscan
+                    if remove_medscan and source == "medscan":
+                        continue
+
+                    available_sources_dict[src_type].append(source)
+
         return render_template(
             "data_display/data_display_base.html",
             stmts=stmts,
