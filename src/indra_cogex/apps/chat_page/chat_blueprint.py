@@ -49,10 +49,8 @@ else:
 def pusher_info():
     return json.dumps(
         {
-            "pusher_app_opt": {
-                "pusher_key": pusher_key or "",
-                "pusher_cluster": pusher_cluster or "",
-            },
+            "pusher_key": pusher_key or "",
+            "pusher_cluster": pusher_cluster or "",
             "auth_endpoint": url_for(".pusher_authentication"),
             "new_user_endpoint": url_for(".guestUser"),
         }
