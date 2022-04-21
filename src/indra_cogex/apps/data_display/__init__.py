@@ -239,19 +239,22 @@ def statement_display():
 
         # Get statements and assign belief from the meta data
         stmt_iter = []
+        source_counts = {}
         for rel in relations:
+            # Remove statements with only medscan evidence if not logged in
+            if (
+                remove_medscan
+                and "medscan" in rel.data["source_counts"]
+                and set(json.loads(rel.data["source_counts"]).keys()) == {"medscan"}
+            ):
+                continue
             stmt = Statement._from_json(json.loads(rel.data["stmt_json"]))
             stmt.belief = rel.data["belief"]
             stmt_iter.append(stmt)
+            source_counts[int(rel.data["stmt_hash"])] = json.loads(rel.data["source_counts"])
 
-        # Get the evidence counts
+        # Get the evidence counts and available sources
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
-
-        # Get the source counts
-        source_counts = {
-            int(r.data["stmt_hash"]): json.loads(r.data["source_counts"])
-            for r in relations
-        }
         available_sources = set().union(*source_counts.values())
 
         # Get the formatted evidence rows
@@ -259,6 +262,7 @@ def statement_display():
             stmts=stmt_iter,
             evidence_counts=ev_counts,
             source_counts_per_hash=source_counts,
+            remove_medscan=remove_medscan,
         )
 
         available_sources_dict = {}
