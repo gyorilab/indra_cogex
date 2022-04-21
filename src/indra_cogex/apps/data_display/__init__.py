@@ -15,6 +15,7 @@ from flask_jwt_extended import jwt_optional
 from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.statements import Statement
 from indralab_auth_tools.auth import resolve_auth
+from indra_cogex.client.queries import enrich_statements
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.apps.queries_web.helpers import process_result
@@ -221,6 +222,9 @@ def statement_display():
     user, roles = resolve_auth(dict(request.args))
     email = user.email if user else ""
 
+    # TODO enable preloading evidenes
+    preload_evidence = request.args.get("preload") in {"t", "true", "True"}
+
     # Get the statements hash from the query string
     try:
         stmt_hash_list_str = request.args.get("stmt_hash")
@@ -252,6 +256,13 @@ def statement_display():
             for r in relations
         }
         available_sources = set().union(*source_counts.values())
+
+        if preload_evidence:
+            logger.info(f"preloading evidences for {len(stmt_iter)} statements")
+            stmt_iter = enrich_statements(
+                stmt_iter,
+                client=client,
+            )
 
         # Get the formatted evidence rows
         stmts = format_stmts(
