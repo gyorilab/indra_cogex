@@ -78,8 +78,8 @@ export default {
       logged_in: false,
     };
   },
-  async mounted() {
-    await this.getAppInfo();
+  mounted() {
+    this.getAppInfo();
   },
   computed: {
     pusher_key() {
@@ -116,14 +116,12 @@ export default {
       const resp = await fetch("/chat/pusher_info", {
         method: "GET",
       });
-      console.log(resp);
-      this.pusher_info = await resp.json();
+      const data = await resp.json();
+      this.pusher_info = await data;
+      this.pusher = this.setupPusher();
     },
     async setupPusher() {
-      if (!this.pusher_key) {
-        await this.getAppInfo();
-      }
-      return new Pusher(this.pusher_key(), {
+      return new Pusher(this.pusher_key, {
         authEndpoint: this.auth_endpoint,
         cluster: this.pusher_cluster,
         encrypted: true,
