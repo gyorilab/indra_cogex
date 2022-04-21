@@ -1,13 +1,23 @@
 <template>
   <!-- Add horizontal line -->
   <hr />
-  <h3>Discovery</h3>
-  <div v-if="logged_in">
+  <h3>Discovery App</h3>
+  <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
     <input type="text" v-model="chat.message" @keyup.enter="sendMessage" />
-  </div>
-  <div v-else>
-    <form id="loginForm">
+    <ul id="chatList" class="clearfix messages">
+      <li
+        class="clearfix message"
+        v-for="(message, index) in chat.messages"
+        :key="index"
+      >
+        <span>{{ message.name }}:</span>
+        <span>{{ message.message }}</span>
+      </li>
+    </ul>
+  </template>
+  <template v-else>
+    <form id="loginForm" @submit.prevent="logIntoChatSession">
       <div class="form-row">
         <div class="form-group col-md-6">
           <label for="name">Name</label>
@@ -44,6 +54,9 @@
         </button>
       </div>
     </form>
+  </template>
+  <div>
+    <p>The pusher key is "{{ pusher_key }}"</p>
   </div>
   <pre>
     <code>
@@ -73,6 +86,7 @@ export default {
         name: undefined,
         email: undefined,
         channel: undefined,
+        messages: [],
       },
       submitted: false,
       logged_in: false,
@@ -118,7 +132,12 @@ export default {
       });
       const data = await resp.json();
       this.pusher_info = await data;
-      this.pusher = this.setupPusher();
+      // Setup pusher instance
+      this.pusher = await this.setupPusher();
+      // Subscribe to the channel
+      this.pusher.bind("client-support-new-message", (data) => {
+        this.newMessage(data);
+      });
     },
     async setupPusher() {
       return new Pusher(this.pusher_key, {
@@ -131,19 +150,27 @@ export default {
       if (this.chat.name && this.chat.email) {
         // Disable the form
         this.submitted = true;
-        //
+        // Trim strings
+        let trimmed_name = this.chat.name.trim();
+        let trimmed_email = this.chat.email.trim();
         const resp = await fetch(this.new_user_endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            name: this.chat.name,
-            email: this.chat.email,
+            name: trimmed_name,
+            email: trimmed_email,
           }),
         });
         const user_info = await resp.json();
         this.chat.channel = user_info.channel;
+      }
+    },
+    newMessage(message) {
+      if (message !== undefined) {
+        // Add the message to the chat
+        this.chat.messages.push(message);
       }
     },
   },
