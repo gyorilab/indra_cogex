@@ -4,7 +4,8 @@
   <h3>Discovery App</h3>
   <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
-    <input type="text" v-model="chat.message" @keyup.enter="sendMessage" />
+    <input type="text" v-model="text_input" :disabled="disable_input" />
+    <button @click="sendMessage" :disabled="disable_input">Send</button>
     <ul id="chatList" class="clearfix messages">
       <li
         class="clearfix message"
@@ -12,7 +13,7 @@
         :key="index"
       >
         <span>{{ message.name }}:</span>
-        <span>{{ message.message }}</span>
+        <span>{{ message.text }}</span>
       </li>
     </ul>
   </template>
@@ -58,11 +59,6 @@
   <div>
     <p>The pusher key is "{{ pusher_key }}"</p>
   </div>
-  <pre>
-    <code>
-      {{ pusher_info }}
-    </code>
-  </pre>
 </template>
 
 <script>
@@ -90,6 +86,8 @@ export default {
       },
       submitted: false,
       logged_in: false,
+      disable_input: false,
+      text_input: "",
     };
   },
   mounted() {
@@ -163,11 +161,34 @@ export default {
             email: trimmed_email,
           }),
         });
-        const user_info = await resp.json();
+        const data = await resp.json();
+        const user_info = await data;
         this.chat.channel = user_info.channel;
+        this.logged_in = true;
+      }
+    },
+    sendMessage() {
+      if (this.chat.channel) {
+        this.disable_input = true;
+        const createdAt = new Date().toUTCString();
+        const message = {
+          sender: this.chat.name,
+          email: this.chat.email,
+          text: this.text_input,
+          createdAt: createdAt,
+        };
+        this.pusher.trigger("client-guest-new-message", message);
+        this.newMessage({
+          text: message.text,
+          name: message.sender,
+          sender: message.email,
+        });
+        this.text_input = "";
       }
     },
     newMessage(message) {
+      console.log("New message");
+      console.log(message);
       if (message !== undefined) {
         // Add the message to the chat
         this.chat.messages.push(message);
