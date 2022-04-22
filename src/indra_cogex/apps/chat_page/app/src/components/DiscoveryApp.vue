@@ -66,6 +66,12 @@ import Pusher from "pusher-js";
 
 export default {
   name: "DiscoveryApp.vue",
+  props: {
+    info_endpoint: {
+      type: String,
+      default: "/chat/pusher_info",
+    },
+  },
   data() {
     return {
       /** Pusher options and related data
@@ -125,7 +131,7 @@ export default {
   },
   methods: {
     async getAppInfo() {
-      const resp = await fetch("/chat/pusher_info", {
+      const resp = await fetch(this.info_endpoint, {
         method: "GET",
       });
       const data = await resp.json();
