@@ -7,6 +7,7 @@ https://emmaa.indra.bio/evidence?model=covid19&source=model_statement&stmt_hash=
 """
 import json
 import logging
+from collections import defaultdict
 from http import HTTPStatus
 from typing import Iterable, Any, Dict, List, Optional, Set
 
@@ -265,9 +266,8 @@ def statement_display():
             remove_medscan=remove_medscan,
         )
 
-        available_sources_dict = {}
+        available_sources_dict = defaultdict(list)
         for src_type, sources in sources_dict.items():
-            available_sources_dict[src_type] = []
             for source in sources:
                 if source in available_sources:
                     # If not logged in, skip medscan
@@ -282,7 +282,7 @@ def statement_display():
             user_email=email,
             vue_src_js=VUE_SRC_JS,
             vue_src_css=VUE_SRC_CSS,
-            sources_dict=available_sources_dict,
+            sources_dict=dict(available_sources_dict),
         )
     except Exception as err:
         logger.exception(err)
