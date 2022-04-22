@@ -243,16 +243,13 @@ def statement_display():
         source_counts = {}
         for rel in relations:
             # Remove statements with only medscan evidence if not logged in
-            if (
-                remove_medscan
-                and "medscan" in rel.data["source_counts"]
-                and set(json.loads(rel.data["source_counts"]).keys()) == {"medscan"}
-            ):
+            src_counts = json.loads(rel.data["source_counts"])
+            if remove_medscan and set(src_counts.keys()) == {"medscan"}:
                 continue
             stmt = Statement._from_json(json.loads(rel.data["stmt_json"]))
             stmt.belief = rel.data["belief"]
             stmt_iter.append(stmt)
-            source_counts[int(rel.data["stmt_hash"])] = json.loads(rel.data["source_counts"])
+            source_counts[int(rel.data["stmt_hash"])] = src_counts
 
         # Get the evidence counts and available sources
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
