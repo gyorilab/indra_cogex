@@ -131,10 +131,6 @@ export default {
       }
       return "";
     },
-    disableBtn() {
-      const unfilled = !this.chat.name || !this.chat.email;
-      return unfilled || this.submitted;
-    },
   },
   methods: {
     async getAppInfo() {
