@@ -24,7 +24,7 @@
         v-for="(message, index) in chat.messages"
         :key="index"
       >
-        <div class="col">{{ message.text }}</div>
+        <MessageWrapper :message="message" />
       </div>
     </div>
   </template>
@@ -67,9 +67,11 @@
 
 <script>
 import Pusher from "pusher-js";
+import MessageWrapper from "@/components/MessageWrapper";
 
 export default {
   name: "DiscoveryApp.vue",
+  components: { MessageWrapper },
   props: {
     info_endpoint: {
       type: String,
@@ -212,13 +214,18 @@ export default {
         console.log("Message sent");
       }
     },
-    newMessage(message) {
+    async newMessage(message) {
       // Expecting {text: "", name: "", sender: ""}
       console.log("New message received");
       console.log(message);
       if (message !== undefined) {
         // Add the message to the chat
-        this.chat.messages.push(message);
+        let resolved_message = await message;
+        let receivedAt = new Date().toUTCString();
+        this.chat.messages.push({
+          ...resolved_message,
+          receivedAt: receivedAt,
+        });
       }
     },
   },
