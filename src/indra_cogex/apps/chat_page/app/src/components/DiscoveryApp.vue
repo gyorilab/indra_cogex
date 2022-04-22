@@ -4,18 +4,29 @@
   <h3>Discovery App</h3>
   <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
-    <input type="text" v-model="text_input" :disabled="disable_input" />
-    <button @click="sendMessage" :disabled="disable_input">Send</button>
-    <ul id="chatList" class="clearfix messages">
-      <li
-        class="clearfix message"
+    <input
+      type="text"
+      v-model="text_input"
+      :disabled="disable_input"
+      @keyup.enter="sendMessage"
+    />
+    <button
+      class="btn btn-primary"
+      type="button"
+      @click="sendMessage"
+      :disabled="disable_input"
+    >
+      Send it!
+    </button>
+    <div id="chatList" class="clearfix messages">
+      <div
+        class="clearfix message row"
         v-for="(message, index) in chat.messages"
         :key="index"
       >
-        <span>{{ message.name }}:</span>
-        <span>{{ message.text }}</span>
-      </li>
-    </ul>
+        <div class="col">{{ message.text }}</div>
+      </div>
+    </div>
   </template>
   <template v-else>
     <form id="loginForm" @submit.prevent="logIntoChatSession">
@@ -46,19 +57,12 @@
         </div>
       </div>
       <div class="form-group form-row">
-        <button
-          type="submit"
-          class="btn btn-block btn-primary"
-          :disabled="disableBtn"
-        >
+        <button type="submit" class="btn btn-block btn-primary">
           Start Session
         </button>
       </div>
     </form>
   </template>
-  <div>
-    <p>The pusher key is "{{ pusher_key }}"</p>
-  </div>
 </template>
 
 <script>
@@ -91,6 +95,7 @@ export default {
         email: undefined,
         channel: undefined,
         messages: [],
+        user_messages: [],
       },
       submitted: false,
       logged_in: false,
@@ -181,7 +186,10 @@ export default {
     },
     sendMessage() {
       if (this.chat.channel) {
+        // Disable the input
         this.disable_input = true;
+
+        // Create the message
         const createdAt = new Date().toUTCString();
         const message = {
           sender: this.chat.name,
@@ -189,17 +197,28 @@ export default {
           text: this.text_input,
           createdAt: createdAt,
         };
-        this.pusher.trigger("client-guest-new-message", message);
-        this.newMessage({
+
+        // Send the message to the channel
+        this.chat.channel.trigger("client-guest-new-message", message);
+
+        // Add the message to the user's messages
+        this.chat.user_messages.push({
           text: message.text,
           name: message.sender,
           sender: message.email,
         });
+
+        // Clear the input
         this.text_input = "";
+
+        // Enable the input
+        this.disable_input = false;
+        console.log("Message sent");
       }
     },
     newMessage(message) {
-      console.log("New message");
+      // Expecting {text: "", name: "", sender: ""}
+      console.log("New message received");
       console.log(message);
       if (message !== undefined) {
         // Add the message to the chat
