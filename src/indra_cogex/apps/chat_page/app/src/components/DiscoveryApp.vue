@@ -27,7 +27,7 @@
             class="form-control"
             id="name"
             placeholder="Name*"
-            v-model="chat.name"
+            v-model="form_name"
             :disabled="submitted"
             required
           />
@@ -39,7 +39,7 @@
             class="form-control"
             id="email"
             placeholder="Email*"
-            v-model="chat.email"
+            v-model="form_email"
             :disabled="submitted"
             required
           />
@@ -84,6 +84,8 @@ export default {
        */
       pusher_info: {},
       pusher: null,
+      form_name: "",
+      form_email: "",
       chat: {
         name: undefined,
         email: undefined,
@@ -151,12 +153,12 @@ export default {
       });
     },
     async logIntoChatSession() {
-      if (this.chat.name && this.chat.email) {
+      if (this.form_email && this.form_name) {
         // Disable the form
         this.submitted = true;
         // Trim strings
-        let trimmed_name = this.chat.name.trim();
-        let trimmed_email = this.chat.email.trim();
+        let trimmed_name = this.form_name.trim();
+        let trimmed_email = this.form_email.trim();
         const resp = await fetch(this.new_user_endpoint, {
           method: "POST",
           headers: {
@@ -169,7 +171,11 @@ export default {
         });
         const data = await resp.json();
         const user_info = await data;
-        this.chat.channel = user_info.channel;
+        // Set the chat session info
+        this.chat.name = trimmed_name;
+        this.chat.email = trimmed_email;
+        // Subscribe to the channel
+        this.chat.channel = this.pusher.subscribe("private-" + user_info.email);
         this.logged_in = true;
       }
     },
