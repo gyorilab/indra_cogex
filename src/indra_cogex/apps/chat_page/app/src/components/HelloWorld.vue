@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import DiscoveryApp from "@/components/DiscoveryApp";
+import DiscoveryApp from "@/components/DiscoveryApp.vue";
 
 export default {
   name: "HelloWorld",
