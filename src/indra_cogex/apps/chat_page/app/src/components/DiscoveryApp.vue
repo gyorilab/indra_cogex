@@ -67,7 +67,7 @@
 
 <script>
 import Pusher from "pusher-js";
-import MessageWrapper from "@/components/MessageWrapper";
+import MessageWrapper from "@/components/MessageWrapper.vue";
 
 export default {
   name: "DiscoveryApp.vue",
