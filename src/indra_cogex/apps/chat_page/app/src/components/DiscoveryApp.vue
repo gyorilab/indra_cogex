@@ -21,7 +21,7 @@
     <div id="chatList" class="clearfix messages">
       <div
         class="clearfix message row"
-        v-for="(message, index) in chat.messages"
+        v-for="(message, index) in chat_messages"
         :key="index"
       >
         <MessageWrapper :message="message" />
@@ -109,6 +109,10 @@ export default {
     this.getAppInfo();
   },
   computed: {
+    chat_messages() {
+      // Return the message in reverse order, i.e. newest first
+      return this.chat.messages.reverse();
+    },
     pusher_key() {
       if (this.pusher_info) {
         return this.pusher_info.pusher_key;
