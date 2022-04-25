@@ -1,8 +1,10 @@
 <template>
-  <div class="col">
-    <span class="text-muted small" :title="receivedDate">{{ shortDate }}</span
-    >&nbsp;
-    <span v-html="message.text"></span>
+  <div class="col card">
+    <div class="card-body">
+      <span class="text-muted small" :title="receivedDate">{{ shortDate }}</span
+      >&nbsp;
+      <span v-html="message.text"></span>
+    </div>
   </div>
 </template>
 
