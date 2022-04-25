@@ -2,12 +2,12 @@
   <div class="col card">
     <div class="card-body">
       <div class="row">
-        <div class="col-md-2">
+        <div class="col-1">
           <span class="text-muted small" :title="receivedDate">{{
             shortDate
           }}</span>
         </div>
-        <div class="col-auto text-left">
+        <div class="col-11 text-left">
           <span v-html="message.text"></span>
         </div>
       </div>
