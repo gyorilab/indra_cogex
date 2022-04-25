@@ -4,20 +4,29 @@
   <h3>Discovery App</h3>
   <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
-    <input
-      type="text"
-      v-model="text_input"
-      :disabled="disable_input"
-      @keyup.enter="sendMessage"
-    />
-    <button
-      class="btn btn-primary"
-      type="button"
-      @click="sendMessage"
-      :disabled="disable_input"
-    >
-      Send it!
-    </button>
+    <div class="input-group mb-3">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Enter question"
+        aria-label="Enter question"
+        aria-describedby="button-addon"
+        v-model="text_input"
+        :disabled="disable_input"
+        @keyup.enter="sendMessage"
+      />
+      <div class="input-group-append">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          id="button-addon"
+          @click="sendMessage"
+          :disabled="disable_input"
+        >
+          Ask
+        </button>
+      </div>
+    </div>
     <div id="chatList" class="clearfix messages">
       <div
         class="clearfix message row"
