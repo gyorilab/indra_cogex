@@ -1,15 +1,19 @@
 <template>
-  <h1>From App.vue</h1>
-  <HelloWorld msg="Welcome to Your Vue.js App" />
+  <div class="container">
+    <p>Add some top matter that can link back to the main discovery app</p>
+    <!-- Add horizontal line -->
+    <hr />
+    <DiscoveryApp />
+  </div>
 </template>
 
 <script>
-import HelloWorld from "@/components/HelloWorld.vue";
+import DiscoveryApp from "@/components/DiscoveryApp.vue";
 
 export default {
   name: "App",
   components: {
-    HelloWorld,
+    DiscoveryApp,
   },
   data() {
     return {
