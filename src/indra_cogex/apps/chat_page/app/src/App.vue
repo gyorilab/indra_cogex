@@ -1,6 +1,6 @@
 <template>
+  <p>Add navbar that link back to the main discovery app</p>
   <div class="container">
-    <p>Add some top matter that can link back to the main discovery app</p>
     <!-- Add horizontal line -->
     <hr />
     <DiscoveryApp />

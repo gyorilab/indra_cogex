@@ -1,6 +1,4 @@
 <template>
-  <!-- Add horizontal line -->
-  <hr />
   <h3>Discovery App</h3>
   <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
