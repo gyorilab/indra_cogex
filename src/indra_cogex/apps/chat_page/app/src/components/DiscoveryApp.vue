@@ -28,10 +28,13 @@
     <div id="chatList" class="clearfix messages">
       <div
         class="clearfix message row"
-        v-for="(message, index) in chat_messages"
+        v-for="(message_obj, index) in chat_messages"
         :key="index"
       >
-        <MessageWrapper :message="message" />
+        <MessageWrapper
+          :message="message_obj"
+          :user_message="chat_user_messages[index]"
+        />
       </div>
     </div>
   </template>
@@ -119,6 +122,10 @@ export default {
     chat_messages() {
       // Return the message in reverse order, i.e. newest first
       return this.chat.messages.reverse();
+    },
+    chat_user_messages() {
+      // Return the message in reverse order, i.e. newest first
+      return this.chat.user_messages.reverse();
     },
     pusher_key() {
       if (this.pusher_info) {
@@ -212,9 +219,10 @@ export default {
 
         // Add the message to the user's messages
         this.chat.user_messages.push({
-          text: message.text,
+          input: message.text,
           name: message.sender,
-          sender: message.email,
+          sender_email: message.email,
+          createdAt: message.createdAt,
         });
 
         // Clear the input
