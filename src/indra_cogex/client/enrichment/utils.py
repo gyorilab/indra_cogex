@@ -25,6 +25,9 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+GENE_SET_CACHE = {}
+
+
 @autoclient()
 def collect_gene_sets(
     query: str,
@@ -47,9 +50,11 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if cache_file.exists():
+    if cache_file.as_posix() in GENE_SET_CACHE:
+        return GENE_SET_CACHE[cache_file.as_posix()]
+    elif cache_file.exists():
         with open(cache_file, "rb") as fh:
-            return pickle.load(fh)
+            res = pickle.load(fh)
     else:
         curie_to_hgnc_ids = defaultdict(set)
         for result in client.query_tx(query):
@@ -65,7 +70,8 @@ def collect_gene_sets(
         res = dict(curie_to_hgnc_ids)
         with open(cache_file, "wb") as fh:
             pickle.dump(res, fh)
-        return res
+    GENE_SET_CACHE[cache_file.as_posix()] = res
+    return res
 
 
 @autoclient()
@@ -92,9 +98,11 @@ def collect_genes_with_confidence(
         pointing to the maximum belief and evidence count associated with
         the given HGNC gene.
     """
-    if cache_file.exists():
+    if cache_file.as_posix() in GENE_SET_CACHE:
+        return GENE_SET_CACHE[cache_file.as_posix()]
+    elif cache_file.exists():
         with open(cache_file, "rb") as fh:
-            curie_to_hgnc_ids = pickle.load(fh)
+            res = pickle.load(fh)
     else:
         curie_to_hgnc_ids = defaultdict(dict)
         max_beliefs = {}
@@ -126,7 +134,8 @@ def collect_genes_with_confidence(
         curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
         with open(cache_file, "wb") as fh:
             pickle.dump(curie_to_hgnc_ids, fh)
-    return curie_to_hgnc_ids
+    GENE_SET_CACHE[cache_file.as_posix()] = res
+    return res
 
 
 @autoclient(cache=True)
