@@ -35,8 +35,8 @@ def build_caches():
     get_go()
     get_reactome()
     get_wikipathways()
-    get_entity_to_targets()
-    get_entity_to_regulators()
+    get_entity_to_targets(minimum_evidence_count=1, minimum_belief=0.0)
+    get_entity_to_regulators(minimum_evidence_count=1, minimum_belief=0.0)
     logger.info("Finished building caches for gene set enrichment analysis.")
 
 

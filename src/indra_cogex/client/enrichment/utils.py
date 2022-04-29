@@ -4,8 +4,12 @@
 
 import logging
 from collections import defaultdict
+from pathlib import Path
+import pickle
 from textwrap import dedent
 from typing import Dict, Optional, Set, Tuple
+
+import pystow
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
@@ -25,6 +29,7 @@ logger = logging.getLogger(__name__)
 def collect_gene_sets(
     query: str,
     *,
+    cache_file: Path = None,
     client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
@@ -42,18 +47,25 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
-    curie_to_hgnc_ids = defaultdict(set)
-    for result in client.query_tx(query):
-        curie = result[0]
-        name = result[1]
-        hgnc_ids = {
-            hgnc_curie.lower().replace("hgnc:", "")
-            if hgnc_curie.lower().startswith("hgnc:")
-            else hgnc_curie.lower()
-            for hgnc_curie in result[2]
-        }
-        curie_to_hgnc_ids[curie, name].update(hgnc_ids)
-    return dict(curie_to_hgnc_ids)
+    if cache_file.exists():
+        with open(cache_file, "rb") as fh:
+            return pickle.load(fh)
+    else:
+        curie_to_hgnc_ids = defaultdict(set)
+        for result in client.query_tx(query):
+            curie = result[0]
+            name = result[1]
+            hgnc_ids = {
+                hgnc_curie.lower().replace("hgnc:", "")
+                if hgnc_curie.lower().startswith("hgnc:")
+                else hgnc_curie.lower()
+                for hgnc_curie in result[2]
+            }
+            curie_to_hgnc_ids[curie, name].update(hgnc_ids)
+        res = dict(curie_to_hgnc_ids)
+        with open(cache_file, "wb") as fh:
+            pickle.dump(res, fh)
+        return res
 
 
 @autoclient(cache=True)
@@ -71,6 +83,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each GO term
         and whose values are sets of HGNC gene identifiers (as strings)
     """
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="go.pkl")
     query = dedent(
         """\
         MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
@@ -78,7 +91,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """
     )
     logger.info("caching GO with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 @autoclient(cache=True)
@@ -96,6 +109,7 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each WikiPathway
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="wiki.pkl")
     query = dedent(
         """\
         MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
@@ -104,7 +118,7 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """
     )
     logger.info("caching WikiPathways with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 @autoclient(cache=True)
@@ -122,6 +136,7 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each Reactome
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="reactome.pkl")
     query = dedent(
         """\
         MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
@@ -130,7 +145,7 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """
     )
     logger.info("caching Reactome with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 @autoclient(cache=True, maxsize=5)
@@ -160,6 +175,8 @@ def get_entity_to_targets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
+    fname = f"to_targets_{str(minimum_evidence_count)}_{str(minimum_belief)}.pkl"
+    cache_file = pystow.join("indra", "cogex", "app_cache", name=fname)
     evidence_line = minimum_evidence_helper(
         minimum_evidence_count=minimum_evidence_count, name="r"
     )
@@ -180,7 +197,7 @@ def get_entity_to_targets(
     """
     )
     logger.info("caching entity->targets with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 @autoclient(cache=True, maxsize=5)
@@ -210,6 +227,8 @@ def get_entity_to_regulators(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
+    fname = f"to_regs_{str(minimum_evidence_count)}_{str(minimum_belief)}.pkl"
+    cache_file = pystow.join("indra", "cogex", "app_cache", name=fname)
     evidence_line = minimum_evidence_helper(
         minimum_evidence_count=minimum_evidence_count, name="r"
     )
@@ -230,7 +249,7 @@ def get_entity_to_regulators(
     """
     )
     logger.info("caching entity->regulators with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 def minimum_evidence_helper(
