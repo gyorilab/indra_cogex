@@ -102,7 +102,7 @@ def collect_genes_with_confidence(
         return GENE_SET_CACHE[cache_file.as_posix()]
     elif cache_file.exists():
         with open(cache_file, "rb") as fh:
-            res = pickle.load(fh)
+            curie_to_hgnc_ids = pickle.load(fh)
     else:
         curie_to_hgnc_ids = defaultdict(dict)
         max_beliefs = {}
@@ -134,8 +134,8 @@ def collect_genes_with_confidence(
         curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
         with open(cache_file, "wb") as fh:
             pickle.dump(curie_to_hgnc_ids, fh)
-    GENE_SET_CACHE[cache_file.as_posix()] = res
-    return res
+    GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
+    return curie_to_hgnc_ids
 
 
 @autoclient(cache=True)
