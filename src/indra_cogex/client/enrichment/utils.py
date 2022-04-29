@@ -68,6 +68,67 @@ def collect_gene_sets(
         return res
 
 
+@autoclient()
+def collect_genes_with_confidence(
+    query: str,
+    *,
+    cache_file: Path = None,
+    client: Neo4jClient,
+) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
+    """Collect gene sets based on the given query.
+
+    Parameters
+    ----------
+    query:
+        A cypher query
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each queried
+        item and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with
+        the given HGNC gene.
+    """
+    if cache_file.exists():
+        with open(cache_file, "rb") as fh:
+            curie_to_hgnc_ids = pickle.load(fh)
+    else:
+        curie_to_hgnc_ids = defaultdict(dict)
+        max_beliefs = {}
+        max_ev_counts = {}
+        for result in client.query_tx(query):
+            curie = result[0]
+            name = result[1]
+            hgnc_ids = set()
+            for hgnc_curie, belief, ev_count in result[2]:
+                hgnc_id = (
+                    hgnc_curie.lower().replace("hgnc:", "")
+                    if hgnc_curie.lower().startswith("hgnc:")
+                    else hgnc_curie.lower()
+                )
+                max_beliefs[(curie, name, hgnc_id)] = max(
+                    belief, max_beliefs.get((curie, name, hgnc_id), 0.0)
+                )
+                max_ev_counts[(curie, name, hgnc_id)] = max(
+                    ev_count, max_ev_counts.get((curie, name, hgnc_id), 0)
+                )
+                hgnc_ids.add(hgnc_id)
+            curie_to_hgnc_ids[(curie, name)] = {
+                hgnc_id: (
+                    max_beliefs[(curie, name, hgnc_id)],
+                    max_ev_counts[(curie, name, hgnc_id)],
+                )
+                for hgnc_id in hgnc_ids
+            }
+        curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
+        with open(cache_file, "wb") as fh:
+            pickle.dump(curie_to_hgnc_ids, fh)
+    return curie_to_hgnc_ids
+
+
 @autoclient(cache=True)
 def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
@@ -94,7 +155,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
-@autoclient(cache=True)
+@autoclient()
 def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -121,7 +182,7 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
-@autoclient(cache=True)
+@autoclient()
 def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -148,7 +209,7 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
-@autoclient(cache=True, maxsize=5)
+@autoclient()
 def get_entity_to_targets(
     *,
     client: Neo4jClient,
@@ -175,12 +236,7 @@ def get_entity_to_targets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    fname = f"to_targets_{str(minimum_evidence_count)}_{str(minimum_belief)}.pkl"
-    cache_file = pystow.join("indra", "cogex", "app_cache", name=fname)
-    evidence_line = minimum_evidence_helper(
-        minimum_evidence_count=minimum_evidence_count, name="r"
-    )
-    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="to_targets.pkl")
     query = dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
@@ -188,24 +244,32 @@ def get_entity_to_targets(
             gene.id STARTS WITH "hgnc"                  // Collecting human genes only
             AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
             AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-            {evidence_line}
-            {belief_line}
         RETURN
             regulator.id,
             regulator.name,
-            collect(gene.id);
+            collect([gene.id, r.belief, r.evidence_count]);
     """
     )
     logger.info("caching entity->targets with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    genes_with_confidence = collect_genes_with_confidence(
+        client=client, query=query, cache_file=cache_file
+    )
+    curie_to_hgnc_id = defaultdict(set)
+    for (curie, name), hgnc_with_confidence in genes_with_confidence.items():
+        curie_to_hgnc_id[(curie, name)] = {
+            hgnc_id
+            for hgnc_id, (belief, ev_count) in hgnc_with_confidence.items()
+            if belief >= minimum_belief and ev_count >= minimum_evidence_count
+        }
+    return dict(curie_to_hgnc_id)
 
 
-@autoclient(cache=True, maxsize=5)
+@autoclient()
 def get_entity_to_regulators(
     *,
     client: Neo4jClient,
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
@@ -227,12 +291,7 @@ def get_entity_to_regulators(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    fname = f"to_regs_{str(minimum_evidence_count)}_{str(minimum_belief)}.pkl"
-    cache_file = pystow.join("indra", "cogex", "app_cache", name=fname)
-    evidence_line = minimum_evidence_helper(
-        minimum_evidence_count=minimum_evidence_count, name="r"
-    )
-    belief_line = minimum_belief_helper(minimum_belief=minimum_belief, name="r")
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="to_regs.pkl")
     query = dedent(
         f"""\
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
@@ -240,16 +299,24 @@ def get_entity_to_regulators(
             gene.id STARTS WITH "hgnc"               // Collecting human genes only
             AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
             AND NOT target.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-            {evidence_line}
-            {belief_line}
         RETURN
             target.id,
             target.name,
-            collect(gene.id);
+            collect([gene.id, r.belief, r.evidence_count]);
     """
     )
     logger.info("caching entity->regulators with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    genes_with_confidence = collect_genes_with_confidence(
+        client=client, query=query, cache_file=cache_file
+    )
+    curie_to_hgnc_id = defaultdict(set)
+    for (curie, name), hgnc_with_confidence in genes_with_confidence.items():
+        curie_to_hgnc_id[(curie, name)] = {
+            hgnc_id
+            for hgnc_id, (belief, ev_count) in hgnc_with_confidence.items()
+            if belief >= minimum_belief and ev_count >= minimum_evidence_count
+        }
+    return dict(curie_to_hgnc_id)
 
 
 def minimum_evidence_helper(
