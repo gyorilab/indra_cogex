@@ -17,27 +17,10 @@ from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.queries_web import api
 from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.enrichment.utils import build_caches
 
 
 logger = logging.getLogger(__name__)
-
-
-def build_caches():
-    logger.info("Building up caches for gene set enrichment analysis...")
-    from indra_cogex.client.enrichment.utils import (
-        get_entity_to_targets,
-        get_entity_to_regulators,
-        get_go,
-        get_reactome,
-        get_wikipathways,
-    )
-
-    get_go()
-    get_reactome()
-    get_wikipathways()
-    get_entity_to_targets(minimum_evidence_count=1, minimum_belief=0.0)
-    get_entity_to_regulators(minimum_evidence_count=1, minimum_belief=0.0)
-    logger.info("Finished building caches for gene set enrichment analysis.")
 
 
 app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
@@ -61,4 +44,5 @@ app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 app.config["EXPLAIN_TEMPLATE_LOADING"] = False
 
 bootstrap = Bootstrap4(app)
+
 build_caches()

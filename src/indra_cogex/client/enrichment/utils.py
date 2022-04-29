@@ -53,9 +53,13 @@ def collect_gene_sets(
     if cache_file.as_posix() in GENE_SET_CACHE:
         return GENE_SET_CACHE[cache_file.as_posix()]
     elif cache_file.exists():
+        logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             res = pickle.load(fh)
     else:
+        logger.info(
+            "Running new query and caching results into %s" % cache_file.as_posix()
+        )
         curie_to_hgnc_ids = defaultdict(set)
         for result in client.query_tx(query):
             curie = result[0]
@@ -101,9 +105,13 @@ def collect_genes_with_confidence(
     if cache_file.as_posix() in GENE_SET_CACHE:
         return GENE_SET_CACHE[cache_file.as_posix()]
     elif cache_file.exists():
+        logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             curie_to_hgnc_ids = pickle.load(fh)
     else:
+        logger.info(
+            "Running new query and caching results into %s" % cache_file.as_posix()
+        )
         curie_to_hgnc_ids = defaultdict(dict)
         max_beliefs = {}
         max_ev_counts = {}
@@ -160,7 +168,6 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
-    logger.info("caching GO with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
@@ -187,7 +194,6 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    logger.info("caching WikiPathways with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
@@ -214,7 +220,6 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    logger.info("caching Reactome with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
@@ -259,7 +264,6 @@ def get_entity_to_targets(
             collect([gene.id, r.belief, r.evidence_count]);
     """
     )
-    logger.info("caching entity->targets with Cypher query: %s", query)
     genes_with_confidence = collect_genes_with_confidence(
         client=client, query=query, cache_file=cache_file
     )
@@ -314,7 +318,6 @@ def get_entity_to_regulators(
             collect([gene.id, r.belief, r.evidence_count]);
     """
     )
-    logger.info("caching entity->regulators with Cypher query: %s", query)
     genes_with_confidence = collect_genes_with_confidence(
         client=client, query=query, cache_file=cache_file
     )
@@ -342,3 +345,14 @@ def minimum_belief_helper(
     if minimum_belief is None or minimum_belief == 0.0:
         return ""
     return f"AND {name}.belief >= {minimum_belief}"
+
+
+def build_caches():
+    """Call each gene set constuction to build up cache,"""
+    logger.info("Building up caches for gene set enrichment analysis...")
+    get_go()
+    get_reactome()
+    get_wikipathways()
+    get_entity_to_targets(minimum_evidence_count=1, minimum_belief=0.0)
+    get_entity_to_regulators(minimum_evidence_count=1, minimum_belief=0.0)
+    logger.info("Finished building caches for gene set enrichment analysis.")
