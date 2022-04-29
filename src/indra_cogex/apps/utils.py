@@ -294,6 +294,7 @@ def _stmt_to_row(
                 "color": "#28a745",
                 "symbol": "\u270E",
                 "title": f"{num} evidences curated as correct",
+                "loc": "left",
             }
         )
 
