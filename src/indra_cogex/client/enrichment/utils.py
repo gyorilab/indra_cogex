@@ -222,8 +222,8 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
 def get_entity_to_targets(
     *,
     client: Neo4jClient,
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
