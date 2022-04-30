@@ -51,6 +51,7 @@ def collect_gene_sets(
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
     if cache_file.as_posix() in GENE_SET_CACHE:
+        logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         return GENE_SET_CACHE[cache_file.as_posix()]
     elif cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
@@ -103,6 +104,7 @@ def collect_genes_with_confidence(
         the given HGNC gene.
     """
     if cache_file.as_posix() in GENE_SET_CACHE:
+        logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         return GENE_SET_CACHE[cache_file.as_posix()]
     elif cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
