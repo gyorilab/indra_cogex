@@ -161,9 +161,28 @@ export default {
       this.pusher_info = await data;
       // Setup pusher instance
       this.pusher = await this.setupPusher();
-      // Subscribe to the channel
+      // Bind to message events
       this.pusher.bind("client-support-new-message", (data) => {
         this.newMessage(data);
+      });
+      // Bind to chunked message events
+      let events = {};
+      this.pusher.bind("chunked-client-support-new-message", (data) => {
+        if (!Object.prototype.hasOwnProperty.call(events, data.id)) {
+          events[data.id] = { chunks: [], receivedFinal: false };
+        }
+        let ev = events[data.id];
+        ev.chunks[data.index] = data.chunk;
+        if (data.final) ev.receivedFinal = true;
+        if (
+          ev.receivedFinal &&
+          ev.chunks.length === Object.keys(ev.chunks).length
+        ) {
+          console.log("Received chunked message");
+          let msgJson = JSON.parse(ev.chunks.join(""));
+          this.newMessage(msgJson);
+          delete events[data.id];
+        }
       });
     },
     async setupPusher() {
