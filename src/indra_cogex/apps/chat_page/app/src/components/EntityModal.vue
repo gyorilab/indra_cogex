@@ -1,6 +1,6 @@
 <template>
   <!-- BootStrap 5.1 Modal -->
-  <!-- Button type modal from anchor tag; Todo: make a popover on hover here -->
+  <!-- Button type modal from anchor tag -->
   <a
     type="button"
     :title="title"
