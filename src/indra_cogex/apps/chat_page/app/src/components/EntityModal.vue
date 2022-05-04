@@ -1,15 +1,14 @@
 <template>
-  <!-- BootStrap 4.6 Modal -->
-  <!-- Button type modal from anchor tag -->
+  <!-- BootStrap 5.1 Modal -->
+  <!-- Button type modal from anchor tag; Todo: make a popover on hover here -->
   <a
     type="button"
     :title="title"
     @click="fillXrefs()"
     class="node-modal"
-    data-toggle="modal"
-    :data-target="`#${modalUUID}`"
-  >
-    <b>{{ nm }}</b>
+    data-bs-toggle="modal"
+    :data-bs-target="`#${modalUUID}`"
+    >{{ nm }}
   </a>
 
   <!-- Modal -->
@@ -23,24 +22,21 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" :id="titleUUID">Modal title</h5>
+          <h5 class="modal-title" :id="titleUUID">{{ nm }}</h5>
           <button
             type="button"
-            class="close"
-            data-dismiss="modal"
+            class="btn-close"
+            data-bs-dismiss="modal"
             aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
+          ></button>
         </div>
         <div class="modal-body">
-          <p v-if="entityDescription">
-            <b>{{ nm }}</b
-            ><br />{{ entityDescription }}
+          <p>
+            <span v-if="entityDescription">{{ entityDescription }}</span
+            ><span v-else>loading gif...</span>
           </p>
-          <p v-else><span>loading gif...</span></p>
           <hr />
-          <table>
+          <table class="table table-striped">
             <thead>
               <tr>
                 <th>Database</th>
@@ -53,11 +49,11 @@
                 v-for="(xref, index) in allRefs"
                 :key="`${modalUUID}-row${index}`"
               >
-                <td>{{ xref.db }}</td>
-                <td>{{ xref.id }}</td>
+                <td>{{ xref[0] }}</td>
+                <td>{{ xref[1] }}</td>
                 <td>
-                  <a :href="`${xref.url}`" target="_blank">
-                    <i class="fas fa-external-link-alt">Link</i>
+                  <a :href="`${xref[2]}`" target="_blank">
+                    <i class="fas fa-external-link-alt"></i>Link
                   </a>
                 </td>
               </tr>
@@ -130,23 +126,23 @@ export default {
       // Call network search web api to get xrefs; fixme: should use a standalone api; Isn't there one for the bioontology?
       const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${this.gnd[0]}&id=${this.gnd[1]}`;
       const xrefResp = await fetch(xrefsUrl);
-      console.log("Xrefs response");
-      console.log(xrefResp);
       const xrefData = await xrefResp.json();
       this.xrefs = await xrefData;
+      console.log("Xrefs");
+      console.log(this.xrefs);
 
       // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
       const bioluUrl = `http://biolookup.io/api/lookup/${this.gnd[0]}:${this.gnd[1]}`; // Currently only supports http
       console.log("biolookup url: " + bioluUrl);
       const bioluResp = await fetch(bioluUrl);
-      console.log("Lookup response");
-      console.log(bioluResp);
       const bioluData = await bioluResp.json();
       this.lookupData = await bioluData;
+      console.log("Lookup data");
+      console.log(this.lookupData);
     },
   },
   setup() {
-    const uuid = getUUID();
+    const uuid = getUUID()();
     return {
       uuid,
     };
