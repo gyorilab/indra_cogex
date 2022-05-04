@@ -39,37 +39,33 @@
     </div>
   </template>
   <template v-else>
-    <form id="loginForm" @submit.prevent="logIntoChatSession">
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label for="name">Name</label>
-          <input
-            type="text"
-            class="form-control"
-            id="name"
-            placeholder="Name*"
-            v-model="form_name"
-            :disabled="submitted"
-            required
-          />
-        </div>
-        <div class="form-group col-md-6">
-          <label for="email">Email</label>
-          <input
-            type="email"
-            class="form-control"
-            id="email"
-            placeholder="Email*"
-            v-model="form_email"
-            :disabled="submitted"
-            required
-          />
-        </div>
+    <form id="loginForm" @submit.prevent="logIntoChatSession" class="row g-3">
+      <div class="col-md-6">
+        <label for="name" class="form-label">Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="name"
+          placeholder="Name*"
+          v-model="form_name"
+          :disabled="submitted"
+          required
+        />
       </div>
-      <div class="form-group form-row">
-        <button type="submit" class="btn btn-block btn-primary">
-          Start Session
-        </button>
+      <div class="col-md-6">
+        <label for="email" class="form-label">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          placeholder="Email*"
+          v-model="form_email"
+          :disabled="submitted"
+          required
+        />
+      </div>
+      <div class="col">
+        <button type="submit" class="btn btn-primary">Start Session</button>
       </div>
     </form>
   </template>
@@ -85,7 +81,7 @@ export default {
   props: {
     info_endpoint: {
       type: String,
-      default: "/chat/pusher_info",
+      default: "http://localhost:5000/chat/pusher_info",
     },
   },
   data() {
@@ -141,13 +137,13 @@ export default {
     },
     auth_endpoint() {
       if (this.pusher_info) {
-        return this.pusher_info.auth_endpoint;
+        return `http://localhost:5000${this.pusher_info.auth_endpoint}`;
       }
       return "";
     },
     new_user_endpoint() {
       if (this.pusher_info) {
-        return this.pusher_info.new_user_endpoint;
+        return `http://localhost:5000${this.pusher_info.new_user_endpoint}`;
       }
       return "";
     },
@@ -244,6 +240,14 @@ export default {
           createdAt: message.createdAt,
         });
 
+        // Add a placeholder message for the response
+        this.chat.messages.push({
+          input: "",
+          name: "Support",
+          sender_email: "",
+          createdAt: "",
+        });
+
         // Clear the input
         this.text_input = "";
 
@@ -257,13 +261,13 @@ export default {
       console.log("New message received");
       console.log(message);
       if (message !== undefined) {
-        // Add the message to the chat
+        // Replace the placeholder message with the actual message
         let resolved_message = await message;
         let receivedAt = new Date().toUTCString();
-        this.chat.messages.push({
+        this.chat.messages[this.chat.messages.length - 1] = {
           ...resolved_message,
           receivedAt: receivedAt,
-        });
+        };
       }
     },
   },
