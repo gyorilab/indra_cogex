@@ -13,19 +13,17 @@
         :disabled="disable_input"
         @keyup.enter="sendMessage"
       />
-      <div class="input-group-append">
-        <button
-          class="btn btn-outline-secondary"
-          type="button"
-          id="button-addon"
-          @click="sendMessage"
-          :disabled="disable_input"
-        >
-          Ask
-        </button>
-      </div>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        id="button-addon"
+        @click="sendMessage"
+        :disabled="disable_input"
+      >
+        Ask
+      </button>
     </div>
-    <div id="chatList" class="clearfix messages">
+    <div id="chatList" class="clearfix">
       <div
         class="clearfix message row"
         v-for="(message_obj, index) in chat_messages"
@@ -273,5 +271,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>
