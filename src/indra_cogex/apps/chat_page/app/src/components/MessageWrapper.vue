@@ -30,7 +30,7 @@
               >Entity list ({{ entityList.length }})
             </span>
           </div>
-          <div class="col-11 text-start">
+          <div class="col-11 text-start overflow-auto entity-list-container">
             <EntityList :entities="entityList" />
           </div>
         </div>
@@ -100,4 +100,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.entity-list-container {
+  max-height: 200px;
+  overflow-y: auto;
+}
+</style>

@@ -5,7 +5,7 @@
     type="button"
     :title="title"
     @click="fillXrefs()"
-    class="node-modal"
+    class="badge bg-primary text-decoration-none m-1"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
     >{{ nm }}

@@ -1,10 +1,8 @@
 <template>
   <h5>Entity List</h5>
-  <ul>
-    <li v-for="(entity, number) in entities" :key="number">
-      <EntityModal :gnd="entity.gnd" :nm="entity.nm" />
-    </li>
-  </ul>
+  <template v-for="(entity, number) in entities" :key="number">
+    <EntityModal :gnd="entity.gnd" :nm="entity.nm" />
+  </template>
 </template>
 
 <script>
