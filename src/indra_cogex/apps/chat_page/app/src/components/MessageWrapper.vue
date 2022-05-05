@@ -1,40 +1,44 @@
 <template>
-  <div class="col card">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-1">
-          <span class="text-muted small" :title="user_message.createdAt"
-            >User Input</span
-          >
-        </div>
-        <div class="col-11 text-start">
-          <span>{{ user_message.input }}</span>
-        </div>
-      </div>
-      <hr />
-      <div class="row">
-        <div class="col-1">
-          <span class="text-muted small" :title="receivedDate"
-            >Output ({{ shortDate }})
-          </span>
-        </div>
-        <div class="col-11 text-start">
-          <span v-html="message.text"></span>
-        </div>
-      </div>
-      <template v-if="entityList.length">
-        <hr />
+  <div v-if="user && user.input" class="row">
+    <div class="col card">
+      <div class="card-body">
         <div class="row">
           <div class="col-1">
-            <span class="text-muted small" :title="receivedDate"
-              >Entity list ({{ entityList.length }})
-            </span>
+            <span class="text-muted small" :title="user.createdAt"
+              >User Input</span
+            >
           </div>
-          <div class="col-11 text-start overflow-auto entity-list-container">
-            <EntityList :entities="entityList" />
+          <div class="col-11 text-start">
+            <span>{{ user.input }}</span>
           </div>
         </div>
-      </template>
+        <template v-if="bot && bot.text">
+          <hr />
+          <div class="row">
+            <div class="col-1">
+              <span class="text-muted small" :title="receivedDate"
+                >Output ({{ shortDate }})
+              </span>
+            </div>
+            <div class="col-11 text-start">
+              <span v-html="bot.text"></span>
+            </div>
+          </div>
+        </template>
+        <template v-if="entityList.length">
+          <hr />
+          <div class="row">
+            <div class="col-1">
+              <span class="text-muted small" :title="receivedDate"
+                >Entity list ({{ entityList.length }})
+              </span>
+            </div>
+            <div class="col-11 text-start overflow-auto entity-list-container">
+              <EntityList :entities="entityList" />
+            </div>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -53,8 +57,8 @@ export default {
     };
   },
   props: {
-    message: {
-      /* Expecting a message object:
+    bot: {
+      /* Expecting a bot object:
        * {
        *  text: "",
        *  name: "",
@@ -64,9 +68,9 @@ export default {
        * }
        * */
       type: Object,
-      required: true,
+      default: null,
     },
-    user_message: {
+    user: {
       /* Expecting this object:
        * {
        *  input: "",
@@ -76,23 +80,23 @@ export default {
        * }
        */
       type: Object,
-      required: true,
+      default: null,
     },
   },
   computed: {
     receivedDate() {
-      return new Date(this.message.receivedAt).toLocaleString();
+      return new Date(this.bot.receivedAt).toLocaleString();
     },
     shortDate() {
       // Format: "HH:mm" 24 hour clock
-      return new Date(this.message.receivedAt).toLocaleTimeString("en-GB", {
+      return new Date(this.bot.receivedAt).toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
       });
     },
     entityList() {
-      if (this.message.entities) {
-        return this.message.entities;
+      if (this.bot.entities) {
+        return this.bot.entities;
       }
       return [];
     },

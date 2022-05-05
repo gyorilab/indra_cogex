@@ -1,5 +1,6 @@
 <template>
   <h3>Discovery App</h3>
+  <!-- Chat app -->
   <template v-if="logged_in">
     <p>Logged in as {{ chat.name }} ({{ chat.email }})</p>
     <div class="input-group mb-3">
@@ -23,19 +24,12 @@
         Ask
       </button>
     </div>
-    <div id="chatList" class="clearfix">
-      <div
-        class="clearfix message row"
-        v-for="(message_obj, index) in chat_messages"
-        :key="index"
-      >
-        <MessageWrapper
-          :message="message_obj"
-          :user_message="chat_user_messages[index]"
-        />
-      </div>
+    <div class="clearfix message">
+      <!-- FixMe: Do some sort of fading out of the old response once a new message/question is sent -->
+      <MessageWrapper :user="last_message.user" :bot="last_message.bot" />
     </div>
   </template>
+  <!-- Login -->
   <template v-else>
     <form id="loginForm" @submit.prevent="logIntoChatSession" class="row g-3">
       <div class="col-md-6">
@@ -100,8 +94,8 @@ export default {
         name: undefined,
         email: undefined,
         channel: undefined,
-        messages: [],
-        user_messages: [],
+        response: undefined, // Last response from chatbot
+        history: [], // Store query and response: [{user: {...}, bot: {...}}, ...]
       },
       submitted: false,
       logged_in: false,
@@ -113,14 +107,6 @@ export default {
     this.getAppInfo();
   },
   computed: {
-    chat_messages() {
-      // Return the message in reverse order, i.e. newest first
-      return this.chat.messages.reverse();
-    },
-    chat_user_messages() {
-      // Return the message in reverse order, i.e. newest first
-      return this.chat.user_messages.reverse();
-    },
     pusher_key() {
       if (this.pusher_info) {
         return this.pusher_info.pusher_key;
@@ -144,6 +130,12 @@ export default {
         return `http://localhost:5000${this.pusher_info.new_user_endpoint}`;
       }
       return "";
+    },
+    last_message() {
+      if (this.chat.history.length > 0) {
+        return this.chat.history[this.chat.history.length - 1];
+      }
+      return { user: {}, bot: {} };
     },
   },
   methods: {
@@ -230,21 +222,17 @@ export default {
         // Send the message to the channel
         this.chat.channel.trigger("client-guest-new-message", message);
 
-        // Add the message to the user's messages
-        this.chat.user_messages.push({
+        // Add the message to the message history
+        let user_msg = {
           input: message.text,
           name: message.sender,
           sender_email: message.email,
           createdAt: message.createdAt,
-        });
+          responseIndex: undefined, // Set index to undefined until response is received
+        };
 
-        // Add a placeholder message for the response
-        this.chat.messages.push({
-          input: "",
-          name: "Support",
-          sender_email: "",
-          createdAt: "",
-        });
+        // Push message to history
+        this.chat.history.push({ user: user_msg, bot: {} });
 
         // Clear the input
         this.text_input = "";
@@ -252,17 +240,20 @@ export default {
         // Enable the input
         this.disable_input = false;
         console.log("Message sent");
+      } else {
+        console.log("No channel, cannot send message!");
       }
     },
     async newMessage(message) {
-      // Expecting {text: "", name: "", sender: ""}
+      // Expecting at least {text: "", name: "", entities: ""}
       console.log("New message received");
       console.log(message);
       if (message !== undefined) {
-        // Replace the placeholder message with the actual message
+        // await the message
         let resolved_message = await message;
         let receivedAt = new Date().toUTCString();
-        this.chat.messages[this.chat.messages.length - 1] = {
+        // Replace the response to the message history
+        this.chat.history[this.chat.history.length - 1].bot = {
           ...resolved_message,
           receivedAt: receivedAt,
         };
