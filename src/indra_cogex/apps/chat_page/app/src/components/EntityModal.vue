@@ -5,7 +5,8 @@
     type="button"
     :title="title"
     @click="fillXrefs()"
-    class="badge bg-primary text-decoration-none m-1"
+    class="badge ext-decoration-none m-1"
+    :class="`bg-${badgeClass}`"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
     >{{ nm }}
@@ -33,7 +34,7 @@
         <div class="modal-body">
           <p>
             <span v-if="entityDescription">{{ entityDescription }}</span
-            ><span v-else>loading gif...</span>
+            ><span v-else><i>Description missing</i></span>
           </p>
           <hr />
           <table class="table table-striped">
@@ -67,6 +68,7 @@
 
 <script>
 import getUUID from "@/helpers/helperFunctions.js";
+import badgeMappings from "../../public/DefaultValues";
 
 export default {
   name: "EntityModal.vue",
@@ -118,6 +120,16 @@ export default {
         return this.lookupData.definition;
       }
       return "";
+    },
+    badgeClass() {
+      for (const [cls, values] of Object.entries(badgeMappings)) {
+        if (this.gnd[0] && values.includes(this.gnd[0].toLowerCase())) {
+          console.log(`${this.gnd[0]} is ${cls}`);
+          return cls;
+        }
+      }
+      console.log(`No badge class found for ${this.gnd[0]}`);
+      return "warning";
     },
   },
   methods: {
