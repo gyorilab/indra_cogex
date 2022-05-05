@@ -1,5 +1,7 @@
 <template>
-  <p>Add navbar that link back to the main discovery app</p>
+  <p style="color: #00a250">
+    Add navbar that link back to the main discovery app
+  </p>
   <div class="container">
     <!-- Add horizontal line -->
     <hr />
