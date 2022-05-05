@@ -6,7 +6,7 @@
     :title="title"
     @click="fillXrefs()"
     class="badge ext-decoration-none m-1"
-    :class="`bg-${badgeClass}`"
+    :class="badgeClass"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
     >{{ nm }}
@@ -124,11 +124,12 @@ export default {
     badgeClass() {
       for (const [cls, values] of Object.entries(badgeMappings)) {
         if (this.gnd[0] && values.includes(this.gnd[0].toLowerCase())) {
-          console.log(`${this.gnd[0]} is ${cls}`);
           return cls;
         }
       }
-      console.log(`No badge class found for ${this.gnd[0]}`);
+      console.log(
+        `No badge class found for ${this.nm} (${this.gnd.join(":")})`
+      );
       return "warning";
     },
   },
