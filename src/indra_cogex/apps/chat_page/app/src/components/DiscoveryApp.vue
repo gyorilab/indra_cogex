@@ -25,8 +25,9 @@
       </button>
     </div>
     <div class="clearfix message">
-      <!-- FixMe: Do some sort of fading out of the old response once a new message/question is sent -->
-      <MessageWrapper :user="last_message.user" :bot="last_message.bot" />
+      <template v-for="(message, index) in reverseHistory" :key="index">
+        <MessageWrapper :user="message.user" :bot="message.bot" />
+      </template>
     </div>
   </template>
   <!-- Login -->
@@ -131,11 +132,8 @@ export default {
       }
       return "";
     },
-    last_message() {
-      if (this.chat.history.length > 0) {
-        return this.chat.history[this.chat.history.length - 1];
-      }
-      return { user: {}, bot: {} };
+    reverseHistory() {
+      return this.chat.history.slice().reverse();
     },
   },
   methods: {
