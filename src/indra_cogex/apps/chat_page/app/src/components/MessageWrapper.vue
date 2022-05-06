@@ -1,7 +1,13 @@
 <template>
   <div v-if="user && user.input" class="row">
     <div class="col card">
-      <div class="card-body">
+      <div
+        class="card-header"
+        data-bs-toggle="collapse"
+        :data-bs-target="`#${componentID}`"
+        aria-expanded="false"
+        :aria-controls="componentID"
+      >
         <div class="row">
           <div class="col-1">
             <span class="text-muted small" :title="user.createdAt"
@@ -12,32 +18,37 @@
             <span>{{ user.input }}</span>
           </div>
         </div>
-        <template v-if="bot && bot.text">
-          <hr />
-          <div class="row">
-            <div class="col-1">
-              <span class="text-muted small" :title="receivedDate"
-                >Output ({{ shortDate }})
-              </span>
+      </div>
+      <div class="collapse" :id="componentID">
+        <div class="card-body">
+          <template v-if="bot && bot.text">
+            <div class="row">
+              <div class="col-1">
+                <span class="text-muted small" :title="receivedDate"
+                  >Output ({{ shortDate }})
+                </span>
+              </div>
+              <div class="col-11 text-start">
+                <span v-html="bot.text"></span>
+              </div>
             </div>
-            <div class="col-11 text-start">
-              <span v-html="bot.text"></span>
+          </template>
+          <hr v-if="bot && bot.text && entityList.length" />
+          <template v-if="entityList.length">
+            <div class="row">
+              <div class="col-1">
+                <span class="text-muted small" :title="receivedDate"
+                  >Entity list ({{ entityList.length }})
+                </span>
+              </div>
+              <div
+                class="col-11 text-start overflow-auto entity-list-container"
+              >
+                <EntityList :entities="entityList" />
+              </div>
             </div>
-          </div>
-        </template>
-        <template v-if="entityList.length">
-          <hr />
-          <div class="row">
-            <div class="col-1">
-              <span class="text-muted small" :title="receivedDate"
-                >Entity list ({{ entityList.length }})
-              </span>
-            </div>
-            <div class="col-11 text-start overflow-auto entity-list-container">
-              <EntityList :entities="entityList" />
-            </div>
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -45,6 +56,7 @@
 
 <script>
 import EntityList from "@/components/EntityList.vue";
+import getUUID from "@/helpers/helperFunctions";
 
 export default {
   name: "MessageWrapper.vue",
@@ -100,6 +112,15 @@ export default {
       }
       return [];
     },
+    componentID() {
+      return `component-${this.uuid}`;
+    },
+  },
+  setup() {
+    const uuid = getUUID()();
+    return {
+      uuid,
+    };
   },
 };
 </script>
