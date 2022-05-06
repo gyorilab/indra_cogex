@@ -3,7 +3,9 @@
     <div class="col card">
       <div
         class="card-header msg-wrapper-header"
+        :class="shown ? 'border-bottom-0' : ''"
         title="Click to toggle response visibility"
+        @click="shown = !shown"
         data-bs-toggle="collapse"
         :data-bs-target="`#${componentID}`"
         aria-expanded="true"
@@ -67,6 +69,7 @@ export default {
   data() {
     return {
       listMax: 0,
+      shown: true,
     };
   },
   props: {
