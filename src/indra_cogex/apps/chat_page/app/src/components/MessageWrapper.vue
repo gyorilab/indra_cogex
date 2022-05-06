@@ -2,10 +2,11 @@
   <div v-if="user && user.input" class="row">
     <div class="col card">
       <div
-        class="card-header"
+        class="card-header msg-wrapper-header"
+        title="Click to toggle response visibility"
         data-bs-toggle="collapse"
         :data-bs-target="`#${componentID}`"
-        aria-expanded="false"
+        aria-expanded="true"
         :aria-controls="componentID"
       >
         <div class="row">
@@ -19,7 +20,7 @@
           </div>
         </div>
       </div>
-      <div class="collapse" :id="componentID">
+      <div class="collapse show" :id="componentID">
         <div class="card-body">
           <template v-if="bot && bot.text">
             <div class="row">
@@ -129,5 +130,8 @@ export default {
 .entity-list-container {
   max-height: 200px;
   overflow-y: auto;
+}
+.msg-wrapper-header {
+  cursor: pointer;
 }
 </style>
