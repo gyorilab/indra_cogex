@@ -114,7 +114,7 @@ export default {
       return [];
     },
     componentID() {
-      return `component-${this.uuid}`;
+      return `msgWrapper-${this.uuid}`;
     },
   },
   setup() {
