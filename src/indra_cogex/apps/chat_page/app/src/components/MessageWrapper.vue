@@ -1,6 +1,6 @@
 <template>
   <div v-if="user && user.input" class="row">
-    <div class="col card">
+    <div class="col card mb-3">
       <div
         class="card-header msg-wrapper-header"
         :class="shown ? '' : 'border-bottom-0'"
@@ -24,79 +24,77 @@
       </div>
       <div class="collapse show" :id="componentID">
         <div class="card-body">
-          <div class="row">
+          <div class="row mb-1">
             <div class="col-2 text-start">
               <span class="text-muted small" :title="receivedDate"
                 >Output ({{ shortDate }})
               </span>
             </div>
-            <div class="col-10 text-start"></div>
+            <div class="col-10"></div>
           </div>
-          <hr />
-          <nav>
-            <div class="nav nav-tabs" :id="idRegistry.navTabsID" role="tablist">
-              <button
+          <div class="row">
+            <nav>
+              <div
+                class="nav nav-tabs"
+                :id="idRegistry.navTabsID"
+                role="tablist"
+              >
+                <!-- Text tab -->
+                <button
+                  v-if="bot && bot.text"
+                  class="nav-link active"
+                  :id="idRegistry.navTabs.nav.text"
+                  data-bs-toggle="tab"
+                  :data-bs-target="`#${idRegistry.navTabs.content.text}`"
+                  type="button"
+                  role="tab"
+                  :aria-controls="idRegistry.navTabs.content.text"
+                  aria-selected="true"
+                >
+                  Respone
+                </button>
+                <!-- Entities tab -->
+                <button
+                  v-if="entityList.length"
+                  class="nav-link"
+                  :title="receivedDate"
+                  :id="idRegistry.navTabs.nav.entities"
+                  data-bs-toggle="tab"
+                  :data-bs-target="`#${idRegistry.navTabs.content.entities}`"
+                  type="button"
+                  role="tab"
+                  :aria-controls="idRegistry.navTabs.content.entities"
+                  aria-selected="false"
+                >
+                  Entities ({{ entityList.length }})
+                </button>
+              </div>
+            </nav>
+            <div class="tab-content" :id="idRegistry.tabsContent">
+              <!-- Text content -->
+              <div
                 v-if="bot && bot.text"
-                class="nav-link active"
-                :id="idRegistry.navTabs.nav.text"
-                data-bs-toggle="tab"
-                :data-bs-target="`#${idRegistry.navTabs.content.text}`"
-                type="button"
-                role="tab"
-                :aria-controls="idRegistry.navTabs.content.text"
-                aria-selected="true"
+                class="tab-pane fade show active"
+                :id="idRegistry.navTabs.content.text"
+                role="tabpanel"
+                :aria-labelledby="idRegistry.navTabs.nav.text"
               >
-                Respone
-              </button>
-              <button
-                v-if="entityList.length"
-                class="nav-link"
-                :id="idRegistry.navTabs.nav.entities"
-                data-bs-toggle="tab"
-                :data-bs-target="`#${idRegistry.navTabs.content.entities}`"
-                type="button"
-                role="tab"
-                :aria-controls="idRegistry.navTabs.content.entities"
-                aria-selected="false"
-              >
-                Entities
-              </button>
-            </div>
-          </nav>
-          <div class="tab-content" :id="idRegistry.tabsContent">
-            <div
-              v-if="bot && bot.text"
-              class="tab-pane fade show active"
-              :id="idRegistry.navTabs.content.text"
-              role="tabpanel"
-              :aria-labelledby="idRegistry.navTabs.nav.text"
-            >
-              <!-- Text answer -->
-              <div class="row">
-                <div class="col-1"></div>
-                <div class="col-11 text-start">
-                  <span v-html="bot.text"></span>
+                <div class="card card-body border-light">
+                  <p class="text-start" v-html="bot.text"></p>
                 </div>
               </div>
-            </div>
-            <!-- Entities -->
-            <div
-              v-if="entityList.length"
-              class="tab-pane fade show active"
-              :id="idRegistry.navTabs.content.entities"
-              role="tabpanel"
-              :aria-labelledby="idRegistry.navTabs.nav.entities"
-            >
-              <div class="row">
-                <div class="col-1">
-                  <span class="text-muted small" :title="receivedDate"
-                    >Entity list ({{ entityList.length }})
-                  </span>
-                </div>
-                <div
-                  class="col-11 text-start overflow-auto entity-list-container"
-                >
-                  <EntityList :entities="entityList" />
+              <!-- Entities content -->
+              <div
+                v-if="entityList.length"
+                class="tab-pane fade show active"
+                :id="idRegistry.navTabs.content.entities"
+                role="tabpanel"
+                :aria-labelledby="idRegistry.navTabs.nav.entities"
+              >
+                <div class="row">
+                  <div class="col">
+                    <EntityList :entities="entityList" />
+                  </div>
                 </div>
               </div>
             </div>
