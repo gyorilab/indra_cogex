@@ -76,6 +76,10 @@ export default {
   },
   methods: {
     toggleHide(cls) {
+      // If there is only one class, don't toggle
+      if (this.availableClasses.length <= 1) {
+        return;
+      }
       switch (cls) {
         case "bg-primary":
           this.primaryVis = !this.primaryVis;
