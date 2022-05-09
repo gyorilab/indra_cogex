@@ -1,8 +1,9 @@
 <template>
   <h5>Entity List</h5>
   <span
-    v-for="([cls, descr], index) in badgeClasses"
+    v-for="([cls, descr], index) in availableClasses"
     class="badge"
+    :title="availableClasses.length > 1 ? 'Toggle visibility' : ''"
     @click="toggleHide(cls)"
     :class="`${cls} ${isClsVisible(cls) ? '' : ' opacity-50'}`"
     :key="index"
@@ -56,6 +57,21 @@ export default {
         }
       }
       return list;
+    },
+    availableClasses() {
+      let classes = [];
+      for (const entity of this.entities) {
+        const cls = this.nsToCls(entity.gnd);
+        // Add class if it: is in badgeClasses and is not already in classes
+        if (
+          this.badgeClasses.some((el) => el[0] === cls) &&
+          !classes.some((el) => el[0] === cls)
+        ) {
+          const clsDesc = this.badgeClasses.find((el) => el[0] === cls);
+          classes.push(clsDesc);
+        }
+      }
+      return classes;
     },
   },
   methods: {
