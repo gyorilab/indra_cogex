@@ -140,6 +140,7 @@ export default {
         case "efo":
           return "bg-light text-dark";
         default:
+          console.warn("Unknown namespace: " + ns, gnd);
           return "warning text-dark";
       }
     },
