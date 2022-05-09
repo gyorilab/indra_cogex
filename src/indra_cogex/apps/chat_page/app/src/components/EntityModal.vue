@@ -141,17 +141,15 @@ export default {
       const xrefResp = await fetch(xrefsUrl);
       const xrefData = await xrefResp.json();
       this.xrefs = await xrefData;
-      console.log("Xrefs");
-      console.log(this.xrefs);
 
       // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
       const bioluUrl = `http://biolookup.io/api/lookup/${this.gnd[0]}:${this.gnd[1]}`; // Currently only supports http
-      console.log("biolookup url: " + bioluUrl);
+      if (this.gnd[0].length === 0 || this.gnd[1].length === 0) {
+        console.warn(`No grounding found for ${this.nm}`);
+      }
       const bioluResp = await fetch(bioluUrl);
       const bioluData = await bioluResp.json();
       this.lookupData = await bioluData;
-      console.log("Lookup data");
-      console.log(this.lookupData);
     },
   },
   setup() {
