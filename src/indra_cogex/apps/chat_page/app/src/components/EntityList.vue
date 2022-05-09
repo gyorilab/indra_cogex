@@ -1,18 +1,22 @@
 <template>
   <h5>Entity List</h5>
-  <span
-    v-for="([cls, descr], index) in availableClasses"
-    class="badge"
-    :title="availableClasses.length > 1 ? 'Toggle visibility' : ''"
-    @click="toggleHide(cls)"
-    :class="`${cls} ${isClsVisible(cls) ? '' : ' opacity-50'}`"
-    :key="index"
-    >{{ descr }}</span
-  >
+  <div>
+    <span
+      v-for="([cls, descr], index) in availableClasses"
+      class="badge"
+      :title="availableClasses.length > 1 ? 'Toggle visibility' : ''"
+      @click="toggleHide(cls)"
+      :class="`${cls} ${isClsVisible(cls) ? '' : ' opacity-50'}`"
+      :key="index"
+      >{{ descr }}</span
+    >
+  </div>
   <hr />
-  <template v-for="(entity, number) in computedList" :key="number">
-    <EntityModal :gnd="entity.gnd" :nm="entity.nm" />
-  </template>
+  <div class="text-start">
+    <template v-for="(entity, number) in computedList" :key="number">
+      <EntityModal :gnd="entity.gnd" :nm="entity.nm" />
+    </template>
+  </div>
 </template>
 
 <script>
