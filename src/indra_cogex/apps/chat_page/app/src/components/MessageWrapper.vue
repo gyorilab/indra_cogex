@@ -4,7 +4,7 @@
       <div
         class="card-header msg-wrapper-header"
         :class="shown ? '' : 'border-bottom-0'"
-        title="Click to toggle response visibility"
+        title="Click to expand/collapse response"
         @click="shown = !shown"
         data-bs-toggle="collapse"
         :data-bs-target="`#${componentID}`"
@@ -24,33 +24,83 @@
       </div>
       <div class="collapse show" :id="componentID">
         <div class="card-body">
-          <template v-if="bot && bot.text">
-            <div class="row">
-              <div class="col-1">
-                <span class="text-muted small" :title="receivedDate"
-                  >Output ({{ shortDate }})
-                </span>
-              </div>
-              <div class="col-11 text-start">
-                <span v-html="bot.text"></span>
-              </div>
+          <div class="row">
+            <div class="col-2 text-start">
+              <span class="text-muted small" :title="receivedDate"
+                >Output ({{ shortDate }})
+              </span>
             </div>
-          </template>
-          <hr v-if="bot && bot.text && entityList.length" />
-          <template v-if="entityList.length">
-            <div class="row">
-              <div class="col-1">
-                <span class="text-muted small" :title="receivedDate"
-                  >Entity list ({{ entityList.length }})
-                </span>
-              </div>
-              <div
-                class="col-11 text-start overflow-auto entity-list-container"
+            <div class="col-10 text-start"></div>
+          </div>
+          <hr />
+          <nav>
+            <div class="nav nav-tabs" :id="idRegistry.navTabsID" role="tablist">
+              <button
+                v-if="bot && bot.text"
+                class="nav-link active"
+                :id="idRegistry.navTabs.nav.text"
+                data-bs-toggle="tab"
+                :data-bs-target="`#${idRegistry.navTabs.content.text}`"
+                type="button"
+                role="tab"
+                :aria-controls="idRegistry.navTabs.content.text"
+                aria-selected="true"
               >
-                <EntityList :entities="entityList" />
+                Respone
+              </button>
+              <button
+                v-if="entityList.length"
+                class="nav-link"
+                :id="idRegistry.navTabs.nav.entities"
+                data-bs-toggle="tab"
+                :data-bs-target="`#${idRegistry.navTabs.content.entities}`"
+                type="button"
+                role="tab"
+                :aria-controls="idRegistry.navTabs.content.entities"
+                aria-selected="false"
+              >
+                Entities
+              </button>
+            </div>
+          </nav>
+          <div class="tab-content" :id="idRegistry.tabsContent">
+            <div
+              v-if="bot && bot.text"
+              class="tab-pane fade show active"
+              :id="idRegistry.navTabs.content.text"
+              role="tabpanel"
+              :aria-labelledby="idRegistry.navTabs.nav.text"
+            >
+              <!-- Text answer -->
+              <div class="row">
+                <div class="col-1"></div>
+                <div class="col-11 text-start">
+                  <span v-html="bot.text"></span>
+                </div>
               </div>
             </div>
-          </template>
+            <!-- Entities -->
+            <div
+              v-if="entityList.length"
+              class="tab-pane fade show active"
+              :id="idRegistry.navTabs.content.entities"
+              role="tabpanel"
+              :aria-labelledby="idRegistry.navTabs.nav.entities"
+            >
+              <div class="row">
+                <div class="col-1">
+                  <span class="text-muted small" :title="receivedDate"
+                    >Entity list ({{ entityList.length }})
+                  </span>
+                </div>
+                <div
+                  class="col-11 text-start overflow-auto entity-list-container"
+                >
+                  <EntityList :entities="entityList" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -118,6 +168,33 @@ export default {
     },
     componentID() {
       return `msgWrapper-${this.uuid}`;
+    },
+    idRegistry() {
+      return {
+        collapse: `${this.componentID}-collapse`,
+        navTabsID: `${this.componentID}-nav-tabs`,
+        tabsContent: `${this.componentID}-tabs-content`,
+        navTabs: {
+          nav: {
+            text: `${this.componentID}-tab-text`,
+            entities: `${this.componentID}-tab-entities`,
+          },
+          content: {
+            text: `${this.componentID}-content-text`,
+            entities: `${this.componentID}-content-entities`,
+          },
+        },
+      };
+    },
+  },
+  methods: {
+    setTabActive(tab) {
+      // Set the active tab
+      this.activeTab = tab;
+    },
+    isActive(tab) {
+      // Check if the tab is active
+      return this.activeTab === tab;
     },
   },
   setup() {
