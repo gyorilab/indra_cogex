@@ -1,5 +1,5 @@
 <template>
-  <div v-if="user && user.input" class="row">
+  <div v-if="user && user.input" :id="componentID" class="row">
     <div class="col card mb-3">
       <div
         class="card-header msg-wrapper-header"
@@ -7,9 +7,9 @@
         title="Click to expand/collapse response"
         @click="shown = !shown"
         data-bs-toggle="collapse"
-        :data-bs-target="`#${componentID}`"
+        :data-bs-target="`#${idRegistry.collapse}`"
         aria-expanded="true"
-        :aria-controls="componentID"
+        :aria-controls="idRegistry.collapse"
       >
         <div class="row">
           <div class="col-1">
@@ -22,7 +22,7 @@
           </div>
         </div>
       </div>
-      <div class="collapse show" :id="componentID">
+      <div class="collapse show" :id="idRegistry.collapse">
         <div class="card-body">
           <div class="row mb-1">
             <div class="col-2 text-start">
