@@ -4,9 +4,13 @@
 
 /* Get globally unique IDs */
 let UUID = 0;
-export default function getUUID() {
+const getUUID = function () {
   return () => {
     UUID++;
     return UUID;
   };
-}
+};
+
+export default {
+  getUUID,
+};

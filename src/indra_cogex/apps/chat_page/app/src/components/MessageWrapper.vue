@@ -107,7 +107,7 @@
 
 <script>
 import EntityList from "@/components/EntityList.vue";
-import getUUID from "@/helpers/helperFunctions";
+import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "MessageWrapper.vue",
@@ -196,7 +196,7 @@ export default {
     },
   },
   setup() {
-    const uuid = getUUID()();
+    const uuid = helperFunctions.getUUID()();
     return {
       uuid,
     };
