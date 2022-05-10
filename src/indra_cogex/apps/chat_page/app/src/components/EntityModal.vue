@@ -67,8 +67,8 @@
 </template>
 
 <script>
-import getUUID from "@/helpers/helperFunctions.js";
 import badgeMappings from "../../public/DefaultValues";
+import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "EntityModal.vue",
@@ -153,7 +153,7 @@ export default {
     },
   },
   setup() {
-    const uuid = getUUID()();
+    const uuid = helperFunctions.getUUID()();
     return {
       uuid,
     };
