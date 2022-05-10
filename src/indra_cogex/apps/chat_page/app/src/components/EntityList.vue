@@ -1,5 +1,5 @@
 <template>
-  <h5>Entity List</h5>
+  <h5 v-if="showTitle">Entity List</h5>
   <div>
     <span
       v-for="([cls, descr], index) in availableClasses"
@@ -50,6 +50,11 @@ export default {
       // Array of entity objects
       type: Array,
       required: true,
+    },
+    showTitle: {
+      // Show title
+      type: Boolean,
+      default: true,
     },
   },
   computed: {
