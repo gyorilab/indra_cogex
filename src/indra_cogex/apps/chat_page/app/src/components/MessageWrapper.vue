@@ -55,8 +55,9 @@
                 </button>
                 <!-- Entities tab -->
                 <button
-                  v-if="entityList.length"
+                  v-if="replyEntities.length"
                   class="nav-link"
+                  @click.once="click.entities = true"
                   :title="receivedDate"
                   :id="idRegistry.navTabs.nav.entities"
                   data-bs-toggle="tab"
@@ -66,7 +67,7 @@
                   :aria-controls="idRegistry.navTabs.content.entities"
                   aria-selected="false"
                 >
-                  Entities ({{ entityList.length }})
+                  Entities ({{ replyEntities.length }})
                 </button>
               </div>
             </nav>
@@ -85,17 +86,15 @@
               </div>
               <!-- Entities content -->
               <div
-                v-if="entityList.length"
-                class="tab-pane fade show active"
+                v-if="replyEntities.length"
+                class="tab-pane fade show active entity-list-container"
                 :id="idRegistry.navTabs.content.entities"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.navTabs.nav.entities"
               >
-                <div class="row">
-                  <div class="col">
-                    <EntityList :entities="entityList" />
-                  </div>
-                </div>
+                <template v-if="click.entities">
+                  <EntityList :entities="replyEntities" />
+                </template>
               </div>
             </div>
           </div>
@@ -118,6 +117,10 @@ export default {
     return {
       listMax: 0,
       shown: true,
+      click: {
+        text: false,
+        entities: false,
+      },
     };
   },
   props: {
@@ -126,7 +129,9 @@ export default {
        * {
        *  text: "",
        *  name: "",
-       *  entities: [{gnd: "", nm: ""}, ...],
+       *  query_entities: [{gnd: "", nm: ""}, ...],
+       *  reply_entities: [{gnd: "", nm: ""}, ...],
+       *  stmt_list: [{al: [nm, ...], tp: "", hs: ""}, ...],
        *  sender: "",
        *  receivedAt: "",
        * }
@@ -158,9 +163,21 @@ export default {
         minute: "2-digit",
       });
     },
-    entityList() {
-      if (this.bot.entities) {
-        return this.bot.entities;
+    queryEntities() {
+      if (this.bot && this.bot.query_entities) {
+        return this.bot.query_entities;
+      }
+      return [];
+    },
+    replyEntities() {
+      if (this.bot && this.bot.reply_entities) {
+        return this.bot.reply_entities;
+      }
+      return [];
+    },
+    stmtList() {
+      if (this.bot && this.bot.stmt_list) {
+        return this.bot.stmt_list;
       }
       return [];
     },
@@ -206,7 +223,7 @@ export default {
 
 <style scoped>
 .entity-list-container {
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
 }
 .msg-wrapper-header {
