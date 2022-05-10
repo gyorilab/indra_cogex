@@ -82,6 +82,16 @@
               >
                 <div class="card card-body border-light">
                   <p class="text-start" v-html="bot.text"></p>
+                  <template v-if="queryEntities.length > 0">
+                    <div class="text-start">
+                      Entities found in query text:
+                      <template
+                        v-for="(ent, index) in queryEntities"
+                        :key="index"
+                        ><EntityModal :gnd="ent.gnd" :nm="ent.nm"
+                      /></template>
+                    </div>
+                  </template>
                 </div>
               </div>
               <!-- Entities content -->
@@ -105,6 +115,7 @@
 </template>
 
 <script>
+import EntityModal from "@/components/EntityModal.vue";
 import EntityList from "@/components/EntityList.vue";
 import helperFunctions from "@/helpers/helperFunctions";
 
@@ -112,6 +123,7 @@ export default {
   name: "MessageWrapper.vue",
   components: {
     EntityList,
+    EntityModal,
   },
   data() {
     return {
