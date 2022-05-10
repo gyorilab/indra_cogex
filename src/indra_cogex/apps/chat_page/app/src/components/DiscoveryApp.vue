@@ -24,8 +24,8 @@
         Ask
       </button>
     </div>
-    <div class="clearfix message">
-      <template v-for="(message, index) in reverseHistory" :key="index">
+    <div class="clearfix message d-flex flex-column-reverse">
+      <template v-for="(message, index) in chat.history" :key="index">
         <MessageWrapper :user="message.user" :bot="message.bot" />
       </template>
     </div>
@@ -131,9 +131,6 @@ export default {
         return `http://localhost:5000${this.pusher_info.new_user_endpoint}`;
       }
       return "";
-    },
-    reverseHistory() {
-      return this.chat.history.slice().reverse();
     },
   },
   methods: {
