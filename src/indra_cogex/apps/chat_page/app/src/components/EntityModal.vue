@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import badgeMappings from "../../public/DefaultValues";
+import badgeMappings from "@/helpers/DefaultValues";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
