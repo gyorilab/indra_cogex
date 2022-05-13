@@ -227,7 +227,7 @@ export default {
         };
 
         // Push message to history
-        this.chat.history.push({ user: user_msg, bot: {} });
+        this.chat.history.push({ user: user_msg, bot: { receivedAt: null } });
 
         // Clear the input
         this.text_input = "";
@@ -240,8 +240,8 @@ export default {
       }
     },
     async newMessage(message) {
-      // Expecting at least {text: "", name: "", entities: ""}
-      console.log("New message received");
+      // Expecting at least {raw_text: "", name: "", objects: ""}
+      console.log("New message received; bot=");
       console.log(message);
       if (message !== undefined) {
         // await the message
@@ -252,6 +252,8 @@ export default {
           ...resolved_message,
           receivedAt: receivedAt,
         };
+        console.log("Last interaction after response push: ");
+        console.log(this.chat.history[this.chat.history.length - 1]);
       }
     },
   },

@@ -1,6 +1,6 @@
 <template>
   <div v-if="user && user.input" :id="componentID" class="row">
-    <div class="col card mb-3">
+    <div class="col card mb-1">
       <div
         class="card-header msg-wrapper-header"
         :class="shown ? '' : 'border-bottom-0'"
@@ -26,7 +26,10 @@
         <div class="card-body">
           <div class="row mb-1">
             <div class="col-2 text-start">
-              <span class="text-muted small" :title="receivedDate"
+              <span
+                v-if="receivedDate"
+                class="text-muted small"
+                :title="receivedDate"
                 >Output ({{ shortDate }})
               </span>
             </div>
@@ -71,26 +74,43 @@
                 </button>
               </div>
             </nav>
+            <!-- Tab content -->
             <div class="tab-content" :id="idRegistry.tabsContent">
-              <!-- Text content -->
+              <!-- Text tab -->
               <div
-                v-if="bot && bot.text"
                 class="tab-pane fade show active"
                 :id="idRegistry.navTabs.content.text"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.navTabs.nav.text"
               >
                 <div class="card card-body border-light">
-                  <p class="text-start" v-html="bot.text"></p>
-                  <template v-if="queryEntities.length > 0">
-                    <div class="text-start">
-                      Entities found in query text:
-                      <template
-                        v-for="(ent, index) in queryEntities"
-                        :key="index"
-                        ><EntityModal :gnd="ent.gnd" :nm="ent.nm"
-                      /></template>
-                    </div>
+                  <!-- Show spinner if receivedDate is null -->
+                  <div
+                    v-if="bot && !receivedDate"
+                    class="d-flex align-items-center"
+                  >
+                    <strong>Loading...</strong>
+                    <div
+                      class="spinner-grow spinner-grow-sm text-secondary ms-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></div>
+                  </div>
+                  <template v-if="bot && bot.raw_text">
+                    <p class="text-start">
+                      <i>Raw text: </i>
+                      <span v-html="bot.raw_text"></span>
+                    </p>
+                    <template v-if="queryEntities.length > 0">
+                      <div class="text-start">
+                        Entities found in query text:
+                        <template
+                          v-for="(ent, index) in queryEntities"
+                          :key="index"
+                          ><EntityModal :gnd="ent.gnd" :nm="ent.nm"
+                        /></template>
+                      </div>
+                    </template>
                   </template>
                 </div>
               </div>
@@ -139,11 +159,9 @@ export default {
     bot: {
       /* Expecting a bot object:
        * {
-       *  text: "",
+       *  raw_text: "",
        *  name: "",
-       *  query_entities: [{gnd: "", nm: ""}, ...],
-       *  reply_entities: [{gnd: "", nm: ""}, ...],
-       *  stmt_list: [{al: [nm, ...], tp: "", hs: ""}, ...],
+       *  objects: {...},
        *  sender: "",
        *  receivedAt: "",
        * }
@@ -166,14 +184,20 @@ export default {
   },
   computed: {
     receivedDate() {
-      return new Date(this.bot.receivedAt).toLocaleString();
+      if (this.bot.receivedAt !== null) {
+        return new Date(this.bot.receivedAt).toLocaleString();
+      }
+      return "";
     },
     shortDate() {
       // Format: "HH:mm" 24 hour clock
-      return new Date(this.bot.receivedAt).toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      if (this.bot.receivedAt !== null) {
+        return new Date(this.bot.receivedAt).toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      return "";
     },
     queryEntities() {
       if (this.bot && this.bot.query_entities) {
