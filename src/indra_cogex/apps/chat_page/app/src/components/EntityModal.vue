@@ -5,11 +5,11 @@
     type="button"
     :title="title"
     @click="fillXrefs()"
-    class="badge ext-decoration-none m-1"
+    class="badge ext-decoration-none"
     :class="badgeClass"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
-    >{{ nm }}
+    >{{ textToShow }}
   </a>
 
   <!-- Modal -->
@@ -23,7 +23,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" :id="titleUUID">{{ nm }}</h5>
+          <h5 class="modal-title" :id="titleUUID">{{ textToShow }}</h5>
           <button
             type="button"
             class="btn-close"
@@ -71,18 +71,19 @@ import badgeMappings from "@/helpers/DefaultValues";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
+  // Todo: rename to AgentModal
   name: "EntityModal.vue",
   props: {
-    nm: {
+    text: {
       type: String,
-      required: true,
+      default: null,
     },
-    gnd: {
+    agentObject: {
       // Array of db name, db id
-      type: Array,
+      type: Object,
       required: true,
-      validator: (arr) => {
-        return arr.length === 2;
+      validator: (obj) => {
+        return obj.type === "agent";
       },
     },
   },
@@ -94,8 +95,24 @@ export default {
     };
   },
   computed: {
+    textToShow() {
+      return this.text || this.agentObject.value.name;
+    },
+    topGrounding() {
+      let defaultValue;
+      for (const [db_name, db_id] of Object.entries(
+        this.agentObject.value.db_refs
+      )) {
+        if (db_name === "TEXT") {
+          defaultValue = [db_name, db_id];
+        } else {
+          return [db_name, db_id];
+        }
+      }
+      return defaultValue;
+    },
     title() {
-      return `Grounded to ${this.gnd.join(
+      return `Grounded to ${this.topGrounding.join(
         ":"
       )}. Click to see more about the entity.`;
     },
@@ -108,9 +125,9 @@ export default {
     allRefs() {
       return [
         [
-          this.gnd[0],
-          this.gnd[1],
-          `https://bioregistry.io/${this.gnd[0]}:${this.gnd[1]}`,
+          this.topGrounding[0],
+          this.topGrounding[1],
+          `https://bioregistry.io/${this.topGrounding[0]}:${this.topGrounding[1]}`,
         ],
         ...this.xrefs,
       ];
@@ -123,12 +140,15 @@ export default {
     },
     badgeClass() {
       for (const [cls, values] of Object.entries(badgeMappings)) {
-        if (this.gnd[0] && values.includes(this.gnd[0].toLowerCase())) {
+        if (
+          this.topGrounding[0] &&
+          values.includes(this.topGrounding[0].toLowerCase())
+        ) {
           return cls;
         }
       }
       console.log(
-        `No badge class found for ${this.nm} (${this.gnd.join(":")})`
+        `No badge class found for ${this.nm} (${this.topGrounding.join(":")})`
       );
       return "warning";
     },
@@ -137,14 +157,17 @@ export default {
     async fillXrefs() {
       // Todo: Use a global with `inject ['GStore']` to store the xrefs in
       // Call network search web api to get xrefs; fixme: should use a standalone api; Isn't there one for the bioontology?
-      const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${this.gnd[0]}&id=${this.gnd[1]}`;
+      const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${this.topGrounding[0]}&id=${this.topGrounding[1]}`;
       const xrefResp = await fetch(xrefsUrl);
       const xrefData = await xrefResp.json();
       this.xrefs = await xrefData;
 
       // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
-      const bioluUrl = `http://biolookup.io/api/lookup/${this.gnd[0]}:${this.gnd[1]}`; // Currently only supports http
-      if (this.gnd[0].length === 0 || this.gnd[1].length === 0) {
+      const bioluUrl = `http://biolookup.io/api/lookup/${this.topGrounding[0]}:${this.topGrounding[1]}`; // Currently only supports http
+      if (
+        this.topGrounding[0].length === 0 ||
+        this.topGrounding[1].length === 0
+      ) {
         console.warn(`No grounding found for ${this.nm}`);
       }
       const bioluResp = await fetch(bioluUrl);

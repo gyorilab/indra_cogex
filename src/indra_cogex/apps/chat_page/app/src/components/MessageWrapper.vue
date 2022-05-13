@@ -58,7 +58,11 @@
                 </button>
                 <!-- Entities tab -->
                 <button
-                  v-if="replyEntities.length"
+                  v-if="
+                    objects &&
+                    objects.agent_list &&
+                    objects.agent_list.length > 0
+                  "
                   class="nav-link"
                   @click.once="click.entities = true"
                   :title="receivedDate"
@@ -70,7 +74,7 @@
                   :aria-controls="idRegistry.navTabs.content.entities"
                   aria-selected="false"
                 >
-                  Entities ({{ replyEntities.length }})
+                  Entities ({{ objects.agent_list.length }})
                 </button>
               </div>
             </nav>
@@ -101,29 +105,35 @@
                       <i>Raw text: </i>
                       <span v-html="bot.raw_text"></span>
                     </p>
-                    <template v-if="queryEntities.length > 0">
-                      <div class="text-start">
-                        Entities found in query text:
-                        <template
-                          v-for="(ent, index) in queryEntities"
-                          :key="index"
-                          ><EntityModal :gnd="ent.gnd" :nm="ent.nm"
-                        /></template>
-                      </div>
-                    </template>
+                    <p class="text-start">
+                      <i>Formatted text: </i><br />
+                      <template
+                        v-for="(txtObj, index) in textObjectArray"
+                        :key="`${idRegistry.navTabs.content.text}-text${index}`"
+                      >
+                        <template v-if="txtObj.object === null">
+                          <span v-html="txtObj.text"></span>
+                        </template>
+                        <template v-else-if="txtObj.object.type === 'agent'">
+                          <EntityModal :agent-object="txtObj.object" />
+                        </template>
+                      </template>
+                    </p>
                   </template>
                 </div>
               </div>
               <!-- Entities content -->
               <div
-                v-if="replyEntities.length"
+                v-if="
+                  objects && objects.agent_list && objects.agent_list.length
+                "
                 class="tab-pane fade show active entity-list-container"
                 :id="idRegistry.navTabs.content.entities"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.navTabs.nav.entities"
               >
                 <template v-if="click.entities">
-                  <EntityList :entities="replyEntities" />
+                  <EntityList :entities="objects.agent_list" />
                 </template>
               </div>
             </div>
@@ -199,23 +209,64 @@ export default {
       }
       return "";
     },
-    queryEntities() {
-      if (this.bot && this.bot.query_entities) {
-        return this.bot.query_entities;
+    objects() {
+      if (this.bot && this.bot.objects) {
+        return this.bot.objects;
       }
-      return [];
+      return null;
     },
-    replyEntities() {
-      if (this.bot && this.bot.reply_entities) {
-        return this.bot.reply_entities;
+    textObjectArray() {
+      // Locate all references to text objects in raw text
+
+      // Contains objects with entries: "text", "object"
+      // "text" is the text to show, "object" is the object representing the text (null if plain text)
+      let txtObjs = [];
+      const rawText = this.bot.raw_text || "";
+
+      // Split string on any text between '{' and '}'
+      let txtObjStrings = rawText.split(/(\{.*?\})/g);
+
+      if (txtObjStrings.length > 0 && this.bot.objects) {
+        // Loop through each string and match against objects
+        txtObjStrings.forEach((substring) => {
+          // Skip empty strings
+          if (substring.length > 0) {
+            // If we match a recognised object, look it up among the objects
+            if (substring.includes("{") && substring.includes("}")) {
+              const objName = substring.replace(/[{}]/g, "");
+              const obj = this.bot.objects[objName] || null;
+              let textForObj;
+              if (obj) {
+                textForObj = this.getTextForObj(obj);
+                txtObjs.push({ text: textForObj, object: obj });
+              }
+            } else {
+              // If we don't match a recognised object, just add the string
+              // This shouldn't happen, but just in case
+              console.log(
+                "Shouldn't happen!! Unrecognised object: " + substring
+              );
+              txtObjs.push({ text: substring, object: null });
+            }
+          }
+        });
+      } else {
+        // If there are no text objects, return the raw text
+        if (rawText.includes("{") || rawText.includes("}")) {
+          console.warn(
+            "MessageWrapper.vue: No text objects found in raw text, but references found. Returning raw text."
+          );
+        } else {
+          console.log("No text objects found");
+        }
+        txtObjs.push({
+          text: this.bot.raw_text,
+          object: null,
+        });
       }
-      return [];
-    },
-    stmtList() {
-      if (this.bot && this.bot.stmt_list) {
-        return this.bot.stmt_list;
-      }
-      return [];
+      console.log("txtObjs");
+      console.log(txtObjs);
+      return txtObjs;
     },
     componentID() {
       return `msgWrapper-${this.uuid}`;
@@ -242,6 +293,18 @@ export default {
     isActive(tab) {
       // Check if the tab is active
       return this.activeTab === tab;
+    },
+    getTextForObj(obj) {
+      // Return the text for the object
+      switch (obj.type) {
+        // Todo: handle 'agent_list', 'stmt_list', 'url', 'url_list', 'string_list', 'str'
+        case "agent":
+          // Return object.value.name
+          return obj.value.name;
+        default:
+          console.log("In switch-case: unhandled object: " + obj.type);
+          return "(N/A)";
+      }
     },
   },
   setup() {
