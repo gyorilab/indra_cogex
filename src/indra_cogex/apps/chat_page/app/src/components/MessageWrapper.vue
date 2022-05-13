@@ -111,12 +111,21 @@
                         v-for="(txtObj, index) in textObjectArray"
                         :key="`${idRegistry.navTabs.content.text}-text${index}`"
                       >
-                        <template v-if="txtObj.object === null">
-                          <span v-html="txtObj.text"></span>
-                        </template>
+                        <span
+                          v-if="txtObj.object === null"
+                          v-html="txtObj.text"
+                        ></span>
                         <template v-else-if="txtObj.object.type === 'agent'">
                           <EntityModal :agent-object="txtObj.object" />
                         </template>
+                        <ul v-else-if="txtObj.object.type === 'string_list'">
+                          <li
+                            v-for="(str, index) in txtObj.object.value"
+                            :key="`${idRegistry.navTabs.content.text}-strlist${index}`"
+                          >
+                            {{ str }}
+                          </li>
+                        </ul>
                       </template>
                     </p>
                   </template>
@@ -226,14 +235,19 @@ export default {
       // Split string on any text between '{' and '}'
       let txtObjStrings = rawText.split(/(\{.*?\})/g);
 
-      if (txtObjStrings.length > 0 && this.bot.objects) {
+      if (txtObjStrings.length > 0 && this.bot.objects !== null) {
         // Loop through each string and match against objects
         txtObjStrings.forEach((substring) => {
           // Skip empty strings
           if (substring.length > 0) {
             // If we match a recognised object, look it up among the objects
             if (substring.includes("{") && substring.includes("}")) {
-              const objName = substring.replace(/[{}]/g, "");
+              let objName = substring.replace(/[{}]/g, "");
+              let limit;
+              // Check if there is a limit
+              if (objName.includes(":")) {
+                [objName, limit] = objName.split(":");
+              }
               const obj = this.bot.objects[objName] || null;
               let textForObj;
               if (obj) {
@@ -242,16 +256,12 @@ export default {
               }
             } else {
               // If we don't match a recognised object, just add the string
-              // This shouldn't happen, but just in case
-              console.log(
-                "Shouldn't happen!! Unrecognised object: " + substring
-              );
               txtObjs.push({ text: substring, object: null });
             }
           }
         });
       } else {
-        // If there are no text objects, return the raw text
+        console.log("Shouldn't get here");
         if (rawText.includes("{") || rawText.includes("}")) {
           console.warn(
             "MessageWrapper.vue: No text objects found in raw text, but references found. Returning raw text."
