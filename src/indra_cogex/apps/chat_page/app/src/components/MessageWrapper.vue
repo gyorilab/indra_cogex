@@ -239,10 +239,6 @@ export default {
     },
   },
   methods: {
-    setTabActive(tab) {
-      // Set the active tab
-      this.activeTab = tab;
-    },
     isActive(tab) {
       // Check if the tab is active
       return this.activeTab === tab;
