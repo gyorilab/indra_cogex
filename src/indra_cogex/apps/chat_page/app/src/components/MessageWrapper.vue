@@ -119,7 +119,7 @@
                             txtObj.object.type === 'agent'
                           "
                         >
-                          <EntityModal :agent-object="txtObj.object" />
+                          <EntityModal :agent-object="txtObj.object.value" />
                         </template>
                         <!-- A string list, set as an unordered list -->
                         <ul v-else-if="txtObj.object.type === 'string_list'">
@@ -254,8 +254,6 @@ export default {
       // return this.getEntitiesWithRole(this.objects, "fixed");
       if (this.bot && this.bot.objects) {
         let stuff = this.getEntitiesWithRole(this.bot.objects, "fixed");
-        console.log("queryEntities");
-        console.log(stuff);
         return stuff;
       }
       return [];
@@ -388,7 +386,7 @@ export default {
       // Loop the entries in the Object
       Object.values(objs).forEach((obj) => {
         if (obj.type === "agent_list" && obj.role === role) {
-          // Concantenate the entities (stored in the 'value' field)
+          // Concatenate the entities (stored in the 'value' field)
           entities = entities.concat(obj.value);
         }
       });

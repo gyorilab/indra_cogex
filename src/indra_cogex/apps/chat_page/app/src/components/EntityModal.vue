@@ -79,11 +79,11 @@ export default {
       default: null,
     },
     agentObject: {
-      // Array of db name, db id
+      // Object of { name: "", db_refs: {ns: id} }
       type: Object,
       required: true,
       validator: (obj) => {
-        return obj.type === "agent";
+        return obj.name !== null && obj.db_refs !== null;
       },
     },
   },
@@ -96,13 +96,11 @@ export default {
   },
   computed: {
     textToShow() {
-      return this.text || this.agentObject.value.name;
+      return this.text || this.agentObject.name;
     },
     topGrounding() {
       let defaultValue;
-      for (const [db_name, db_id] of Object.entries(
-        this.agentObject.value.db_refs
-      )) {
+      for (const [db_name, db_id] of Object.entries(this.agentObject.db_refs)) {
         if (db_name === "TEXT") {
           defaultValue = [db_name, db_id];
         } else {

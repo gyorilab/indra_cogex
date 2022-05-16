@@ -14,7 +14,7 @@
   <hr />
   <div class="text-start">
     <template v-for="(entity, number) in computedList" :key="number">
-      <EntityModal :gnd="entity.gnd" :nm="entity.nm" />
+      <EntityModal :agent-object="entity" />
     </template>
   </div>
 </template>
@@ -61,7 +61,7 @@ export default {
     computedList() {
       let list = [];
       for (let entity of this.entities) {
-        if (this.isClsVisible(this.nsToCls(entity.gnd))) {
+        if (this.isClsVisible(this.dbRefsToCls(entity.db_refs))) {
           list.push(entity);
         }
       }
@@ -70,8 +70,8 @@ export default {
     availableClasses() {
       let classes = [];
       for (const entity of this.entities) {
-        const cls = this.nsToCls(entity.gnd);
-        // Add class if it: is in badgeClasses and is not already in classes
+        const cls = this.dbRefsToCls(entity.db_refs);
+        // Add class if it is in badgeClasses and is not already in classes
         if (
           this.badgeClasses.some((el) => el[0] === cls) &&
           !classes.some((el) => el[0] === cls)
@@ -126,32 +126,40 @@ export default {
           return this.warningVis;
       }
     },
-    nsToCls(gnd) {
-      let ns = "";
-      if (gnd[0]) {
-        ns = gnd[0].toLowerCase();
-      }
-      switch (ns) {
-        case "fplx":
-        case "hgnc":
-        case "up":
-        case "uppro":
-        case "mirbase":
-          return "bg-primary";
-        case "chebi":
-          return "bg-secondary";
-        case "go":
-        case "mesh":
-        case "doid":
-          return "bg-success";
-        case "hp":
-          return "bg-info text-dark";
-        case "efo":
-          return "bg-light text-dark";
-        default:
-          console.warn("Unknown namespace: " + ns, gnd);
-          return "warning text-dark";
-      }
+    dbRefsToCls(db_refs) {
+      // db_refs is an object with key-value pairs of the form
+      // { "namespace": "namespace_id" }
+      let cls = "";
+      const dbRefKeys = Object.keys(db_refs);
+      dbRefKeys.forEach((ns) => {
+        const nsLower = ns.toLowerCase();
+        switch (nsLower) {
+          case "fplx":
+          case "hgnc":
+          case "up":
+          case "uppro":
+          case "mirbase":
+            cls = "bg-primary";
+            return;
+          case "chebi":
+            cls = "bg-secondary";
+            return;
+          case "go":
+          case "mesh":
+          case "doid":
+            cls = "bg-success";
+            return;
+          case "hp":
+            cls = "bg-info text-dark";
+            return;
+          case "efo":
+            cls = "bg-light text-dark";
+            return;
+          default:
+            cls = "warning text-dark";
+        }
+      });
+      return cls;
     },
   },
 };
