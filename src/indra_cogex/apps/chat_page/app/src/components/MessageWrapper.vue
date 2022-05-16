@@ -93,7 +93,7 @@
                     v-if="bot && !receivedDate"
                     class="d-flex align-items-center"
                   >
-                    <strong>Loading...</strong>
+                    <span>Loading...</span>
                     <div
                       class="spinner-grow spinner-grow-sm text-secondary ms-auto"
                       role="status"
