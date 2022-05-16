@@ -371,6 +371,18 @@ export default {
         } and ${arr.slice(-1)}`;
       }
     },
+    getEntitiesWithRole(objs, role) {
+      // Get all entities from type 'agent_list' with a given role
+      let entities = [];
+      // Loop the entries in the Object
+      Object.values(objs).forEach((obj) => {
+        if (obj.type === "agent_list" && obj.role === role) {
+          // Concantenate the entities (stored in the 'value' field)
+          entities = entities.concat(obj.value);
+        }
+      });
+      return entities;
+    },
     getTextForObj(obj, format_spec = null) {
       // Return the text for the object
       switch (obj.type) {
