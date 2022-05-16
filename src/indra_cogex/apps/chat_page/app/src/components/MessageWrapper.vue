@@ -304,7 +304,23 @@ export default {
       // Check if the tab is active
       return this.activeTab === tab;
     },
-    getTextForObj(obj) {
+    englishJoin(arr, delimiter = ", ", oxford = true) {
+      console.log("englishJoin");
+      console.log(arr);
+      // Join an array of strings into a string with a delimiter and a grammatically correct conjunction
+      if (arr.length === 0) {
+        console.warn("No array to join", arr);
+      } else if (arr.length === 1) {
+        return arr[0];
+      } else if (arr.length === 2) {
+        return `${arr[0]} and ${arr[1]}`;
+      } else {
+        return `${arr.slice(0, -1).join(delimiter)}${
+          oxford ? "," : ""
+        } and ${arr.slice(-1)}`;
+      }
+    },
+    getTextForObj(obj, format_spec = null) {
       // Return the text for the object
       switch (obj.type) {
         // Todo: handle 'agent_list', 'stmt_list', 'url', 'url_list', 'string_list', 'str'
