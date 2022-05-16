@@ -79,7 +79,7 @@
               </div>
             </nav>
             <!-- Tab content -->
-            <div class="tab-content" :id="idRegistry.tabsContent">
+            <div class="tab-content" :id="idRegistry.tabContentID">
               <!-- Text tab -->
               <div
                 class="tab-pane fade show active"
@@ -125,6 +125,7 @@
                         >
                           <EntityModal :agent-object="txtObj.object" />
                         </template>
+                        <!-- A string list, set as an unordered list -->
                         <ul v-else-if="txtObj.object.type === 'string_list'">
                           <li
                             v-for="(str, index) in txtObj.object.value"
@@ -333,15 +334,17 @@ export default {
       return {
         collapse: `${this.componentID}-collapse`,
         navTabsID: `${this.componentID}-nav-tabs`,
-        tabsContent: `${this.componentID}-tabs-content`,
+        tabContentID: `${this.componentID}-tabs-content`,
         navTabs: {
           nav: {
             text: `${this.componentID}-tab-text`,
             entities: `${this.componentID}-tab-entities`,
+            stmt: `${this.componentID}-tab-stmts`,
           },
           content: {
             text: `${this.componentID}-content-text`,
             entities: `${this.componentID}-content-entities`,
+            stmt: `${this.componentID}-content-stmts`,
           },
         },
       };
