@@ -247,6 +247,8 @@ export default {
               // Check if there is a limit
               if (objName.includes(":")) {
                 [objName, limit] = objName.split(":");
+              } else {
+                limit = null;
               }
               const obj = this.bot.objects[objName] || null;
               let textForObj;
