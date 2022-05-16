@@ -338,8 +338,6 @@ export default {
           match: null,
         });
       }
-      console.log("txtObjs");
-      console.log(txtObjs);
       return txtObjs;
     },
     componentID() {
@@ -371,8 +369,6 @@ export default {
       return this.activeTab === tab;
     },
     englishJoin(arr, delimiter = ", ", oxford = true) {
-      console.log("englishJoin");
-      console.log(arr);
       // Join an array of strings into a string with a delimiter and a grammatically correct conjunction
       if (arr.length === 0) {
         console.warn("No array to join", arr);
