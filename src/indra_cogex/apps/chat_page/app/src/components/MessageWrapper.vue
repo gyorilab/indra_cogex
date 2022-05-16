@@ -334,6 +334,8 @@ export default {
         txtObjs.push({
           text: this.bot.raw_text,
           object: null,
+          objName: null,
+          match: null,
         });
       }
       console.log("txtObjs");
