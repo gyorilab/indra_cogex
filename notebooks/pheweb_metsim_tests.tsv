@@ -1,0 +1,643 @@
+gene_prefix	gene_identifier	gene_name	phenotype_prefix	phenotype_identifier	phenotype_name
+hgnc	10348	RPL37A	chebi	27592	ectoine
+hgnc	1048	BHMT2	chebi	90344	N-methylproline
+hgnc	1048	BHMT2	mesh	C025138	dimethylglycine
+hgnc	10487	S100A10	chebi	132979	3-hydroxydecanoate
+hgnc	10487	S100A10	chebi	133511	3-hydroxyoctanoate
+hgnc	10487	S100A10	chebi	76616	3-hydroxylaurate
+hgnc	10536	SARDH	chebi	15611	sarcosine
+hgnc	10621	CCL22	mesh	C013461	cysteine sulfinic acid
+hgnc	10699	SEC14L2	chebi	22470	alpha-tocopherol
+hgnc	10906	SLC10A2	chebi	58301	taurolithocholic acid sulfate(2-)
+hgnc	10916	SLC13A1	chebi	16189	sulfate
+hgnc	10929	SLC17A1	chebi	133096	chavicol hydrogen sulfate
+hgnc	10929	SLC17A1	chebi	133695	21-hydroxypregnenolone disulfate
+hgnc	10929	SLC17A1	chebi	166654	3-Hydroxycinnamate sulfate
+hgnc	10932	SLC17A4	chebi	133740	caffeic acid 3-sulfate(2-)
+hgnc	10942	SLC1A4	chebi	133093	gamma-Glu-Abu(1-)
+hgnc	10942	SLC1A4	chebi	35621	alpha-aminobutyric acid
+hgnc	10959	SLCO1B1	chebi	132924	sulfoglycolithocholate anion
+hgnc	10959	SLCO1B1	chebi	133456	1-alpha-linolenoyl-sn-glycero-3-phosphocholine
+hgnc	10959	SLCO1B1	chebi	133684	glycochenodeoxycholic acid glucuronide anion
+hgnc	10959	SLCO1B1	chebi	133940	lithocholate sulfate(2-)
+hgnc	10959	SLCO1B1	chebi	166730	Glycocholenate sulfate
+hgnc	10959	SLCO1B1	chebi	166739	Taurocholenate sulfate
+hgnc	10959	SLCO1B1	chebi	17474	estrone 3-sulfate
+hgnc	10959	SLCO1B1	chebi	29023	(-)-stercobilin
+hgnc	10959	SLCO1B1	chebi	35420	pregnenolone sulfate
+hgnc	10959	SLCO1B1	chebi	72663	9,10-DiHOME
+hgnc	10959	SLCO1B1	mesh	C028281	phenylalanyltryptophan
+hgnc	10969	SLC22A5	chebi	5757	homostachydrine
+hgnc	10969	SLC22A5	chebi	73028	O-malonylcarnitine
+hgnc	11001	SLC28A1	chebi	17562	cytidine
+hgnc	11001	SLC28A1	chebi	17802	pseudouridine
+hgnc	11001	SLC28A1	mesh	C010922	5,6-dihydrouridine
+hgnc	11041	SLC5A6	chebi	16454	pantothenate
+hgnc	11042	SLC6A1	chebi	36110	pipecolate
+hgnc	11046	SLC6A13	chebi	132918	1-methyl-4-imidazoleacetate
+hgnc	11046	SLC6A13	chebi	16244	4-(trimethylammonio)butanoate
+hgnc	11046	SLC6A13	chebi	72991	dihydrourocanate
+hgnc	11063	SLC7A5	chebi	28683	kynurenine
+hgnc	11064	SLC7A6	chebi	24109	fructosyllysine
+hgnc	11064	SLC7A6	chebi	88494	epsilon-(gamma-glutamyl)lysine
+hgnc	11134	SNAPC1	chebi	89929	glycoursodeoxycholic acid
+hgnc	1118	BST1	chebi	132960	3-phosphoglycerate
+hgnc	11270	SPRY2	chebi	49053	N-carbamoylvaline
+hgnc	11284	SRD5A1	chebi	16175	cholest-4-en-3-one
+hgnc	1130	BTG1	chebi	72801	5-HEPE
+hgnc	11453	SULT1A1	chebi	133073	quinol sulfate(1-)
+hgnc	11453	SULT1A1	chebi	133559	3-hydroxypyridine sulfate
+hgnc	11453	SULT1A1	chebi	176456	Ascorbic acid 3-sulfate
+hgnc	11453	SULT1A1	chebi	89649	5-hydroxyindole
+hgnc	11458	SULT2A1	chebi	133100	5alpha-androstane-3alpha,17beta-diol disulfate anion
+hgnc	11458	SULT2A1	chebi	133105	(3alpha,5alpha,17beta)-3-hydroxyandrostan-17-yl sulfate(1-)
+hgnc	11458	SULT2A1	chebi	166737	Taurochenodeoxycholic acid 3-sulfate
+hgnc	11458	SULT2A1	chebi	178079	21-hydroxypregnenolone monosulfate
+hgnc	11458	SULT2A1	chebi	28320	tetrahydrocortisol
+hgnc	11458	SULT2A1	chebi	84094	testosterone sulfate
+hgnc	11458	SULT2A1	chebi	88765	Pregnanediol-3-glucuronide
+hgnc	11458	SULT2A1	chebi	89234	3b-Hydroxy-5-cholenoic acid
+hgnc	11617	ELOC	chebi	26986	threonine
+hgnc	11617	ELOC	chebi	82968	gamma-glutamylthreonine
+hgnc	11631	TCF20	chebi	28374	solanidine
+hgnc	1164	TMEM258	chebi	77292	1-(1Z)-hexadecenyl-2-arachidonoyl-sn-glycero-3-phosphocholine
+hgnc	11768	TGFB2	chebi	133664	1-(1Z-octadecenyl)-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphocholine
+hgnc	11782	TH	chebi	133708	3-methoxytyramine sulfate
+hgnc	11782	TH	mesh	C008404	3-methoxytyrosine
+hgnc	11834	TKT	chebi	133792	erythronate
+hgnc	1186	PARP11	mesh	C010223	N6-methyladenosine (m6A)
+hgnc	12313	JMJD1C	chebi	16610	spermidine
+hgnc	12383	EIPR1	mesh	C003342	stachydrine
+hgnc	12404	TTPA	mesh	C482621	gamma-glutamylvaline
+hgnc	12420	TUFM	mesh	C095190	4-allylcatechol
+hgnc	12531	UGT1A10	chebi	17033	biliverdin
+hgnc	12531	UGT1A10	chebi	2323	4-hydroxy-8-methoxyquinaldic acid
+hgnc	12531	UGT1A10	chebi	62448	indole-3-carboxylate
+hgnc	12531	UGT1A10	chebi	71201	xanthurenate
+hgnc	12535	UGT1A3	chebi	17033	biliverdin
+hgnc	12536	UGT1A4	chebi	17033	biliverdin
+hgnc	12537	UGT1A5	chebi	17033	biliverdin
+hgnc	12538	UGT1A6	chebi	17033	biliverdin
+hgnc	12538	UGT1A6	chebi	2323	4-hydroxy-8-methoxyquinaldic acid
+hgnc	12538	UGT1A6	chebi	71201	xanthurenate
+hgnc	12539	UGT1A7	chebi	17033	biliverdin
+hgnc	12539	UGT1A7	chebi	2323	4-hydroxy-8-methoxyquinaldic acid
+hgnc	12539	UGT1A7	chebi	71201	xanthurenate
+hgnc	12540	UGT1A8	chebi	17033	biliverdin
+hgnc	12540	UGT1A8	chebi	2323	4-hydroxy-8-methoxyquinaldic acid
+hgnc	12540	UGT1A8	chebi	62448	indole-3-carboxylate
+hgnc	12540	UGT1A8	chebi	71201	xanthurenate
+hgnc	12541	UGT1A9	chebi	17033	biliverdin
+hgnc	12541	UGT1A9	chebi	2323	4-hydroxy-8-methoxyquinaldic acid
+hgnc	12541	UGT1A9	chebi	62448	indole-3-carboxylate
+hgnc	12541	UGT1A9	chebi	71201	xanthurenate
+hgnc	12546	UGT2B15	chebi	133205	trans-3-hydroxycotinine beta-D-glucuronide(1-)
+hgnc	12546	UGT2B15	chebi	137056	cholic acid glucuronide
+hgnc	12555	UGT8	chebi	2596	alliin
+hgnc	12563	UMPS	chebi	30839	orotate
+hgnc	12570	UNC93A	mesh	C000009	N-acetylglucosaminylasparagine
+hgnc	12576	UPP1	chebi	16704	uridine
+hgnc	12587	UQCRFS1	chebi	28088	genistein
+hgnc	12587	UQCRFS1	chebi	42191	ethylenediaminetetraacetic acid
+hgnc	12828	XRCC1	chebi	133594	isoeugenol sulfate
+hgnc	13009	ZNF217	chebi	133460	guaiacol sulfate
+hgnc	13176	IKZF1	mesh	C030737	indoleacetic acid
+hgnc	13202	ADAMTS9	chebi	133177	glycohyocholate
+hgnc	13446	SLC2A9	chebi	17775	7,9-dihydro-1H-purine-2,6,8(3H)-trione
+hgnc	13830	CNTNAP2	chebi	61938	gamma-carboxy-L-glutamic acid zwitterion(2-)
+hgnc	13887	ABCG8	chebi	28623	campesterol
+hgnc	1390	CACNA1C	mesh	C032703	palmitoylcholine
+hgnc	14051	MRPS6	chebi	40968	astaxanthin
+hgnc	1406	CACNG2	chebi	88824	N-acetylcadaverine
+hgnc	14198	ELAC2	chebi	36252	glycochenodeoxycholate
+hgnc	14268	PCDH18	chebi	25982	phenylacetylglutamine
+hgnc	14412	AGXT2	chebi	49096	3-aminoisobutyrate
+hgnc	14416	ELOVL2	chebi	74963	1-hexadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphocholine
+hgnc	14417	ELSPBP1	chebi	133693	oleoylcholine
+hgnc	14430	SLC13A3	chebi	25115	malate
+hgnc	14460	NDRG2	chebi	27570	histidine
+hgnc	14463	SLC39A11	chebi	133197	2-hydroxyibuprofen
+hgnc	14526	NAALAD2	chebi	76942	beta-citrylglutamate(4-)
+hgnc	14569	JPT1	chebi	25722	orotidine
+hgnc	14885	DNAJA4	chebi	30867	dihydroorotate
+hgnc	14909	TAS2R1	mesh	C500980	fibrinopeptide A, des-Ala(1)-
+hgnc	14942	PPP1R3B	chebi	17306	maltose
+hgnc	14942	PPP1R3B	chebi	65097	2-hydroxyhexadecanoate
+hgnc	14942	PPP1R3B	chebi	76724	2-hydroxyoctadecanoate
+hgnc	14971	SNX7	mesh	C082810	gamma-glutamylglutamate
+hgnc	1540	SERPINA6	chebi	17650	cortisol
+hgnc	1544	CBLN2	chebi	84557	1-(1Z-hexadecenyl)-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphocholine
+hgnc	15472	ALDH1A2	chebi	132926	2-hexadecanoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	133144	2-octadecanoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	133432	1-docosahexaenoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	133656	1-hexadecanoyl-2-(8Z,11Z,14Z-icosatrienoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	34112	1-O-hexadecyl-2-oleoyl-sn-glycero-3-phosphocholine
+hgnc	15472	ALDH1A2	chebi	73001	1-hexadecanoyl-2-(9Z-octadecenoyl)-sn-glycero-3-phosphocholine
+hgnc	15472	ALDH1A2	chebi	73004	1-hexadecanoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	73009	1-hexadecanoyl-2-(5Z,8Z,11Z,14Z-icosatetraenoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	75034	1-stearoyl-2-oleoyl-sn-glycero-3-phosphocholine
+hgnc	15472	ALDH1A2	chebi	75038	1-stearoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	78261	1-hexadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	78266	1-octadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15472	ALDH1A2	chebi	78268	1-stearoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	15492	ANKH	chebi	133748	citrate anion
+hgnc	15505	MBOAT7	chebi	133065	1-arachidonoyl-sn-glycero-3-phospho-1D-myo-inositol(1-)
+hgnc	15505	MBOAT7	chebi	133077	1-linoleoyl-sn-glycero-3-phospho-D-myo-inositol
+hgnc	15505	MBOAT7	chebi	72838	1-hexadecanoyl-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phospho-D-myo-inositol(1-)
+hgnc	15866	MRGBP	chebi	15676	allantoin
+hgnc	15919	ACOT8	chebi	17325	3-hydroxy-3-methylglutarate(2-)
+hgnc	16126	MACROD2	chebi	18222	xylose
+hgnc	16297	UPB1	chebi	11892	N-carbamoyl-beta-alaninate
+hgnc	16393	CARD11	chebi	28790	serotonin
+hgnc	16396	OSBPL8	chebi	134206	2-methylserine
+hgnc	16430	LACRT	chebi	23098	chiro-inositol
+hgnc	16432	AZIN1	mesh	C038361	leucylleucine
+hgnc	16626	RAPGEF4	chebi	75216	1-O-octadecyl-sn-glycero-3-phosphocholine
+hgnc	1664	SCARB1	chebi	133587	1,2,3-benzenetriol monosulfate(1-)
+hgnc	16781	NPL	chebi	35418	N-acetylneuraminate
+hgnc	16835	TAOK2	chebi	2869	ascorbic acid 2-sulfate
+hgnc	16891	TRIB1	chebi	36314	glycerophosphoethanolamine
+hgnc	16891	TRIB1	chebi	74000	1-palmitoyl-2-palmitoleoyl-sn-glycero-3-phosphocholine
+hgnc	16891	TRIB1	chebi	75062	1-myristoyl-2-palmitoyl-sn-glycero-3-phosphocholine
+hgnc	17022	HPS5	chebi	133082	(2R,3R)-2-hydroxy-3-methylpentanoate
+hgnc	17053	PLEKHA6	chebi	27823	(5-hydroxyindol-3-yl)acetic acid
+hgnc	17127	SLC39A2	chebi	9407	taurochenodeoxycholate
+hgnc	17134	CBWD1	chebi	58044	2,5-dihydroxybenzoate
+hgnc	17245	CPA6	chebi	133565	umbelliferone sulfate
+hgnc	17369	ABT1	chebi	82931	4-vinylphenol sulfate
+hgnc	1765	CDH6	chebi	17254	4-methylcatechol
+hgnc	1765	CDH6	chebi	36234	chenodeoxycholate
+hgnc	1767	CDH8	chebi	133562	2-acetamidophenol sulfate
+hgnc	17699	SBK1	mesh	C477779	2-hydroxyfluorene
+hgnc	177	ACY1	mesh	C010530	N-acetylalanine
+hgnc	177	ACY1	mesh	D009239	N-Formylmethionine
+hgnc	17859	NUP188	chebi	19227	2'-O-methyluridine
+hgnc	17859	NUP188	chebi	19228	2'-O-methylcytidine
+hgnc	17939	SLC45A1	chebi	165848	2-Butenoylglycine
+hgnc	1795	CDO1	chebi	16668	hypotaurine
+hgnc	17976	RPL10L	chebi	86394	5-aminopentanoate
+hgnc	17993	TRPM4	chebi	131982	1-icosenoyl-sn-glycero-3-phosphocholine
+hgnc	18003	OLIG3	mesh	C029660	glycylphenylalanine
+hgnc	18040	ARID1B	chebi	81555	Enterolactone
+hgnc	18069	NAT8	chebi	132188	methionine sulfone
+hgnc	18069	NAT8	chebi	166830	N-acetyl-leucine
+hgnc	18069	NAT8	chebi	21626	N-acetylphenylalanine
+hgnc	18069	NAT8	chebi	49006	N-acetylcitrulline
+hgnc	18069	NAT8	chebi	70976	N-acetyltryptophan
+hgnc	18069	NAT8	mesh	C016195	N-acetylglutamic acid
+hgnc	18107	DEFB130A	chebi	10362	beta-cryptoxanthin
+hgnc	1811	CDYL	chebi	28483	N-acetylhistamine
+hgnc	18117	KHDRBS3	chebi	132028	tauroursodeoxycholate
+hgnc	18246	CRYL1	chebi	24461	gulonate
+hgnc	18329	YPEL5	chebi	70959	3-methylhistidine
+hgnc	18515	TMEM47	chebi	17154	nicotinamide
+hgnc	18697	ASCC3	chebi	141700	3-methoxycatechol
+hgnc	18748	CNTNAP5	chebi	29746	glycocholate
+hgnc	19035	MAST2	chebi	17113	erythritol
+hgnc	19087	EBF3	chebi	30413	heme
+hgnc	19090	EBF2	chebi	17754	glycerol
+hgnc	19182	SASH1	mesh	C026166	theanine
+hgnc	19194	HMCN1	chebi	28757	fructose
+hgnc	19288	ACMSD	chebi	16797	1-methylnicotinamide
+hgnc	1937	CHKA	chebi	18132	phosphocholine
+hgnc	19411	LRRTM4	chebi	15318	xanthine
+hgnc	19768	ASB16	mesh	C050750	benzoylcarnitine
+hgnc	19845	SLC35F4	chebi	16628	methylguanidine
+hgnc	1987	CITED2	chebi	72665	12,13-DiHOME
+hgnc	19965	TXNDC16	mesh	C110059	6-bromotryptophan
+hgnc	19972	CLMN	chebi	16567	anthranilate
+hgnc	20001	PCSK9	chebi	16113	cholesterol
+hgnc	20001	PCSK9	chebi	78646	N-hexadecanoylsphingosine-1-phosphocholine
+hgnc	20123	ASPG	chebi	22653	asparagine
+hgnc	20130	TMEM229B	chebi	133636	1-(1Z-hexadecenyl)-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphocholine
+hgnc	20130	TMEM229B	chebi	133669	1-(1Z-hexadecenyl)-2-tetradecanoyl-sn-glycero-3-phosphocholine
+hgnc	20130	TMEM229B	chebi	133672	1-(1Z-hexadecenyl)-2-hexadecanoyl-sn-glycero-3-phosphocholine
+hgnc	20130	TMEM229B	chebi	84562	1-(1Z-hexadecenyl)-2-(9Z-hexadecenoyl)-sn-glycero-3-phosphocholine
+hgnc	2021	CLCN3	chebi	165865	Indolepropionylglycine
+hgnc	20297	SLITRK1	chebi	133090	o-cresol sulfate
+hgnc	20302	SLC22A16	chebi	4828	ergothioneine
+hgnc	2033	CLDN10	chebi	165864	Hydroxyasparagine
+hgnc	20357	EFCAB11	chebi	133532	methyl-4-hydroxybenzoate O-sulfate
+hgnc	20482	WDFY2	chebi	176649	2-methoxyhydroquinone
+hgnc	20498	DGLUCY	chebi	139374	isocitric lactone
+hgnc	20601	SLC23A3	chebi	15243	threonate
+hgnc	20601	SLC23A3	chebi	17376	cystine
+hgnc	20601	SLC23A3	chebi	26849	tartaric acid
+hgnc	20601	SLC23A3	chebi	30923	4-hydroxy-2-oxoglutaric acid
+hgnc	20601	SLC23A3	chebi	33871	glycerate
+hgnc	20601	SLC23A3	mesh	C013111	methionine sulfoxide
+hgnc	20754	TRPC7	chebi	176649	2-methoxyhydroquinone
+hgnc	20796	RASSF6	chebi	37257	phytanate
+hgnc	20823	DPP10	chebi	25013	lanthionine
+hgnc	20837	PAOX	mesh	C051870	N-(3-acetamidopropyl)pyrrolidin-2-one
+hgnc	20910	AFMID	chebi	36575	N-formylanthranilic acid
+hgnc	20957	SDHAF4	chebi	87248	ethyl glucuronide
+hgnc	20974	ADGRL3	mesh	C049854	2-hydroxysebacic acid
+hgnc	20990	PHACTR1	chebi	27905	phenyl hydrogen sulfate
+hgnc	21115	MTFR2	chebi	32635	paracetamol sulfate
+hgnc	21314	COPS9	chebi	29747	cholate
+hgnc	21490	DAPL1	chebi	133141	1-(octadec-1-enyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	21578	RNF144B	chebi	15891	taurine
+hgnc	21578	RNF144B	chebi	36711	phosphoethanolamine
+hgnc	21616	TNS3	chebi	132948	pyridoxate
+hgnc	21839	KPNA7	chebi	133687	4-(acetylamino)-3-hydroxyphenyl sulfate
+hgnc	2188	COL12A1	chebi	178081	2-ethylphenylsulfate
+hgnc	2220	COLEC10	chebi	133733	Pro-Hyp zwitterion
+hgnc	2228	COMT	mesh	C035661	2-O-methylascorbic acid
+hgnc	2292	COX7C	chebi	21440	N-[(9-beta-D-ribofuranosylpurin-6-yl)carbamoyl]threonine
+hgnc	22998	TMC4	chebi	133606	1-octadecanoyl-2-arachidonoyl-sn-glycero-3-phospho-D-myo-inositol(1-)
+hgnc	22998	TMC4	chebi	72833	1-hexadecanoyl-sn--glycero-3-phospho-D-myo-inositol(1-)
+hgnc	22998	TMC4	chebi	72834	1-hexadecanoyl-2-(5Z,8Z,11Z,14Z-icosatetraenoyl)-sn-glycero-3-phospho-D-myo-inositol(1-)
+hgnc	22998	TMC4	chebi	72837	1-hexadecanoyl-2-(9Z-octadecenoyl)-sn-glycero-3-phospho-D-myo-inositol(1-)
+hgnc	22998	TMC4	chebi	78762	1-oleoyl-sn-glycero-3-phospho-D-myo-inositol(1-)
+hgnc	23106	NANOGP8	chebi	74077	S-allylcysteine
+hgnc	2323	CPS1	chebi	15428	glycine
+hgnc	2323	CPS1	chebi	40410	N-acetylglycine
+hgnc	2323	CPS1	chebi	70979	N-isobutyrylglycine
+hgnc	2323	CPS1	chebi	89836	propionylglycine
+hgnc	2323	CPS1	mesh	C028929	gamma-glutamylglycine
+hgnc	2323	CPS1	mesh	C090448	cinnamoylglycine
+hgnc	23248	MOGAT2	chebi	16811	methionine
+hgnc	23249	MOGAT3	chebi	86910	N-acetylhistidine
+hgnc	2329	CPT1B	chebi	16450	2'-deoxyuridine
+hgnc	23368	MVB12B	chebi	13705	acetoacetate
+hgnc	23520	SLC16A9	chebi	17126	carnitine
+hgnc	23520	SLC16A9	chebi	84842	(R)-3-hydroxybutyrylcarnitine
+hgnc	23520	SLC16A9	mesh	C042294	N,N-dimethylalanine
+hgnc	23533	TCERG1L	chebi	133607	m-hydroxyhippurate
+hgnc	23537	DHTKD1	chebi	37024	2-aminoadipic acid
+hgnc	23537	DHTKD1	chebi	57987	2-hydroxyadipate(2-)
+hgnc	23537	DHTKD1	chebi	70966	1-methyl-5-imidazoleacetic acid
+hgnc	2359	CRIM1	chebi	80470	7-Methyluric acid
+hgnc	23704	TTC39B	mesh	C018613	nicotinamide-beta-riboside
+hgnc	2372	MED23	chebi	29016	arginine
+hgnc	23791	INF2	chebi	43355	indoxyl sulfate
+hgnc	23994	ERI1	chebi	61993	maltotriose
+hgnc	24098	SORBS2	chebi	133221	2-oxindole-3-acetic acid
+hgnc	24157	ACOT7	chebi	82957	3-hydroxyisovalerate
+hgnc	2444	CSK	chebi	26490	quinate
+hgnc	24475	DMGDH	chebi	17750	glycine betaine
+hgnc	24475	DMGDH	chebi	90344	N-methylproline
+hgnc	24475	DMGDH	mesh	C025138	dimethylglycine
+hgnc	24627	DCBLD2	chebi	132991	pyroglutamylvaline
+hgnc	249	ADH1A	chebi	24265	gluconate
+hgnc	2501	CTH	chebi	17755	cystathionine
+hgnc	25076	NBPF3	chebi	26020	phosphate
+hgnc	2511	CTNNA3	chebi	82982	glycodeoxycholate
+hgnc	2511	CTNNA3	mesh	C043384	2-piperidone
+hgnc	25415	PPM1K	chebi	11851	3-methyl-2-oxobutanoate
+hgnc	25415	PPM1K	chebi	133577	2-hydroxy-4-methylvalerate
+hgnc	25415	PPM1K	chebi	17865	4-methyl-2-oxopentanoate
+hgnc	25415	PPM1K	chebi	24898	isoleucine
+hgnc	25415	PPM1K	chebi	25017	leucine
+hgnc	25415	PPM1K	chebi	27266	valine
+hgnc	25415	PPM1K	chebi	28654	3-methyl-2-oxovalerate
+hgnc	25415	PPM1K	chebi	70984	N-isovalerylglycine
+hgnc	2542	CTSO	chebi	74534	Leu-Gly
+hgnc	25544	MSL2	chebi	141700	3-methoxycatechol
+hgnc	2561	CXCR4	chebi	89087	cotinine N-oxide
+hgnc	25730	TTC23	chebi	133570	eugenol sulfate
+hgnc	25807	SLC7A6OS	chebi	25094	lysine
+hgnc	25846	PYCR3	chebi	17388	(S)-1-pyrroline-5-carboxylate
+hgnc	25907	CEP89	mesh	C001352	homocitrulline
+hgnc	2595	CYP1A1	chebi	27732	caffeine
+hgnc	2595	CYP1A1	chebi	28177	theophylline
+hgnc	2595	CYP1A1	chebi	68449	1,7-dimethyluric acid
+hgnc	2610	CYP2A6	chebi	133568	6-hydroxyindole sulfate
+hgnc	2610	CYP2A6	chebi	28946	theobromine
+hgnc	2610	CYP2A6	chebi	31697	indolin-2-one
+hgnc	2610	CYP2A6	chebi	62205	3-methylxanthine
+hgnc	2610	CYP2A6	mesh	C001381	hydroxycotinine
+hgnc	2610	CYP2A6	mesh	C021183	1,7-dimethylxanthine
+hgnc	26213	RERGL	chebi	133430	N-acetylalliin
+hgnc	2623	CYP2C9	chebi	82911	thymol sulfate
+hgnc	263	ADORA2A	mesh	C102867	gamma-glutamyltryptophan
+hgnc	26316	MYRFL	chebi	16962	cortisone
+hgnc	2640	CYP3A7	chebi	133064	tauro-beta-muricholate
+hgnc	2640	CYP3A7	chebi	133105	(3alpha,5alpha,17beta)-3-hydroxyandrostan-17-yl sulfate(1-)
+hgnc	2640	CYP3A7	chebi	133111	5alpha-androstane-3beta,17alpha-diol disulfate anion
+hgnc	2640	CYP3A7	chebi	133114	5alpha-androstane-3beta,17beta-diol disulfate anion
+hgnc	2640	CYP3A7	chebi	83037	androsterone sulfate
+hgnc	2640	CYP3A7	chebi	83040	epiandrosterone sulfate
+hgnc	2640	CYP3A7	chebi	87538	16alpha-hydroxydehydroepiandrosterone 3-sulfate(1-)
+hgnc	2642	CYP4A11	chebi	132934	3-hydroxysebacate
+hgnc	2642	CYP4A11	chebi	145961	3-hydroxydodecanedioic acid
+hgnc	2642	CYP4A11	mesh	C045052	3-hydroxyadipic acid
+hgnc	26437	TSNARE1	chebi	14321	glutamate(1-)
+hgnc	2645	CYP4F2	chebi	133148	gamma-CEHC beta-glucuronide
+hgnc	2645	CYP4F2	chebi	88427	alpha-CEHC
+hgnc	2645	CYP4F2	chebi	89379	gamma-CEHC
+hgnc	26465	YTHDF3	chebi	133032	gamma-Glu-His
+hgnc	2651	CYP7A1	chebi	23614	deoxycholate
+hgnc	2651	CYP7A1	chebi	78604	ursodeoxycholate
+hgnc	26625	UGT3A1	chebi	133118	5alpha-pregnane-3beta,20alpha-diol disulfate anion
+hgnc	26639	XXYLT1	chebi	955	2,6-dimethoxyphenol
+hgnc	26665	C12orf50	chebi	29026	urobilinogen
+hgnc	2678	DARS1	chebi	24148	galactonate
+hgnc	26801	COX18	chebi	15356	cysteine
+hgnc	26801	COX18	chebi	64564	thioproline
+hgnc	26801	COX18	chebi	88670	Dihomo-linoleate (20:2n6)
+hgnc	26829	NKAIN3	mesh	C100511	gamma-glutamyl-leucine
+hgnc	26992	SPNS2	chebi	36261	taurodeoxycholate
+hgnc	2701	DCC	chebi	11805	3-hydroxyisobutyrate
+hgnc	27018	LYPD6B	chebi	72998	1-hexadecanoyl-sn-glycero-3-phosphocholine
+hgnc	27035	UBXN2B	chebi	34729	dopamine 4-O-sulfate
+hgnc	27263	KANK4	mesh	C001955	5-methylthioribose
+hgnc	27442	SLC25A45	chebi	131444	guanidinoacetate
+hgnc	27468	SPRYD4	chebi	28300	glutamine
+hgnc	27468	SPRYD4	mesh	C047442	gamma-glutamylglutamine
+hgnc	27949	GADL1	chebi	16958	beta-alanine
+hgnc	27960	SLC6A19	chebi	70958	1-methylhistidine
+hgnc	28174	PLPP7	chebi	3165	bradykinin
+hgnc	28358	D2HGDH	chebi	132941	2-hydroxyglutarate
+hgnc	28448	TMEM86B	chebi	133647	1-(1Z-hexadecenyl)-2-arachidonoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	28451	TMEM108	chebi	133174	2-hydroxydecanoate
+hgnc	28519	C11orf65	chebi	166727	Chenodeoxycholic acid sulfate
+hgnc	28542	SLC22A24	chebi	133504	etiocholanolone 3-glucuronide
+hgnc	28542	SLC22A24	mesh	C027927	androsterone glucuronide
+hgnc	2855	DGKI	chebi	16150	benzoate
+hgnc	2855	DGKI	chebi	78602	isoursodeoxycholate
+hgnc	28758	FASTKD3	chebi	86260	1-tetracosanoyl-sn-glycero-3-phosphocholine
+hgnc	2884	DIO2	chebi	86612	dihydroferulic acid
+hgnc	28973	MLEC	chebi	132938	ethylmalonate
+hgnc	29040	SZT2	chebi	16763	2-oxobutanoate
+hgnc	2906	DLGAP2	chebi	82914	p-cresol sulfate
+hgnc	29157	DNAJC16	chebi	86392	4-guanidinobutanoate
+hgnc	29253	CC2D2A	chebi	20129	3-methylcytidine
+hgnc	29348	THSD7B	chebi	68641	(-)-cotinine
+hgnc	29397	TMEM132B	chebi	133706	propyl 4-hydroxybenzoate sulfate
+hgnc	29400	CCDC85A	chebi	133199	carboxyibuprofen
+hgnc	29418	FNIP1	mesh	C025390	creosol
+hgnc	29570	GLS2	chebi	28300	glutamine
+hgnc	29570	GLS2	mesh	C047442	gamma-glutamylglutamine
+hgnc	29635	MEGF11	chebi	32111	saccharin
+hgnc	29821	ISYNA1	chebi	17268	myo-inositol
+hgnc	29878	NIT2	mesh	C008230	alpha-ketoglutaramate
+hgnc	2989	DOCK3	chebi	132958	N-acetylmethionine
+hgnc	2989	DOCK3	mesh	C012162	N-acetylserine
+hgnc	2989	DOCK3	mesh	C055589	N-acetylvaline
+hgnc	2989	DOCK3	mesh	C063269	N-acetylthreonine
+hgnc	29944	TENM3	chebi	82912	N-(2-furoyl)glycine
+hgnc	29955	SLC51A	chebi	16572	3-ethylcatechol
+hgnc	29955	SLC51A	chebi	68465	2,6-dihydroxybenzoic acid
+hgnc	29959	TTC33	chebi	16199	urea
+hgnc	3002	DPEP1	chebi	133040	Cys-Gly disulfide
+hgnc	3002	DPEP1	chebi	74066	Ile-Gly
+hgnc	3002	DPEP1	chebi	89884	Picolinoylglycine
+hgnc	3002	DPEP1	mesh	C028505	cysteinylglycine
+hgnc	30083	KCNIP4	mesh	C023867	7-ketodeoxycholic acid
+hgnc	3010	DPP6	chebi	137880	ursocholate
+hgnc	3012	DPYD	chebi	17568	uracil
+hgnc	3012	DPYD	chebi	17821	thymine
+hgnc	30123	ATAD2	chebi	19928	3-(3-amino-3-carboxypropyl)uridine
+hgnc	30219	LRRC30	mesh	D005344	Fibrinopeptide A
+hgnc	30224	SLC52A2	chebi	16810	2-oxoglutarate(2-)
+hgnc	30269	RAB3C	mesh	C009760	mequinol
+hgnc	30301	SEC16B	mesh	C025910	dimethyl sulfone
+hgnc	30365	ENOSF1	chebi	33527	ribonate
+hgnc	30451	SLC25A48	chebi	15354	choline
+hgnc	30525	MARVELD3	chebi	18186	tyrosine
+hgnc	30525	MARVELD3	mesh	C054674	gamma-glutamyltyrosine
+hgnc	30527	C11orf53	chebi	63815	4-acetamidobenzoate
+hgnc	30620	PDGFD	mesh	C494864	7-hydroxyindole
+hgnc	30765	TNIK	chebi	166727	Chenodeoxycholic acid sulfate
+hgnc	30858	EFTUD2	chebi	16737	creatinine
+hgnc	30927	SLC6A20	chebi	133469	pyroglutamine
+hgnc	30931	ACSM2B	chebi	18401	phenylacetate
+hgnc	30931	ACSM2B	chebi	38184	picolinate
+hgnc	31043	SLC35G4	chebi	74968	1-icosanoyl-sn-glycero-3-phosphocholine
+hgnc	3126	EBF1	chebi	133534	N-formyl-L-phenylalanine
+hgnc	31422	CFAP95	chebi	50621	gamma-glutamylalanine
+hgnc	316	AFM	chebi	27897	tryptophan
+hgnc	31665	ACSM6	chebi	82955	2-ethylhydracrylate
+hgnc	31700	ZBTB7C	chebi	60008	glycolithocholate
+hgnc	3173	EDIL3	chebi	37550	sphingosine 1-phosphate
+hgnc	31955	PABPC4L	chebi	28197	daidzein
+hgnc	31979	ANKRD20A2P	chebi	29806	fumarate(2-)
+hgnc	32017	ACSM2A	chebi	176458	Indoleacetylglutamine
+hgnc	32017	ACSM2A	chebi	20070	3-hydroxyhexanoate
+hgnc	32017	ACSM2A	chebi	30762	salicylate
+hgnc	32017	ACSM2A	chebi	40070	4-hydroxycoumarin
+hgnc	32017	ACSM2A	chebi	57277	3-(3-hydroxyphenyl)propanoate
+hgnc	32017	ACSM2A	chebi	57277	3-(3-hydroxyphenyl)propanoate
+hgnc	32017	ACSM2A	chebi	82916	3-(1H-indol-3-yl)propanoate
+hgnc	3212	EEF1E1	chebi	133738	2-hydroxyhexanoate
+hgnc	32159	MTG1	chebi	176478	N-Acetylisoputreanine
+hgnc	32179	DUXA	chebi	133072	pyrocatechol sulfate(1-)
+hgnc	3318	ELF3	mesh	C057749	prolylglycine
+hgnc	33227	TMEM114	chebi	133186	2-aminophenyl hydrogen sulfate
+hgnc	33238	KYAT3	chebi	137228	2-hydroxy-4-(methylthio)butanoic acid
+hgnc	33238	KYAT3	chebi	24773	3-(imidazol-5-yl)lactate
+hgnc	33434	RNF215	chebi	22470	alpha-tocopherol
+hgnc	33437	GSTT2B	mesh	C528934	3-formylindole
+hgnc	33756	GLTPD2	chebi	74532	N-docosanoylsphingosine-1-phosphocholine
+hgnc	33756	GLTPD2	chebi	78647	N-hexadecanoylsphinganine-1-phosphocholine
+hgnc	3390	EPHA7	mesh	C027957	tyramine O-sulfate
+hgnc	3392	EPHB1	chebi	133689	catechol beta-D-glucuronide
+hgnc	33995	PPIAL4C	chebi	132959	3-methyladipate
+hgnc	3432	ERBB4	chebi	133661	hyocholate
+hgnc	34388	ODF3B	chebi	27468	5,6-dihydrothymine
+hgnc	34522	CLEC19A	mesh	D001125	Argininosuccinic Acid
+hgnc	346	AHRR	chebi	26806	succinate
+hgnc	348	AHR	chebi	48991	7-methylxanthine
+hgnc	3495	ETV6	chebi	133613	p-hydroxyhippurate
+hgnc	3519	EYA1	chebi	36257	taurocholate
+hgnc	3553	FAAH	chebi	132477	N-hexadecanoyltaurine
+hgnc	3553	FAAH	chebi	136614	N-oleoyl-L-serine
+hgnc	3553	FAAH	chebi	146206	N-oleoyltaurine
+hgnc	3553	FAAH	chebi	64032	linoleoyl ethanolamide
+hgnc	3553	FAAH	chebi	71466	oleoyl ethanolamide
+hgnc	3553	FAAH	mesh	C095773	N-palmitoylglycine
+hgnc	3574	FADS1	chebi	133522	1-icosapentaenoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3574	FADS1	chebi	133657	1-[(7Z,10Z,13Z,16Z)-docosatetraenoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	133662	1-(1Z-octadecenyl)-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	133734	1-[(7Z,10Z,13Z,16Z,19Z)-docosapentaenoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	28733	1-linoleoyl-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	73000	1-hexadecanoyl-2-octadecanoyl-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	73008	1-hexadecanoyl-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3574	FADS1	chebi	74965	1-stearoyl-2-arachidonoyl-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	74977	1-oleoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3574	FADS1	chebi	77222	(6Z,9Z,12Z,15Z)-octadecatetraenoate
+hgnc	3574	FADS1	chebi	83055	1-[(11Z,14Z)]-icosadienoyl-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	83058	1-linoleoyl-sn-glycero-3-phosphoethanolamine
+hgnc	3574	FADS1	chebi	84563	1-[(9Z,12Z)-octadecadienoyl]-2-[(5Z,8Z,11Z,14Z)-icosatetraenoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	84829	1-octadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	86119	1-hexadecanoyl-2-[(5Z,8Z,11Z)-icosatrienoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	86137	1-hexadecanoyl-2-[(5Z,8Z,11Z,14Z,17Z)-icosapentaenoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	86176	1-octadecanoyl-2-[(5Z,8Z,11Z)-eicosatrienoyl]-sn-glycero-3-phosphocholine
+hgnc	3574	FADS1	chebi	91311	1-icosapentaenoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	131987	2-docosahexaenoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	133522	1-icosapentaenoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3575	FADS2	chebi	133617	1-pentadecanoyl-2-linoleoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	133649	1-(1Z-hexadecenyl)-2-linoleoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3575	FADS2	chebi	133657	1-[(7Z,10Z,13Z,16Z)-docosatetraenoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	133662	1-(1Z-octadecenyl)-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	133675	1-(1Z-octadecenyl)-2-linoleoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3575	FADS2	chebi	133694	arachidonoylcholine
+hgnc	3575	FADS2	chebi	133734	1-[(7Z,10Z,13Z,16Z,19Z)-docosapentaenoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	28733	1-linoleoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	73000	1-hexadecanoyl-2-octadecanoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	73002	1-hexadecanoyl-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	73008	1-hexadecanoyl-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3575	FADS2	chebi	74348	1-[(4Z,7Z,10Z,13Z,16Z)-docosapentaenoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	74670	1-oleoyl-2-linoleoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	74965	1-stearoyl-2-arachidonoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	74977	1-oleoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	3575	FADS2	chebi	77222	(6Z,9Z,12Z,15Z)-octadecatetraenoate
+hgnc	3575	FADS2	chebi	83055	1-[(11Z,14Z)]-icosadienoyl-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	83058	1-linoleoyl-sn-glycero-3-phosphoethanolamine
+hgnc	3575	FADS2	chebi	84563	1-[(9Z,12Z)-octadecadienoyl]-2-[(5Z,8Z,11Z,14Z)-icosatetraenoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	84566	1-heptadecanoyl-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	84753	1-[(1Z,9Z)-octadecadienyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	84822	1-octadecanoyl-2-[(9Z,12Z)-octadecadienoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	84829	1-octadecanoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	86119	1-hexadecanoyl-2-[(5Z,8Z,11Z)-icosatrienoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	86137	1-hexadecanoyl-2-[(5Z,8Z,11Z,14Z,17Z)-icosapentaenoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	86176	1-octadecanoyl-2-[(5Z,8Z,11Z)-eicosatrienoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	89618	1-oleoyl-2-[(8Z,11Z,14Z)-icosatrienoyl]-sn-glycero-3-phosphocholine
+hgnc	3575	FADS2	chebi	91311	1-icosapentaenoyl-sn-glycero-3-phosphocholine
+hgnc	3638	FDX1	chebi	81014	3beta-hydroxycholest-5-en-26-oic acid
+hgnc	3638	FDX1	chebi	81015	3beta,7alpha-Dihydroxy-5-cholestenoate
+hgnc	37170	MTRNR2L13	chebi	167215	2-naphthyl sulfate
+hgnc	37219	TMEM233	chebi	132030	glycoursodeoxycholate
+hgnc	3763	FLT1	mesh	C008940	N(2),N(2)-dimethylguanosine
+hgnc	3771	FMO3	chebi	45658	S-methylcysteine
+hgnc	3771	FMO3	mesh	C008389	methiin
+hgnc	380	AKR1A1	chebi	15963	ribitol
+hgnc	38856	ABHD14A-ACY1	mesh	C010530	N-acetylalanine
+hgnc	38856	ABHD14A-ACY1	mesh	D009239	N-Formylmethionine
+hgnc	3974	FTCD	mesh	D005565	Formiminoglutamic Acid
+hgnc	40037	C18orf63	mesh	C024626	bradykinin, des-Arg(9)-
+hgnc	4175	GATM	chebi	16919	creatine
+hgnc	4175	GATM	chebi	24606	homoarginine
+hgnc	4193	GCH1	chebi	37946	dopamine 3-O-sulfate
+hgnc	4196	GCKR	chebi	15361	pyruvate
+hgnc	4196	GCKR	chebi	16449	alanine
+hgnc	4196	GCKR	chebi	24996	lactate
+hgnc	4196	GCKR	chebi	33526	mannonate
+hgnc	4196	GCKR	chebi	37684	mannose
+hgnc	41998	CHKB-CPT1B	chebi	16450	2'-deoxyuridine
+hgnc	4250	GGT1	chebi	82966	gamma-glutamylphenylalanine
+hgnc	4250	GGT1	mesh	C031586	cysteine-glutathione disulfide
+hgnc	428	ALMS1	chebi	133180	N(5)-acetylornithine zwitterion
+hgnc	428	ALMS1	chebi	133181	N-acetyl-1-methyl-L-histidine
+hgnc	428	ALMS1	chebi	133514	2-hydroxyoctanoate
+hgnc	428	ALMS1	chebi	133592	N-acetylkynurenine
+hgnc	428	ALMS1	chebi	142420	2-aminooctanoate
+hgnc	428	ALMS1	chebi	604731	pyrraline
+hgnc	428	ALMS1	chebi	68561	N-acetyltyrosine
+hgnc	428	ALMS1	chebi	84056	N-acetylisoleucine
+hgnc	428	ALMS1	mesh	C018440	N-acetyl-3-methylhistidine
+hgnc	428	ALMS1	mesh	C032007	aceglutamide
+hgnc	428	ALMS1	mesh	C033406	N-acetyl-2-aminooctanoic acid
+hgnc	4313	GLDC	chebi	144330	3-methylglutaconic acid
+hgnc	4313	GLDC	mesh	C048290	3-methylglutarylcarnitine
+hgnc	4376	GMPR	chebi	17368	hypoxanthine
+hgnc	4376	GMPR	chebi	18107	xanthosine
+hgnc	4433	GOT2	chebi	17282	3-(indol-3-yl)lactate
+hgnc	4433	GOT2	chebi	26008	phenylpyruvate
+hgnc	4433	GOT2	chebi	36659	3-(4-hydroxyphenyl)lactate
+hgnc	4441	GP2	chebi	133139	1-[(E)-hexadec-1-enyl]-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	4453	GPC5	chebi	16572	3-ethylcatechol
+hgnc	4456	GPD2	mesh	C029620	alpha-glycerophosphoric acid
+hgnc	44653	CCDC179	chebi	19065	1-methylinosine
+hgnc	45037	TDRD15	chebi	85341	2-hydroxynervonic acid
+hgnc	4515	GPR6	chebi	68447	1,3-dimethyluric acid
+hgnc	4545	GRK6	mesh	C448039	prolyl-proline
+hgnc	4599	GRM7	chebi	17596	inosine
+hgnc	4617	GSK3B	chebi	1556	3-Hydroxystachydrine
+hgnc	4626	GSTA1	chebi	132940	1,3,7-trimethylurate
+hgnc	4637	GSTM5	chebi	68531	3,7-dimethyluric acid
+hgnc	4643	GSTZ1	chebi	132951	maleate
+hgnc	4655	GTF2H1	chebi	64669	2-hydroxy-3-methylbutyrate
+hgnc	4806	HAL	chebi	17771	trans-urocanate
+hgnc	4814	KALRN	chebi	133751	dihydroferulate
+hgnc	49187	EEF1E1-BLOC1S5	chebi	133738	2-hydroxyhexanoate
+hgnc	51	ABCC1	chebi	73051	3-hydroxydecanoylcarnitine
+hgnc	51	ABCC1	mesh	C026650	phenylalanylphenylalanine
+hgnc	5147	HPD	chebi	36242	3-(4-hydroxyphenyl)pyruvate
+hgnc	5147	HPD	chebi	62423	(2-hydroxyphenyl)acetate
+hgnc	5466	IGF2	mesh	C003753	vanillactic acid
+hgnc	54724	PDCD6-AHRR	chebi	26806	succinate
+hgnc	55	ABCC4	chebi	165856	C-Glycosyltryptophan
+hgnc	55	ABCC4	chebi	67249	N-acetylcarnosine
+hgnc	553	AOX1	chebi	133476	hydantoin-5-propionate
+hgnc	553	AOX1	chebi	2274	7-methylguanine
+hgnc	582	APBB2	chebi	133223	2-aminoheptanoic acid zwitterion
+hgnc	5884	IGLV10-54	chebi	73699	Val-Gly
+hgnc	59	ABCC8	chebi	15901	5,6-dihydrouracil
+hgnc	6126	IRS2	chebi	77268	pristanate
+hgnc	6267	KCNJ6	mesh	C465982	prolyl-serine
+hgnc	6322	KIF4B	chebi	30747	4-chlorobenzoic acid
+hgnc	6348	KLF4	chebi	132966	hippurate
+hgnc	6381	KMO	chebi	132942	quinolinate
+hgnc	6381	KMO	chebi	58454	kynurenate
+hgnc	6588	LHFPL2	chebi	24297	glucuronate
+hgnc	663	ARG1	chebi	28116	5-guanidino-2-oxopentanoic acid
+hgnc	663	ARG1	chebi	29016	arginine
+hgnc	663	ARG1	chebi	32695	argininate
+hgnc	6677	LPL	chebi	84555	1-(1Z-octadecenyl)-2-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphocholine
+hgnc	6762	MAD1L1	chebi	133026	salicyluric beta-D-glucuronide
+hgnc	683	ARHGEF3	chebi	132943	aspartate
+hgnc	683	ARHGEF3	chebi	16393	sphingosine
+hgnc	683	ARHGEF3	chebi	16566	sphinganine
+hgnc	683	ARHGEF3	mesh	C003337	sphingadienine
+hgnc	7014	MEOX2	chebi	133646	1-(1Z-hexadecenyl)-2-(4Z,7Z,10Z,13Z,16Z,19Z-docosahexaenoyl)-sn-glycero-3-phosphoethanolamine zwitterion
+hgnc	713	ARSA	chebi	46215	O(4')-sulfo-L-tyrosine
+hgnc	714	ARSB	chebi	133548	2-methoxyresorcinol sulfate
+hgnc	736	NAAA	chebi	132479	N-stearoyltaurine
+hgnc	7392	MSX2	chebi	133225	4-acetylphenyl sulfate
+hgnc	74	ABCG2	chebi	133542	4-hydroxychlorothalonil
+hgnc	7417	MTBP	chebi	133544	4-vinylguaiacol sulfate
+hgnc	7464	MTNR1B	chebi	17234	glucose
+hgnc	7473	MTRR	chebi	86260	1-tetracosanoyl-sn-glycero-3-phosphocholine
+hgnc	7553	MYC	chebi	74340	1-heptadecanoyl-sn-glycero-3-phosphocholine
+hgnc	758	ASS1	chebi	18211	citrulline
+hgnc	7598	MYO1D	chebi	176462	N-Methyltaurine
+hgnc	7646	NAT2	chebi	11951	4-acetamidobutanoate
+hgnc	7646	NAT2	chebi	17768	N-acetylputrescine
+hgnc	7646	NAT2	chebi	68441	1-methyluric acid
+hgnc	7646	NAT2	chebi	68443	1-methylxanthine
+hgnc	7646	NAT2	mesh	C036692	5-acetylamino-6-formylamino-3-methyluracil
+hgnc	7646	NAT2	mesh	C054188	5-acetylamino-6-amino-3-methyluracil
+hgnc	7657	NCAM2	chebi	133607	m-hydroxyhippurate
+hgnc	7657	NCAM2	mesh	D014814	Vitamin U
+hgnc	7728	NEDD4L	chebi	78602	isoursodeoxycholate
+hgnc	777	ZFHX3	chebi	83501	acesulfame
+hgnc	795	ATM	chebi	166727	Chenodeoxycholic acid sulfate
+hgnc	7979	NR3C2	chebi	76722	2-hydroxybehenate
+hgnc	8075	NXF5	chebi	30660	thyroxine
+hgnc	8076	NXPH2	chebi	133508	ferulic acid 4-sulfate
+hgnc	8091	OAT	chebi	18257	ornithine
+hgnc	8091	OAT	chebi	76341	3-aminopiperidine-2-one
+hgnc	8143	OPCML	chebi	74547	1-linoleoyl-sn-glycero-3-phosphate(2-)
+hgnc	8149	OPLAH	chebi	16010	5-oxoproline
+hgnc	8547	P4HA2	chebi	5832	hypaphorine
+hgnc	8582	PAH	chebi	28044	phenylalanine
+hgnc	8728	PCMT1	chebi	16708	adenine
+hgnc	8754	PCYT1A	chebi	16572	3-ethylcatechol
+hgnc	8754	PCYT1A	chebi	68465	2,6-dihydroxybenzoic acid
+hgnc	877	ALDH7A1	chebi	133178	6-ketopiperidine-2-carboxylate
+hgnc	8859	PEX6	chebi	84814	1-[(9Z)-octadecenoyl]-2-[(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl]-sn-glycero-3-phosphocholine
+hgnc	89	ACADM	mesh	C024571	N-caproylglycine
+hgnc	8910	PGR	chebi	132985	5-hydroxyhexanoate
+hgnc	8923	PHGDH	chebi	17822	serine
+hgnc	90	ACADS	chebi	132961	methylsuccinate
+hgnc	90	ACADS	chebi	89963	butyrylglycine
+hgnc	9011	PKD2L1	chebi	133515	2-[(9Z)-hexadecenoyl]-sn-glycero-3-phosphocholine
+hgnc	9011	PKD2L1	chebi	136286	9-hydroxyoctadecanoate
+hgnc	9011	PKD2L1	chebi	86241	1-[(1Z)-octadecenyl]-2-[(9Z)-octadecenoyl]-sn-glycero-3-phosphocholine
+hgnc	9039	PLA2G6	chebi	131989	1-nonadecanoyl-sn-glycero-3-phosphocholine
+hgnc	946	MAGI1	chebi	11424	2,3-dihydroxy-3-methylbutanoate
+hgnc	9490	TMPRSS15	chebi	15724	trimethylamine N-oxide
+hgnc	9533	PSMA4	chebi	60175	5-hydroxylysine
+hgnc	9577	PSPH	mesh	C001318	guanidinosuccinic acid
+hgnc	9590	PTER	chebi	16682	N-acetyl-beta-alanine
+hgnc	9590	PTER	chebi	84415	acetyltaurine
+hgnc	9602	PTGIR	chebi	76732	2-hydroxyarachidate
+hgnc	9639	HACD1	chebi	73610	Met-Ala
+hgnc	9682	PTPRT	chebi	16335	adenosine
+hgnc	9753	QPCT	chebi	88956	pyroglutamylglutamine
+hgnc	977	BCAT2	chebi	22599	arabinose
+hgnc	983	BCHE	chebi	28821	piperine
+hgnc	9991	RGS1	mesh	C527200	4-ethylcatechol
