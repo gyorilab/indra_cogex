@@ -255,6 +255,25 @@ export default {
       }
       return null;
     },
+    queryEntities() {
+      // Loop through the objects and check if they have role === 'fixed'
+      // return this.getEntitiesWithRole(this.objects, "fixed");
+      if (this.bot && this.bot.objects) {
+        let stuff = this.getEntitiesWithRole(this.bot.objects, "fixed");
+        console.log("queryEntities");
+        console.log(stuff);
+        return stuff;
+      }
+      return [];
+    },
+    replyEntities() {
+      // Loop through the objects and check if they have role === 'variable'
+      // return this.getEntitiesWithRole(this.objects, "variable");
+      if (this.bot && this.bot.objects) {
+        return this.getEntitiesWithRole(this.bot.objects, "variable");
+      }
+      return [];
+    },
     textObjectArray() {
       // Locate all references to text objects in raw text
 
