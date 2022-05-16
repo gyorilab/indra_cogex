@@ -44,7 +44,7 @@
               >
                 <!-- Text tab -->
                 <button
-                  v-if="bot && bot.text"
+                  v-if="bot && bot.raw_text"
                   class="nav-link active"
                   :id="idRegistry.navTabs.nav.text"
                   data-bs-toggle="tab"
@@ -58,11 +58,7 @@
                 </button>
                 <!-- Entities tab -->
                 <button
-                  v-if="
-                    objects &&
-                    objects.agent_list &&
-                    objects.agent_list.length > 0
-                  "
+                  v-if="replyEntities.length > 0"
                   class="nav-link"
                   @click.once="click.entities = true"
                   :title="receivedDate"
@@ -74,7 +70,7 @@
                   :aria-controls="idRegistry.navTabs.content.entities"
                   aria-selected="false"
                 >
-                  Entities ({{ objects.agent_list.length }})
+                  Entities ({{ replyEntities.length }})
                 </button>
               </div>
             </nav>
@@ -164,16 +160,14 @@
               </div>
               <!-- Entities content -->
               <div
-                v-if="
-                  objects && objects.agent_list && objects.agent_list.length
-                "
+                v-if="replyEntities.length > 0"
                 class="tab-pane fade show active entity-list-container"
                 :id="idRegistry.navTabs.content.entities"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.navTabs.nav.entities"
               >
                 <template v-if="click.entities">
-                  <EntityList :entities="objects.agent_list" />
+                  <EntityList :entities="replyEntities" />
                 </template>
               </div>
             </div>
