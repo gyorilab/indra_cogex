@@ -9,7 +9,7 @@
     :class="badgeClass"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
-    >{{ textToShow }}
+    >{{ badgeText }}
   </a>
 
   <!-- Modal -->
@@ -95,6 +95,17 @@ export default {
     };
   },
   computed: {
+    badgeText() {
+      let text = this.text || this.agentObject.name;
+      const maxLength = 30;
+      if (text.length > maxLength) {
+        text =
+          text.substring(0, maxLength / 2) +
+          "..." +
+          text.substring(text.length - maxLength / 2);
+      }
+      return text;
+    },
     textToShow() {
       return this.text || this.agentObject.name;
     },
