@@ -98,11 +98,10 @@ export default {
     badgeText() {
       let text = this.text || this.agentObject.name;
       const maxLength = 30;
+      const half = Math.floor(maxLength / 2);
       if (text.length > maxLength) {
         text =
-          text.substring(0, maxLength / 2) +
-          "..." +
-          text.substring(text.length - maxLength / 2);
+          text.substring(0, half) + "..." + text.substring(text.length - half);
       }
       return text;
     },
