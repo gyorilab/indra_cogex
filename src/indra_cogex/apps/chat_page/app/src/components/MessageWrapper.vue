@@ -72,6 +72,22 @@
                 >
                   Entities ({{ replyEntities.length }})
                 </button>
+                <!-- Stmts tab -->
+                <button
+                  v-if="replyStmts.length > 0"
+                  class="nav-link"
+                  @click.once="click.stmts = true"
+                  title="See statements associated with this response"
+                  :id="idRegistry.nav.stmtsID"
+                  data-bs-toggle="tab"
+                  :data-bs-target="`#${idRegistry.content.stmtsID}`"
+                  type="button"
+                  role="tab"
+                  :aria-controls="idRegistry.content.stmtsID"
+                  aria-selected="false"
+                >
+                  Statements ({{ replyStmts.length }})
+                </button>
               </div>
             </nav>
             <!-- Tab content -->
@@ -161,7 +177,7 @@
               <!-- Entities content -->
               <div
                 v-if="replyEntities.length > 0"
-                class="tab-pane fade show active entity-list-container"
+                class="tab-pane fade entity-list-container"
                 :id="idRegistry.content.entitiesID"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.nav.entitiesID"
@@ -171,6 +187,18 @@
                 </template>
               </div>
               <!-- Stmts content -->
+              <div
+                v-if="replyStmts.length > 0"
+                class="tab-pane fade stmt-list-container"
+                :id="idRegistry.content.stmtsID"
+                role="tabpanel"
+                :aria-labelledby="idRegistry.nav.stmtsID"
+              >
+                <template v-if="click.stmts">
+                  <!-- <StmtList :stmts="replyStmts" />-->
+                  <i>Show {{ replyStmts.length }} statements</i>
+                </template>
+              </div>
             </div>
           </div>
         </div>
