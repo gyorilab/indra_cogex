@@ -252,18 +252,34 @@ export default {
     },
     queryEntities() {
       // Loop through the objects and check if they have role === 'fixed'
-      // return this.getEntitiesWithRole(this.objects, "fixed");
       if (this.bot && this.bot.objects) {
-        let stuff = this.getEntitiesWithRole(this.bot.objects, "fixed");
-        return stuff;
+        return this.getObjectsWithTypeRole(
+          this.bot.objects,
+          "agent_list",
+          "fixed"
+        );
       }
       return [];
     },
     replyEntities() {
       // Loop through the objects and check if they have role === 'variable'
-      // return this.getEntitiesWithRole(this.objects, "variable");
       if (this.bot && this.bot.objects) {
-        return this.getEntitiesWithRole(this.bot.objects, "variable");
+        return this.getObjectsWithTypeRole(
+          this.bot.objects,
+          "agent_list",
+          "variable"
+        );
+      }
+      return [];
+    },
+    replyStmts() {
+      // Loop through the objects and check if they have role === 'statement'
+      if (this.bot && this.bot.objects) {
+        return this.getObjectsWithTypeRole(
+          this.bot.objects,
+          "statement_list",
+          "variable"
+        );
       }
       return [];
     },
@@ -379,12 +395,12 @@ export default {
         } and ${arr.slice(-1)}`;
       }
     },
-    getEntitiesWithRole(objs, role) {
+    getObjectsWithTypeRole(objs, type, role) {
       // Get all entities from type 'agent_list' with a given role
       let entities = [];
       // Loop the entries in the Object
       Object.values(objs).forEach((obj) => {
-        if (obj.type === "agent_list" && obj.role === role) {
+        if (obj.type === type && obj.role === role) {
           // Concatenate the entities (stored in the 'value' field)
           entities = entities.concat(obj.value);
         }
