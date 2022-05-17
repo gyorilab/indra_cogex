@@ -7,9 +7,9 @@
         title="Click to expand/collapse response"
         @click="shown = !shown"
         data-bs-toggle="collapse"
-        :data-bs-target="`#${idRegistry.collapse}`"
+        :data-bs-target="`#${idRegistry.collapseID}`"
         aria-expanded="true"
-        :aria-controls="idRegistry.collapse"
+        :aria-controls="idRegistry.collapseID"
       >
         <div class="row">
           <div class="col-1">
@@ -22,7 +22,7 @@
           </div>
         </div>
       </div>
-      <div class="collapse show" :id="idRegistry.collapse">
+      <div class="collapse show" :id="idRegistry.collapseID">
         <div class="card-body">
           <div class="row mb-1">
             <div class="col-2 text-start">
@@ -46,12 +46,12 @@
                 <button
                   v-if="bot && bot.raw_text"
                   class="nav-link active"
-                  :id="idRegistry.navTabs.nav.text"
+                  :id="idRegistry.nav.textID"
                   data-bs-toggle="tab"
-                  :data-bs-target="`#${idRegistry.navTabs.content.text}`"
+                  :data-bs-target="`#${idRegistry.content.textID}`"
                   type="button"
                   role="tab"
-                  :aria-controls="idRegistry.navTabs.content.text"
+                  :aria-controls="idRegistry.content.textID"
                   aria-selected="true"
                 >
                   Respone
@@ -62,12 +62,12 @@
                   class="nav-link"
                   @click.once="click.entities = true"
                   :title="receivedDate"
-                  :id="idRegistry.navTabs.nav.entities"
+                  :id="idRegistry.nav.entitiesID"
                   data-bs-toggle="tab"
-                  :data-bs-target="`#${idRegistry.navTabs.content.entities}`"
+                  :data-bs-target="`#${idRegistry.content.entitiesID}`"
                   type="button"
                   role="tab"
-                  :aria-controls="idRegistry.navTabs.content.entities"
+                  :aria-controls="idRegistry.content.entitiesID"
                   aria-selected="false"
                 >
                   Entities ({{ replyEntities.length }})
@@ -79,9 +79,9 @@
               <!-- Text tab -->
               <div
                 class="tab-pane fade show active"
-                :id="idRegistry.navTabs.content.text"
+                :id="idRegistry.content.textID"
                 role="tabpanel"
-                :aria-labelledby="idRegistry.navTabs.nav.text"
+                :aria-labelledby="idRegistry.nav.textID"
               >
                 <div class="card card-body border-light">
                   <!-- Show spinner if receivedDate is null -->
@@ -105,7 +105,7 @@
                       <i>Formatted text: </i><br />
                       <template
                         v-for="(txtObj, index) in textObjectArray"
-                        :key="`${idRegistry.navTabs.content.text}-text${index}`"
+                        :key="`${idRegistry.content.textID}-text${index}`"
                       >
                         <!-- No object: just display the text as innerHtml -->
                         <span
@@ -125,7 +125,7 @@
                         <ul v-else-if="txtObj.object.type === 'string_list'">
                           <li
                             v-for="(str, index) in txtObj.object.value"
-                            :key="`${idRegistry.navTabs.content.text}-strlist${index}`"
+                            :key="`${idRegistry.content.textID}-strlist${index}`"
                           >
                             {{ str }}
                           </li>
@@ -143,7 +143,7 @@
                           <span
                             v-for="([url, db_name], index) in txtObj.object
                               .value"
-                            :key="`${idRegistry.navTabs.content.text}-urllist${index}`"
+                            :key="`${idRegistry.content.textID}-urllist${index}`"
                           >
                             <a :href="url" target="_blank">{{ db_name }}</a>
                             {{
@@ -162,14 +162,15 @@
               <div
                 v-if="replyEntities.length > 0"
                 class="tab-pane fade show active entity-list-container"
-                :id="idRegistry.navTabs.content.entities"
+                :id="idRegistry.content.entitiesID"
                 role="tabpanel"
-                :aria-labelledby="idRegistry.navTabs.nav.entities"
+                :aria-labelledby="idRegistry.nav.entitiesID"
               >
                 <template v-if="click.entities">
                   <EntityList :entities="replyEntities" />
                 </template>
               </div>
+              <!-- Stmts content -->
             </div>
           </div>
         </div>
@@ -343,20 +344,18 @@ export default {
     },
     idRegistry() {
       return {
-        collapse: `${this.componentID}-collapse`,
+        collapseID: `${this.componentID}-collapse`,
         navTabsID: `${this.componentID}-nav-tabs`,
         tabContentID: `${this.componentID}-tabs-content`,
-        navTabs: {
-          nav: {
-            text: `${this.componentID}-tab-text`,
-            entities: `${this.componentID}-tab-entities`,
-            stmt: `${this.componentID}-tab-stmts`,
-          },
-          content: {
-            text: `${this.componentID}-content-text`,
-            entities: `${this.componentID}-content-entities`,
-            stmt: `${this.componentID}-content-stmts`,
-          },
+        nav: {
+          textID: `${this.componentID}-tab-text`,
+          entitiesID: `${this.componentID}-tab-entities`,
+          stmtsID: `${this.componentID}-tab-stmts`,
+        },
+        content: {
+          textID: `${this.componentID}-content-text`,
+          entitiesID: `${this.componentID}-content-entities`,
+          stmtsID: `${this.componentID}-content-stmts`,
         },
       };
     },
