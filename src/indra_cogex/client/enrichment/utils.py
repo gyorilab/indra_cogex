@@ -40,10 +40,15 @@ def collect_gene_sets(
 
     Parameters
     ----------
+    cache_file :
+        The path to the cache file.
     query:
         A cypher query
     client :
         The Neo4j client.
+    include_ontology_children :
+        If True, extend the gene set associations with associations from
+        child terms using the indra ontology
 
     Returns
     -------
@@ -194,7 +199,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
 
     Parameters
     ----------
-    client :object
+    client :
         The Neo4j client.
 
     Returns
