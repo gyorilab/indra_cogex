@@ -34,6 +34,7 @@ def collect_gene_sets(
     *,
     cache_file: Path = None,
     client: Neo4jClient,
+    include_ontology_children: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
@@ -73,6 +74,10 @@ def collect_gene_sets(
             }
             curie_to_hgnc_ids[curie, name].update(hgnc_ids)
         res = dict(curie_to_hgnc_ids)
+
+        if include_ontology_children:
+            extend_by_ontology(res)
+
         with open(cache_file, "wb") as fh:
             pickle.dump(res, fh)
     GENE_SET_CACHE[cache_file.as_posix()] = res
@@ -205,7 +210,12 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    return collect_gene_sets(
+        client=client,
+        query=query,
+        cache_file=cache_file,
+        include_ontology_children=True,
+    )
 
 
 @autoclient()
