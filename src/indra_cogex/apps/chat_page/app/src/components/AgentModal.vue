@@ -71,8 +71,7 @@ import badgeMappings from "@/helpers/DefaultValues";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
-  // Todo: rename to AgentModal
-  name: "EntityModal.vue",
+  name: "AgentModal.vue",
   props: {
     text: {
       type: String,
