@@ -216,17 +216,6 @@ export default {
       }
       return null;
     },
-    queryEntities() {
-      // Loop through the objects and check if they have role === 'fixed'
-      if (this.bot && this.bot.objects) {
-        return this.getObjectsWithTypeRole(
-          this.bot.objects,
-          "agent_list",
-          "fixed"
-        );
-      }
-      return [];
-    },
     replyEntities() {
       // Loop through the objects and check if they have role === 'variable'
       if (this.bot && this.bot.objects) {
