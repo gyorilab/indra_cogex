@@ -51,6 +51,15 @@
             {{ index === txtObj.object.value.length - 2 ? "and " : ", " }}
           </span>
         </span>
+        <!-- Clarification: display the computed string -->
+        <div v-if="clarification">
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            @click="$emit('clarification-requested1', clarification)"
+          >
+            Copy clarification to input
+          </button>
+        </div>
       </template>
     </p>
   </template>
@@ -62,6 +71,7 @@ import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "TextReply.vue",
+  emits: ["clarification-requested1"],
   components: {
     AgentModal,
   },
@@ -80,6 +90,16 @@ export default {
     },
   },
   computed: {
+    clarification() {
+      // Match 'Your question is similar to "%s". Try asking it that way.'
+      const clarificationRegex =
+        /Your question is similar to "(.*)". Try asking it that way./;
+      const match = clarificationRegex.exec(this.raw_text);
+      if (match) {
+        return match[1];
+      }
+      return "";
+    },
     componentID() {
       return `text-reply-${this.uuid}`;
     },

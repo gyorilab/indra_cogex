@@ -26,7 +26,11 @@
     </div>
     <div class="clearfix message d-flex flex-column-reverse">
       <template v-for="(message, index) in chat.history" :key="index">
-        <MessageWrapper :user="message.user" :bot="message.bot" />
+        <MessageWrapper
+          :user="message.user"
+          :bot="message.bot"
+          @clarification-requested2="(text) => (this.text_input = text)"
+        />
       </template>
     </div>
   </template>
