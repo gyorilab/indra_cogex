@@ -104,6 +104,7 @@
                     :raw_text="bot ? bot.raw_text : ''"
                     :objects="objects"
                     :received-date="receivedDate"
+                    @clarification-requested1="this.emitClarificationRequested"
                   />
                 </div>
               </div>
@@ -151,6 +152,7 @@ import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "MessageWrapper.vue",
+  emits: ["clarification-requested2"],
   components: {
     TextReply,
     AgentList,
@@ -275,6 +277,10 @@ export default {
         }
       });
       return entities;
+    },
+    emitClarificationRequested(text) {
+      // Emit the event to the parent component
+      this.$emit("clarification-requested2", text);
     },
   },
   setup() {
