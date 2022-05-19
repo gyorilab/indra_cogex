@@ -114,11 +114,6 @@
                   </div>
                   <template v-if="bot && bot.raw_text">
                     <p class="text-start">
-                      <i>Raw text: </i>
-                      <span v-html="bot.raw_text"></span>
-                    </p>
-                    <p class="text-start">
-                      <i>Formatted text: </i><br />
                       <template
                         v-for="(txtObj, index) in textObjectArray"
                         :key="`${idRegistry.content.textID}-text${index}`"
@@ -154,7 +149,7 @@
                           "
                           v-html="txtObj.text"
                         ></span>
-                        <!-- A single entity from query: display as EntityModal -->
+                        <!-- URL list -->
                         <span v-else-if="txtObj.object.type === 'url_list'">
                           <span
                             v-for="([url, db_name], index) in txtObj.object
@@ -177,14 +172,16 @@
               <!-- Entities content -->
               <div
                 v-if="replyEntities.length > 0"
-                class="tab-pane fade entity-list-container"
+                class="tab-pane fade agent-list-container"
                 :id="idRegistry.content.entitiesID"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.nav.entitiesID"
               >
-                <template v-if="click.entities">
-                  <AgentList :entities="replyEntities" />
-                </template>
+                <div class="card card-body border-light">
+                  <template v-if="click.entities">
+                    <AgentList :entities="replyEntities" />
+                  </template>
+                </div>
               </div>
               <!-- Stmts content -->
               <div
@@ -477,7 +474,7 @@ export default {
 </script>
 
 <style scoped>
-.entity-list-container {
+.agent-list-container {
   max-height: 300px;
   overflow-y: auto;
 }
