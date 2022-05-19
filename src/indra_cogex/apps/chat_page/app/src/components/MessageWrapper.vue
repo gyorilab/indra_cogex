@@ -54,7 +54,7 @@
                   :aria-controls="idRegistry.content.textID"
                   aria-selected="true"
                 >
-                  Respone
+                  Response
                 </button>
                 <!-- Entities tab -->
                 <button
@@ -70,7 +70,7 @@
                   :aria-controls="idRegistry.content.entitiesID"
                   aria-selected="false"
                 >
-                  Entities ({{ replyEntities.length }})
+                  Agents ({{ replyEntities.length }})
                 </button>
                 <!-- Stmts tab -->
                 <button
