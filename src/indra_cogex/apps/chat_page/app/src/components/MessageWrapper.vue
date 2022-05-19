@@ -444,7 +444,11 @@ export default {
           return obj.value.name;
         case "agent_list": {
           // If there is a limit, return the first N agent names as a string
-          let limit = format_spec.limit || obj.value.length;
+          let limit;
+          if (format_spec) {
+            limit = format_spec.limit;
+          }
+          limit = limit || obj.value.length;
           let nameArray = obj.value.slice(0, limit).map((agent) => agent.name);
           return this.englishJoin(nameArray);
         }
