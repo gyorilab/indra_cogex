@@ -132,31 +132,34 @@ export default {
       let cls = "";
       const dbRefKeys = Object.keys(db_refs);
       dbRefKeys.forEach((ns) => {
-        const nsLower = ns.toLowerCase();
-        switch (nsLower) {
-          case "fplx":
-          case "hgnc":
-          case "up":
-          case "uppro":
-          case "mirbase":
-            cls = "bg-primary";
-            return;
-          case "chebi":
-            cls = "bg-secondary";
-            return;
-          case "go":
-          case "mesh":
-          case "doid":
-            cls = "bg-success";
-            return;
-          case "hp":
-            cls = "bg-info text-dark";
-            return;
-          case "efo":
-            cls = "bg-light text-dark";
-            return;
-          default:
-            cls = "warning text-dark";
+        // Continue as long as the class is not set or is still default
+        if (cls === "warning text-dark" || cls === "") {
+          const nsLower = ns.toLowerCase();
+          switch (nsLower) {
+            case "fplx":
+            case "hgnc":
+            case "up":
+            case "uppro":
+            case "mirbase":
+              cls = "bg-primary";
+              return;
+            case "chebi":
+              cls = "bg-secondary";
+              return;
+            case "go":
+            case "mesh":
+            case "doid":
+              cls = "bg-success";
+              return;
+            case "hp":
+              cls = "bg-info text-dark";
+              return;
+            case "efo":
+              cls = "bg-light text-dark";
+              return;
+            default:
+              cls = "warning text-dark";
+          }
         }
       });
       return cls;
