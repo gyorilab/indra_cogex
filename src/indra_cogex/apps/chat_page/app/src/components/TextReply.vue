@@ -9,7 +9,7 @@
     ></div>
   </div>
   <template v-if="raw_text">
-    <p class="text-start">
+    <div class="text-start">
       <template
         v-for="(txtObj, index) in textObjectArray"
         :key="`${componentID}-text${index}`"
@@ -61,7 +61,7 @@
           </button>
         </div>
       </template>
-    </p>
+    </div>
   </template>
 </template>
 
