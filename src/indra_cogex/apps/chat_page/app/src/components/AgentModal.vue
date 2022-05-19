@@ -119,9 +119,7 @@ export default {
       return defaultValue;
     },
     title() {
-      return `Grounded to ${this.topGrounding.join(
-        ":"
-      )}. Click to see more about the entity.`;
+      return `Grounded to ${this.topGrounding.join(":")}. Click to see more.`;
     },
     modalUUID() {
       return `modal-${this.uuid}`;
