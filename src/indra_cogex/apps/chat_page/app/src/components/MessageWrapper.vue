@@ -271,7 +271,7 @@ export default {
       let entities = [];
       // Loop the entries in the Object
       Object.values(objs).forEach((obj) => {
-        if (obj.type === type && obj.role === role) {
+        if (obj && obj.type === type && obj.role === role) {
           // Concatenate the entities (stored in the 'value' field)
           entities = entities.concat(obj.value);
         }
