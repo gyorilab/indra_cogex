@@ -128,14 +128,14 @@
                           v-if="txtObj.object === null"
                           v-html="txtObj.text"
                         ></span>
-                        <!-- A single agent from query: display as EntityModal -->
+                        <!-- A single agent from query: display as AgentModal -->
                         <template
                           v-else-if="
                             txtObj.object.role === 'fixed' &&
                             txtObj.object.type === 'agent'
                           "
                         >
-                          <EntityModal :agent-object="txtObj.object.value" />
+                          <AgentModal :agent-object="txtObj.object.value" />
                         </template>
                         <!-- A string list, set as an unordered list -->
                         <ul v-else-if="txtObj.object.type === 'string_list'">
@@ -208,7 +208,7 @@
 </template>
 
 <script>
-import EntityModal from "@/components/EntityModal.vue";
+import AgentModal from "@/components/AgentModal.vue";
 import EntityList from "@/components/EntityList.vue";
 import helperFunctions from "@/helpers/helperFunctions";
 
@@ -216,7 +216,7 @@ export default {
   name: "MessageWrapper.vue",
   components: {
     EntityList,
-    EntityModal,
+    AgentModal,
   },
   data() {
     return {

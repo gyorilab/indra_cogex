@@ -14,18 +14,18 @@
   <hr />
   <div class="text-start">
     <template v-for="(entity, number) in computedList" :key="number">
-      <EntityModal :agent-object="entity" />
+      <AgentModal :agent-object="entity" />
     </template>
   </div>
 </template>
 
 <script>
-import EntityModal from "@/components/EntityModal.vue";
+import AgentModal from "@/components/AgentModal.vue";
 
 export default {
   name: "EntityList.vue",
   components: {
-    EntityModal,
+    AgentModal,
   },
   data() {
     return {
