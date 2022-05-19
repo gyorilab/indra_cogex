@@ -183,7 +183,7 @@
                 :aria-labelledby="idRegistry.nav.entitiesID"
               >
                 <template v-if="click.entities">
-                  <EntityList :entities="replyEntities" />
+                  <AgentList :entities="replyEntities" />
                 </template>
               </div>
               <!-- Stmts content -->
@@ -209,13 +209,13 @@
 
 <script>
 import AgentModal from "@/components/AgentModal.vue";
-import EntityList from "@/components/EntityList.vue";
+import AgentList from "@/components/AgentList.vue";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "MessageWrapper.vue",
   components: {
-    EntityList,
+    AgentList,
     AgentModal,
   },
   data() {
