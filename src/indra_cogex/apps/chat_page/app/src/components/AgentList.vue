@@ -13,8 +13,8 @@
   </div>
   <hr />
   <div class="text-start">
-    <template v-for="(entity, number) in computedList" :key="number">
-      <AgentModal :agent-object="entity" />
+    <template v-for="(agent, number) in computedList" :key="number">
+      <AgentModal :agent-object="agent" />
     </template>
   </div>
 </template>
@@ -59,17 +59,17 @@ export default {
   computed: {
     computedList() {
       let list = [];
-      for (let entity of this.entities) {
-        if (this.isClsVisible(this.dbRefsToCls(entity.db_refs))) {
-          list.push(entity);
+      for (let agent of this.entities) {
+        if (this.isClsVisible(this.dbRefsToCls(agent.db_refs))) {
+          list.push(agent);
         }
       }
       return list;
     },
     availableClasses() {
       let classes = [];
-      for (const entity of this.entities) {
-        const cls = this.dbRefsToCls(entity.db_refs);
+      for (const agent of this.entities) {
+        const cls = this.dbRefsToCls(agent.db_refs);
         // Add class if it is in badgeClasses and is not already in classes
         if (
           this.badgeClasses.some((el) => el[0] === cls) &&
