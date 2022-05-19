@@ -111,7 +111,7 @@
               <!-- Entities content -->
               <div
                 v-if="replyEntities.length > 0"
-                class="tab-pane fade agent-list-container"
+                class="tab-pane fade list-container"
                 :id="idRegistry.content.entitiesID"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.nav.entitiesID"
@@ -125,7 +125,7 @@
               <!-- Stmts content -->
               <div
                 v-if="replyStmts.length > 0"
-                class="tab-pane fade stmt-list-container"
+                class="tab-pane fade list-container"
                 :id="idRegistry.content.stmtsID"
                 role="tabpanel"
                 :aria-labelledby="idRegistry.nav.stmtsID"
@@ -293,7 +293,7 @@ export default {
 </script>
 
 <style scoped>
-.agent-list-container {
+.list-container {
   max-height: 300px;
   overflow-y: auto;
 }
