@@ -23,7 +23,7 @@
 import AgentModal from "@/components/AgentModal.vue";
 
 export default {
-  name: "EntityList.vue",
+  name: "AgentList.vue",
   components: {
     AgentModal,
   },
@@ -47,7 +47,6 @@ export default {
   },
   props: {
     entities: {
-      // Array of entity objects Fixme: rename to agents when things are working
       type: Array,
       required: true,
     },
