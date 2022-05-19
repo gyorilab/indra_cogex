@@ -4,15 +4,33 @@
     v-for="(stmt, index) in stmts"
     :key="`${this.componentUUID}-${index}`"
   >
-    <span>{{ stmt.id }}</span>
+    <div class="col">
+      Agents:
+      <span
+        v-for="(ag, innerIndex) in this.getAgentList(stmt)"
+        :key="`${this.componentUUID}-${index}-${innerIndex}`"
+        ><AgentModal :agent-object="ag"
+      /></span>
+    </div>
+    <div class="col text-end">
+      See statement on
+      <a
+        :href="`https://discovery.indra.bio/statement_display?stmt_hash=${stmt.matches_hash}`"
+        >discovery.indra.bio</a
+      >
+    </div>
   </div>
 </template>
 
 <script>
+import AgentModal from "@/components/AgentModal.vue";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "StmtList.vue",
+  components: {
+    AgentModal,
+  },
   props: {
     stmts: {
       /* Array of statements:
@@ -49,6 +67,21 @@ export default {
     return {
       uuid,
     };
+  },
+  methods: {
+    getAgentList(stmt) {
+      const agentList = [];
+      if (stmt.subj) {
+        agentList.push(stmt.subj);
+      }
+      if (stmt.obj) {
+        agentList.push(stmt.obj);
+      }
+      if (stmt.members && stmt.members.length > 0) {
+        agentList.concat(stmt.members);
+      }
+      return agentList;
+    },
   },
 };
 </script>
