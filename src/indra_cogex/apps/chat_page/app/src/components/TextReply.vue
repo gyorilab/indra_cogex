@@ -55,9 +55,10 @@
         <div v-if="clarification">
           <button
             class="btn btn-sm btn-outline-secondary"
+            title="Click to copy the clarification text to the input text box"
             @click="$emit('clarification-requested1', clarification)"
           >
-            Copy clarification to input
+            Use clarification
           </button>
         </div>
       </template>
