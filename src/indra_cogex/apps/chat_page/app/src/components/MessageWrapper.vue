@@ -191,10 +191,11 @@
                 role="tabpanel"
                 :aria-labelledby="idRegistry.nav.stmtsID"
               >
-                <template v-if="click.stmts">
-                  <!-- <StmtList :stmts="replyStmts" />-->
-                  <i>Show {{ replyStmts.length }} statements</i>
-                </template>
+                <div class="card card-body border-light">
+                  <template v-if="click.stmts">
+                    <StmtList :stmts="replyStmts" />
+                  </template>
+                </div>
               </div>
             </div>
           </div>
@@ -207,6 +208,7 @@
 <script>
 import AgentModal from "@/components/AgentModal.vue";
 import AgentList from "@/components/AgentList.vue";
+import StmtList from "@/components/StmtList.vue";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
@@ -214,6 +216,7 @@ export default {
   components: {
     AgentList,
     AgentModal,
+    StmtList,
   },
   data() {
     return {
