@@ -1,10 +1,10 @@
 <template>
-  <h5 v-if="showTitle">Entity List</h5>
-  <div>
+  <div class="text-start">
+    Available agent types:
     <span
       v-for="([cls, descr], index) in availableClasses"
       class="badge"
-      :title="availableClasses.length > 1 ? 'Toggle visibility' : ''"
+      :title="availableClasses.length > 1 ? 'Click to toggle visibility' : ''"
       @click="toggleHide(cls)"
       :class="`${cls} ${isClsVisible(cls) ? '' : ' opacity-50'}`"
       :key="index"
