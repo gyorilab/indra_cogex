@@ -13,11 +13,13 @@
       /></span>
     </div>
     <div class="col text-end">
-      See statement on
+      See full statement info:
       <a
         :href="`https://discovery.indra.bio/statement_display?stmt_hash=${stmt.matches_hash}`"
-        >discovery.indra.bio</a
-      >
+        target="_blank"
+        rel="noopener noreferrer"
+        ><i class="bi bi-box-arrow-up-right"></i
+      ></a>
     </div>
   </div>
 </template>
