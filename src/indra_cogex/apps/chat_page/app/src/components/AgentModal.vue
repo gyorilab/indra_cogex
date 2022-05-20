@@ -120,6 +120,13 @@ export default {
           topEntry = [nsLower, id];
         }
       }
+      if (
+        DefaultValues.nsPriorityMap[topEntry[0].toLowerCase()] === undefined
+      ) {
+        console.warn(
+          `${topEntry[0]} is not in the nsPrio map. Forgot to make it lowercase in code?`
+        );
+      }
       return topEntry;
     },
     title() {
@@ -200,9 +207,6 @@ export default {
       if (!ns) {
         return nsPrio.default;
       } else if (nsPrio[ns] === undefined) {
-        console.warn(
-          `${ns} is not in the nsPrio map. Forgot to make it lowercase?`
-        );
         return nsPrio.default;
       } else {
         return nsPrio[ns];
