@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import badgeMappings from "@/helpers/DefaultValues";
+import { DefaultValues } from "@/helpers/DefaultValues";
 import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
@@ -110,15 +110,17 @@ export default {
       );
     },
     topGrounding() {
-      let defaultValue;
-      for (const [db_name, db_id] of Object.entries(this.agentObject.db_refs)) {
-        if (db_name === "TEXT") {
-          defaultValue = [db_name, db_id];
-        } else {
-          return [db_name, db_id];
+      // Set to the first grounding in db_refs
+      let [firstNs, firstId] = Object.entries(this.agentObject.db_refs)[0];
+      let topEntry = [firstNs.toLowerCase(), firstId];
+      // Return the top ranked grounding according to the nsPrio map, lower is better
+      for (const [ns, id] of Object.entries(this.agentObject.db_refs)) {
+        const nsLower = ns.toLowerCase();
+        if (this.getNsPrio(nsLower) < this.getNsPrio(topEntry[0])) {
+          topEntry = [nsLower, id];
         }
       }
-      return defaultValue;
+      return topEntry;
     },
     title() {
       return `Grounded to ${this.topGrounding.join(":")}. Click to see more.`;
@@ -130,6 +132,10 @@ export default {
       return `modal-${this.uuid}-title`;
     },
     allRefs() {
+      if (this.topGrounding.length === 0) {
+        return this.xrefs;
+      }
+
       return [
         [
           this.topGrounding[0],
@@ -146,7 +152,7 @@ export default {
       return "";
     },
     badgeClass() {
-      for (const [cls, values] of Object.entries(badgeMappings)) {
+      for (const [cls, values] of Object.entries(DefaultValues.badgeMappings)) {
         if (
           this.topGrounding[0] &&
           values.includes(this.topGrounding[0].toLowerCase())
@@ -155,31 +161,52 @@ export default {
         }
       }
       console.log(
-        `No badge class found for ${this.nm} (${this.topGrounding.join(":")})`
+        `No badge class found for ${this.textToShow} (${this.topGrounding.join(
+          ":"
+        )})`
       );
-      return "warning";
+      return "text-dark border";
     },
   },
   methods: {
     async fillXrefs() {
       // Todo: Use a global with `inject ['GStore']` to store the xrefs in
       // Call network search web api to get xrefs; fixme: should use a standalone api; Isn't there one for the bioontology?
-      const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${this.topGrounding[0]}&id=${this.topGrounding[1]}`;
-      const xrefResp = await fetch(xrefsUrl);
-      const xrefData = await xrefResp.json();
-      this.xrefs = await xrefData;
-
-      // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
-      const bioluUrl = `http://biolookup.io/api/lookup/${this.topGrounding[0]}:${this.topGrounding[1]}`; // Currently only supports http
-      if (
-        this.topGrounding[0].length === 0 ||
-        this.topGrounding[1].length === 0
-      ) {
-        console.warn(`No grounding found for ${this.nm}`);
+      if (this.topGrounding.length === 0) {
+        console.log(
+          "Cannot fill crossrefs without grounding for",
+          this.textToShow
+        );
+        return;
       }
-      const bioluResp = await fetch(bioluUrl);
-      const bioluData = await bioluResp.json();
-      this.lookupData = await bioluData;
+      const topNsUpper = this.topGrounding[0].toUpperCase();
+      if (this.xrefs.length <= 1) {
+        const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${topNsUpper}&id=${this.topGrounding[1]}`;
+        const xrefResp = await fetch(xrefsUrl);
+        const xrefData = await xrefResp.json();
+        this.xrefs = await xrefData;
+      }
+
+      if (Object.entries(this.lookupData).length === 0) {
+        // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
+        const bioluUrl = `http://biolookup.io/api/lookup/${topNsUpper}:${this.topGrounding[1]}`; // Currently only supports http
+        const bioluResp = await fetch(bioluUrl);
+        const bioluData = await bioluResp.json();
+        this.lookupData = await bioluData;
+      }
+    },
+    getNsPrio(ns) {
+      const nsPrio = DefaultValues.nsPriorityMap;
+      if (!ns) {
+        return nsPrio.default;
+      } else if (nsPrio[ns] === undefined) {
+        console.warn(
+          `${ns} is not in the nsPrio map. Forgot to make it lowercase?`
+        );
+        return nsPrio.default;
+      } else {
+        return nsPrio[ns];
+      }
     },
   },
   setup() {
