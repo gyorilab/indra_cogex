@@ -5,4 +5,28 @@ const badgeMappings = {
   ["bg-info text-dark"]: ["hp"], // Phenotypic Abnormality
   ["bg-light text-dark"]: ["efo"], // Experimental Factor Ontology
 };
-export default badgeMappings;
+// "text" is the default badge class and should be the last one
+const nsPriority = [
+  "fplx",
+  "uppro",
+  "hgnc",
+  "up",
+  "chebi",
+  "go",
+  "mesh",
+  "mirbase",
+  "doid",
+  "hp",
+  "efo",
+];
+const nsPriorityMap = {};
+nsPriority.forEach((ns, i) => {
+  nsPriorityMap[ns] = i;
+});
+nsPriorityMap["default"] = nsPriority.length;
+
+export const DefaultValues = {
+  badgeMappings,
+  nsPriority,
+  nsPriorityMap,
+};
