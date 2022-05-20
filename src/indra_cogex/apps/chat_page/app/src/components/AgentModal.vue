@@ -105,7 +105,9 @@ export default {
       return text;
     },
     textToShow() {
-      return this.text || this.agentObject.name;
+      return (
+        this.text || (this.agentObject ? this.agentObject.name : "(no name)")
+      );
     },
     topGrounding() {
       let defaultValue;
