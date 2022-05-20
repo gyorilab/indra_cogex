@@ -5,7 +5,7 @@
     type="button"
     :title="title"
     @click="fillXrefs()"
-    class="badge ext-decoration-none"
+    class="badge text-decoration-none"
     :class="badgeClass"
     data-bs-toggle="modal"
     :data-bs-target="`#${modalUUID}`"
