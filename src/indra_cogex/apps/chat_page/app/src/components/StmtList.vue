@@ -71,14 +71,11 @@ export default {
   methods: {
     getAgentList(stmt) {
       const agentList = [];
-      if (stmt.subj) {
-        agentList.push(stmt.subj);
-      }
-      if (stmt.obj) {
-        agentList.push(stmt.obj);
-      }
-      if (stmt.members && stmt.members.length > 0) {
-        agentList.concat(stmt.members);
+      // Loop through key-value pairs of the statement object and add to agentList the objects that have the keys "name" and "db_refs"
+      for (const obj of Object.values(stmt)) {
+        if (obj.name && obj.db_refs) {
+          agentList.push(obj);
+        }
       }
       return agentList;
     },
