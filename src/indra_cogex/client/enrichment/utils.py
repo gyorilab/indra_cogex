@@ -10,8 +10,11 @@ from textwrap import dedent
 from typing import Dict, Optional, Set, Tuple
 
 import pystow
+from indra.databases.identifiers import get_ns_id_from_identifiers
+from indra.ontology.bio import bio_ontology
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
+from indra_cogex.representation import norm_id
 
 __all__ = [
     "collect_gene_sets",
@@ -91,36 +94,21 @@ def collect_gene_sets(
 
 def extend_by_ontology(gene_set_mapping: Dict[Tuple[str, str], Set[str]]):
     """Extend the gene set mapping by ontology."""
-    from indra.ontology.bio import bio_ontology
-    from indra.databases.identifiers import ensure_prefix_if_needed
-
-    # The bio_ontology contains upper case db names and sometimes double prefixes
-    # (e.g. "GO:GO:123456"), the gene_set_mapping contains lower case db
-    # names and don't have double prefixes, e.g. "go:123456".
 
     bio_ontology.initialize()
     # Keys are tuples of (curie, name)
     for curie, name in gene_set_mapping:
 
         # Upper case the curie and split it into prefix and identifier
-        db_ns, db_id = curie.upper().split(":")
-
-        # See if prefix is needed in the identifier
-        db_id = ensure_prefix_if_needed(db_ns, db_id)
+        graph_ns, graph_id = curie.split(":", maxsplit=1)
+        db_ns, db_id = get_ns_id_from_identifiers(graph_ns, graph_id)
 
         # Loop the ontology children and add them to the mapping
         for child_ns, child_id in bio_ontology.get_children(db_ns, db_id):
             child_name = bio_ontology.get_name(child_ns, child_id)
-            child_curie = child_ns + ":" + child_id
-
-            # Lowercase and remove double prefix for matching the keys in
-            # the mapping
-            child_curie = child_curie.replace(
-                f"{child_ns}:" f"{child_ns}:", f"{child_ns}:"
-            ).lower()
 
             gene_set_mapping[curie, name] |= gene_set_mapping.get(
-                (child_curie, child_name), set()
+                (norm_id(child_ns, child_id), child_name), set()
             )
 
 
