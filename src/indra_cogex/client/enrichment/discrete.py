@@ -252,8 +252,8 @@ def indra_downstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
     *,
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -297,8 +297,8 @@ def indra_upstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
     *,
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
     **kwargs,
 ) -> pd.DataFrame:
     """

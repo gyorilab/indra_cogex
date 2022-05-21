@@ -10,8 +10,11 @@ from textwrap import dedent
 from typing import Dict, Optional, Set, Tuple
 
 import pystow
+from indra.databases.identifiers import get_ns_id_from_identifiers
+from indra.ontology.bio import bio_ontology
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
+from indra_cogex.representation import norm_id
 
 __all__ = [
     "collect_gene_sets",
@@ -34,15 +37,21 @@ def collect_gene_sets(
     *,
     cache_file: Path = None,
     client: Neo4jClient,
+    include_ontology_children: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
     Parameters
     ----------
+    cache_file :
+        The path to the cache file.
     query:
         A cypher query
     client :
         The Neo4j client.
+    include_ontology_children :
+        If True, extend the gene set associations with associations from
+        child terms using the indra ontology
 
     Returns
     -------
@@ -73,10 +82,34 @@ def collect_gene_sets(
             }
             curie_to_hgnc_ids[curie, name].update(hgnc_ids)
         res = dict(curie_to_hgnc_ids)
+
+        if include_ontology_children:
+            extend_by_ontology(res)
+
         with open(cache_file, "wb") as fh:
             pickle.dump(res, fh)
     GENE_SET_CACHE[cache_file.as_posix()] = res
     return res
+
+
+def extend_by_ontology(gene_set_mapping: Dict[Tuple[str, str], Set[str]]):
+    """Extend the gene set mapping by ontology."""
+
+    bio_ontology.initialize()
+    # Keys are tuples of (curie, name)
+    for curie, name in gene_set_mapping:
+
+        # Upper case the curie and split it into prefix and identifier
+        graph_ns, graph_id = curie.split(":", maxsplit=1)
+        db_ns, db_id = get_ns_id_from_identifiers(graph_ns, graph_id)
+
+        # Loop the ontology children and add them to the mapping
+        for child_ns, child_id in bio_ontology.get_children(db_ns, db_id):
+            child_name = bio_ontology.get_name(child_ns, child_id)
+
+            gene_set_mapping[curie, name] |= gene_set_mapping.get(
+                (norm_id(child_ns, child_id), child_name), set()
+            )
 
 
 @autoclient()
@@ -154,7 +187,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
 
     Parameters
     ----------
-    client :object
+    client :
         The Neo4j client.
 
     Returns
@@ -170,7 +203,12 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    return collect_gene_sets(
+        client=client,
+        query=query,
+        cache_file=cache_file,
+        include_ontology_children=True,
+    )
 
 
 @autoclient()
