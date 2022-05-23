@@ -1,10 +1,10 @@
 <template>
   <div
-    class="row"
+    class="card mb-1"
     v-for="(stmt, index) in stmtsWithEnglish"
     :key="`${this.componentUUID}-${index}`"
   >
-    <StmtRow :stmt="stmt" :index="index" />
+    <StmtRow :stmt="stmt" :row-index="index" />
   </div>
 </template>
 
