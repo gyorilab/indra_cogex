@@ -4,35 +4,18 @@
     v-for="(stmt, index) in stmtsWithEnglish"
     :key="`${this.componentUUID}-${index}`"
   >
-    <div class="col-auto">
-      <span>{{ stmt.english ? stmt.english : englishFromStmt(stmt) }}</span>
-      Agents:
-      <span
-        v-for="(ag, innerIndex) in getAgentList(stmt)"
-        :key="`${this.componentUUID}-${index}-${innerIndex}`"
-        ><AgentModal :agent-object="ag"
-      /></span>
-    </div>
-    <div class="col text-end">
-      Full statement info:
-      <a
-        :href="`https://discovery.indra.bio/statement_display?stmt_hash=${stmt.matches_hash}`"
-        target="_blank"
-        rel="noopener noreferrer"
-        ><i class="bi bi-box-arrow-up-right"></i
-      ></a>
-    </div>
+    <StmtRow :stmt="stmt" :index="index" />
   </div>
 </template>
 
 <script>
-import AgentModal from "@/components/AgentModal.vue";
 import helperFunctions from "@/helpers/helperFunctions";
+import StmtRow from "@/components/StmtRow.vue";
 
 export default {
   name: "StmtList.vue",
   components: {
-    AgentModal,
+    StmtRow,
   },
   data() {
     return {
@@ -99,6 +82,7 @@ export default {
   },
   methods: {
     getAgentList(stmt) {
+      // Initialize agent list
       const agentList = [];
       // Loop through key-value pairs of the statement object and add
       // to agentList the objects that have the keys "name" and "db_refs"
