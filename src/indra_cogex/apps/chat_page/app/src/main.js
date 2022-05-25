@@ -1,8 +1,67 @@
+/* eslint-disable vue/multi-word-component-names */
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 import { createApp } from "vue";
+
+import { Statement } from "indralab-vue";
+import { Evidence } from "indralab-vue";
+import { CurationRow } from "indralab-vue";
+import { RefLink } from "indralab-vue";
+import { SourceDisplay } from "indralab-vue";
 import App from "./App.vue";
 
-createApp(App).mount("#app");
+const app = createApp(App);
+
+app.component("Statement", Statement);
+app.component("Evidence", Evidence);
+app.component("RefLink", RefLink);
+app.component("SourceDisplay", SourceDisplay);
+app.component("CurationRow", CurationRow);
+
+app.config.globalProperties.$stmt_hash_url =
+  "https://discovery.indra.bio/expand/"; // URL to get more evidence for a statement: e.g. https://discovery.indra.bio/expand/-16093215807632509?format=json-js&with_english=true&with_cur_counts=true&filter_ev=true
+app.config.globalProperties.$curation_url =
+  "https://discovery.indra.bio/curate/";
+app.config.globalProperties.$curation_list_url =
+  "https://discovery.indra.bio/curation/list";
+app.config.globalProperties.$sources = {
+  readers: [
+    "geneways",
+    "tees",
+    "gnbr",
+    "isi",
+    "trips",
+    "rlimsp",
+    "medscan",
+    "eidos",
+    "sparser",
+    "reach",
+  ],
+  databases: [
+    "psp",
+    "cbn",
+    "pc",
+    "bel_lc",
+    "signor",
+    "biogrid",
+    "tas",
+    "hprd",
+    "trrust",
+    "ctd",
+    "vhn",
+    "pe",
+    "drugbank",
+    "omnipath",
+    "conib",
+    "crog",
+    "dgi",
+    "minerva",
+    "creeds",
+    "ubibrowser",
+    "acsn",
+  ],
+};
+
+app.mount("#app");
