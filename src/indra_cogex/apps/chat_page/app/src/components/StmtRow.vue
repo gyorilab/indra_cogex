@@ -1,10 +1,3 @@
-<!-- Todo:
-      1. Clickable row to show:
-        - AgentModals for agents in the row 
-        - Statement linkout
-        - Add preview in a modal?
-        - Evidence info e.g. link to pubmed,
-       -->
 <template>
   <div
     class="card-header stmt-row-header"
@@ -20,54 +13,15 @@
   </div>
   <div class="collapse" :id="collapseAreaID">
     <div class="card-body">
-      <div class="row">
-        <div class="col-auto">
-          <h5>Agents involved in this statements</h5>
-          <span
-            v-for="(ag, innerIndex) in agentList"
-            :key="`${this.componentUUID}-${rowIndex}-${innerIndex}`"
-            ><AgentModal :agent-object="ag"
-          /></span>
-        </div>
-        <div class="col text-end">
-          Full statement info on:
-          <a
-            :href="`https://discovery.indra.bio/statement_display?stmt_hash=${stmt.matches_hash}`"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><i class="bi bi-box-arrow-up-right"></i
-          ></a>
-        </div>
-      </div>
-      <div class="row">
-        <h5>Evidence</h5>
-        <div
-          class="col"
-          v-for="([sourceDb, dbId], evIndex) of Object.entries(
-            stmt.evidence[0].text_refs
-          )"
-          :key="`${this.componentUUID}-${rowIndex}-${evIndex}`"
-        >
-          <b>{{ sourceDb }}</b
-          >: {{ dbId }}
-          <!-- Make link to source >: {{ dbId }}-->
-        </div>
-        <div class="row">
-          <span class="text-center">Here put info about the paper</span>
-        </div>
-      </div>
+      <p class="text-center">Testing Statement</p>
+      <Statement v-bind="fakeStatement" />
     </div>
   </div>
 </template>
 
 <script>
-import AgentModal from "@/components/AgentModal.vue";
-
 export default {
   name: "StmtRow.vue",
-  components: {
-    AgentModal,
-  },
   data() {
     return {
       shown: false,
@@ -84,9 +38,35 @@ export default {
     },
   },
   computed: {
-    agentList() {
-      // Get all agent objects from the statement
-      return this.getAgentList(this.stmt);
+    fakeEvidence() {
+      const fe = {
+        text: "This is fake evidence text",
+        pmid:
+          this.stmt.evidence[0].pmid || this.stmt.evidence[0].text_refs.PMID,
+        source_api: "sparser",
+        text_refs: this.stmt.evidence[0].text_refs,
+        num_curations: 0,
+        source_hash: String(this.stmt.evidence[0].source_hash),
+        stmt_hash: this.stmt.matches_hash,
+        original_json: this.stmt.evidence[0],
+      };
+      console.log("fakeEvidence");
+      console.log(fe);
+      return fe;
+    },
+    fakeStatement() {
+      const fs = {
+        belief: 0.86,
+        evidence: [this.fakeEvidence],
+        english: this.stmt.english,
+        hash: this.stmt.matches_hash,
+        sources: { sparser: 1 },
+        total_evidence: this.stmt.evidence.length,
+        loadable: true,
+      };
+      console.log("fakeStatement");
+      console.log(fs);
+      return fs;
     },
     componentUUID() {
       return this.stmt.id;
