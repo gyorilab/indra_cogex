@@ -20,6 +20,8 @@ export default {
   data() {
     return {
       englishLookup: {},
+      meta: {},
+      loading: true,
     };
   },
   props: {
@@ -72,7 +74,11 @@ export default {
     },
   },
   mounted() {
+    // Fetch English
     this.getEnglishArray();
+    // Fetch statement metadata
+    this.getStmtMeta();
+    this.loading = false;
   },
   setup() {
     const uuid = helperFunctions.getUUID()();
@@ -146,8 +152,56 @@ export default {
         }),
       });
       const data = await response.json();
-      console.log(data);
       this.englishLookup = data.sentences;
+    },
+    getMeta(stmtHash) {
+      if (this.meta[stmtHash]) {
+        return this.meta[stmtHash];
+      }
+      return {};
+    },
+    getSourceCounts(stmtHash) {
+      const meta = this.getMeta(stmtHash);
+      if (meta.sourceCounts) {
+        return meta.sourceCounts;
+      }
+      return {};
+    },
+    getEvidenceCount(stmtHash) {
+      const meta = this.getMeta(stmtHash);
+      if (meta.evidenceCount) {
+        return meta.evidenceCount;
+      }
+      return 0;
+    },
+    getStmtMeta() {
+      // Fetch statement metadata to https://discovery.indra.bio/api/get_stmts_meta_for_stmt_hashes
+      const cogexApi =
+        "https://discovery.indra.bio/api/get_stmts_meta_for_stmt_hashes";
+      const stmtHashes = this.stmts.map((stmt) => stmt.matches_hash);
+      fetch(cogexApi, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stmt_hashes: stmtHashes,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // Data should be list of relations in JSON format, map them to source counts and evidence counts per statement hash
+          data.forEach((relation) => {
+            const stmtObj = JSON.parse(relation.data.stmt_json);
+            const stmtHash = stmtObj.matches_hash;
+            const sourceCounts = JSON.parse(relation.data.source_counts);
+            const evidenceCount = relation.data.evidence_count;
+            this.meta[stmtHash] = {
+              sourceCounts,
+              evidenceCount,
+            };
+          });
+        });
     },
   },
 };
