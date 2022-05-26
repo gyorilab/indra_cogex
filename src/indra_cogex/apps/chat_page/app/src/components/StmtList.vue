@@ -1,22 +1,25 @@
 <template>
-  <div
-    class="card mb-1"
-    v-for="(stmt, index) in stmtsWithEnglish"
-    :key="`${this.componentUUID}-${index}`"
-  >
-    <StmtRow :stmt="stmt" :row-index="index" />
+  <div v-if="!loading" class="list-group list-group-flush">
+    <Statement
+      v-for="(stmt, index) in stmtsWithEnglish"
+      class="list-group-item"
+      :key="`${this.componentUUID}-${index}`"
+      :belief="stmt.belief"
+      :evidence="stmt.evidence"
+      :english="stmt.english"
+      :hash="stmt.matches_hash"
+      :sources="getSourceCounts(stmt.stmt_hash)"
+      :total_evidence="getEvidenceCount(stmt.stmt_hash)"
+      :loadable="true"
+    />
   </div>
 </template>
 
 <script>
 import helperFunctions from "@/helpers/helperFunctions";
-import StmtRow from "@/components/StmtRow.vue";
 
 export default {
   name: "StmtList.vue",
-  components: {
-    StmtRow,
-  },
   data() {
     return {
       englishLookup: {},
