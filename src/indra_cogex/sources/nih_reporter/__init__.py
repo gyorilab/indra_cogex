@@ -1,4 +1,5 @@
 import re
+from typing import Iterable
 import zipfile
 from collections import defaultdict
 import pandas
@@ -33,6 +34,11 @@ project_columns = [
 
 
 class NihReporterProcessor(Processor):
+    """Processor for NIH Reporter database."""
+
+    name = "nih_reporter"
+    node_types = ["ResearchProject", "Publication", "ClinicalTrial"]
+
     def __init__(self, years=None):
         base_folder = pystow.join("indra", "cogex", "nih_reporter")
         data_files = defaultdict(dict)
@@ -42,8 +48,9 @@ class NihReporterProcessor(Processor):
                 if match:
                     data_files[file_type][match.groups()[0]] = file_path
         self.data_files = dict(data_files)
+        self._core_project_to_application = {}
 
-    def get_nodes(self):
+    def get_nodes(self) -> Iterable[Node]:
         # Projects
         for year, project_file in self.data_files.get("project").items():
             df = _read_first_df(project_file)
@@ -55,6 +62,9 @@ class NihReporterProcessor(Processor):
                     labels=["ResearchProject"],
                     data=data,
                 )
+                self._core_project_to_application[
+                    row.CORE_PROJECT_NUM
+                ] = row.APPLICATION_ID
         # Publications
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
@@ -65,7 +75,7 @@ class NihReporterProcessor(Processor):
                     labels=["Publication"],
                 )
         # Clinical trials
-        for year, clinical_trial_file in self.data_files.get("clinical_trial").items():
+        for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
             for row in df.itertuples():
                 yield Node(
@@ -74,6 +84,40 @@ class NihReporterProcessor(Processor):
                     labels=["ClinicalTrial"],
                 )
         # NOTE: we don't process patents for now
+
+    def get_relations(self) -> Iterable[Relation]:
+        # Project publications
+        for year, publink_file in self.data_files.get("publink").items():
+            df = _read_first_df(publink_file)
+            for row in df.itertuples():
+                application_id = self._core_project_to_application.get(
+                    row.CORE_PROJECT_NUM
+                )
+                if not application_id:
+                    continue
+                yield Relation(
+                    source_ns="nihreporter",
+                    source_id=application_id,
+                    target_ns="pubmed",
+                    target_id=row.PMID,
+                    rel_type="has_publication",
+                )
+        # Project clinical trials
+        for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
+            df = pandas.read_csv(clinical_trial_file)
+            for row in df.itertuples():
+                application_id = self._core_project_to_application.get(
+                    row["Core Project Number"]
+                )
+                if not application_id:
+                    continue
+                yield Relation(
+                    source_ns="nihreporter",
+                    source_id=application_id,
+                    target_ns="clinicaltrials",
+                    target_id=row["ClinicalTrials.gov ID"],
+                    rel_type="has_clinical_trial",
+                )
 
 
 def _read_first_df(zip_file_path):
