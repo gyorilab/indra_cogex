@@ -39,7 +39,7 @@ class NihReporterProcessor(Processor):
     name = "nih_reporter"
     node_types = ["ResearchProject", "Publication", "ClinicalTrial"]
 
-    def __init__(self, years=None):
+    def __init__(self):
         base_folder = pystow.join("indra", "cogex", "nih_reporter")
         data_files = defaultdict(dict)
         for file_path in base_folder.iterdir():
@@ -54,10 +54,15 @@ class NihReporterProcessor(Processor):
         # Projects
         for year, project_file in self.data_files.get("project").items():
             df = _read_first_df(project_file)
-            for row in df.itertuples():
-                data = {pc: row.get(pc) for pc in project_columns}
+            for _, row in df.iterrows():
+                data = {
+                    pc: row[pc]
+                    for pc in project_columns
+                    # Not all columns are available in all years
+                    if pc in row
+                }
                 yield Node(
-                    db_ns="nihreporter",
+                    db_ns="NIHREPORTER",
                     db_id=row.APPLICATION_ID,
                     labels=["ResearchProject"],
                     data=data,
@@ -70,16 +75,16 @@ class NihReporterProcessor(Processor):
             df = _read_first_df(publink_file)
             for row in df.itertuples():
                 yield Node(
-                    db_ns="pubmed",
-                    db_id=row.PMID,
+                    db_ns="PUBMED",
+                    db_id=str(row.PMID),
                     labels=["Publication"],
                 )
         # Clinical trials
         for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
-            for row in df.itertuples():
+            for _, row in df.iterrows():
                 yield Node(
-                    db_ns="clinicaltrials",
+                    db_ns="CLINICALTRIALS",
                     db_id=row["ClinicalTrials.gov ID"],
                     labels=["ClinicalTrial"],
                 )
@@ -91,30 +96,30 @@ class NihReporterProcessor(Processor):
             df = _read_first_df(publink_file)
             for row in df.itertuples():
                 application_id = self._core_project_to_application.get(
-                    row.CORE_PROJECT_NUM
+                    row.PROJECT_NUMBER
                 )
                 if not application_id:
                     continue
                 yield Relation(
-                    source_ns="nihreporter",
+                    source_ns="NIHREPORTER",
                     source_id=application_id,
-                    target_ns="pubmed",
-                    target_id=row.PMID,
+                    target_ns="PUBMED",
+                    target_id=str(row.PMID),
                     rel_type="has_publication",
                 )
         # Project clinical trials
         for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
-            for row in df.itertuples():
+            for _, row in df.iterrows():
                 application_id = self._core_project_to_application.get(
                     row["Core Project Number"]
                 )
                 if not application_id:
                     continue
                 yield Relation(
-                    source_ns="nihreporter",
+                    source_ns="NIHREPORTER",
                     source_id=application_id,
-                    target_ns="clinicaltrials",
+                    target_ns="CLINICALTRIALS",
                     target_id=row["ClinicalTrials.gov ID"],
                     rel_type="has_clinical_trial",
                 )
@@ -124,6 +129,5 @@ def _read_first_df(zip_file_path):
     # extract a single file from the project_file zip file
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         return pandas.read_csv(
-            zip_ref.open(zip_ref.filelist[0], "r"),
-            encoding="latin1",
+            zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
         )
