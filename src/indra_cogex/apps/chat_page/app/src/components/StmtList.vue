@@ -1,4 +1,5 @@
 <template>
+  Sources: <SourceDisplay :source-defaults="availableSources" />
   <div v-if="!loading" class="list-group list-group-flush">
     <Statement
       v-for="(stmt, index) in stmtsWithEnglish"
@@ -74,6 +75,27 @@ export default {
         }
       });
       return extendedStmts;
+    },
+    availableSources() {
+      let availableSources = { readers: [], databases: [] };
+
+      // Loop the meta dict's values
+      for (let metaEntry of Object.values(this.meta)) {
+        // Loop the meta entry's keys of the sourceCounts dict
+        for (let source of Object.keys(metaEntry.sourceCounts)) {
+          // If the source is a reader, add it to the readers array
+          const lowerSource = source.toLowerCase();
+
+          if (this.$sources.readers.includes(lowerSource)) {
+            availableSources.readers.push(lowerSource);
+          } else if (this.$sources.databases.includes(lowerSource)) {
+            availableSources.databases.push(lowerSource);
+          } else {
+            console.log(`Unknown source: ${source}`);
+          }
+        }
+      }
+      return availableSources;
     },
   },
   mounted() {
