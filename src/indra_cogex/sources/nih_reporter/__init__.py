@@ -37,7 +37,7 @@ class NihReporterProcessor(Processor):
     """Processor for NIH Reporter database."""
 
     name = "nih_reporter"
-    node_types = ["ResearchProject", "Publication", "ClinicalTrial"]
+    node_types = ["ResearchProject", "Publication", "ClinicalTrial", "Patent"]
 
     def __init__(self):
         base_folder = pystow.join("indra", "cogex", "nih_reporter")
@@ -88,7 +88,16 @@ class NihReporterProcessor(Processor):
                     db_id=row["ClinicalTrials.gov ID"],
                     labels=["ClinicalTrial"],
                 )
-        # NOTE: we don't process patents for now
+        # Patents
+        for _, patent_file in self.data_files.get("patent").items():
+            df = pandas.read_csv(patent_file)
+            for _, row in df.iterrows():
+                yield Node(
+                    db_ns="GOOGLE.PATENT",
+                    db_id="US%s" % row["PATENT_ID"],
+                    data={"name": row["PATENT_TITLE"]},
+                    labels=["Patent"],
+                )
 
     def get_relations(self) -> Iterable[Relation]:
         # Project publications
@@ -120,6 +129,19 @@ class NihReporterProcessor(Processor):
                         target_ns="CLINICALTRIALS",
                         target_id=row["ClinicalTrials.gov ID"],
                         rel_type="has_clinical_trial",
+                    )
+        # Project patents
+        for _, patent_file in self.data_files.get("patent").items():
+            df = pandas.read_csv(patent_file)
+            for _, row in df.iterrows():
+                projects = self._core_project_applications.get(row["PROJECT_ID"], [])
+                for project in projects:
+                    yield Relation(
+                        source_ns="NIHREPORTER.PROJECT",
+                        source_id=project["APPLICATION_ID"],
+                        target_ns="GOOGLE.PATENT",
+                        target_id="US%s" % row["PATENT_ID"],
+                        rel_type="has_patent",
                     )
 
 
