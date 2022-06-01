@@ -58,7 +58,7 @@ class NihReporterProcessor(Processor):
                 if not pandas.isna(row["SUBPROJECT_ID"]):
                     continue
                 data = {
-                    pc: row[pc]
+                    pc: row[pc] if not pandas.isna(row[pc]) else None
                     for pc in project_columns
                     # Not all columns are available in all years
                     if pc in row
