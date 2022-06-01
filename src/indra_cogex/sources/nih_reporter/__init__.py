@@ -1,3 +1,22 @@
+"""Processor for the NIH RePORTER data set.
+
+NIH RePORTER is available at https://reporter.nih.gov/. Export for bulk
+downloads at: https://reporter.nih.gov/exporter available as zipped csv files per year:
+- Projects: table of basic project metadata including activity code,
+  various dates, PI code and names, organization info, total cost, etc.
+- Publications: table of publications including PMID, PMCID, author lists,
+  affiliations etc. but no link to each project. This information is
+  usually available via PubMed directly.
+- Publication links: table with two columns linking each PMID with a
+  project number. The relationship is many-to-many.
+- Project abstracts: table with two columns, application ID and corresponding
+  abstract.
+- Patents: table with patent IDs, titles, linked to project IDs and
+  the patent organization name
+- Clinical trials: table with core project number, clinical trials ID, study
+  name and study status.
+"""
+
 import re
 from typing import Iterable
 import zipfile
@@ -10,11 +29,11 @@ from indra_cogex.representation import Node, Relation
 
 # Regular expressions to find files of different types
 fname_regexes = {
-    "project": re.compile(r"RePORTER_PRJ_C_FY(\d+).zip"),
-    "publink": re.compile(r"RePORTER_PUBLNK_C_(\d+).zip"),
-    "abstract": re.compile(r"RePORTER_PRJABS_C_FY(\d+).zip"),
-    "patent": re.compile(r"Patents_(\d+).csv"),
-    "clinical_trial": re.compile(r"ClinicalStudies_(\d+).csv"),
+    "project": re.compile(r"RePORTER_PRJ_C_FY(\d+)\.zip"),
+    "publink": re.compile(r"RePORTER_PUBLNK_C_(\d+)\.zip"),
+    "abstract": re.compile(r"RePORTER_PRJABS_C_FY(\d+)\.zip"),
+    "patent": re.compile(r"Patents_(\d+)\.csv"),
+    "clinical_trial": re.compile(r"ClinicalStudies_(\d+)\.csv"),
 }
 
 
@@ -47,6 +66,7 @@ class NihReporterProcessor(Processor):
                 match = pattern.match(file_path.name)
                 if match:
                     data_files[file_type][match.groups()[0]] = file_path
+                    break
         self.data_files = dict(data_files)
         self._core_project_applications = defaultdict(list)
 
@@ -146,7 +166,7 @@ class NihReporterProcessor(Processor):
 
 
 def _read_first_df(zip_file_path):
-    # extract a single file from the project_file zip file
+    """Extract a single file from the project_file zip file."""
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         return pandas.read_csv(
             zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
