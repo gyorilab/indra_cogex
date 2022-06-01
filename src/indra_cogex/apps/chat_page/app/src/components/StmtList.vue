@@ -8,8 +8,8 @@
       :evidence="stmt.evidence"
       :english="stmt.english"
       :hash="stmt.matches_hash"
-      :sources="getSourceCounts(stmt.stmt_hash)"
-      :total_evidence="getEvidenceCount(stmt.stmt_hash)"
+      :sources="getSourceCounts(stmt.matches_hash)"
+      :total_evidence="getEvidenceCount(stmt.matches_hash)"
       :loadable="true"
     />
   </div>
