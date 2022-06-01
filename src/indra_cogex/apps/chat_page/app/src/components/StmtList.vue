@@ -1,5 +1,16 @@
 <template>
-  Sources: <SourceDisplay :source-defaults="availableSources" />
+  <template v-if="metaIsLoaded">
+    Available sources:
+    <SourceDisplay :source-defaults="availableSources" />
+  </template>
+  <template v-else>
+    <span>loading...</span>
+    <div>
+      <div class="spinner-grow spinner-grow-sm text-secondary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </template>
   <div v-if="!loading" class="list-group list-group-flush">
     <Statement
       v-for="(stmt, index) in stmtsWithEnglish"
@@ -96,6 +107,10 @@ export default {
         }
       }
       return availableSources;
+    },
+    metaIsLoaded() {
+      // Return true if the meta dict is not empty
+      return Object.keys(this.meta).length > 0;
     },
   },
   mounted() {
