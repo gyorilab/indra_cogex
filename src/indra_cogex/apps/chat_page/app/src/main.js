@@ -2,6 +2,7 @@
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "./assets/indralab-style.css";
 import "../../../static/source_badges.css"; // Generated after first import from indra_cogex/apps/constants.py
 
 import { createApp } from "vue";
