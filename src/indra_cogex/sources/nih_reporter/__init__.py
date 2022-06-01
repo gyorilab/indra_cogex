@@ -30,6 +30,7 @@ project_columns = [
     "PI_NAMEs",
     "DIRECT_COST_AMT",
     "PROJECT_TITLE",
+    "SUBPROJECT_ID" "FULL_PROJECT_ID",
 ]
 
 
@@ -48,7 +49,7 @@ class NihReporterProcessor(Processor):
                 if match:
                     data_files[file_type][match.groups()[0]] = file_path
         self.data_files = dict(data_files)
-        self._core_project_to_application = {}
+        self._core_project_applications = defaultdict(list)
 
     def get_nodes(self) -> Iterable[Node]:
         # Projects
@@ -67,9 +68,7 @@ class NihReporterProcessor(Processor):
                     labels=["ResearchProject"],
                     data=data,
                 )
-                self._core_project_to_application[
-                    row.CORE_PROJECT_NUM
-                ] = row.APPLICATION_ID
+                self._core_project_applications[row.CORE_PROJECT_NUM].append(dict(row))
         # Publications
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
@@ -91,15 +90,34 @@ class NihReporterProcessor(Processor):
         # NOTE: we don't process patents for now
 
     def get_relations(self) -> Iterable[Relation]:
+        self.unmapped_projects = {}
+        mappings_to_prime = {}
+        # Internal project relations
+        for (
+            core_project_number,
+            applications,
+        ) in self._core_project_applications.items():
+            internal_relations, prime_project = get_internal_project_relations(
+                applications
+            )
+            for sub_project, parent_project in internal_relations.items():
+                if not parent_project:
+                    self.unmapped_projects[sub_project] = core_project_number
+                    continue
+                yield Relation(
+                    source_ns="NIHREPORTER",
+                    source_id=sub_project,
+                    target_ns="NIHREPORTER",
+                    target_id=parent_project,
+                    rel_type="part_of",
+                )
+            mappings_to_prime[core_project_number] = prime_project["APPLICATION_ID"]
+
         # Project publications
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
             for row in df.itertuples():
-                application_id = self._core_project_to_application.get(
-                    row.PROJECT_NUMBER
-                )
-                if not application_id:
-                    continue
+                application_id = mappings_to_prime.get[row["PROJECT_NUMBER"]]
                 yield Relation(
                     source_ns="NIHREPORTER",
                     source_id=application_id,
@@ -111,11 +129,7 @@ class NihReporterProcessor(Processor):
         for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
             for _, row in df.iterrows():
-                application_id = self._core_project_to_application.get(
-                    row["Core Project Number"]
-                )
-                if not application_id:
-                    continue
+                application_id = mappings_to_prime[row["Core Project Number"]]
                 yield Relation(
                     source_ns="NIHREPORTER",
                     source_id=application_id,
@@ -131,3 +145,52 @@ def _read_first_df(zip_file_path):
         return pandas.read_csv(
             zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
         )
+
+
+def get_internal_project_relations(core_project_applications):
+    sub_projects = [
+        p for p in core_project_applications if not pandas.isna(p["SUBPROJECT_ID"])
+    ]
+    non_sub_projects = [
+        p for p in core_project_applications if pandas.isna(p["SUBPROJECT_ID"])
+    ]
+    relations = {}
+    for sp in sub_projects:
+        if len(non_sub_projects) > 1:
+            possible_parents = [
+                p
+                for p in non_sub_projects
+                if p["FULL_PROJECT_NUM"] == sp["FULL_PROJECT_NUM"]
+            ]
+            if not possible_parents:
+                possible_parents = [
+                    p for p in non_sub_projects if p["FOA_NUMBER"] == sp["FOA_NUMBER"]
+                ]
+            if len(possible_parents) != 1:
+                possible_parents = [None]
+        else:
+            possible_parents = [non_sub_projects[0]]
+        relations[sp["APPLICATION_ID"]] = (
+            possible_parents[0]["APPLICATION_ID"] if possible_parents[0] else None
+        )
+
+    prime_project = sorted(
+        non_sub_projects,
+        key=lambda x: len([v for v in relations.values() if v == x["APPLICATION_ID"]]),
+        reverse=True,
+    )[0]
+    return relations, prime_project
+
+
+def _get_parent_project(this_project, projects_in_core):
+    if len(projects_in_core) == 1:
+        return this_project["APPLICATION_ID"]
+    possible_parents = [
+        p
+        for p in projects_in_core
+        if p["FULL_PROJECT_NUM"] == this_project["FULL_PROJECT_NUM"]
+    ]
+    possible_parents = [p for p in possible_parents if pandas.isna(p["SUBPROJECT_ID"])]
+    if len(possible_parents) != 1:
+        print(this_project)
+    return possible_parents[0]["APPLICATION_ID"]
