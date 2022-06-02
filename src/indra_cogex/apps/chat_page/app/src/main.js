@@ -27,6 +27,7 @@ const cogexUrl = "https://discovery.indra.bio";
 app.config.globalProperties.$stmt_hash_url = `${cogexUrl}/expand/`; // URL to get more evidence for a statement: e.g. https://discovery.indra.bio/expand/-16093215807632509?format=json-js&with_english=true&with_cur_counts=true&filter_ev=true
 app.config.globalProperties.$curation_url = `${cogexUrl}/curate/`;
 app.config.globalProperties.$curation_list_url = `${cogexUrl}/curation/list`;
+app.config.globalProperties.$info_endpoint = `${cogexUrl}/chat/pusher_info`;
 app.config.globalProperties.$sources = {
   readers: [
     "geneways",
