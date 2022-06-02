@@ -1,12 +1,111 @@
 <template>
+  <!-- Logout -->
   <button
+    v-if="loggedIn"
+    type="button"
     class="btn btn-primary"
-    @click="user_email ? this.trigger_logout : this.trigger_login"
-    id="loginout-button"
+    @click="this.trigger_logout"
+    id="logout-button"
+    title="Click to log out"
     :disabled="!endpointsAvailable"
   >
-    {{ user_email ? "Logout" : "Login" }}
+    Logout
   </button>
+  <!-- Login Button -->
+  <button
+    v-else
+    type="button"
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#loginModal"
+    id="login-button"
+    title="Click to login or register"
+    :disabled="!endpointsAvailable"
+  >
+    Login/Register
+  </button>
+  <!-- Login Modal -->
+  <div
+    class="modal fade"
+    id="loginModal"
+    tabindex="-1"
+    aria-labelledby="loginModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loginModalLabel">IndraLab</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="row justify-content-md-center">
+            <div class="col-md">
+              <img
+                src="https://bigmech.s3.amazonaws.com/indra-db/indralab_bare_logo.png"
+                alt="IndraLab Logo"
+                width="150em"
+              />
+            </div>
+          </div>
+          <div class="row justify-content-md-center">
+            <nav>
+              <div class="nav nav-tabs" id="login-nav-tab" role="tablist">
+                <button
+                  class="nav-link active"
+                  id="nav-home-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#nav-home"
+                  type="button"
+                  role="tab"
+                  aria-controls="nav-home"
+                  aria-selected="true"
+                >
+                  Login
+                </button>
+                <button
+                  class="nav-link"
+                  id="nav-profile-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#nav-profile"
+                  type="button"
+                  role="tab"
+                  aria-controls="nav-profile"
+                  aria-selected="false"
+                >
+                  Register
+                </button>
+              </div>
+            </nav>
+            <div class="tab-content" id="nav-tabContent">
+              <div
+                class="tab-pane fade show active"
+                id="nav-home"
+                role="tabpanel"
+                aria-labelledby="nav-home-tab"
+              >
+                Login content
+              </div>
+              <div
+                class="tab-pane fade"
+                id="nav-profile"
+                role="tabpanel"
+                aria-labelledby="nav-profile-tab"
+              >
+                Register content
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- OLD STUFF -->
   <div id="overlay">
     <button class="btn btn-danger" id="x-out">x</button>
     <div id="overlay-form-div">
@@ -141,24 +240,18 @@ export default {
     return {
       pusher_info: {},
       user_email: null, // From login
+      loggedIn: false,
     };
   },
-  mounted() {
-    this.getAppInfo();
+  async mounted() {
+    await this.getAppInfo();
+    // this.loggedIn = this.login(); // Check if logged in
   },
   computed: {
     endpointsAvailable() {
       const hasLogin = this.pusher_info.indralab_login !== undefined;
       const hasRegister = this.pusher_info.indralab_register !== undefined;
       const hasLogout = this.pusher_info.indralab_logout !== undefined;
-      console.log(
-        "LoginButton.vue: endpointsAvailable: hasLogin:",
-        hasLogin,
-        "hasRegister:",
-        hasRegister,
-        "hasLogout:",
-        hasLogout
-      );
       return hasLogin && hasRegister && hasLogout;
     },
   },
@@ -210,13 +303,18 @@ export default {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(json),
       });
+      console.log("postAuth response");
       console.log(resp);
       const resp_json = await resp.json();
       on_complete(resp_json, resp);
     },
-    login(successCallback, failureCallback, checked = false) {
-      // reimplement login from auth_macros.html
-      return checked;
+    login(successCallback, failureCallback) {
+      this.postAuth("login", {}, (resp_json, resp) => {
+        if (resp.status === 200) successCallback("login", resp_json);
+        else return this.login(successCallback, failureCallback);
+        return false;
+      });
+      return false;
     },
   },
 };
