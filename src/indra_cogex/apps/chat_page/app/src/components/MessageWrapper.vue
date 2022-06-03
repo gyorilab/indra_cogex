@@ -1,23 +1,23 @@
 <template>
   <div v-if="user && user.input" :id="componentID" class="row">
-    <div class="col card mb-1">
+    <div class="col card mb-1 px-0">
       <div
         class="card-header msg-wrapper-header"
         :class="shown ? '' : 'border-bottom-0'"
         title="Click to expand/collapse response"
         @click="shown = !shown"
-        data-bs-toggle="collapse"
-        :data-bs-target="`#${idRegistry.collapseID}`"
+        data-toggle="collapse"
+        :data-target="`#${idRegistry.collapseID}`"
         aria-expanded="true"
         :aria-controls="idRegistry.collapseID"
       >
         <div class="row">
-          <div class="col-1">
+          <div class="col-auto">
             <span class="text-muted small" :title="user.createdAt"
               >User Input</span
             >
           </div>
-          <div class="col-11 text-start">
+          <div class="col text-left">
             <span>{{ user.input }}</span>
           </div>
         </div>
@@ -25,7 +25,7 @@
       <div class="collapse show" :id="idRegistry.collapseID">
         <div class="card-body">
           <div class="row mb-1">
-            <div class="col-2 text-start">
+            <div class="col-2 text-left">
               <span
                 v-if="receivedDate"
                 class="text-muted small"
@@ -36,104 +36,104 @@
             <div class="col-10"></div>
           </div>
           <div class="row">
-            <nav>
-              <div
-                class="nav nav-tabs"
-                :id="idRegistry.navTabsID"
-                role="tablist"
-              >
+            <!-- Awrapping col-12 is needed to not screw up the tabs -->
+            <div class="col-12">
+              <!-- tabs -->
+              <nav>
+                <div
+                  class="nav nav-tabs"
+                  :id="idRegistry.navTabsID"
+                  role="tablist"
+                >
+                  <!-- Text tab -->
+                  <a
+                    v-if="bot && bot.raw_text"
+                    class="nav-link active"
+                    :id="idRegistry.nav.textID"
+                    data-toggle="tab"
+                    :href="`#${idRegistry.content.textID}`"
+                    role="tab"
+                    :aria-controls="idRegistry.content.textID"
+                    aria-selected="true"
+                    >Response</a
+                  >
+                  <!-- Entities tab -->
+                  <a
+                    v-if="replyEntities.length > 0"
+                    class="nav-link"
+                    @click.once="click.entities = true"
+                    :title="receivedDate"
+                    :id="idRegistry.nav.entitiesID"
+                    data-toggle="tab"
+                    :href="`#${idRegistry.content.entitiesID}`"
+                    role="tab"
+                    :aria-controls="idRegistry.content.entitiesID"
+                    aria-selected="false"
+                    >Agents</a
+                  >
+                  <!-- Stmts tab -->
+                  <a
+                    v-if="replyStmts.length > 0"
+                    class="nav-link"
+                    @click.once="click.stmts = true"
+                    title="See statements associated with this response"
+                    :id="idRegistry.nav.stmtsID"
+                    data-toggle="tab"
+                    :href="`#${idRegistry.content.stmtsID}`"
+                    role="tab"
+                    :aria-controls="idRegistry.content.stmtsID"
+                    aria-selected="false"
+                    >Statements ({{ replyStmts.length }})</a
+                  >
+                </div>
+              </nav>
+              <!-- Tab content -->
+              <div class="tab-content" :id="idRegistry.tabContentID">
                 <!-- Text tab -->
-                <button
-                  v-if="bot && bot.raw_text"
-                  class="nav-link active"
-                  :id="idRegistry.nav.textID"
-                  data-bs-toggle="tab"
-                  :data-bs-target="`#${idRegistry.content.textID}`"
-                  type="button"
-                  role="tab"
-                  :aria-controls="idRegistry.content.textID"
-                  aria-selected="true"
+                <div
+                  class="tab-pane fade show active"
+                  :id="idRegistry.content.textID"
+                  role="tabpanel"
+                  :aria-labelledby="idRegistry.nav.textID"
                 >
-                  Response
-                </button>
-                <!-- Entities tab -->
-                <button
+                  <div class="card card-body border-light">
+                    <TextReply
+                      :raw_text="bot ? bot.raw_text : ''"
+                      :objects="objects"
+                      :received-date="receivedDate"
+                      @clarification-requested1="
+                        this.emitClarificationRequested
+                      "
+                    />
+                  </div>
+                </div>
+                <!-- Entities content -->
+                <div
                   v-if="replyEntities.length > 0"
-                  class="nav-link"
-                  @click.once="click.entities = true"
-                  :title="receivedDate"
-                  :id="idRegistry.nav.entitiesID"
-                  data-bs-toggle="tab"
-                  :data-bs-target="`#${idRegistry.content.entitiesID}`"
-                  type="button"
-                  role="tab"
-                  :aria-controls="idRegistry.content.entitiesID"
-                  aria-selected="false"
+                  class="tab-pane fade list-container"
+                  :id="idRegistry.content.entitiesID"
+                  role="tabpanel"
+                  :aria-labelledby="idRegistry.nav.entitiesID"
                 >
-                  Agents ({{ replyEntities.length }})
-                </button>
-                <!-- Stmts tab -->
-                <button
+                  <div class="card card-body border-light">
+                    <template v-if="click.entities">
+                      <AgentList :entities="replyEntities" />
+                    </template>
+                  </div>
+                </div>
+                <!-- Stmts content -->
+                <div
                   v-if="replyStmts.length > 0"
-                  class="nav-link"
-                  @click.once="click.stmts = true"
-                  title="See statements associated with this response"
-                  :id="idRegistry.nav.stmtsID"
-                  data-bs-toggle="tab"
-                  :data-bs-target="`#${idRegistry.content.stmtsID}`"
-                  type="button"
-                  role="tab"
-                  :aria-controls="idRegistry.content.stmtsID"
-                  aria-selected="false"
+                  class="tab-pane fade list-container"
+                  :id="idRegistry.content.stmtsID"
+                  role="tabpanel"
+                  :aria-labelledby="idRegistry.nav.stmtsID"
                 >
-                  Statements ({{ replyStmts.length }})
-                </button>
-              </div>
-            </nav>
-            <!-- Tab content -->
-            <div class="tab-content" :id="idRegistry.tabContentID">
-              <!-- Text tab -->
-              <div
-                class="tab-pane fade show active"
-                :id="idRegistry.content.textID"
-                role="tabpanel"
-                :aria-labelledby="idRegistry.nav.textID"
-              >
-                <div class="card card-body border-light">
-                  <TextReply
-                    :raw_text="bot ? bot.raw_text : ''"
-                    :objects="objects"
-                    :received-date="receivedDate"
-                    @clarification-requested1="this.emitClarificationRequested"
-                  />
-                </div>
-              </div>
-              <!-- Entities content -->
-              <div
-                v-if="replyEntities.length > 0"
-                class="tab-pane fade list-container"
-                :id="idRegistry.content.entitiesID"
-                role="tabpanel"
-                :aria-labelledby="idRegistry.nav.entitiesID"
-              >
-                <div class="card card-body border-light">
-                  <template v-if="click.entities">
-                    <AgentList :entities="replyEntities" />
-                  </template>
-                </div>
-              </div>
-              <!-- Stmts content -->
-              <div
-                v-if="replyStmts.length > 0"
-                class="tab-pane fade list-container"
-                :id="idRegistry.content.stmtsID"
-                role="tabpanel"
-                :aria-labelledby="idRegistry.nav.stmtsID"
-              >
-                <div class="card card-body border-light">
-                  <template v-if="click.stmts">
-                    <StmtList :stmts="replyStmts" />
-                  </template>
+                  <div class="card card-body border-light">
+                    <template v-if="click.stmts">
+                      <StmtList :stmts="replyStmts" />
+                    </template>
+                  </div>
                 </div>
               </div>
             </div>
