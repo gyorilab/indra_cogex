@@ -21,6 +21,9 @@
 }
 
 .nvm {
+    /* Replace with Bootstrap 4 class px-0
+       kept for backwards compatibility
+     */
     padding-left: 0;
     padding-right: 0;
 }

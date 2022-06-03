@@ -36,34 +36,38 @@
   </template>
   <!-- Login -->
   <template v-else>
-    <form id="loginForm" @submit.prevent="logIntoChatSession" class="row g-3">
-      <div class="col-md-6">
-        <label for="name" class="form-label">Name</label>
-        <input
-          type="text"
-          class="form-control"
-          id="name"
-          placeholder="Name*"
-          v-model="form_name"
-          :disabled="submitted"
-          required
-        />
+    <form id="loginForm" @submit.prevent="logIntoChatSession">
+      <div class="form-row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="name" class="form-label">Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              placeholder="Name*"
+              v-model="form_name"
+              :disabled="submitted"
+              required
+            />
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              placeholder="Email*"
+              v-model="form_email"
+              :disabled="submitted"
+              required
+            />
+          </div>
+        </div>
       </div>
-      <div class="col-md-6">
-        <label for="email" class="form-label">Email</label>
-        <input
-          type="email"
-          class="form-control"
-          id="email"
-          placeholder="Email*"
-          v-model="form_email"
-          :disabled="submitted"
-          required
-        />
-      </div>
-      <div class="col">
-        <button type="submit" class="btn btn-primary">Start Session</button>
-      </div>
+      <button type="submit" class="btn btn-primary">Start Session</button>
     </form>
   </template>
 </template>

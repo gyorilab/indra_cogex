@@ -1,16 +1,17 @@
 <template>
-  <!-- BootStrap 5.1 Modal -->
-  <!-- Button type modal from anchor tag -->
-  <a
+  <!-- BootStrap 4.6 Modal -->
+  <!-- Button trigger modal -->
+  <button
     type="button"
     :title="title"
     @click="fillXrefs()"
-    class="badge text-decoration-none"
+    class="btn badge"
     :class="badgeClass"
-    data-bs-toggle="modal"
-    :data-bs-target="`#${modalUUID}`"
-    >{{ badgeText }}
-  </a>
+    data-toggle="modal"
+    :data-target="`#${modalUUID}`"
+  >
+    {{ badgeText }}
+  </button>
 
   <!-- Modal -->
   <div
@@ -26,10 +27,12 @@
           <h5 class="modal-title" :id="titleUUID">{{ textToShow }}</h5>
           <button
             type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
+            class="close"
+            data-dismiss="modal"
             aria-label="Close"
-          ></button>
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
         <div class="modal-body">
           <p>
@@ -54,7 +57,7 @@
                 <td>{{ xref[1] }}</td>
                 <td>
                   <a :href="`${xref[2]}`" target="_blank">
-                    <i class="fas fa-external-link-alt"></i>Link
+                    <i class="fas fa-external-link-alt"></i>
                   </a>
                 </td>
               </tr>

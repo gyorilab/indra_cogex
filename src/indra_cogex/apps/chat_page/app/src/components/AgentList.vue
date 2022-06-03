@@ -1,5 +1,5 @@
 <template>
-  <div class="text-start">
+  <div class="text-left">
     Available agent types:
     <span
       v-for="([cls, descr], index) in availableClasses"
@@ -12,7 +12,7 @@
     >
   </div>
   <hr />
-  <div class="text-start">
+  <div class="text-left">
     <template v-for="(agent, number) in computedList" :key="number">
       <AgentModal :agent-object="agent" />
     </template>

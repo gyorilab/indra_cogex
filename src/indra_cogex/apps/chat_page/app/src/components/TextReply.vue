@@ -3,13 +3,13 @@
   <div v-if="!receivedDate" class="d-flex align-items-center">
     <span>Loading...</span>
     <div
-      class="spinner-grow spinner-grow-sm text-secondary ms-auto"
+      class="spinner-grow spinner-grow-sm text-secondary ml-auto"
       role="status"
       aria-hidden="true"
     ></div>
   </div>
   <template v-if="raw_text">
-    <div class="text-start">
+    <div class="text-left">
       <template
         v-for="(txtObj, index) in textObjectArray"
         :key="`${componentID}-text${index}`"

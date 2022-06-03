@@ -4,8 +4,8 @@
     :class="shown ? '' : 'border-bottom-0'"
     @click="shown = !shown"
     title="Click to show/hide statement details"
-    data-bs-toggle="collapse"
-    :data-bs-target="'#' + collapseAreaID"
+    data-toggle="collapse"
+    :data-target="'#' + collapseAreaID"
     aria-expanded="false"
     :aria-controls="collapseAreaID"
   >
