@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build-dist": "vue-cli-service build",
+    "build-index-html": "python build_index_html.py",
+    "build": "npm run build-index-html && npm run build-dist",
     "lint": "vue-cli-service lint",
     "dev-vue-cli": "vue-cli-service serve",
     "dev-vite": "vite"
