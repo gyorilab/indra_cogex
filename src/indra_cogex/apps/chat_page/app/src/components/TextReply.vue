@@ -202,7 +202,7 @@ export default {
       // Get the format specifier from a string
       if (formatSpec.includes("limit")) {
         // Match limit(d+) and return the number
-        const limitRegex = /limit\((\d+)\)/;
+        const limitRegex = /limit(\d+)/;
         const match = limitRegex.exec(formatSpec);
         if (match) {
           return parseInt(match[1]);
