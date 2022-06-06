@@ -24,15 +24,23 @@
         >
           <AgentModal :agent-object="txtObj.object.value" />
         </template>
-        <!-- A string list, set as an unordered list -->
-        <ul v-else-if="txtObj.object.type === 'string_list'">
-          <li
-            v-for="(str, index) in txtObj.object.value"
-            :key="`${componentID}-strlist${index}`"
-          >
-            {{ str }}
-          </li>
-        </ul>
+        <!-- A string list, set as an unordered list if  -->
+        <template v-else-if="txtObj.object.type === 'string_list'">
+          <template v-if="txtObj.format === 'bullet'">
+            <ul>
+              <li
+                v-for="(str, index) in txtObj.object.value"
+                :key="`${componentID}-strlist${index}`"
+              >
+                {{ str }}
+              </li>
+            </ul>
+          </template>
+          <!-- Assumed to be a pre-formatted flat list -->
+          <template v-else>
+            <span v-html="txtObj.text"></span>
+          </template>
+        </template>
         <!-- agent list with reply entities: display the computed string -->
         <span
           v-else-if="
@@ -123,28 +131,23 @@ export default {
             // If we match a recognised object, look it up among the objects
             if (substring.includes("{") && substring.includes("}")) {
               let objName = substring.replace(/[{}]/g, "");
-              let limit;
-              // Check if there is a limit
+              let formatSpec;
+              // Check if there is a format specifier
               if (objName.includes(":")) {
-                [objName, limit] = objName.split(":");
+                [objName, formatSpec] = objName.split(":");
               } else {
-                limit = null;
+                formatSpec = null;
               }
               const obj = this.objects[objName] || null;
               let textForObj;
               if (obj) {
-                let formatSpec;
-                if (limit !== null) {
-                  // Get the numeric value of the limit, e.g. "limit10" -> 10
-                  limit = parseInt(limit.replace(/limit/g, ""), 10);
-                  formatSpec = { limit: limit };
-                }
                 textForObj = this.getTextForObj(obj, formatSpec);
                 txtObjs.push({
                   text: textForObj,
                   object: obj,
                   objName: objName,
                   match: substring, // The string that matched the object
+                  format: formatSpec, // The format specifier
                 });
               }
             } else {
@@ -154,24 +157,24 @@ export default {
                 object: null,
                 objName: null,
                 match: substring,
+                format: null,
               });
             }
           }
         });
       } else {
-        console.log("Shouldn't get here");
         if (rawText.includes("{") || rawText.includes("}")) {
           console.warn(
-            "MessageWrapper.vue: No text objects found in raw text, but references found. Returning raw text."
+            "MessageWrapper.vue: No text objects found in raw text, but references found. Returning raw text.",
+            rawText
           );
-        } else {
-          console.log("No text objects found");
         }
         txtObjs.push({
           text: this.raw_text,
           object: null,
           objName: null,
           match: null,
+          format: null,
         });
       }
       return txtObjs;
@@ -192,28 +195,48 @@ export default {
         } and ${arr.slice(-1)}`;
       }
     },
-    getTextForObj(obj, format_spec = null) {
+    getFormatSpec(formatSpec) {
+      if (!formatSpec) {
+        return null;
+      }
+      // Get the format specifier from a string
+      if (formatSpec.includes("limit")) {
+        // Match limit(d+) and return the number
+        const limitRegex = /limit\((\d+)\)/;
+        const match = limitRegex.exec(formatSpec);
+        if (match) {
+          return parseInt(match[1]);
+        }
+        console.warn("Couldn't match limit specifier", formatSpec);
+        return null;
+      } else {
+        return formatSpec;
+      }
+    },
+    getTextForObj(obj, formatSpec = null) {
       // Return the text for the object
+      const formatSpecVal = this.getFormatSpec(formatSpec);
       switch (obj.type) {
-        // Todo: handle 'stmt_list', 'url', 'url_list', 'string_list', 'str'
         case "agent":
           // Return object.value.name
           return obj.value.name;
         case "agent_list": {
           // If there is a limit, return the first N agent names as a string
-          let limit;
-          if (format_spec) {
-            limit = format_spec.limit;
-          }
-          limit = limit || obj.value.length;
+          let limit =
+            formatSpec && formatSpec.includes("limit")
+              ? formatSpecVal
+              : obj.value.length;
           let nameArray = obj.value.slice(0, limit).map((agent) => agent.name);
           return this.englishJoin(nameArray);
         }
         case "string_list":
+          /* string_list is an array of strings that are joined together either
+           *  as a bullet list (handled in template) or by comma (done here w englishJoin) */
+          if (formatSpecVal === "bullet") return null;
+          return this.englishJoin(obj.value);
+
         case "url_list":
-          /* string_list, url_list is an arrays of strings that are joined together with
-           * a delimiter in the template and doesn't need any text */
-          return null;
+          return null; // Always show handled in template
         case "string":
           // Return the string
           return obj.value;
