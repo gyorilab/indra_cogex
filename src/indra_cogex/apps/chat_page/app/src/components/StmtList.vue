@@ -23,7 +23,6 @@
       :sources="getSourceCounts(stmt.matches_hash)"
       :total_evidence="getEvidenceCount(stmt.matches_hash)"
       :loadable="true"
-      :init_expanded="true"
     />
   </div>
 </template>
