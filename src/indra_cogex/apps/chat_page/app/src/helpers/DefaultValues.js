@@ -1,6 +1,6 @@
 const badgeMappings = {
-  ["bg-primary"]: ["fplx", "hgnc", "up", "uppro", "mirbase", "egid"], // genes, proteins
-  ["bg-secondary"]: [
+  ["badge-primary"]: ["fplx", "hgnc", "up", "uppro", "mirbase", "egid"], // genes, proteins
+  ["badge-secondary"]: [
     "chebi",
     "pubchem",
     "chembl",
@@ -8,9 +8,9 @@ const badgeMappings = {
     "lincs",
     "drugbank",
   ], // Small molecule
-  ["bg-success"]: ["go", "mesh", "doid"], // Biological process, disease
-  ["bg-info text-dark"]: ["hp"], // Phenotypic Abnormality
-  ["bg-light text-dark"]: ["efo"], // Experimental Factor Ontology
+  ["badge-success"]: ["go", "mesh", "doid"], // Biological process, disease
+  ["badge-info text-dark"]: ["hp"], // Phenotypic Abnormality
+  ["badge-light text-dark"]: ["efo"], // Experimental Factor Ontology
 };
 // "text" is the default badge class and should be the last one
 // Check e.g. indra/ontology/bio/ontology.py for more info about prioritizing namespaces
