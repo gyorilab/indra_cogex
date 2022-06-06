@@ -30,12 +30,12 @@ export default {
   data() {
     return {
       badgeClasses: [
-        ["bg-primary", "Gene/Protein"],
-        ["bg-secondary", "Small Molecule"],
-        ["bg-success", "Biological Process, Disease"],
-        ["bg-info text-dark", "Phenotypic Abnormality"],
-        ["bg-light text-dark", "Experimental Factor"],
-        ["bg-warning text-dark", "ungrounded"],
+        ["badge-primary", "Gene/Protein"],
+        ["badge-secondary", "Small Molecule"],
+        ["badge-success", "Biological Process, Disease"],
+        ["badge-info text-dark", "Phenotypic Abnormality"],
+        ["badge-light text-dark", "Experimental Factor"],
+        ["badge-warning text-dark", "ungrounded"],
       ],
       primaryVis: true,
       secondaryVis: true,
@@ -89,39 +89,39 @@ export default {
         return;
       }
       switch (cls) {
-        case "bg-primary":
+        case "badge-primary":
           this.primaryVis = !this.primaryVis;
           break;
-        case "bg-secondary":
+        case "badge-secondary":
           this.secondaryVis = !this.secondaryVis;
           break;
-        case "bg-success":
+        case "badge-success":
           this.successVis = !this.successVis;
           break;
-        case "bg-info text-dark":
+        case "badge-info text-dark":
           this.infoVis = !this.infoVis;
           break;
-        case "bg-light text-dark":
+        case "badge-light text-dark":
           this.lightVis = !this.lightVis;
           break;
-        case "bg-warning text-dark":
+        case "badge-warning text-dark":
           this.warningVis = !this.warningVis;
           break;
       }
     },
     isClsVisible(cls) {
       switch (cls) {
-        case "bg-primary":
+        case "badge-primary":
           return this.primaryVis;
-        case "bg-secondary":
+        case "badge-secondary":
           return this.secondaryVis;
-        case "bg-success":
+        case "badge-success":
           return this.successVis;
-        case "bg-info text-dark":
+        case "badge-info text-dark":
           return this.infoVis;
-        case "bg-light text-dark":
+        case "badge-light text-dark":
           return this.lightVis;
-        case "bg-warning text-dark":
+        case "badge-warning text-dark":
           return this.warningVis;
       }
     },
@@ -140,21 +140,21 @@ export default {
             case "up":
             case "uppro":
             case "mirbase":
-              cls = "bg-primary";
+              cls = "badge-primary";
               return;
             case "chebi":
-              cls = "bg-secondary";
+              cls = "badge-secondary";
               return;
             case "go":
             case "mesh":
             case "doid":
-              cls = "bg-success";
+              cls = "badge-success";
               return;
             case "hp":
-              cls = "bg-info text-dark";
+              cls = "badge-info text-dark";
               return;
             case "efo":
-              cls = "bg-light text-dark";
+              cls = "badge-light text-dark";
               return;
             default:
               cls = "warning text-dark";
