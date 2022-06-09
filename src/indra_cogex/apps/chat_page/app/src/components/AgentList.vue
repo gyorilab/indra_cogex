@@ -6,7 +6,9 @@
       class="badge"
       :title="availableClasses.length > 1 ? 'Click to toggle visibility' : ''"
       @click="toggleHide(cls)"
-      :class="`${cls} ${isClsVisible(cls) ? '' : ' opacity-50'}`"
+      :class="`${cls} ${isClsVisible(cls) ? '' : ' custom-opacity'} ${
+        availableClasses.length > 1 ? 'hoverable' : ''
+      }`"
       :key="index"
       >{{ descr }}</span
     >
@@ -14,7 +16,7 @@
   <hr />
   <div class="text-left">
     <template v-for="(agent, number) in computedList" :key="number">
-      <AgentModal :agent-object="agent" />
+      <AgentModal :agent-object="agent" :button-class="'mx-1'" />
     </template>
   </div>
 </template>
@@ -168,7 +170,10 @@ export default {
 </script>
 
 <style scoped>
-.badge {
+.hoverable {
   cursor: pointer;
+}
+.custom-opacity {
+  opacity: 0.5;
 }
 </style>
