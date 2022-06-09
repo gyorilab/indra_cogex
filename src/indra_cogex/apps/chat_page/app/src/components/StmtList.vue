@@ -97,9 +97,15 @@ export default {
           // If the source is a reader, add it to the readers array
           const lowerSource = source.toLowerCase();
 
-          if (this.$sources.readers.includes(lowerSource)) {
+          if (
+            this.$sources.readers.includes(lowerSource) &&
+            !availableSources.readers.includes(lowerSource)
+          ) {
             availableSources.readers.push(lowerSource);
-          } else if (this.$sources.databases.includes(lowerSource)) {
+          } else if (
+            this.$sources.databases.includes(lowerSource) &&
+            !availableSources.databases.includes(lowerSource)
+          ) {
             availableSources.databases.push(lowerSource);
           } else {
             console.log(`Unknown source: ${source}`);
