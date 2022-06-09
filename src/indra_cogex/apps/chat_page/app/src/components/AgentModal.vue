@@ -6,7 +6,7 @@
     :title="title"
     @click="fillXrefs()"
     class="btn badge"
-    :class="badgeClass"
+    :class="`${badgeClass} ${buttonClass ? buttonClass : ''}`"
     data-toggle="modal"
     :data-target="`#${modalUUID}`"
   >
@@ -87,6 +87,11 @@ export default {
       validator: (obj) => {
         return obj.name !== null && obj.db_refs !== null;
       },
+    },
+    buttonClass: {
+      // Optional. Class to apply to the button for easier styling
+      type: String,
+      default: null,
     },
   },
   data() {
