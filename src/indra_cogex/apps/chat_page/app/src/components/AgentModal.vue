@@ -36,7 +36,7 @@
         </div>
         <div class="modal-body">
           <p>
-            <span v-if="entityDescription">{{ entityDescription }}</span
+            <span v-if="entityDescription" v-html="entityDescription"></span
             ><span v-else><i>Description missing</i></span>
           </p>
           <hr />
@@ -157,7 +157,9 @@ export default {
     },
     entityDescription() {
       if (this.lookupData.definition) {
-        return this.lookupData.definition;
+        return this.lookupData.definition
+          .replace(/\\n/g, "<br>")
+          .replace(/\n/g, "<br>");
       }
       return "";
     },
