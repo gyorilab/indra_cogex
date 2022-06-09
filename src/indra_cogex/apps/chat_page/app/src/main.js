@@ -2,7 +2,7 @@
 import "./assets/indralab-style.css";
 import "../../../static/source_badges.css"; // Generated after first import from indra_cogex/apps/constants.py
 
-import { createApp } from "vue";
+import { createApp, reactive } from "vue";
 
 import { Statement } from "indralab-vue";
 import { Evidence } from "indralab-vue";
@@ -63,4 +63,9 @@ app.config.globalProperties.$sources = {
   ],
 };
 
+const GStore = reactive({
+  xrefs: {},
+});
+
+app.provide("GStore", GStore);
 app.mount("#app");
