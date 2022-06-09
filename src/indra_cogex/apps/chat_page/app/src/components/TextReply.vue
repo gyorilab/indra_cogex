@@ -56,7 +56,10 @@
             :key="`${componentID}-urllist${index}`"
           >
             <a :href="url" target="_blank">{{ db_name }}</a>
-            {{ index === txtObj.object.value.length - 2 ? "and " : ", " }}
+            <span v-if="index < txtObj.object.value.length - 2">, </span>
+            <span v-else-if="index === txtObj.object.value.length - 2"
+              >, and
+            </span>
           </span>
         </span>
         <!-- Clarification: display the computed string -->
