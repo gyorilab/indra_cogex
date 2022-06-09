@@ -4,7 +4,7 @@
   <button
     type="button"
     :title="title"
-    @click="fillXrefs()"
+    @click.once="fillXrefs()"
     class="btn badge"
     :class="`${badgeClass} ${buttonClass ? buttonClass : ''}`"
     data-toggle="modal"
@@ -75,6 +75,7 @@ import helperFunctions from "@/helpers/helperFunctions";
 
 export default {
   name: "AgentModal.vue",
+  inject: ["GStore"],
   props: {
     text: {
       type: String,
@@ -187,7 +188,6 @@ export default {
   },
   methods: {
     async fillXrefs() {
-      // Todo: Use a global with `inject ['GStore']` to store the xrefs in
       // Call network search web api to get xrefs; fixme: should use a standalone api; Isn't there one for the bioontology?
       if (this.topGrounding.length === 0) {
         console.log(
@@ -198,10 +198,20 @@ export default {
       }
       const topNsUpper = this.topGrounding[0].toUpperCase();
       if (this.xrefs.length <= 1) {
-        const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${topNsUpper}&id=${this.topGrounding[1]}`;
-        const xrefResp = await fetch(xrefsUrl);
-        const xrefData = await xrefResp.json();
-        this.xrefs = await xrefData;
+        const key = this.topGrounding.join(":");
+        // Only fetch if we don't have any xrefs yet
+        if (this.GStore.xrefs && this.GStore.xrefs[key]) {
+          this.xrefs = this.GStore.xrefs[key];
+          console.log(`Fetched xrefs for ${key} from cache`);
+        } else {
+          const xrefsUrl = `https://network.indra.bio/api/xrefs?ns=${topNsUpper}&id=${this.topGrounding[1]}`;
+          const xrefResp = await fetch(xrefsUrl);
+          const xrefData = await xrefResp.json();
+          this.xrefs = await xrefData;
+          this.GStore.xrefs[key] = this.xrefs;
+        }
+      } else {
+        console.log(`Already have xrefs for ${this.textToShow}`);
       }
 
       if (Object.entries(this.lookupData).length === 0) {
