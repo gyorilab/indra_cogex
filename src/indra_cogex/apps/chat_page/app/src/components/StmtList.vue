@@ -107,8 +107,11 @@ export default {
             !availableSources.databases.includes(lowerSource)
           ) {
             availableSources.databases.push(lowerSource);
-          } else {
-            console.log(`Unknown source: ${source}`);
+          } else if (
+            !this.$sources.databases.includes(lowerSource) &&
+            !this.$sources.readers.includes(lowerSource)
+          ) {
+            console.warn(`Unknown source: ${source}`);
           }
         }
       }
