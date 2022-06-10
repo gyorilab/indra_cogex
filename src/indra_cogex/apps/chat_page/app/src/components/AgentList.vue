@@ -156,7 +156,7 @@ export default {
               cls = "badge-info text-dark";
               return;
             case "efo":
-              cls = "badge-light text-dark";
+              cls = "badge-dark";
               return;
             default:
               cls = "warning text-dark";
