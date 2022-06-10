@@ -187,6 +187,7 @@ export default {
     },
   },
   methods: {
+    // todo: Add fetch of synonyms from http://grounding.indra.bio/get_names POST endpoint
     async fillXrefs() {
       // Call network search web api to get xrefs; fixme: should use a standalone api; Isn't there one for the bioontology?
       if (this.topGrounding.length === 0) {
