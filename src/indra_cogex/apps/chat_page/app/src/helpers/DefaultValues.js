@@ -10,7 +10,7 @@ const badgeMappings = {
   ], // Small molecule
   ["badge-success"]: ["go", "mesh", "doid"], // Biological process, disease
   ["badge-info text-dark"]: ["hp"], // Phenotypic Abnormality
-  ["badge-light text-dark"]: ["efo"], // Experimental Factor Ontology
+  ["badge-dark"]: ["efo"], // Experimental Factor Ontology
 };
 // "text" is the default badge class and should be the last one
 // Check e.g. indra/ontology/bio/ontology.py for more info about prioritizing namespaces
