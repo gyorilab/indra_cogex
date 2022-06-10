@@ -49,6 +49,7 @@
                   <a
                     v-if="bot && bot.raw_text"
                     class="nav-link active"
+                    title="See text response from bot"
                     :id="idRegistry.nav.textID"
                     data-toggle="tab"
                     :href="`#${idRegistry.content.textID}`"
@@ -62,14 +63,14 @@
                     v-if="replyEntities.length > 0"
                     class="nav-link"
                     @click.once="click.entities = true"
-                    :title="receivedDate"
+                    title="See agents associated with this response"
                     :id="idRegistry.nav.entitiesID"
                     data-toggle="tab"
                     :href="`#${idRegistry.content.entitiesID}`"
                     role="tab"
                     :aria-controls="idRegistry.content.entitiesID"
                     aria-selected="false"
-                    >Agents</a
+                    >Agents ({{ replyEntities.length }})</a
                   >
                   <!-- Stmts tab -->
                   <a
