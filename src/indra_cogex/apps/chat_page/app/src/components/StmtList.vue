@@ -49,7 +49,7 @@ export default {
        *      - epistemics: Object containing evidence epistemics
        *      - pmid: String of article PMID
        *      - source_api: String of source API name (e.g. "sparser", "reach", "biopax", "signor")
-       *      - source_hash: Number of source hash (todo: this is larger than Number.MAX_SAFE_INTEGER, need to cast as string on server)
+       *      - source_hash: Number of source hash
        *      - text: String of evidence text
        *      - text_refs: Object containing identifiers for different article sources, e.g. { "PMID": "12345", "doi": "10.1038/ncomms12456" }
        *    }
