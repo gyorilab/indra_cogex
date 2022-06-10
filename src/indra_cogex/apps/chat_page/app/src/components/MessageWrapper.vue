@@ -91,7 +91,7 @@
               <div class="tab-content" :id="idRegistry.tabContentID">
                 <!-- Text tab -->
                 <div
-                  class="tab-pane fade show active"
+                  class="tab-pane fade show active overflow-container"
                   :id="idRegistry.content.textID"
                   role="tabpanel"
                   :aria-labelledby="idRegistry.nav.textID"
@@ -110,7 +110,7 @@
                 <!-- Entities content -->
                 <div
                   v-if="replyEntities.length > 0"
-                  class="tab-pane fade list-container"
+                  class="tab-pane fade overflow-container"
                   :id="idRegistry.content.entitiesID"
                   role="tabpanel"
                   :aria-labelledby="idRegistry.nav.entitiesID"
@@ -124,7 +124,7 @@
                 <!-- Stmts content -->
                 <div
                   v-if="replyStmts.length > 0"
-                  class="tab-pane fade list-container"
+                  class="tab-pane fade overflow-container"
                   :id="idRegistry.content.stmtsID"
                   role="tabpanel"
                   :aria-labelledby="idRegistry.nav.stmtsID"
@@ -293,7 +293,7 @@ export default {
 </script>
 
 <style scoped>
-.list-container {
+.overflow-container {
   max-height: 300px;
   overflow-y: auto;
 }
