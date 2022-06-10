@@ -141,6 +141,7 @@ export default {
               } else {
                 formatSpec = null;
               }
+              // Get the actual object
               const obj = this.objects[objName] || null;
               let textForObj;
               if (obj) {
@@ -152,6 +153,11 @@ export default {
                   match: substring, // The string that matched the object
                   format: formatSpec, // The format specifier
                 });
+              } else {
+                console.warn(
+                  `No object available for object name ${objName}`,
+                  this.objects
+                );
               }
             } else {
               // If we don't match a recognised object, just add the string
