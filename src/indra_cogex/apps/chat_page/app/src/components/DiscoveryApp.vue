@@ -82,7 +82,7 @@ export default {
   props: {
     info_endpoint: {
       type: String,
-      default: "http://localhost:5000/chat/pusher_info",
+      default: "/chat/pusher_info",
     },
   },
   data() {
@@ -129,14 +129,14 @@ export default {
       return "";
     },
     auth_endpoint() {
-      if (this.pusher_info) {
-        return `http://localhost:5000${this.pusher_info.auth_endpoint}`;
+      if (this.pusher_info && this.pusher_info.auth_endpoint) {
+        return this.pusher_info.auth_endpoint;
       }
       return "";
     },
     new_user_endpoint() {
-      if (this.pusher_info) {
-        return `http://localhost:5000${this.pusher_info.new_user_endpoint}`;
+      if (this.pusher_info && this.pusher_info.new_user_endpoint) {
+        return this.pusher_info.new_user_endpoint;
       }
       return "";
     },
