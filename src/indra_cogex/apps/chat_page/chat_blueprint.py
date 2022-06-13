@@ -57,15 +57,6 @@ def pusher_info():
     )
 
 
-@chat_blueprint.route("/")
-def chat_page():
-    """Chat page"""
-    return flask.render_template(
-        "chat/chat_page.html",
-        pusher_app_key=pusher_key,
-    )
-
-
 @chat_blueprint.route("/new/guest", methods=["POST"])
 def guestUser():
     data = request.json
