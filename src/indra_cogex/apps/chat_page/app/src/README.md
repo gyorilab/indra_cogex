@@ -5,7 +5,7 @@ In the root of `indralab-vue`:
 
 - Run `npm run build`; this will create or update the `dist` directory (`dist` is the default name, other names might 
   be set)
-- Run `npm run pack`; this will package the project in tgz file that can be used as a standalone installation
+- Run `npm pack`; this will package the project in tgz file that can be used as a standalone installation
 
 ## Installing indralab-vue locally
 
