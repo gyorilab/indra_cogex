@@ -24,6 +24,7 @@ It seems that when components from the library are nested, the nested/child comp
 why, but a workaround is to register all the necessary components globally in the app setup in `main.js`:
 
 ```js
+// See: https://vuejs.org/api/application.html#app-component
 // indra_cogex/src/indra_cogex/apps/chat_page/app/src/main.js
 import { createApp } from "vue";
 
