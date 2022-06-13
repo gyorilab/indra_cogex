@@ -21,10 +21,12 @@ _Note that the version number might be different._
 ## Importing components from `indralab-vue`
 
 It seems that when components from the library are nested, the nested/child components are not resolved. It's unclear 
-why, but a workaround is to register all the necessary components globally in the app setup in `main.js`:
+why, but a workaround is to register all the necessary components globally in the app setup in `main.js`. When 
+components are registered globally, there is no need to import them in the component files.
+
+See more at https://vuejs.org/api/application.html#app-component
 
 ```js
-// See: https://vuejs.org/api/application.html#app-component
 // indra_cogex/src/indra_cogex/apps/chat_page/app/src/main.js
 import { createApp } from "vue";
 
