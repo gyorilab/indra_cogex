@@ -235,6 +235,7 @@ class Neo4jClient:
         source_type: Optional[str] = None,
         target_type: Optional[str] = None,
         limit: Optional[int] = None,
+        bidirectional: Optional[bool] = False,
     ) -> List[Relation]:
         """Return relations based on source, target and type constraints.
 
@@ -255,6 +256,9 @@ class Neo4jClient:
             A constraint on the target type
         limit :
             A limit on the number of relations returned.
+        bidirectional :
+            If True, return both directions of relationships
+            between the source and target.
 
         Returns
         -------
@@ -271,6 +275,7 @@ class Neo4jClient:
             relation_type=relation,
             target_id=target,
             target_type=target_type,
+            relation_direction=("both" if bidirectional else "right"),
         )
         query = """
             MATCH p=%s
@@ -416,6 +421,7 @@ class Neo4jClient:
         relation: Optional[str] = None,
         source_type: Optional[str] = None,
         target_type: Optional[str] = None,
+        node_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources and targets with the given node.
 
@@ -428,7 +434,9 @@ class Neo4jClient:
         source_type :
             Type constraint on the sources for in-edges
         target_type :
-            Type constraint on te targets for out-edges
+            Type constraint on the targets for out-edges
+        node_type :
+            Type constraint on the queried node itself
 
         Returns
         -------
