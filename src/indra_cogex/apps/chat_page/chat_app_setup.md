@@ -1,6 +1,8 @@
 ### AWS S3, Cloudfront setup
 
 A somewhat outdated, but useful video [here](https://www.youtube.com/watch?v=5r9Q-tI7mMw).
+Helpful [SO question](https://stackoverflow.com/questions/31017105/how-do-you-set-a-default-root-object-for-subdirectories-for-a-statically-hosted), 
+especially [this](https://stackoverflow.com/a/69157535/10478812) answer.
 
 #### Build dist for indralab-vue and then for the chat app 
 
@@ -14,7 +16,8 @@ To summarize:
 
 #### Upload app to S3
 
-- Upload the _content_ of the `dist` directory for the chat app into the directory of your choice on S3.
+- Upload the _content_ of the `dist` directory for the chat app into a directory on S3 **with the same name as is 
+  configured as `publicPath` in the Vue app's `vue.config.js` file**.
 - Make sure that the content is publicly accessible (and that the bucket allows public access).
 
 #### Set up a new origin in CloudFront for the content served from the S3 bucket
