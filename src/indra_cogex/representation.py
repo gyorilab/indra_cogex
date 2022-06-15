@@ -358,6 +358,9 @@ def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     :
         A list of INDRA Statements.
     """
-    stmts_json = [json.loads(rel.data["stmt_json"]) for rel in rels]
+    stmts_json = [
+        json.loads(rel.data["stmt_json"].replace("\\\\", "\\").replace("\\\\", "\\"))
+        for rel in rels
+    ]
     stmts = stmts_from_json(stmts_json)
     return stmts
