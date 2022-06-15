@@ -69,7 +69,7 @@ class Sentence:
         if self.dependency_graph:
             return draw_graph(self.dependency_graph, fname)
 
-    def get_grounded_agents(self):
+    def get_grounded_agents(self, grounder=None):
         """Return a list of grounded agents in the sentence.
 
         Returns
@@ -77,7 +77,7 @@ class Sentence:
         grounded_agents : list of Agent
             A list of grounded agents in the sentence.
         """
-        return grounded_agents_from_tokens(self.tokens)
+        return grounded_agents_from_tokens(self.tokens, grounder=grounder)
 
     def __str__(self):
         return "Sentence(%s)" % ", ".join([t.word for t in self.tokens])
@@ -108,7 +108,7 @@ class Document:
         joint_graph = networkx.compose_all(graphs)
         draw_graph(joint_graph, fname)
 
-    def get_grounded_agents(self):
+    def get_grounded_agents(self, grounder=None):
         """Return a list of grounded agents in the document.
 
         Returns
@@ -118,7 +118,7 @@ class Document:
         """
         grounded_agents = []
         for sentence in self.sentences:
-            grounded_agents += sentence.get_grounded_agents()
+            grounded_agents += sentence.get_grounded_agents(grounder=grounder)
         return grounded_agents
 
     def __str__(self):
@@ -220,7 +220,7 @@ def process_document(json_gz_path):
     return Document(document_data)
 
 
-def grounded_agents_from_tokens(tokens: List[Token]) -> List[Agent]:
+def grounded_agents_from_tokens(tokens: List[Token], grounder=None) -> List[Agent]:
     """Return a list of grounded Agents from a list of tokens.
 
     Parameters
@@ -233,6 +233,7 @@ def grounded_agents_from_tokens(tokens: List[Token]) -> List[Agent]:
     :
         A list of grounded Agents.
     """
+    grounder = grounder if grounder else gilda.ground
     idx = 0
     entities = []
     while idx < len(tokens):
@@ -248,7 +249,7 @@ def grounded_agents_from_tokens(tokens: List[Token]) -> List[Agent]:
 
     grounded_agents = []
     for entity in entities:
-        matches = gilda.ground(entity)
+        matches = grounder(entity)
         if matches:
             agent = get_standard_agent(
                 matches[0].term.entry_name, {matches[0].term.db: matches[0].term.id}
