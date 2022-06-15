@@ -2,7 +2,7 @@
 
 A somewhat outdated, but useful video [here](https://www.youtube.com/watch?v=5r9Q-tI7mMw).
 
-#### Build dist for indralab-vue chat app 
+#### Build dist for indralab-vue and then for the chat app 
 
 The full build process is documented in the Vue [readme file](./app/README.md).
 
