@@ -7,7 +7,7 @@ import gzip
 import json
 import tqdm
 import os.path
-from typing import List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import networkx
 
@@ -69,12 +69,18 @@ class Sentence:
         if self.dependency_graph:
             return draw_graph(self.dependency_graph, fname)
 
-    def get_grounded_agents(self, grounder=None):
+    def get_grounded_agents(self, grounder: Optional[Callable] = None) -> List[Agent]:
         """Return a list of grounded agents in the sentence.
+
+        Parameters
+        ----------
+        grounder :
+            A grounder function that returns scored matches given an input
+            string. Gilda grounder used by default.
 
         Returns
         -------
-        grounded_agents : list of Agent
+        :
             A list of grounded agents in the sentence.
         """
         return grounded_agents_from_tokens(self.tokens, grounder=grounder)
@@ -108,12 +114,18 @@ class Document:
         joint_graph = networkx.compose_all(graphs)
         draw_graph(joint_graph, fname)
 
-    def get_grounded_agents(self, grounder=None):
+    def get_grounded_agents(self, grounder: Optional[Callable] = None) -> List[Agent]:
         """Return a list of grounded agents in the document.
+
+        Parameters
+        ----------
+        grounder :
+            A grounder function that returns scored matches given an input
+            string. Gilda grounder used by default.
 
         Returns
         -------
-        grounded_agents : list of Agent
+        :
             A list of grounded agents in the document.
         """
         grounded_agents = []
@@ -220,13 +232,18 @@ def process_document(json_gz_path):
     return Document(document_data)
 
 
-def grounded_agents_from_tokens(tokens: List[Token], grounder=None) -> List[Agent]:
+def grounded_agents_from_tokens(
+    tokens: List[Token], grounder: Optional[Callable] = None
+) -> List[Agent]:
     """Return a list of grounded Agents from a list of tokens.
 
     Parameters
     ----------
     tokens :
         A list of tokens.
+    grounder :
+        A grounder function that returns scored matches given an input
+        string. Gilda grounder used by default.
 
     Returns
     -------
