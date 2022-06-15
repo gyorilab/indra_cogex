@@ -14,12 +14,12 @@ To summarize:
 
 #### Upload app to S3
 
-- Upload the _content_ of the `dist` directory into the directory of your choice on S3.
+- Upload the _content_ of the `dist` directory for the chat app into the directory of your choice on S3.
 - Make sure that the content is publicly accessible (and that the bucket allows public access).
 
 #### Set up a new origin in CloudFront for the content served from the S3 bucket
 
-In the Distributions console, go to the `Origins` tab and click "Create origin":
+In the Distributions console for `discovery.indra.bio`, go to the `Origins` tab and click "Create origin":
 
 - Click on "Origin domain". A list with AWS resources will appear. Find and select the S3 bucket with the uploaded content.
 - _Leave the "Origin path" field empty!_
