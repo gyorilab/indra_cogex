@@ -235,6 +235,7 @@ class Neo4jClient:
         source_type: Optional[str] = None,
         target_type: Optional[str] = None,
         limit: Optional[int] = None,
+        bidirectional: Optional[bool] = False,
     ) -> List[Relation]:
         """Return relations based on source, target and type constraints.
 
@@ -255,6 +256,9 @@ class Neo4jClient:
             A constraint on the target type
         limit :
             A limit on the number of relations returned.
+        bidirectional :
+            If True, return both directions of relationships
+            between the source and target.
 
         Returns
         -------
@@ -271,6 +275,7 @@ class Neo4jClient:
             relation_type=relation,
             target_id=target,
             target_type=target_type,
+            relation_direction=("both" if bidirectional else "right"),
         )
         query = """
             MATCH p=%s
@@ -414,8 +419,8 @@ class Neo4jClient:
         self,
         node: Tuple[str, str],
         relation: Optional[str] = None,
-        source_type: Optional[str] = None,
-        target_type: Optional[str] = None,
+        node_type: Optional[str] = None,
+        other_type: Optional[str] = None,
     ) -> List[Relation]:
         """Get relations that connect sources and targets with the given node.
 
@@ -425,24 +430,24 @@ class Neo4jClient:
             Node namespace and identifier.
         relation :
             Relation type.
-        source_type :
-            Type constraint on the sources for in-edges
-        target_type :
-            Type constraint on te targets for out-edges
+        node_type :
+            Type constraint on the queried node itself
+        other_type :
+            Type constraint on the other node in the relation
 
         Returns
         -------
         rels :
             A list of relations matching the constraints.
         """
-        source_rels = self.get_source_relations(
-            target=node, relation=relation, source_type=source_type
+        rels = self.get_relations(
+            source=node,
+            relation=relation,
+            source_type=node_type,
+            target_type=other_type,
+            bidirectional=True,
         )
-        target_rels = self.get_target_relations(
-            source=node, relation=relation, target_type=target_type
-        )
-        all_rels = source_rels + target_rels
-        return all_rels
+        return rels
 
     @staticmethod
     def get_property_from_relations(relations: List[Relation], prop: str) -> Set[str]:

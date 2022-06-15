@@ -5,8 +5,17 @@
 
 __all__ = ["Node", "Relation", "indra_stmts_from_relations"]
 
-from typing import Any, Collection, Iterable, List, Mapping, Optional, Tuple, \
-    Dict, Union
+from typing import (
+    Any,
+    Collection,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Dict,
+    Union,
+)
 import json
 from indra.databases import identifiers
 from indra.ontology.standardize import standardize_name_db_refs
@@ -258,6 +267,7 @@ def triple_query(
     target_name: Optional[str] = None,
     target_type: Optional[str] = None,
     target_id: Optional[str] = None,
+    relation_direction: Optional[str] = "right",
 ) -> str:
     """Create a Cypher query from the given parameters.
 
@@ -279,17 +289,25 @@ def triple_query(
         The type of the target node. Optional.
     target_id :
         The identifier of the target node. Optional.
+    relation_direction :
+        The direction of the relation, one of 'left', 'right', or 'both'.
+        These correspond to <-[]-, -[]->, and -[]-, respectively.
 
     Returns
     -------
     :
         A Cypher query as a string.
     """
+    rel1, rel2 = "-", "-"
+    if relation_direction == "left":
+        rel1 = "<-"
+    elif relation_direction == "right":
+        rel2 = "->"
     source = node_query(node_name=source_name, node_type=source_type, node_id=source_id)
     # TODO could later make an alternate function for the relation
     relation = node_query(node_name=relation_name, node_type=relation_type)
     target = node_query(node_name=target_name, node_type=target_type, node_id=target_id)
-    return f"({source})-[{relation}]->({target})"
+    return f"({source}){rel1}[{relation}]{rel2}({target})"
 
 
 def node_query(
