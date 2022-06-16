@@ -9,8 +9,8 @@ especially [this](https://stackoverflow.com/a/69157535/10478812) answer.
 The full build process is documented in the Vue [readme file](./app/README.md).
 
 To summarize:
-- Build the `indralab-vue` dist: in the root directory of `indralab-vue`, run `npm run build`
-- Pack the build by running `npm pack`
+- Build the `indralab-vue` dist by running `npm run build` in the root directory of the `indralab-vue` repository
+- Pack the build by running `npm pack`. This will create a .tgz file that can be used as a standalone local installation.
 - Install the `indralab-vue` dist: in the root directory of the Vue chat app, run `npm install /path/to/indralab-vue/indralab-vue-0.0.1.tgz`
 - Build the Vue chat app: in the root directory of the Vue chat app, run `npm run build`
 
