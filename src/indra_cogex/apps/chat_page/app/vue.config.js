@@ -1,5 +1,5 @@
 const { defineConfig } = require("@vue/cli-service");
 module.exports = defineConfig({
   transpileDependencies: true,
-  publicPath: "/discovery_chat_app/",
+  publicPath: "/chat/", // This should match the path set by CloudFront/S3
 });

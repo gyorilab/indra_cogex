@@ -82,7 +82,7 @@ export default {
   props: {
     info_endpoint: {
       type: String,
-      default: "/chat/pusher_info",
+      default: "/api_chat/pusher_info", // Set corresponding endpoint in indra_cogex/apps/chat_page/chat_blueprint.py
     },
   },
   data() {

@@ -16,7 +16,9 @@ from indra_cogex.apps.constants import (
 
 logger = logging.getLogger(__name__)
 
-chat_blueprint = flask.Blueprint("chat", __name__, url_prefix="/chat")
+# Set corresponding endpoint in indra_cogex/apps/chat_page/app/src/components/DiscoveryApp.vue
+# The prefix could interfere with the endpoint set in CloudFront/S3 (and in vue.config.js)
+chat_blueprint = flask.Blueprint("chat api", __name__, url_prefix="/api_chat")
 
 __all__ = [
     "chat_blueprint",
