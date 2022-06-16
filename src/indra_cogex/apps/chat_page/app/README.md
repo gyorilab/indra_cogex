@@ -32,7 +32,7 @@ npm run build-dist
 ```sh
 npm run lint
 ```
-``
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
@@ -41,20 +41,18 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 ### Packaging `indralab-vue` for local install
 In the root of `indralab-vue`:
 
-- Run `npm run build`; this will create or update the `dist` directory (`dist` is the default name, other names might 
+- Run `npm run build`; this will create or update the `dist` directory (`dist` is the default name, another name might 
   be set)
 - Run `npm pack`; this will package the project in tgz file that can be used as a standalone installation
 
 ### Installing indralab-vue locally
 
 In the root directory of the Vue chat app, i.e. `indra_cogex/apps/chat_page/app`, install the `indralab-vue` from the 
-.tgz file:
+.tgz file. _Note that the version number might be different._
 
 ```sh
 npm install /path/to/indralab-vue/indralab-vue-0.0.1.tgz
 ```
-
-_Note that the version number might be different._
 
 ### Importing components from `indralab-vue`
 
