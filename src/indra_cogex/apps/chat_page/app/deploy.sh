@@ -52,10 +52,12 @@ echo "Deploying to $PATH"
 # Copy the content of the dist directory to the S3 bucket
 # See https://awscli.amazonaws.com/v2/documentation/api/latest/reference/s3/sync.html for more details
 aws s3 sync --exact-timestamps --delete dist/ "${S3_URI}"
+echo "Deployment complete"
+echo ""
 
 # Force a cache refresh for CloudFront. NOTE: This requires SUDO privileges currently and will likely fail
 #aws cloudfront create-invalidation --distribution-id EFROMZ1D89URP --paths "/chat*"
-echo "Invalidate cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions"
+echo "Invalidate the CloudFront cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions"
 echo "  - Click the distribution for discovery.indra.bio"
 echo "  - Click the invalidations tab"
 echo "  - Click 'Create invalidation'"
