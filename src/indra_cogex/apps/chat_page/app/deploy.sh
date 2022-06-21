@@ -57,6 +57,8 @@ echo ""
 
 # Force a cache refresh for CloudFront. NOTE: This requires SUDO privileges currently and will likely fail
 #aws cloudfront create-invalidation --distribution-id EFROMZ1D89URP --paths "/chat*"
+
+# Instructions for manual cache invalidaton
 echo "Invalidate the CloudFront cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions"
 echo "  - Click the distribution for discovery.indra.bio"
 echo "  - Click the invalidations tab"
