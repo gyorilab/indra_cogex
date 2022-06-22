@@ -15,7 +15,7 @@
     "bootstrap": "^5.1.3",
     "bootstrap-icons": "^1.8.2",
     "core-js": "^3.8.3",
-    "indralab-vue": "file:../../../../../../indralab-vue/indralab-vue-0.1.1.tgz",
+    "indralab-vue": "file:indralab-vue-0.1.1.tgz",
     "pusher-js": "^4.0.0",
     "vue": "^3.2.13"
   },
