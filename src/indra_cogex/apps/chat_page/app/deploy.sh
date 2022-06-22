@@ -12,11 +12,12 @@ helpFunction()
    exit 1 # Exit script after printing help
 }
 
-while getopts "is" opt
+while getopts "i:s:h" opt
 do
    case "$opt" in
       i ) indralabVueTgz="$OPTARG" ;;
       s ) s3Path="$OPTARG" ;;
+      h ) helpFunction ;;
       ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
    esac
 done
