@@ -36,8 +36,12 @@ then
    npm install "${indralabVueTgz}"
 fi
 
+# Run the regular install
+echo "Installing npm dependencies"
+npm install
+
 # Build the app
-echo "Building the app"
+echo "Building index.html for chat app and dist"
 npm run build
 
 # Deploy to S3
