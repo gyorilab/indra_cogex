@@ -1,14 +1,14 @@
 #!/bin/bash
 
-S3_URI_BASE=s3://bigmech/
-PATH_DEFAULT=chat
+S3_URI_BASE=s3://bigmech
+PATH_DEFAULT="/chat"
 
 helpFunction()
 {
    echo ""
    echo "Usage: $0 [-i INDRALAB_VUE_TGZ] [-s S3_PATH]"
    echo -e "\t-i Path to indralab-vue tgz file. If provided, it will be installed. If not, it is assumed to already be installed."
-   echo -e "\t-s The S3 bucket path to deploy to. Default is $S3_URI_BASE$PATH_DEFAULT"
+   echo -e "\t-s The path in the bigmech S3 bucket to deploy to. Default is ${PATH_DEFAULT}. Path must start with /."
    exit 1 # Exit script after printing help
 }
 
@@ -40,14 +40,14 @@ echo "Building the app"
 npm run build
 
 # Deploy to S3
-if [ "$s3Path" ]; then
-    PATH=$1
+if [ -n "$s3Path" ]; then
+    PATH="$s3Path"
 else # Use the alternate S3 URI
     PATH=$PATH_DEFAULT
 fi
 
 S3_URI="${S3_URI_BASE}${PATH}"
-echo "Deploying to $PATH"
+echo "Deploying to $S3_URI"
 
 # Copy the content of the dist directory to the S3 bucket
 # See https://awscli.amazonaws.com/v2/documentation/api/latest/reference/s3/sync.html for more details
@@ -58,8 +58,9 @@ echo ""
 # Force a cache refresh for CloudFront. NOTE: This requires SUDO privileges currently and will likely fail
 #aws cloudfront create-invalidation --distribution-id EFROMZ1D89URP --paths "/chat*"
 
-# Instructions for manual cache invalidaton
-echo "Invalidate the CloudFront cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions"
+# Instructions for manual cache invalidation
+echo "Invalidate the CloudFront cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions and then:"
+echo "  - Log in to the AWS console if needed"
 echo "  - Click the distribution for discovery.indra.bio"
 echo "  - Click the invalidations tab"
 echo "  - Click 'Create invalidation'"
