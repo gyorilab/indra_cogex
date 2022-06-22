@@ -60,8 +60,8 @@ aws s3 sync --exact-timestamps --delete dist/ "${S3_URI}"
 echo "Deployment complete"
 echo ""
 
-# Force a cache refresh for CloudFront. NOTE: This requires SUDO privileges currently and will likely fail
-#aws cloudfront create-invalidation --distribution-id EFROMZ1D89URP --paths "/chat*"
+# Force a cache refresh for CloudFront. NOTE: This requires the SUDO role
+#aws cloudfront create-invalidation --distribution-id EFROMZ1D89URP --paths "${PATH}*"
 
 # Instructions for manual cache invalidation
 echo "Invalidate the CloudFront cache manually by going to https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions and then:"
@@ -72,3 +72,4 @@ echo "  - Click 'Create invalidation'"
 echo "  - Add the path /chat* to the list of paths to be invalidated"
 echo "  - Click 'Create invalidation'"
 echo "  - Wait for the invalidation to complete"
+echo ""
