@@ -18,6 +18,8 @@ downloads at: https://reporter.nih.gov/exporter available as zipped csv files pe
 """
 
 import re
+import logging
+import datetime
 from typing import Iterable
 import zipfile
 from collections import defaultdict
@@ -27,13 +29,34 @@ from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 
 
+logger = logging.getLogger(__name__)
+
+
 # Regular expressions to find files of different types
+fname_prefixes = {
+    "project": "RePORTER_PRJ_C_FY",
+    "publink": "RePORTER_PUBLINK_C_",
+    "abstract": "RePORTER_PRJABS_C_FY",
+    "patent": "Patents_",
+    "clinical_trial": "ClinicalStudies_",
+}
+
+
 fname_regexes = {
-    "project": re.compile(r"RePORTER_PRJ_C_FY(\d+)\.zip"),
-    "publink": re.compile(r"RePORTER_PUBLNK_C_(\d+)\.zip"),
-    "abstract": re.compile(r"RePORTER_PRJABS_C_FY(\d+)\.zip"),
-    "patent": re.compile(r"Patents_(\d+)\.csv"),
-    "clinical_trial": re.compile(r"ClinicalStudies_(\d+)\.csv"),
+    "project": re.compile(rf"{fname_prefixes['project']}(\d+)\.zip"),
+    "publink": re.compile(rf"{fname_prefixes['publink']}(\d+)\.zip"),
+    "abstract": re.compile(rf"{fname_prefixes['abstract']}(\d+)\.zip"),
+    "patent": re.compile(rf"{fname_prefixes['patent']}(\d+)\.csv"),
+    "clinical_trial": re.compile(rf"{fname_prefixes['clinical_trial']}(\d+)\.csv"),
+}
+
+base_url = "https://reporter.nih.gov/exporter"
+
+download_urls = {
+    "project": f"{base_url}/projects/download/%s",
+    "publink": f"{base_url}/linktables/download/%s",
+    "clinical_trial": f"{base_url}/clinicalstudies/download",
+    "patent": f"{base_url}/patents/download",
 }
 
 
@@ -58,10 +81,20 @@ class NihReporterProcessor(Processor):
     name = "nih_reporter"
     node_types = ["ResearchProject", "Publication", "ClinicalTrial", "Patent"]
 
-    def __init__(self):
-        base_folder = pystow.join("indra", "cogex", "nih_reporter")
+    def __init__(self, download=True, force_download=False):
+        base_folder = pystow.module("indra", "cogex", "nih_reporter")
         data_files = defaultdict(dict)
-        for file_path in base_folder.iterdir():
+
+        # Download the data files if they are not present
+        if download or force_download:
+            logger.info(
+                "Downloading NIH RePORTER data files %s force redownload..."
+                % ("with" if force_download else "without")
+            )
+            download_files(base_folder, force=force_download)
+
+        # Collect all the data files
+        for file_path in base_folder.base.iterdir():
             for file_type, pattern in fname_regexes.items():
                 match = pattern.match(file_path.name)
                 if match:
@@ -166,8 +199,38 @@ class NihReporterProcessor(Processor):
 
 
 def _read_first_df(zip_file_path):
-    """Extract a single file from the project_file zip file."""
+    """Extract a single CSV file from a zip file given its path."""
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         return pandas.read_csv(
             zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
         )
+
+
+def download_files(
+    base_folder: pystow.Module, force=False, first_year=1985, last_year=2021
+):
+    current_year = datetime.date.today().year
+    for subset, url_pattern in download_urls.items():
+        # These files are indexed by year
+        if subset in ["project", "publink"]:
+            for year in range(first_year, last_year + 1):
+                url = download_urls[subset] % year
+                base_folder.ensure(
+                    url=url,
+                    name=fname_prefixes[subset] + str(year) + ".zip",
+                    force=force,
+                )
+        # These files are single downloads but RePORTER adds a timestamp
+        # to the file name making it difficult to check if it already exists
+        # so to avoid always redownloading, we take Jan 1st of the current
+        # year as reference.
+        else:
+            timestamp = int(
+                datetime.datetime(year=current_year, month=1, day=1).timestamp()
+            )
+            url = download_urls[subset]
+            base_folder.ensure(
+                url=url,
+                name=fname_prefixes[subset] + str(timestamp) + ".csv",
+                force=force,
+            )
