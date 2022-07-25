@@ -3,11 +3,15 @@
 """Processor for Bgee."""
 
 import os
+from collections import defaultdict
 import pickle
 from pathlib import Path
 from typing import Union, Iterable, Tuple
 
+import pandas
 import pyobo
+import pystow
+from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
@@ -25,12 +29,11 @@ class BgeeProcessor(Processor):
         :param path: The path to the Bgee dump pickle. If none given, will look in the default location.
         """
         if path is None:
-            path = os.path.join(os.path.dirname(__file__), "expressions.pkl")
+            path = pystow.join("indra", "cogex", "bgee", name="expressions.pkl")
         elif isinstance(path, str):
             path = Path(path)
         self.rel_type = "expressed_in"
-        with open(path, "rb") as fh:
-            self.expressions = pickle.load(fh)
+        self.expressions = get_expressions(path)
 
     def get_nodes(self) -> Iterable[Node]:  # noqa:D102
         for context in self.expressions:
@@ -57,6 +60,28 @@ class BgeeProcessor(Processor):
                 yield Relation(
                     "HGNC", hgnc_id, context_ns, context_id, self.rel_type, data
                 )
+
+
+def get_expressions(fname):
+    if fname.exists():
+        with open(fname, "rb") as fh:
+            return pickle.load(fh)
+    else:
+        url = (
+            "https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/"
+            "Homo_sapiens_expr_simple.tsv.gz"
+        )
+        df = pandas.read_csv(url, sep="\t")
+        df = df[df["Expression"] == "present"]
+        expression = defaultdict(set)
+        for _, row in df.iterrows():
+            hgnc_id = hgnc_client.get_hgnc_id(row["Gene name"])
+            if not hgnc_id:
+                continue
+            expression[row["Anatomical entity ID"]].add(hgnc_id)
+        with open(fname, "wb") as fh:
+            pickle.dump(expression, fh)
+        return expression
 
 
 def get_context(context) -> Tuple[str, str]:
