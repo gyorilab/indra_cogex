@@ -1,3 +1,24 @@
+"""This module implements input for ClinicalTrials.gov data
+
+To obtain the custom download for ingest, do the following
+
+1. Go to https://clinicaltrials.gov/api/gui/demo/simple_study_fields
+
+2. Enter the following in the form:
+
+expr=
+fields=NCTId,BriefTitle,Condition,ConditionMeshTerm,ConditionMeshId,InterventionName,InterventionType,InterventionMeshTerm,InterventionMeshId
+min_rnk=1
+max_rnk=400000
+fmt=csv
+
+3. Send Request
+
+4. Answer captcha and press enter, wait
+
+5. Save to file
+"""
+
 import gilda
 import pandas as pd
 from pathlib import Path
