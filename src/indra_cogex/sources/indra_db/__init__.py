@@ -296,6 +296,7 @@ class EvidenceProcessor(Processor):
                                 data={
                                     "evidence:string": json.dumps(evidence),
                                     "stmt_hash:int": stmt_hash,
+                                    "source_api:string": evidence["source_api"],
                                 },
                             )
                         )
