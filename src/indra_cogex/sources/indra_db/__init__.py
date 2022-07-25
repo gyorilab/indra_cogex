@@ -276,6 +276,17 @@ class EvidenceProcessor(Processor):
                             # Add Publication node to batch if it was created
                             node_batch.append(pubmed_node)
 
+                        # TODO: Add node for any context associated with the evidence
+                        # Issues to resolve
+                        # - context db_refs are often unnormalized and proper normalization
+                        #   would require mappings not available in the INDRA BioOntology
+                        #   e.g., {'name': None, 'db_refs': {'TAXONOMY': '9606'}}
+                        #   would require TAXONOMY -> MESH mapping + name standardization
+                        # similarly, {'name': None, 'db_refs': {'UPLOC': 'SL-0310'}}
+                        # would require using UPLOC -> GO mappings to normalize
+                        # Some keys appear to be invalid e.g., CELLOSAURUS
+                        #  is not the standard CVCL INDRA normally expects.
+
                         # Add Evidence node for this evidence
                         node_batch.append(
                             Node(
