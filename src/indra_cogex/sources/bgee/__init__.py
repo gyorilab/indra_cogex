@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Processor for Bgee."""
-
+import logging
 from collections import defaultdict
 import pickle
 from pathlib import Path
@@ -15,6 +15,9 @@ from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+
+
+logger = logging.getLogger(__name__)
 
 
 class BgeeProcessor(Processor):
@@ -71,14 +74,17 @@ def get_expressions(fname):
             "https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/"
             "Homo_sapiens_expr_simple.tsv.gz"
         )
+        logger.info("Getting source tsv file")
         df = pandas.read_csv(url, sep="\t")
 
         # Filter to "present" Expression only (see
         # https://bgee.org/support/gene-expression-calls#expression-column-9)
+        logger.info("Filtering to 'present' expressions")
         df = df[df["Expression"] == "present"]
 
         # Filter out rows where "Anatomical entity ID" contains '∩', e.g.
         # "UBERON:0000991 ∩ CL:0000670". They should only be ~1 % of all rows.
+        logger.info("Filtering out identifiers containing '∩'")
         df = df[~df["Anatomical entity ID"].str.contains("∩")]
 
         expression = defaultdict(set)
