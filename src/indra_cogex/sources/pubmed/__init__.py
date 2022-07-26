@@ -40,7 +40,7 @@ class PubmedProcessor(Processor):
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.text_refs_path = pystow.join("indra", "db", name="text_refs.tsv.gz")
+        self.text_refs_path = pystow.join("indra", "db", name="text_refs_principal.tsv.gz")
 
     def get_nodes(self):
         pmid_node_type = "Publication"
