@@ -72,7 +72,15 @@ def get_expressions(fname):
             "Homo_sapiens_expr_simple.tsv.gz"
         )
         df = pandas.read_csv(url, sep="\t")
+
+        # Filter to "present" Expression only (see
+        # https://bgee.org/support/gene-expression-calls#expression-column-9)
         df = df[df["Expression"] == "present"]
+
+        # Filter out rows where "Anatomical entity ID" contains '∩', e.g.
+        # "UBERON:0000991 ∩ CL:0000670". They should only be ~1 % of all rows.
+        df = df[~df["Anatomical entity ID"].str.contains("∩")]
+
         expression = defaultdict(set)
         for _, row in df.iterrows():
             hgnc_id = hgnc_client.get_hgnc_id(row["Gene name"])
