@@ -2,7 +2,6 @@
 
 """Processor for Bgee."""
 
-import os
 from collections import defaultdict
 import pickle
 from pathlib import Path
