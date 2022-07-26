@@ -11,6 +11,7 @@ from typing import Union, Iterable, Tuple
 import pandas
 import pyobo
 import pystow
+from tqdm import tqdm
 from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
@@ -82,7 +83,9 @@ def get_expressions(fname):
         df = df[~df["Anatomical entity ID"].str.contains("∩")]
 
         expression = defaultdict(set)
-        for _, row in df.iterrows():
+        for _, row in tqdm(
+            df.iterrows(), total=df.shape[0], desc="Getting expression mappings"
+        ):
             hgnc_id = hgnc_client.get_hgnc_id(row["Gene name"])
             if not hgnc_id:
                 continue
