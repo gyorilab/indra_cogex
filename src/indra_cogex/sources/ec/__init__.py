@@ -25,13 +25,19 @@ class HGNCEnzymeProcessor(Processor):
     def __init__(self):
         self.genes = {
             hgnc_id: Node.standardized(
-                db_ns="hgnc", db_id=hgnc_id, name=hgnc_client.get_hgnc_name(hgnc_id), labels=["BioEntity"]
+                db_ns="hgnc",
+                db_id=hgnc_id,
+                name=hgnc_client.get_hgnc_name(hgnc_id),
+                labels=["BioEntity"],
             )
             for hgnc_id in hgnc_to_enzymes
         }
         self.enzymes = {
             enzyme_id: Node.standardized(
-                db_ns="ec-code", db_id=enzyme_id, name=pyobo.get_name("ec-code", enzyme_id), labels=["BioEntity"]
+                db_ns="ec-code",
+                db_id=_strip_ec_code(enzyme_id),
+                name=pyobo.get_name("ec-code", enzyme_id),
+                labels=["BioEntity"],
             )
             for enzyme_id in enzyme_to_hgncs
         }
@@ -65,5 +71,5 @@ def _strip_ec_code(name: str) -> str:
     return name
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     HGNCEnzymeProcessor.cli()
