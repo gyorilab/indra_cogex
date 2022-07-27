@@ -14,9 +14,17 @@ fmt=csv
 
 3. Send Request
 
-4. Answer captcha and press enter, wait
+4. Enter the captcha characters into the text box and then press enter
+(make sure to use the enter key and not press any buttons).
 
-5. Save to file
+5. The website will display "please wait… " for a couple of minutes, finally,
+the Save to file button will be active.
+
+6. Click the Save to file button to download the response as a txt file.
+
+7. Rename the txt file to clinical_trials.csv and then compress it as
+gzip clinical_trials.csv to get clinical_trials.csv.gz, then place
+this file into <pystow home>/indra/cogex/clinicaltrials/
 """
 
 import gilda
