@@ -211,7 +211,7 @@ class HpPhenotypeGeneProcessor(Processor):
                 db_ns=prefix, db_id=identifier, name=name, labels=["BioEntity"]
             )
         for hgnc_id in self.df.hgnc_id.unique():
-            yield Node.standardized(db_ns="hgnc", db_id=hgnc_id, labels=["BioEntity"])
+            yield Node.standardized(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
     def get_relations(self):  # noqa:D102
         for (phenotype_prefix, phenotype_id, hgnc_id,), evidences in self.df.groupby(
