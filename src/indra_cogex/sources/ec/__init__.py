@@ -63,12 +63,12 @@ class HGNCEnzymeProcessor(Processor):
                 )
 
 
-def _strip_ec_code(name: str) -> str:
-    """Strips off trailing dashes from codes"""
+def _strip_ec_code(code: str) -> str:
+    """Strips off trailing dashes from ec codes"""
     # Continue to strip off '.-' until name does not end with '.-'
-    while name.endswith(".-"):
-        name = name[:-2]
-    return name
+    while code.endswith(".-"):
+        code = code[:-2]
+    return code
 
 
 if __name__ == "__main__":
