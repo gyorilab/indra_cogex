@@ -98,8 +98,11 @@ def get_refinement_graph() -> nx.DiGraph:
                 with gzip.open(unique_stmts_fname, "rt") as fh2:
                     reader2 = csv.reader(fh2, delimiter="\t")
                     batch_iterator = batch_iter(reader2, batch_size=batch_size)
+                    # Note: first argument is the start index, second is
+                    # the stop index, but if None is used, it will iterate
+                    # until possible
                     batch_iterator = itertools.islice(
-                        batch_iterator, outer_batch_ix + 1
+                        batch_iterator, outer_batch_ix + 1, None
                     )
 
                     # Loop the batches
