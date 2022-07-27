@@ -78,7 +78,7 @@ def get_refinement_graph() -> nx.DiGraph:
             for outer_batch_ix in tqdm.tqdm(
                 range(num_batches), total=num_batches, desc="Calculating refinements"
             ):
-
+                logger.info("Loading statements for outer batch %s" % outer_batch_ix)
                 # read in a batch from the first reader
                 stmts1 = []
                 for _ in range(batch_size):
@@ -103,7 +103,11 @@ def get_refinement_graph() -> nx.DiGraph:
                     )
 
                     # Loop the batches
-                    for batch in batch_iterator:
+                    for inner_batch_idx, batch in enumerate(batch_iterator):
+                        logger.info(
+                            "Loading statements for inner batch %s"
+                            % (outer_batch_ix + inner_batch_idx + 1)
+                        )
                         stmts2 = []
 
                         # Loop the statements in the batch
