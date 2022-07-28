@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from indra.databases import biolookup_client
 from indra.databases.identifiers import get_ns_id_from_identifiers
+from indra.ontology.bio import bio_ontology
 from indra_cogex.representation import Node, Relation, standardize
 from indra_cogex.sources import Processor
 
@@ -148,7 +149,11 @@ class SIDERSideEffectProcessor(Processor):
         }
         for node in tqdm(self.chemicals.values(), desc="Finding chemical names"):
             if node.data["name"] is None:
-                node.data["name"] = biolookup_client.get_name(node.db_ns, node.db_id)
+                name = biolookup_client.get_name(node.db_ns, node.db_id)
+                if not name:
+                    # Try bio ontology
+                    name = bio_ontology.get_name(*node.grounding())
+                node.data["name"] = name
 
         umls_mapper = UmlsMapper()
         self.side_effects = {}
@@ -157,6 +162,9 @@ class SIDERSideEffectProcessor(Processor):
             db_ns, db_id = get_ns_id_from_identifiers(prefix, identifier)
             if db_ns is None:
                 db_ns, db_id = prefix, identifier
+            if not name:
+                # Try bio ontology
+                name = bio_ontology.get_name(db_ns.upper(), db_id)
             self.side_effects[umls_id] = Node.standardized(
                 db_ns=db_ns, db_id=db_id, name=name, labels=["BioEntity"]
             )
