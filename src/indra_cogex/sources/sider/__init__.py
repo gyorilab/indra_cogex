@@ -171,27 +171,35 @@ class SIDERSideEffectProcessor(Processor):
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over SIDER chemicals and side effects."""
-        yield from self.chemicals.values()
-        yield from self.side_effects.values()
+        yielded_nodes = set()
+        for node_collection in (self.chemicals.values(), self.side_effects.values()):
+            for node in node_collection:
+                if node.grounding() not in yielded_nodes:
+                    yield node
+                    yielded_nodes.add(node.grounding())
 
     def get_relations(self) -> Iterable[Relation]:
         """Iterate over SIDER side effect annotations."""
+        yielded_rels = set()
         for pubchem_id, umls_id in self.df[
             ["pubchem_id", "UMLS CUI from MedDRA"]
         ].values:
             chemical = self.chemicals[pubchem_id]
             indication = self.side_effects[umls_id]
-            yield Relation(
-                chemical.db_ns,
-                chemical.db_id,
-                indication.db_ns,
-                indication.db_id,
-                "has_side_effect",
-                dict(
-                    source=self.name,
-                    version=VERSION,
-                ),
-            )
+            rel = (chemical.db_ns, chemical.db_id, indication.db_ns, indication.db_id)
+            if rel not in yielded_rels:
+                yield Relation(
+                    chemical.db_ns,
+                    chemical.db_id,
+                    indication.db_ns,
+                    indication.db_id,
+                    "has_side_effect",
+                    dict(
+                        source=self.name,
+                        version=VERSION,
+                    ),
+                )
+                yielded_rels.add(rel)
 
 
 def generate_curation_sheet():
