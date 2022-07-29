@@ -244,6 +244,7 @@ class EvidenceProcessor(Processor):
                     # statement so looping is probably not necessary
                     evidence_list = stmt_json["evidence"]
                     for evidence in evidence_list:
+                        tr = evidence.get("text_refs", {})
                         pmid = tr.get("PMID") or evidence.get("pmid")
 
                         # Skip if no PMID or we already yielded this PMID
@@ -251,7 +252,6 @@ class EvidenceProcessor(Processor):
                             continue
 
                         pubmed_node = None
-                        tr = evidence.get("text_refs", {})
 
                         # If there are text refs, use them
                         if tr.get("PMID"):
