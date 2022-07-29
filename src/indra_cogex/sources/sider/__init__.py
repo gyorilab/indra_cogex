@@ -137,23 +137,32 @@ class SIDERSideEffectProcessor(Processor):
             stitch_stereo_to_pubchem
         )
         del self.df["STITCH_STEREO_ID"]
-        self.chemicals = {
-            pubchem_id: Node.standardized(
+
+        self.chemicals = {}
+        for pubchem_id in tqdm(
+            self.df["pubchem_id"], unit_scale=True, desc="Caching chemicals"
+        ):
+            node = Node.standardized(
                 db_ns="PUBCHEM",
                 db_id=pubchem_id,
                 labels=["BioEntity"],
             )
-            for pubchem_id in tqdm(
-                self.df["pubchem_id"], unit_scale=True, desc="Caching chemicals"
-            )
-        }
-        for node in tqdm(self.chemicals.values(), desc="Finding chemical names"):
-            if node.data["name"] is None:
+            name = node.data["name"]
+
+            # First try biolookup
+            if name is None:
                 name = biolookup_client.get_name(node.db_ns, node.db_id)
-                if not name:
-                    # Try bio ontology
+
+                # Then try bio ontology
+                if name is None:
                     name = bio_ontology.get_name(*node.grounding())
-                node.data["name"] = name
+
+            # Skip unnamed nodes
+            if name is None:
+                continue
+
+            node.data["name"] = name
+            self.chemicals[pubchem_id] = node
 
         umls_mapper = UmlsMapper()
         self.side_effects = {}
@@ -162,9 +171,15 @@ class SIDERSideEffectProcessor(Processor):
             db_ns, db_id = get_ns_id_from_identifiers(prefix, identifier)
             if db_ns is None:
                 db_ns, db_id = prefix, identifier
+
             if not name:
                 # Try bio ontology
                 name = bio_ontology.get_name(db_ns.upper(), db_id)
+
+            # If there is no name, skip it
+            if not name:
+                continue
+
             self.side_effects[umls_id] = Node.standardized(
                 db_ns=db_ns, db_id=db_id, name=name, labels=["BioEntity"]
             )
