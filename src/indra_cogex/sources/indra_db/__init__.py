@@ -220,7 +220,7 @@ class EvidenceProcessor(Processor):
             batch_size = 100000
             # TODO get number of batches from the total number of statements
             #  rather than hardcoding
-            total = num_rows // batch_size + 1 if num_rows else 352
+            total = num_rows // batch_size + 1 if num_rows else 600
             reader = csv.reader(fh, delimiter="\t")
             yield_index = 0
             yielded_pmid = set()
