@@ -223,6 +223,7 @@ class EvidenceProcessor(Processor):
             total = num_rows // batch_size + 1 if num_rows else 352
             reader = csv.reader(fh, delimiter="\t")
             yield_index = 0
+            yielded_pmid = set()
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list),
                 total=total,
@@ -243,12 +244,17 @@ class EvidenceProcessor(Processor):
                     # statement so looping is probably not necessary
                     evidence_list = stmt_json["evidence"]
                     for evidence in evidence_list:
+                        pmid = tr.get("PMID") or evidence.get("pmid")
+
+                        # Skip if no PMID or we already yielded this PMID
+                        if pmid is None or pmid in yielded_pmid:
+                            continue
+
                         pubmed_node = None
                         tr = evidence.get("text_refs", {})
 
-                        # Add publication Nodes if we have a non-empty PMID
+                        # If there are text refs, use them
                         if tr.get("PMID"):
-                            pmid = tr["PMID"]
                             pubmed_node = Node(
                                 db_ns="PUBMED",
                                 db_id=pmid,
@@ -262,17 +268,19 @@ class EvidenceProcessor(Processor):
                                     "manuscript_id": tr.get("MANUSCRIPT_ID"),
                                 },
                             )
-                            self._stmt_id_pmid_links[yield_index] = pmid
+                        # Otherwise, just make a node with the evidence PMID
                         elif evidence.get("pmid"):
                             pubmed_node = Node(
                                 db_ns="PUBMED",
-                                db_id=evidence["pmid"],
+                                db_id=pmid,
                                 labels=["Publication"],
                             )
-                            self._stmt_id_pmid_links[yield_index] = evidence["pmid"]
+
+                        # Add Publication node to batch if it was created
                         if pubmed_node:
-                            # Add Publication node to batch if it was created
                             node_batch.append(pubmed_node)
+                            self._stmt_id_pmid_links[yield_index] = pmid
+                            yielded_pmid.add(pmid)
 
                         # TODO: Add node for any context associated with the evidence
                         # Issues to resolve
