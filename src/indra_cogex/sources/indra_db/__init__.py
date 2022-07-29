@@ -36,8 +36,6 @@ from indra_cogex.sources.indra_db.raw_export import (
     unique_stmts_fname,
     processed_stmts_fname,
     stmts_from_json,
-    raw_stmts_fname,
-    text_refs_fname,
 )
 
 logger = logging.getLogger(__name__)
