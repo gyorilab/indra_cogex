@@ -199,22 +199,28 @@ class SIDERSideEffectProcessor(Processor):
         for pubchem_id, umls_id in self.df[
             ["pubchem_id", "UMLS CUI from MedDRA"]
         ].values:
-            chemical = self.chemicals[pubchem_id]
-            indication = self.side_effects[umls_id]
-            rel = (chemical.db_ns, chemical.db_id, indication.db_ns, indication.db_id)
-            if rel not in yielded_rels:
-                yield Relation(
+            chemical = self.chemicals.get(pubchem_id)
+            indication = self.side_effects.get(umls_id)
+            if chemical is not None and indication is not None:
+                rel = (
                     chemical.db_ns,
                     chemical.db_id,
                     indication.db_ns,
                     indication.db_id,
-                    "has_side_effect",
-                    dict(
-                        source=self.name,
-                        version=VERSION,
-                    ),
                 )
-                yielded_rels.add(rel)
+                if rel not in yielded_rels:
+                    yield Relation(
+                        chemical.db_ns,
+                        chemical.db_id,
+                        indication.db_ns,
+                        indication.db_id,
+                        "has_side_effect",
+                        dict(
+                            source=self.name,
+                            version=VERSION,
+                        ),
+                    )
+                    yielded_rels.add(rel)
 
 
 def generate_curation_sheet():
