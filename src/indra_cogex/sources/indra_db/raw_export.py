@@ -266,6 +266,9 @@ if __name__ == "__main__":
             pickle.dump(reading_id_to_text_ref_id, fh)
 
     else:
+        logger.info(
+            f"Loading {drop_readings_fname.as_posix()} and {reading_to_text_ref_map.as_posix()} from cache"
+        )
         with open(drop_readings_fname, "rb") as fh:
             drop_readings = pickle.load(fh)
         # Get mapping of reading_id to text_ref_id
