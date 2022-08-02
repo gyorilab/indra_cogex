@@ -199,10 +199,11 @@ if __name__ == "__main__":
     if any(not f.exists() for f in needed_files):
         missing = [f.as_posix() for f in needed_files if not f.exists()]
         print(command_line)
-        raise FileNotFoundError(f"{', '.join(missing)} missing, please run "
-                                f"the command(s) above to get them.")
+        raise FileNotFoundError(
+            f"{', '.join(missing)} missing, please run the command(s) above to get them."
+        )
 
-    if not os.environ.get('INDRA_DB_LITE_LOCATION'):
+    if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
     # STAGE 1: We need to run statement distillation to figure out which
@@ -330,7 +331,7 @@ if __name__ == "__main__":
             writer_gr = csv.writer(fh_out_gr, delimiter="\t")
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
-                    reader, total=60178601, desc="Gathering grounded and unique statements"
+                reader, total=60178601, desc="Gathering grounded and unique statements"
             ):
                 stmt = stmts_from_json([load_statement_json(stmt_json_str)])[0]
                 if len(stmt.real_agent_list()) < 2:
