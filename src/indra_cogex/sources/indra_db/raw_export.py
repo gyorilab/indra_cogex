@@ -189,7 +189,7 @@ if __name__ == "__main__":
     Raw statements
 
       psql -d indradb_test -h indradb-refresh.cwcetxbvbgrf.us-east-1.rds.amazonaws.com 
-      -U tester -c "COPY (SELECT id, db_info_id, reading_id, encode(json::bytea, 'escape') FROM public.raw_statements) 
+      -U tester -c "COPY (SELECT id, db_info_id, reading_id, convert_from(json::bytea, 'utf-8') FROM public.raw_statements) 
       TO STDOUT" | gzip > raw_statements.tsv.gz
 
     Time estimate: ~30-40 mins
