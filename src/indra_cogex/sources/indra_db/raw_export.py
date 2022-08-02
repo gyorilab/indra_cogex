@@ -208,7 +208,7 @@ if __name__ == "__main__":
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
     # reader version used to produce it.
-    if not drop_readings_fname.exists():
+    if not drop_readings_fname.exists() or not reading_to_text_ref_map.exists():
         df = pandas.read_csv(
             reading_text_content_fname,
             header=None,
