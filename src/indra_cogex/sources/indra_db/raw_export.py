@@ -265,11 +265,10 @@ if __name__ == "__main__":
         with reading_to_text_ref_map.open("rb") as fh:
             reading_id_to_text_ref_id = pickle.load(fh)
 
-    text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
-
     # STAGE 2: We now need to iterate over raw statements and do preassembly
     if not processed_stmts_fname.exists() or not source_counts_fname.exists():
         logger.info("Preassembling statements and collecting source counts")
+        text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
         source_counts = defaultdict(lambda: defaultdict(int))
         with gzip.open(raw_stmts_fname, "rt") as fh, gzip.open(
             processed_stmts_fname, "wt"
