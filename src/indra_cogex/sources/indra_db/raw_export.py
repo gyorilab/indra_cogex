@@ -9,6 +9,7 @@ import codecs
 import pandas
 import pickle
 import pystow
+from adeft.download import get_available_models
 from indra.util import batch_iter
 from indra.statements import stmts_from_json
 from indra.tools import assemble_corpus as ac
@@ -205,6 +206,11 @@ if __name__ == "__main__":
 
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
+
+    if len(get_available_models()) == 0:
+        raise ValueError(
+            "No adeft models detected, run 'python -m adeft.download' to download models"
+        )
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
