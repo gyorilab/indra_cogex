@@ -169,14 +169,21 @@ if __name__ == "__main__":
     # These can be done from the command line, in the folder
     # that corresponds to pystow.join('indra', 'db')
 
-    command_line = """
-    Text refs
+    command_line_instructions = """
+    NOTE: it is essential that the file dumps are synced, i.e. run 
+    immediately after each other, otherwise there is a risk that Evidence 
+    and Publication nodes in the end are missing from new statements picked 
+    up in the time between dumps. Additionally, to avoid the risk of having 
+    statements with missing reading data, the raw statements dump should be 
+    run *first*, followed by the other two dumps:
 
-      psql -d indradb_test -h indradb-refresh.cwcetxbvbgrf.us-east-1.rds.amazonaws.com
-      -U tester -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id
-      FROM public.text_ref) TO STDOUT" | gzip > text_refs_principal.tsv.gz
+    Raw statements
 
-    Time estimate: ~2.5 mins
+      psql -d indradb_test -h indradb-refresh.cwcetxbvbgrf.us-east-1.rds.amazonaws.com 
+      -U tester -c "COPY (SELECT id, db_info_id, reading_id, convert_from(json::bytea, 'utf-8') FROM public.raw_statements) 
+      TO STDOUT" | gzip > raw_statements.tsv.gz
+
+    Time estimate: ~30-40 mins
 
     Text content joined with reading
 
@@ -187,21 +194,21 @@ if __name__ == "__main__":
 
     Time estimate: ~15 mins
 
-    Raw statements
+    Text refs
 
-      psql -d indradb_test -h indradb-refresh.cwcetxbvbgrf.us-east-1.rds.amazonaws.com 
-      -U tester -c "COPY (SELECT id, db_info_id, reading_id, convert_from(json::bytea, 'utf-8') FROM public.raw_statements) 
-      TO STDOUT" | gzip > raw_statements.tsv.gz
+      psql -d indradb_test -h indradb-refresh.cwcetxbvbgrf.us-east-1.rds.amazonaws.com
+      -U tester -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id
+      FROM public.text_ref) TO STDOUT" | gzip > text_refs_principal.tsv.gz
 
-    Time estimate: ~30-40 mins
+    Time estimate: ~2.5 mins
     """
 
     needed_files = [reading_text_content_fname, text_refs_fname, raw_stmts_fname]
     if any(not f.exists() for f in needed_files):
         missing = [f.as_posix() for f in needed_files if not f.exists()]
-        print(command_line)
+        print(command_line_instructions)
         raise FileNotFoundError(
-            f"{', '.join(missing)} missing, please run the command(s) above to get them."
+            f"{', '.join(missing)} missing, please run the dump commands above to get them."
         )
 
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
