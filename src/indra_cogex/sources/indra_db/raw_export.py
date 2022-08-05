@@ -283,6 +283,7 @@ if __name__ == "__main__":
             reading_id_to_text_ref_id = pickle.load(fh)
 
     # STAGE 2: We now need to iterate over raw statements and do preassembly
+    # Takes ~16 h
     if not processed_stmts_fname.exists() or not source_counts_fname.exists():
         logger.info("Preassembling statements and collecting source counts")
         text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
@@ -338,6 +339,7 @@ if __name__ == "__main__":
         )
 
     # STAGE 3: create grounded and unique dumps
+    # Takes >2.5 h
     if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with gzip.open(processed_stmts_fname, "rt") as fh, gzip.open(
             grounded_stmts_fname, "wt"
