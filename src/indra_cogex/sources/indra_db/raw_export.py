@@ -349,7 +349,7 @@ if __name__ == "__main__":
             writer_gr = csv.writer(fh_out_gr, delimiter="\t")
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
-                reader, total=60178601, desc="Gathering grounded and unique statements"
+                reader, total=60405451, desc="Gathering grounded and unique statements"
             ):
                 stmt = stmts_from_json([load_statement_json(stmt_json_str)])[0]
                 if len(stmt.real_agent_list()) < 2:
