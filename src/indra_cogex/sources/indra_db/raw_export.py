@@ -339,7 +339,7 @@ if __name__ == "__main__":
         )
 
     # STAGE 3: create grounded and unique dumps
-    # Takes >2.5 h
+    # Takes ~2.5 h
     if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with gzip.open(processed_stmts_fname, "rt") as fh, gzip.open(
             grounded_stmts_fname, "wt"
