@@ -136,13 +136,17 @@ class DbProcessor(Processor):
                     "belief:float": belief,
                     "stmt_json:string": json.dumps(stmt_json),
                     "has_database_evidence:boolean": (
-                        True if set(source_count) & db_sources else False
+                        "true" if set(source_count) & db_sources else "false"
                     ),
                     "has_reader_evidence:boolean": (
-                        True if set(source_count) & reader_sources else False
+                        "true" if set(source_count) & reader_sources else "false"
                     ),
-                    "medscan_only:boolean": set(source_count) == {"medscan"},
-                    "sparser_only:boolean": set(source_count) == {"sparser"},
+                    "medscan_only:boolean": (
+                        "true" if set(source_count) == {"medscan"} else "false"
+                    ),
+                    "sparser_only:boolean": (
+                        "true" if set(source_count) == {"sparser"} else "false"
+                    ),
                 }
 
                 # Get the agents from the statement
