@@ -19,6 +19,7 @@ from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
+from .hpoa import HpDiseasePhenotypeProcessor, HpPhenotypeGeneProcessor
 
 __all__ = [
     "processor_resolver",
@@ -37,6 +38,8 @@ __all__ = [
     "SIDERSideEffectProcessor",
     "EvidenceProcessor",
     "PubmedProcessor",
+    "HpDiseasePhenotypeProcessor",
+    "HpPhenotypeGeneProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)
