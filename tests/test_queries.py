@@ -259,9 +259,8 @@ def test_get_evidence_obj_for_mesh_id():
 
 @pytest.mark.nonpublic
 def test_get_evidence_obj_for_stmt_hash():
-    # Note: This statement has 3 evidences
     # Single query
-    stmt_hash = 12198579805553967
+    stmt_hash = -21655886415682961
     client = _get_client()
     ev_objs = get_evidences_for_stmt_hash(stmt_hash, client=client)
     assert ev_objs
