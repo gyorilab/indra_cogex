@@ -26,6 +26,8 @@ edge_labels = {
     "tested_in": "Drug Trials",
     "sensitive_to": "Sensitivities",
     "has_indication": "Drug Indications",
+    "has_phenotype": "Disease Phenotypes",
+    "phenotype_has_gene": "Phenotype Genes",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
