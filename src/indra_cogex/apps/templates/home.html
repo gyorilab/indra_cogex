@@ -69,7 +69,9 @@
             </div>
             <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
                 {% for edge_type, _ in edge_counter.most_common() %}
-                    {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
+                    {% if edge_type not in ignore_labels %}
+                        {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>

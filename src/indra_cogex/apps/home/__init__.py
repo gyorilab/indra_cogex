@@ -44,11 +44,13 @@ def _figure_number(n: int):
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
+    ignore_labels = ["replaced_by"]
     return render_template(
         "home.html",
         format_number=_figure_number,
         node_counter=node_counter,
         edge_counter=edge_counter,
+        ignore_labels=ignore_labels,
         edge_labels=edge_labels,
         blueprints=current_app.blueprints,
         pusher_app_key=pusher_key,
