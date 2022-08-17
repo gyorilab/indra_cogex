@@ -264,7 +264,7 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
-@autoclient(cache=True)
+@autoclient()
 def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
@@ -279,6 +279,7 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
         A dictionary whose keys that are 2-tuples of CURIE and name of each phenotype
         gene set and whose values are sets of HGNC gene identifiers (as strings)
     """
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="hpo.pkl")
     query = dedent(
         """\
         MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
@@ -287,7 +288,7 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
     """
     )
     logger.info("caching phenotype gene sets with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query)
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
 @autoclient()
