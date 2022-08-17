@@ -252,36 +252,31 @@ class EvidenceProcessor(Processor):
                         pmid = tr.get("PMID") or evidence.get("pmid")
 
                         # Skip if no PMID or we already yielded this PMID
-                        if pmid is None or pmid in yielded_pmid:
-                            continue
+                        if pmid is not None and pmid not in yielded_pmid:
+                            # If there are text refs, use them
+                            if tr.get("PMID"):
+                                pubmed_node = Node(
+                                    db_ns="PUBMED",
+                                    db_id=pmid,
+                                    labels=["Publication"],
+                                    data={
+                                        "trid": tr.get("TRID"),
+                                        "pmcid": tr.get("PMCID"),
+                                        "doi": tr.get("DOI"),
+                                        "pii": tr.get("PII"),
+                                        "url": tr.get("URL"),
+                                        "manuscript_id": tr.get("MANUSCRIPT_ID"),
+                                    },
+                                )
+                            # Otherwise, just make a node with the evidence PMID
+                            elif evidence.get("pmid"):
+                                pubmed_node = Node(
+                                    db_ns="PUBMED",
+                                    db_id=pmid,
+                                    labels=["Publication"],
+                                )
 
-                        pubmed_node = None
-
-                        # If there are text refs, use them
-                        if tr.get("PMID"):
-                            pubmed_node = Node(
-                                db_ns="PUBMED",
-                                db_id=pmid,
-                                labels=["Publication"],
-                                data={
-                                    "trid": tr.get("TRID"),
-                                    "pmcid": tr.get("PMCID"),
-                                    "doi": tr.get("DOI"),
-                                    "pii": tr.get("PII"),
-                                    "url": tr.get("URL"),
-                                    "manuscript_id": tr.get("MANUSCRIPT_ID"),
-                                },
-                            )
-                        # Otherwise, just make a node with the evidence PMID
-                        elif evidence.get("pmid"):
-                            pubmed_node = Node(
-                                db_ns="PUBMED",
-                                db_id=pmid,
-                                labels=["Publication"],
-                            )
-
-                        # Add Publication node to batch if it was created
-                        if pubmed_node:
+                            # Add Publication node to batch if it was created
                             node_batch.append(pubmed_node)
                             self._stmt_id_pmid_links[yield_index] = pmid
                             yielded_pmid.add(pmid)
@@ -297,7 +292,7 @@ class EvidenceProcessor(Processor):
                         # Some keys appear to be invalid e.g., CELLOSAURUS
                         #  is not the standard CVCL INDRA normally expects.
 
-                        # Add Evidence node for this evidence
+                        # Always add the Evidence node for this evidence
                         node_batch.append(
                             Node(
                                 db_ns="indra_evidence",
