@@ -36,7 +36,7 @@ GENE_SET_CACHE = {}
 def collect_gene_sets(
     query: str,
     *,
-    cache_file: Path = None,
+    cache_file: Path,
     client: Neo4jClient,
     include_ontology_children: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
