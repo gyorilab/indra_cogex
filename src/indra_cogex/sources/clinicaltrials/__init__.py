@@ -9,7 +9,7 @@ To obtain the custom download for ingest, do the following
 expr=
 fields=NCTId,BriefTitle,Condition,ConditionMeshTerm,ConditionMeshId,InterventionName,InterventionType,InterventionMeshTerm,InterventionMeshId
 min_rnk=1
-max_rnk=400000
+max_rnk=500000  # or any number larger than the current number of studies
 fmt=csv
 
 3. Send Request
