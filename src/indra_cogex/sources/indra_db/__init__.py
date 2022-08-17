@@ -278,8 +278,11 @@ class EvidenceProcessor(Processor):
 
                             # Add Publication node to batch if it was created
                             node_batch.append(pubmed_node)
-                            self._stmt_id_pmid_links[yield_index] = pmid
                             yielded_pmid.add(pmid)
+
+                        # Add Evidence -> Publication mapping if there is a PMID
+                        if pmid is not None:
+                            self._stmt_id_pmid_links[yield_index] = pmid
 
                         # TODO: Add node for any context associated with the evidence
                         # Issues to resolve
