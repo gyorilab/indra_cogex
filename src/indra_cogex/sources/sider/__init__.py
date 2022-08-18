@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from indra.databases import biolookup_client
 from indra.databases.identifiers import get_ns_id_from_identifiers
+from indra.ontology.bio import bio_ontology
 from indra_cogex.representation import Node, Relation, standardize
 from indra_cogex.sources import Processor
 
@@ -136,19 +137,32 @@ class SIDERSideEffectProcessor(Processor):
             stitch_stereo_to_pubchem
         )
         del self.df["STITCH_STEREO_ID"]
-        self.chemicals = {
-            pubchem_id: Node.standardized(
+
+        self.chemicals = {}
+        for pubchem_id in tqdm(
+            self.df["pubchem_id"], unit_scale=True, desc="Caching chemicals"
+        ):
+            node = Node.standardized(
                 db_ns="PUBCHEM",
                 db_id=pubchem_id,
                 labels=["BioEntity"],
             )
-            for pubchem_id in tqdm(
-                self.df["pubchem_id"], unit_scale=True, desc="Caching chemicals"
-            )
-        }
-        for node in tqdm(self.chemicals.values(), desc="Finding chemical names"):
-            if node.data["name"] is None:
-                node.data["name"] = biolookup_client.get_name(node.db_ns, node.db_id)
+            name = node.data["name"]
+
+            # First try biolookup
+            if name is None:
+                name = biolookup_client.get_name(node.db_ns, node.db_id)
+
+                # Then try bio ontology
+                if name is None:
+                    name = bio_ontology.get_name(*node.grounding())
+
+            # Skip unnamed nodes
+            if name is None:
+                continue
+
+            node.data["name"] = name
+            self.chemicals[pubchem_id] = node
 
         umls_mapper = UmlsMapper()
         self.side_effects = {}
@@ -157,33 +171,56 @@ class SIDERSideEffectProcessor(Processor):
             db_ns, db_id = get_ns_id_from_identifiers(prefix, identifier)
             if db_ns is None:
                 db_ns, db_id = prefix, identifier
+
+            if not name:
+                # Try bio ontology
+                name = bio_ontology.get_name(db_ns.upper(), db_id)
+
+            # If there is no name, skip it
+            if not name:
+                continue
+
             self.side_effects[umls_id] = Node.standardized(
                 db_ns=db_ns, db_id=db_id, name=name, labels=["BioEntity"]
             )
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over SIDER chemicals and side effects."""
-        yield from self.chemicals.values()
-        yield from self.side_effects.values()
+        yielded_nodes = set()
+        for node_collection in (self.chemicals.values(), self.side_effects.values()):
+            for node in node_collection:
+                if node.grounding() not in yielded_nodes:
+                    yield node
+                    yielded_nodes.add(node.grounding())
 
     def get_relations(self) -> Iterable[Relation]:
         """Iterate over SIDER side effect annotations."""
+        yielded_rels = set()
         for pubchem_id, umls_id in self.df[
             ["pubchem_id", "UMLS CUI from MedDRA"]
         ].values:
-            chemical = self.chemicals[pubchem_id]
-            indication = self.side_effects[umls_id]
-            yield Relation(
-                chemical.db_ns,
-                chemical.db_id,
-                indication.db_ns,
-                indication.db_id,
-                "has_side_effect",
-                dict(
-                    source=self.name,
-                    version=VERSION,
-                ),
-            )
+            chemical = self.chemicals.get(pubchem_id)
+            indication = self.side_effects.get(umls_id)
+            if chemical is not None and indication is not None:
+                rel = (
+                    chemical.db_ns,
+                    chemical.db_id,
+                    indication.db_ns,
+                    indication.db_id,
+                )
+                if rel not in yielded_rels:
+                    yield Relation(
+                        chemical.db_ns,
+                        chemical.db_id,
+                        indication.db_ns,
+                        indication.db_id,
+                        "has_side_effect",
+                        dict(
+                            source=self.name,
+                            version=VERSION,
+                        ),
+                    )
+                    yielded_rels.add(rel)
 
 
 def generate_curation_sheet():

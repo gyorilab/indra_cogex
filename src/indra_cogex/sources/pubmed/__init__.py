@@ -27,7 +27,7 @@ resources = pystow.module("indra", "cogex", "pubmed")
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
 year_index = 22
 max_file_index = 1114  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
-max_update_index = 1192  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
+max_update_index = 1405  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
 xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
@@ -40,7 +40,7 @@ class PubmedProcessor(Processor):
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.text_refs_path = pystow.join("indra", "db", name="text_refs.tsv.gz")
+        self.text_refs_path = pystow.join("indra", "db", name="text_refs_principal.tsv.gz")
 
     def get_nodes(self):
         pmid_node_type = "Publication"

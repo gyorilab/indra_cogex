@@ -1,16 +1,23 @@
 # -*- coding: utf-8 -*-
 
 """Processor for Bgee."""
-
-import os
+import logging
+from collections import defaultdict
 import pickle
 from pathlib import Path
 from typing import Union, Iterable, Tuple
 
+import pandas
 import pyobo
+import pystow
+from tqdm import tqdm
+from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+
+
+logger = logging.getLogger(__name__)
 
 
 class BgeeProcessor(Processor):
@@ -25,12 +32,11 @@ class BgeeProcessor(Processor):
         :param path: The path to the Bgee dump pickle. If none given, will look in the default location.
         """
         if path is None:
-            path = os.path.join(os.path.dirname(__file__), "expressions.pkl")
+            path = pystow.join("indra", "cogex", "bgee", name="expressions.pkl")
         elif isinstance(path, str):
             path = Path(path)
         self.rel_type = "expressed_in"
-        with open(path, "rb") as fh:
-            self.expressions = pickle.load(fh)
+        self.expressions = get_expressions(path)
 
     def get_nodes(self) -> Iterable[Node]:  # noqa:D102
         for context in self.expressions:
@@ -57,6 +63,41 @@ class BgeeProcessor(Processor):
                 yield Relation(
                     "HGNC", hgnc_id, context_ns, context_id, self.rel_type, data
                 )
+
+
+def get_expressions(fname):
+    if fname.exists():
+        with open(fname, "rb") as fh:
+            return pickle.load(fh)
+    else:
+        url = (
+            "https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/"
+            "Homo_sapiens_expr_simple.tsv.gz"
+        )
+        logger.info("Getting source tsv file")
+        df = pandas.read_csv(url, sep="\t")
+
+        # Filter to "present" Expression only (see
+        # https://bgee.org/support/gene-expression-calls#expression-column-9)
+        logger.info("Filtering to 'present' expressions")
+        df = df[df["Expression"] == "present"]
+
+        # Filter out rows where "Anatomical entity ID" contains '∩', e.g.
+        # "UBERON:0000991 ∩ CL:0000670". They should only be ~1 % of all rows.
+        logger.info("Filtering out identifiers containing '∩'")
+        df = df[~df["Anatomical entity ID"].str.contains("∩")]
+
+        expression = defaultdict(set)
+        for _, row in tqdm(
+            df.iterrows(), total=df.shape[0], desc="Getting expression mappings"
+        ):
+            hgnc_id = hgnc_client.get_hgnc_id(row["Gene name"])
+            if not hgnc_id:
+                continue
+            expression[row["Anatomical entity ID"]].add(hgnc_id)
+        with open(fname, "wb") as fh:
+            pickle.dump(expression, fh)
+        return expression
 
 
 def get_context(context) -> Tuple[str, str]:

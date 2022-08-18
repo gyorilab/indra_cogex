@@ -66,8 +66,17 @@ class ChemblIndicationsProcessor(Processor):
 
     def get_nodes(self) -> Iterable[Node]:
         """Iterate over ChEMBL chemicals and indications"""
-        yield from self.chemicals.values()
-        yield from self.indications.values()
+        yielded = set()
+        for node in self.chemicals.values():
+            grnd = node.grounding()
+            if grnd not in yielded:
+                yield node
+                yielded.add(grnd)
+        for node in self.indications.values():
+            grnd = node.grounding()
+            if grnd not in yielded:
+                yield node
+                yielded.add(grnd)
 
     def get_relations(self) -> Iterable[Relation]:
         """Iterate over ChEMBL indication annotations."""

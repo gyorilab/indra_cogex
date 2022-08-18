@@ -1,9 +1,9 @@
 import re
+import tarfile
 import logging
 
 import pandas as pd
 
-from collections import defaultdict
 from pathlib import Path
 from typing import Union
 
@@ -25,19 +25,15 @@ class CcleMutationsProcessor(Processor):
         self,
         path: Union[str, Path, None] = None,
     ):
-        default_path = pystow.join(
-            "indra",
-            "cogex",
-            "cbioportal",
-            "ccle_broad_2019",
-            name="data_mutations_extended.txt",
-        )
         if not path:
-            path = default_path
-        elif isinstance(path, str):
-            path = Path(path)
-
-        self.df = pd.read_csv(path, sep="\t", comment="#")
+            tar_path = get_data()
+            with tarfile.open(tar_path, "r") as fh:
+                with fh.extractfile("ccle_broad_2019/data_mutations.txt") as fhh:
+                    self.df = pd.read_csv(fhh, sep="\t", comment="#")
+        else:
+            if isinstance(path, str):
+                path = Path(path)
+            self.df = pd.read_csv(path, sep="\t", comment="#")
 
     def get_nodes(self):
         for hgnc_symbol in sorted(set(self.df["Hugo_Symbol"])):
@@ -74,16 +70,15 @@ class CcleCnaProcessor(Processor):
         self,
         path: Union[str, Path, None] = None,
     ):
-        default_path = pystow.join(
-            "indra", "cogex", "cbioportal", "ccle_broad_2019", name="data_CNA.txt"
-        )
-
         if not path:
-            path = default_path
-        elif isinstance(path, str):
-            path = Path(path)
-
-        self.df = pd.read_csv(path, sep="\t")
+            tar_path = get_data()
+            with tarfile.open(tar_path, "r") as fh:
+                with fh.extractfile("ccle_broad_2019/data_cna.txt") as fhh:
+                    self.df = pd.read_csv(fhh, sep="\t")
+        else:
+            if isinstance(path, str):
+                path = Path(path)
+            self.df = pd.read_csv(path, sep="\t")
 
     def get_nodes(self):
         # Collect all gene symbols from both tables
@@ -118,21 +113,17 @@ class CcleDrugResponseProcessor(Processor):
     node_types = ["BioEntity"]
 
     def __init__(self, path: Union[str, Path, None] = None):
-
-        default_path = pystow.join(
-            "indra",
-            "cogex",
-            "cbioportal",
-            "ccle_broad_2019",
-            name="data_drug_treatment_IC50.txt",
-        )
-
         if not path:
-            path = default_path
-        elif isinstance(path, str):
-            path = Path(path)
-
-        self.df = pd.read_csv(path, sep="\t")
+            tar_path = get_data()
+            with tarfile.open(tar_path, "r") as fh:
+                with fh.extractfile(
+                    "ccle_broad_2019/data_drug_treatment_ic50.txt"
+                ) as fhh:
+                    self.df = pd.read_csv(fhh, sep="\t")
+        else:
+            if isinstance(path, str):
+                path = Path(path)
+            self.df = pd.read_csv(path, sep="\t")
         self.drug_mappings = {}
 
     def get_nodes(self):
@@ -191,3 +182,10 @@ class CcleDrugResponseProcessor(Processor):
                 return db_ns, db_id
         logger.info("Could not match %s" % str(names))
         return None, None
+
+
+def get_data():
+    url = "https://cbioportal-datahub.s3.amazonaws.com/ccle_broad_2019.tar.gz"
+    return pystow.ensure(
+        "indra", "cogex", "cbioportal", name="ccle_broad_2019.tar.gz", url=url
+    )
