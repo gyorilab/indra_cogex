@@ -4,7 +4,7 @@ Tests functionalities related to the CoGEx web service serving INDRA Discovery
 import json
 
 from indra.statements import Evidence, Agent, Activation
-from indra_cogex.apps.utils import unicode_double_escape, _stmt_to_row
+from indra_cogex.apps.utils import unicode_escape, _stmt_to_row
 
 
 def test_unicode_double_escape():
@@ -12,11 +12,19 @@ def test_unicode_double_escape():
     true_beta = "β"
     double_escaped = r"\\u03b2"
 
+    true_alpha = "α"
+    quadruple_escaped = r"\\\\u03b1"
+
+    unequal_escaped = r"\\\\u03b1 and \\u03b2"
+    true_alpha_and_beta = r"α and β"
+
     # Test with unicode
-    assert unicode_double_escape(double_escaped) == true_beta
+    assert unicode_escape(double_escaped) == true_beta
+    assert unicode_escape(quadruple_escaped) == true_alpha
+    assert unicode_escape(unequal_escaped) == true_alpha_and_beta
 
     # Test with non-unicode
-    assert unicode_double_escape("a") == "a"
+    assert unicode_escape("a") == "a"
 
 
 def test__stmt_to_row():
