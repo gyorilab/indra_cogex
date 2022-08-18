@@ -164,8 +164,10 @@ class Processor(ABC):
         metadata = sorted(set(key for node in nodes for key in node.data))
         try:
             validate_headers(metadata)
-        except ValueError as e:
-            raise ValueError(f"Bad edge data type in header for {self.name}") from e
+        except TypeError as e:
+            logger.error(f"Bad node data type in header for {self.name}")
+            raise e
+
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
@@ -208,8 +210,9 @@ class Processor(ABC):
         metadata = sorted(set(key for rel in rels for key in rel.data))
         try:
             validate_headers(metadata)
-        except ValueError as e:
-            raise ValueError(f"Bad edge data type in header for {self.name}") from e
+        except TypeError as e:
+            logger.error(f"Bad edge data type in header for {self.name}")
+            raise e
         edge_rows = (
             (
                 norm_id(rel.source_ns, rel.source_id),
@@ -274,4 +277,4 @@ def validate_headers(headers: Iterable[str]) -> None:
     """Check for data types in the headers"""
     for header in headers:
         if ":" in header and header.split(":")[1] not in NEO4J_DATA_TYPES:
-            raise ValueError(f"Invalid header: {header}")
+            raise TypeError(f"Invalid header: {header}")
