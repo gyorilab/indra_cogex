@@ -21,6 +21,7 @@ __all__ = [
     "get_go",
     "get_wikipathways",
     "get_reactome",
+    "get_phenotype_gene_sets",
     "get_entity_to_targets",
     "get_entity_to_regulators",
 ]
@@ -35,7 +36,7 @@ GENE_SET_CACHE = {}
 def collect_gene_sets(
     query: str,
     *,
-    cache_file: Path = None,
+    cache_file: Path,
     client: Neo4jClient,
     include_ontology_children: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -260,6 +261,33 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
+    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+
+
+@autoclient()
+def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+    """Get HPO phenotype gene sets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each phenotype
+        gene set and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    cache_file = pystow.join("indra", "cogex", "app_cache", name="hpo.pkl")
+    query = dedent(
+        """\
+        MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
+        WHERE s.id STARTS WITH "HP" and gene.id STARTS WITH "hgnc"
+        RETURN s.id, s.name, collect(gene.id);
+    """
+    )
+    logger.info("caching phenotype gene sets with Cypher query: %s", query)
     return collect_gene_sets(client=client, query=query, cache_file=cache_file)
 
 
