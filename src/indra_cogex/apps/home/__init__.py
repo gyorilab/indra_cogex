@@ -44,7 +44,7 @@ def _figure_number(n: int):
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
-    ignore_labels = ["replaced_by"]
+    ignore_labels = ["replaced_by", "xref"]
     return render_template(
         "home.html",
         format_number=_figure_number,

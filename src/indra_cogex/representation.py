@@ -5,6 +5,7 @@
 
 __all__ = ["Node", "Relation", "indra_stmts_from_relations"]
 
+import codecs
 from typing import (
     Any,
     Collection,
@@ -343,6 +344,24 @@ def node_query(
     return rv
 
 
+class StatementJSONDecodeError(Exception):
+    pass
+
+
+def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) -> json:
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        if attempt < max_attempts:
+            json_str = codecs.escape_decode(json_str)[0].decode()
+            return load_statement_json(
+                json_str, attempt=attempt + 1, max_attempts=max_attempts
+            )
+    raise StatementJSONDecodeError(
+        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
+    )
+
+
 def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     """Convert a list of relations to INDRA Statements.
 
@@ -358,9 +377,6 @@ def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     :
         A list of INDRA Statements.
     """
-    stmts_json = [
-        json.loads(rel.data["stmt_json"].replace("\\\\", "\\").replace("\\\\", "\\"))
-        for rel in rels
-    ]
+    stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
     return stmts

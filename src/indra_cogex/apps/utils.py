@@ -1,3 +1,4 @@
+import codecs
 import json
 import logging
 import time
@@ -113,11 +114,36 @@ def render_statements(
     )
 
 
-def unicode_double_escape(s: str) -> str:
-    """Remove double escaped unicode characters in a string."""
-    return bytes(bytes(s, "ascii").decode("unicode-escape"), "ascii").decode(
-        "unicode_escape"
-    )
+class UnicodeEscapeError(Exception):
+    pass
+
+
+def unicode_escape(s: str, attempt: int = 1, max_attempts: int = 5) -> str:
+    """Remove extra escapes from unicode characters in a string
+
+    Parameters
+    ----------
+    s :
+        A string to remove extra escapes in unicode characters from
+    attempt :
+        The current attempt number.
+    max_attempts :
+        The maximum number of attempts to remove extra escapes.
+
+    Returns
+    -------
+    :
+        The string with extra escapes removed.
+    """
+    escaped = codecs.escape_decode(s)[0].decode()
+    # No more escaping needed
+    if escaped.count('\\\\u') == 0:
+        return bytes(escaped, "utf-8").decode("unicode_escape")
+    # Too many attempts, return the input
+    if attempt >= max_attempts:
+        raise UnicodeEscapeError(f"Could not remove extra escapes from {s}")
+    # Try again
+    return unicode_escape(escaped, attempt + 1, max_attempts)
 
 
 def format_stmts(
@@ -241,12 +267,14 @@ def _stmt_to_row(
         org_json = ev["original_json"]
         ev["original_json"] = dict(org_json)
 
-        # Fix unicode escaping
+        # Fix unicode escaping: the text will be JSON serialized, so we need to
+        # remove extra escapes or we will have strings like '\\\\\\\\u....'
+        # in the final data.
         text = ev["text"]
         if text:
             try:
-                ev["text"] = unicode_double_escape(text)
-            except UnicodeEncodeError:
+                ev["text"] = unicode_escape(text)
+            except UnicodeEscapeError:
                 unicode_errors += 1
 
     if unicode_errors:
