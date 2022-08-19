@@ -276,5 +276,16 @@ def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
 def validate_headers(headers: Iterable[str]) -> None:
     """Check for data types in the headers"""
     for header in headers:
-        if ":" in header and header.split(":")[1] not in NEO4J_DATA_TYPES:
-            raise TypeError(f"Invalid header: {header}")
+        # If : is in the header and there is something after it check if
+        # it's a valid data type
+        if ":" in header and header.split(":")[1]:
+            dtype = header.split(":")[1]
+
+            # Strip trailing '[]' for array types
+            if dtype.endswith("[]"):
+                dtype = dtype[:-2]
+
+            if dtype not in NEO4J_DATA_TYPES:
+                raise TypeError(
+                    f"Invalid header data type '{dtype}' for header {header}"
+                )
