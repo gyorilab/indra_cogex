@@ -2,6 +2,29 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from indra_cogex.sources import Processor
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import validate_headers
+
+
+def test_validator():
+    # test the validator function
+    validate_headers(["myint:int"])
+    validate_headers(["myintarr:int[]"])
+
+    try:
+        validate_headers(["badint:integer"])
+    except Exception as e:
+        # Check correct error type and that type info is in the error message
+        assert isinstance(e, TypeError)
+        assert "badint" in str(e)
+        assert "integer" in str(e)
+
+    try:
+        validate_headers(["badintarr:integer[]"])
+    except Exception as e:
+        # Check correct error type and that type info is in the error message
+        assert isinstance(e, TypeError)
+        assert "badintarr" in str(e)
+        assert "integer[]" in str(e)
 
 
 class MockProcessor(Processor, object):
