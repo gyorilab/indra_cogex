@@ -10,7 +10,8 @@ from indra_cogex.apps.utils import unicode_escape, _stmt_to_row
 def test_unicode_double_escape():
     """Test unicode_double_escape function"""
     true_beta = "β"
-    double_escaped = r"\\u03b2"
+    single_escaped_beta = r"\u03b2"
+    double_escaped_beta = r"\\u03b2"
 
     true_alpha = "α"
     quadruple_escaped = r"\\\\u03b1"
@@ -19,12 +20,14 @@ def test_unicode_double_escape():
     true_alpha_and_beta = r"α and β"
 
     # Test with unicode
-    assert unicode_escape(double_escaped) == true_beta
+    assert unicode_escape(single_escaped_beta) == true_beta
+    assert unicode_escape(double_escaped_beta) == true_beta
     assert unicode_escape(quadruple_escaped) == true_alpha
     assert unicode_escape(unequal_escaped) == true_alpha_and_beta
 
     # Test with non-unicode
     assert unicode_escape("a") == "a"
+    assert unicode_escape("no unicode in here") == "no unicode in here"
 
 
 def test__stmt_to_row():
