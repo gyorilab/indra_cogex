@@ -262,7 +262,7 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
             continue
 
 
-def validate_relations(relations):
+def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
     for idx, rel in enumerate(relations):
         try:
             assert_valid_node(rel.source_ns, rel.source_id)
