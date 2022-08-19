@@ -35,6 +35,35 @@ logger = logging.getLogger(__name__)
 # data stored in /usr/local/var/neo4j/data/databases
 
 
+# See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/
+# especially sections 4, 5 and 6
+NEO4J_DATA_TYPES = (
+    "int",
+    "long",
+    "float",
+    "double",
+    "boolean",
+    "byte",
+    "short",
+    "char",
+    "string",
+    "point",
+    "date",
+    "localtime",
+    "time",
+    "localdatetime",
+    "datetime",
+    "duration",
+    # Used in node files
+    "ID",
+    "LABEL",
+    # Used in relationship files
+    "START_ID",
+    "END_ID",
+    "TYPE",
+)
+
+
 class Processor(ABC):
     """A processor creates nodes and iterables to upload to Neo4j."""
 
@@ -128,11 +157,16 @@ class Processor(ABC):
             paths_by_type[node_type] = nodes_path
         return paths_by_type, dict(nodes_by_type)
 
-    @staticmethod
-    def _dump_nodes_to_path(nodes, nodes_path, sample_path=None, write_mode="wt"):
+    def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
+        try:
+            validate_headers(metadata)
+        except TypeError as e:
+            logger.error(f"Bad node data type in header for {self.name}")
+            raise e
+
         node_rows = (
             (
                 norm_id(node.db_ns, node.db_id),
@@ -173,6 +207,11 @@ class Processor(ABC):
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
         )
         metadata = sorted(set(key for rel in rels for key in rel.data))
+        try:
+            validate_headers(metadata)
+        except TypeError as e:
+            logger.error(f"Bad edge data type in header for {self.name}")
+            raise e
         edge_rows = (
             (
                 norm_id(rel.source_ns, rel.source_id),
@@ -222,7 +261,7 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
             continue
 
 
-def validate_relations(relations):
+def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
     for idx, rel in enumerate(relations):
         try:
             assert_valid_node(rel.source_ns, rel.source_id)
@@ -231,3 +270,21 @@ def validate_relations(relations):
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
             continue
+
+
+def validate_headers(headers: Iterable[str]) -> None:
+    """Check for data types in the headers"""
+    for header in headers:
+        # If : is in the header and there is something after it check if
+        # it's a valid data type
+        if ":" in header and header.split(":")[1]:
+            dtype = header.split(":")[1]
+
+            # Strip trailing '[]' for array types
+            if dtype.endswith("[]"):
+                dtype = dtype[:-2]
+
+            if dtype not in NEO4J_DATA_TYPES:
+                raise TypeError(
+                    f"Invalid header data type '{dtype}' for header {header}"
+                )
