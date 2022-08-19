@@ -60,7 +60,7 @@ NEO4J_DATA_TYPES = (
     # Used in relationship files
     "START_ID",
     "END_ID",
-    "TYPE"
+    "TYPE",
 )
 
 
@@ -157,8 +157,7 @@ class Processor(ABC):
             paths_by_type[node_type] = nodes_path
         return paths_by_type, dict(nodes_by_type)
 
-    def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None,
-                            write_mode="wt"):
+    def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
