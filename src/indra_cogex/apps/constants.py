@@ -17,7 +17,6 @@ edge_labels = {
     "expressed_in": "Gene Expressions",
     "copy_number_altered_in": "CNVs",
     "mutated_in": "Mutations",
-    "xref": "Xrefs",
     "partof": "Part Of",
     "has_trial": "Disease Trials",
     "isa": "Subclasses",
