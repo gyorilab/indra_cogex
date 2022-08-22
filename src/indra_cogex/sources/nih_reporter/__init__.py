@@ -202,7 +202,10 @@ def _read_first_df(zip_file_path):
     """Extract a single CSV file from a zip file given its path."""
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         return pandas.read_csv(
-            zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
+            zip_ref.open(zip_ref.filelist[0], "r"),
+            encoding="latin1",
+            low_memory=False,
+            error_bad_lines=False,
         )
 
 
