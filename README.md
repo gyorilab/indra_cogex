@@ -26,6 +26,8 @@ non-causal contextual relations including properties, ontology, and data.
 | [Reactome](https://reactome.org/)                                   | haspart                             | The pathway represented by the source node contains the gene represented by the target node.                                   |
 | [WikiPathways](https://www.wikipathways.org/)                       | haspart                             | The pathway represented by the source node contains the gene represented by the target node.                                   |
 | [Enzyme Codes](https://www.ebi.ac.uk/intenz/)                       | has_activity                        | The relation between a gene and its enzyme class(es).                                                                          |
+| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | has_phenotype                       | The relation between a disease and its phenotypes.                                                                             |
+| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | phenotype_has_gene                  | The relation between a phenotype its associated genes.                                                                         |
 
 ## Installation
 
