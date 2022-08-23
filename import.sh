@@ -41,5 +41,5 @@ python -m indra_cogex.sources --process --assemble --run_import $COGEX_SUDO_ARG
 $NEO4J_PREFIX neo4j start
 
 # Wait for the server to start up and then build the indexes
-sleep 10
+sleep 45
 python -m indra_cogex.indexing --all --exist-ok
