@@ -20,7 +20,7 @@ downloads at: https://reporter.nih.gov/exporter available as zipped csv files pe
 import re
 import logging
 import datetime
-from typing import Iterable
+from typing import Iterable, Any
 import zipfile
 from collections import defaultdict
 import pandas
@@ -239,6 +239,8 @@ def download_files(
             )
 
 
-def newline_escape(text: str) -> str:
+def newline_escape(text: Any) -> Any:
     """Escape newlines from text"""
-    return text.replace('\n', '\\n')
+    if isinstance(text, str):
+        return text.replace("\n", "\\n")
+    return text
