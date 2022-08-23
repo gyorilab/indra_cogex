@@ -26,8 +26,11 @@ non-causal contextual relations including properties, ontology, and data.
 | [Reactome](https://reactome.org/)                                   | haspart                             | The pathway represented by the source node contains the gene represented by the target node.                                   |
 | [WikiPathways](https://www.wikipathways.org/)                       | haspart                             | The pathway represented by the source node contains the gene represented by the target node.                                   |
 | [Enzyme Codes](https://www.ebi.ac.uk/intenz/)                       | has_activity                        | The relation between a gene and its enzyme class(es).                                                                          |
-| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | has_phenotype                       | The disease represented by the source has a phenotype represented by the target.                                                                             |
-| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | phenotype_has_gene                  | The phenotype represented by the source has an associated gene represented by the target.                                                                         |
+| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | has_phenotype                       | The disease represented by the source has a phenotype represented by the target.                                               |
+| [Human Phenotype Ontology](https://hpo.jax.org/app/)                | phenotype_has_gene                  | The phenotype represented by the source has an associated gene represented by the target.                                      |
+| [NIH reporter](https://reporter.nih.gov)                            | has_publication                     | The NIH Reporter Project represented by the source has an associated publication represented by the target.                    |
+| [NIH reporter](https://reporter.nih.gov)                            | has_clinical_trial                  | The NIH Reporter Project represented by the source has an associated clinical trial represented by the target.                 |
+| [NIH reporter](https://reporter.nih.gov)                            | has_patent                          | The NIH Reporter Project represented by the source has an associated patent represented by the target.                         |
 
 ## Installation
 

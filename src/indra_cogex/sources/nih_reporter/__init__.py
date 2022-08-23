@@ -20,7 +20,7 @@ downloads at: https://reporter.nih.gov/exporter available as zipped csv files pe
 import re
 import logging
 import datetime
-from typing import Iterable
+from typing import Iterable, Any
 import zipfile
 from collections import defaultdict
 import pandas
@@ -87,11 +87,13 @@ class NihReporterProcessor(Processor):
 
         # Download the data files if they are not present
         if download or force_download:
+            from datetime import datetime
+            last_year = datetime.utcnow().year - 1
             logger.info(
                 "Downloading NIH RePORTER data files %s force redownload..."
                 % ("with" if force_download else "without")
             )
-            download_files(base_folder, force=force_download)
+            download_files(base_folder, force=force_download, last_year=last_year)
 
         # Collect all the data files
         for file_path in base_folder.base.iterdir():
@@ -111,7 +113,7 @@ class NihReporterProcessor(Processor):
                 if not pandas.isna(row["SUBPROJECT_ID"]):
                     continue
                 data = {
-                    pc: row[pc] if not pandas.isna(row[pc]) else None
+                    pc: newline_escape(row[pc]) if not pandas.isna(row[pc]) else None
                     for pc in project_columns
                     # Not all columns are available in all years
                     if pc in row
@@ -202,7 +204,10 @@ def _read_first_df(zip_file_path):
     """Extract a single CSV file from a zip file given its path."""
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         return pandas.read_csv(
-            zip_ref.open(zip_ref.filelist[0], "r"), encoding="latin1", low_memory=False
+            zip_ref.open(zip_ref.filelist[0], "r"),
+            encoding="latin1",
+            low_memory=False,
+            error_bad_lines=False,
         )
 
 
@@ -234,3 +239,10 @@ def download_files(
                 name=fname_prefixes[subset] + str(timestamp) + ".csv",
                 force=force,
             )
+
+
+def newline_escape(text: Any) -> Any:
+    """Escape newlines from text"""
+    if isinstance(text, str):
+        return text.replace("\n", "\\n")
+    return text

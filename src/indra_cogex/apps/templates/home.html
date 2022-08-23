@@ -66,6 +66,8 @@
                 {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
                 {{ count_column(node_counter, "Publication", "Publications", "book") }}
                 {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
+                {{ count_column(node_counter, "ResearchProject", "Research Projects", "flask") }}
+                {{ count_column(node_counter, "Patent", "Patents", "copyright") }}
             </div>
             <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
                 {% for edge_type, _ in edge_counter.most_common() %}
