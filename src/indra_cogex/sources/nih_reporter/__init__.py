@@ -87,11 +87,13 @@ class NihReporterProcessor(Processor):
 
         # Download the data files if they are not present
         if download or force_download:
+            from datetime import datetime
+            last_year = datetime.utcnow().year - 1
             logger.info(
                 "Downloading NIH RePORTER data files %s force redownload..."
                 % ("with" if force_download else "without")
             )
-            download_files(base_folder, force=force_download)
+            download_files(base_folder, force=force_download, last_year=last_year)
 
         # Collect all the data files
         for file_path in base_folder.base.iterdir():
