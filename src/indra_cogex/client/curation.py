@@ -415,11 +415,9 @@ def get_entity_evidence_counts(
 ) -> Mapping[int, int]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH
-            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
             a.id = "{prefix}:{identifier}"
-            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND NOT r.has_database_evidence
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
