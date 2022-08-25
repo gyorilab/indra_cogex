@@ -850,7 +850,7 @@ def get_evidences_for_stmt_hashes(
         MATCH (n:Evidence)
         WHERE
             n.stmt_hash IN [{stmt_hashes_str}]
-            AND NOT apoc.convert.fromJsonMap(n.evidence)['source_api'] IN ['medscan']
+            AND n.source_api <> 'medscan'
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
     result = client.query_tx(query)
