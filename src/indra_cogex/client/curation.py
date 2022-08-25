@@ -442,19 +442,13 @@ def get_conflicting_statements(
         MATCH
             p=(a:BioEntity)-[r1:indra_rel]->(b:BioEntity)<-[r2:indra_rel]-(a:BioEntity)
         WITH
-            a, b, p,
-            r1, apoc.convert.fromJsonMap(r1.source_counts) as r1_sources,
-            r2, apoc.convert.fromJsonMap(r1.source_counts) as r2_sources,
-            r1.evidence_count + r2.evidence_count as total_evidence_count
+            p, r1, r2, r1.evidence_count + r2.evidence_count as total_evidence_count
         WHERE
             a.id STARTS WITH 'hgnc'
             AND b.id STARTS WITH 'hgnc'
             AND r1.stmt_type in ['{positive_stmt_type.__name__}']
             AND r2.stmt_type in ['{negative_stmt_type.__name__}']
-            AND (
-                NOT apoc.coll.intersection(keys(r1_sources), [{databases_str}])
-                OR NOT apoc.coll.intersection(keys(r2_sources), [{databases_str}])
-            )
+            AND (NOT r1.has_database_evidence OR NOT r2.has_database_evidence)
         RETURN p
         ORDER BY total_evidence_count DESC
         {_limit_line(limit)}
