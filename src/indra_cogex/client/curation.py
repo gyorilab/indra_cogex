@@ -156,9 +156,6 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-databases_str = ", ".join(f'"{d}"' for d in sorted(db_sources))
-
-
 def _limit_line(limit: Optional[int] = None) -> str:
     if limit is None:
         return ""
