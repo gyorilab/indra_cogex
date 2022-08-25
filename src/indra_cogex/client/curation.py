@@ -189,14 +189,11 @@ def get_ppi_evidence_counts(
     """
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH
-            a, b, r, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
             a.id STARTS WITH 'hgnc'
-            and b.id STARTS WITH 'hgnc'
-            and r.stmt_type in ["Complex"]
-            // This checks that no sources are database
-            and not apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND b.id STARTS WITH 'hgnc'
+            AND r.stmt_type = 'Complex'
+            AND NOT r.has_database_evidence
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
         {_limit_line(limit)}
