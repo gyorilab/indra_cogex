@@ -41,6 +41,7 @@ APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
+STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 
 # Set VUE parameters
