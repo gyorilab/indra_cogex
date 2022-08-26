@@ -10,7 +10,6 @@ from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
-from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
     Complex,
@@ -27,6 +26,7 @@ from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
+from ..apps.proxies import curation_cache
 from ..representation import indra_stmts_from_relations
 from ..resources import ensure_disprot
 
@@ -34,7 +34,6 @@ __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
-    "get_curations",
     "get_ppi_evidence_counts",
     "get_goa_evidence_counts",
     "get_tf_statements",
@@ -59,7 +58,7 @@ def _get_text(stmt: Statement) -> Optional[str]:
 
 
 def _get_curated_statement_hashes() -> Set[int]:
-    stmt_jsons = get_curations()
+    stmt_jsons = curation_cache.get_curations()
     return {curation["pa_hash"] for curation in stmt_jsons}
 
 
