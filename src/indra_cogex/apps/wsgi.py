@@ -15,7 +15,8 @@ from indra_cogex.apps.constants import (
     TEMPLATES_DIR,
     STATEMENT_CURATION_CACHE,
 )
-from indra_cogex.apps.curator import curator_blueprint, CurationCache
+from indra_cogex.apps.curator import curator_blueprint
+from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
