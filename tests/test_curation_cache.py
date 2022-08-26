@@ -49,6 +49,19 @@ class TestCurationCache(unittest.TestCase):
         statement_hashes = curation_cache.get_correct_statement_hashes()
         self.assertEqual({1, 2}, statement_hashes)
 
+    def test_get_multiple_hashes(self):
+        curations = [
+            _curation(pa_hash=1, source_hash=1, tag="correct"),
+            _curation(pa_hash=1, source_hash=1, tag="incorrect"),
+            _curation(pa_hash=2, source_hash=2, tag="correct"),
+            _curation(pa_hash=2, source_hash=21, tag="correct"),
+            _curation(pa_hash=3, source_hash=3, tag="incorrect"),
+        ]
+        curation_cache = MockCurationCache(curations)
+        curations = curation_cache.get_curations(pa_hash=[1, 2])
+        expected = [curation_cache._process_curation(c) for c in curations[:4]]
+        self.assertEqual(expected, curations)
+
     def test_get_recent_curations(self):
         # this simulates the scenario when a curation is later amended
         input_curations = [
