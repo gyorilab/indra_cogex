@@ -1,5 +1,6 @@
 import codecs
 import json
+import numpy
 import logging
 import time
 from collections import defaultdict
@@ -215,7 +216,7 @@ def format_stmts(
     cur_counts = count_curations(curations, stmts_by_hash)
     if cur_counts:
         assert isinstance(
-            list(cur_counts.keys())[0], int
+            list(cur_counts.keys())[0], (int, numpy.integer)
         ), f"{list(cur_counts.keys())[0]} is not an int"
         key = list(cur_counts.keys())[0]
         assert isinstance(
@@ -315,7 +316,8 @@ def _stmt_to_row(
             },
         )
     if cur_counts and hash_int in cur_counts:
-        num = cur_counts[hash_int]["this"]["correct"]
+        # Ensure numpy ints are converted to json serializable ints
+        num = int(cur_counts[hash_int]["this"]["correct"])
         badges.append(
             {
                 "label": "correct_this",
