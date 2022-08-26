@@ -259,3 +259,23 @@ class CurationCache:
             for curation in self.get_curation_cache(only_most_recent=only_most_recent)
             if curation["tag"] == "correct"
         }
+
+    def get_curated_statement_hashes(self, only_most_recent: bool = False) -> Set[int]:
+        """Get the set of all statement hashes that have curated evidence
+
+        Parameters
+        ----------
+        only_most_recent :
+            If True, filter out all but the most recent curation entry
+            (based on date) for all given curator/statement/evidence triples.
+
+        Returns
+        -------
+        :
+            A set of statement hashes that have any evidence that has been
+            curated
+        """
+        return {
+            curation["pa_hash"]
+            for curation in self.get_curation_cache(only_most_recent=only_most_recent)
+        }
