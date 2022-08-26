@@ -17,8 +17,7 @@ from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.statements import Statement
 from indralab_auth_tools.auth import resolve_auth
 
-from indra_cogex.apps.curator import CurationCache
-from indra_cogex.apps.proxies import client
+from indra_cogex.apps.proxies import client, curation_cache
 from indra_cogex.apps.queries_web.helpers import process_result
 from indra_cogex.client.queries import (
     enrich_statements,
@@ -28,6 +27,7 @@ from indra_cogex.client.queries import (
 )
 
 from ..constants import LOCAL_VUE, VUE_SRC_CSS, VUE_SRC_JS, sources_dict
+from ..curation_cache import Curations
 from ..utils import format_stmts
 from ...representation import Relation
 
@@ -36,12 +36,11 @@ logger = logging.getLogger(__name__)
 data_display_blueprint = Blueprint("data_display", __name__)
 
 MORE_EVIDENCES_LIMIT = 10
-curation_cache = CurationCache()
 
 
 def format_ev_json(
     ev_list: Iterable[Dict[str, Any]],
-    curations_for_stmt: Dict[int, List[Dict[str, any]]],
+    curations_for_stmt: Dict[int, Curations],
     correct_tags: Optional[Set[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Format the evidence json for display by the Vue component
@@ -157,9 +156,6 @@ def get_evidence(stmt_hash):
         #     but for that to work, format_stmts() needs to be refactored
         #     and the part that goes through the evidences should be
         #     refactored out
-        #  2. The call to get curations is taking most of the time, it would
-        #     be good to cache the curations for the stmt_hash and only
-        #     fetch them at a regular interval or when the user requests it
 
         # Check if user is authenticated to allow medscan evidence
         user, roles = resolve_auth(dict(request.args))
@@ -198,8 +194,15 @@ def get_evidence(stmt_hash):
         # Get the evidence counts
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
 
+        # Get curations from the curation cache
+        curations = curation_cache.get_curations(
+            pa_hash=[int(r.data["stmt_hash"]) for r in relations]
+        )
+
         # Get the formatted evidence rows
-        stmt_rows = format_stmts(stmts=stmt_iter, evidence_counts=ev_counts)
+        stmt_rows = format_stmts(
+            stmts=stmt_iter, evidence_counts=ev_counts, curations=curations
+        )
 
         # Return the evidence json for the statement
 
@@ -239,7 +242,7 @@ def statement_display():
             stmt_hash_list, client=client
         )
 
-        # Get statements and assign belief from the meta data
+        # Get statements and assign belief from the metadata
         stmt_iter = []
         source_counts = {}
         for rel in relations:
@@ -263,10 +266,14 @@ def statement_display():
                 client=client,
             )
 
+        # Get curations
+        curations = curation_cache.get_curations(pa_hash=list(stmt_hash_list))
+
         # Get the formatted evidence rows
         stmts = format_stmts(
             stmts=stmt_iter,
             evidence_counts=ev_counts,
+            curations=curations,
             source_counts_per_hash=source_counts,
             remove_medscan=remove_medscan,
         )
