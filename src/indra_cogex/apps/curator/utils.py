@@ -3,9 +3,8 @@
 from collections import Counter, defaultdict
 from typing import Any, Iterable, List, Mapping, Tuple
 
-from indra.sources.indra_db_rest import get_curations
-
 from indra_cogex.client import Neo4jClient, autoclient
+from indra_cogex.apps.proxies import curation_cache
 
 __all__ = [
     "get_conflict_evidence_counts",
@@ -37,7 +36,7 @@ def iterate_conflicts(
 ) -> Iterable[Tuple[int, int, bool]]:
     """Iterate hashes of statements and their resolution status."""
     if curations is None:
-        curations = get_curations()
+        curations = curation_cache.get_curations()
     stmt_hash_to_counter = _group_curations(curations)
     query = f"""\
         MATCH (:BioEntity)-[r:indra_rel]->(:BioEntity)
