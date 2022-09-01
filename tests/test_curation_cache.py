@@ -1,6 +1,8 @@
 import unittest
 from datetime import datetime
 
+import pandas as pd
+
 from indra_cogex.apps.curation_cache import CurationCache, Curations
 
 
@@ -18,6 +20,16 @@ class MockCurationCache(CurationCache):
 
     def refresh_curations(self):
         pass
+
+    @staticmethod
+    def _get_curation_df(curations) -> pd.DataFrame:
+        rv = pd.DataFrame(curations).astype(
+            dtype={
+                "pa_hash": pd.Int64Dtype(),
+                "source_hash": pd.Int64Dtype(),
+            }
+        )
+        return rv
 
 
 TEST_DATE = "Thu, 29 Nov 2018 18:00:08"
