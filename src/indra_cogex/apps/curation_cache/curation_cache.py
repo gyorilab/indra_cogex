@@ -64,7 +64,13 @@ class CurationCache:
 
     @staticmethod
     def _process_curation(curation) -> Curation:
-        curation["date"] = dateutil.parser.parse(curation["date"])
+        # Extra type check for tests
+        if isinstance(curation["date"], datetime):
+            pass
+        elif isinstance(curation["date"], str):
+            curation["date"] = dateutil.parser.parse(curation["date"])
+        else:
+            raise TypeError(f"Unhandled type for date {type(curation['date'])}")
         return curation
 
     def get_curation_cache(
