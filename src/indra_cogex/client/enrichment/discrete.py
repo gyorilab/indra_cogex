@@ -117,7 +117,7 @@ def gene_ontology_single_ora(
     go_term :
         GO term to test
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
 
     Returns
     -------
@@ -186,7 +186,7 @@ def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFra
     client :
         Neo4jClient
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -210,7 +210,7 @@ def wikipathways_ora(
     client :
         Neo4jClient
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -236,7 +236,7 @@ def reactome_ora(
     client :
         Neo4jClient
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -259,7 +259,7 @@ def phenotype_ora(
     Parameters
     ----------
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     client :
         Neo4jClient
     **kwargs :
@@ -295,7 +295,7 @@ def indra_downstream_ora(
     client :
         Neo4jClient
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     minimum_evidence_count :
         Minimum number of evidences to consider a causal relationship
     minimum_belief :
@@ -340,7 +340,7 @@ def indra_upstream_ora(
     client :
         Neo4jClient
     gene_ids :
-        List of gene identifiers
+        List of HGNC gene identifiers
     minimum_evidence_count :
         Minimum number of evidences to consider a causal relationship
     minimum_belief :
