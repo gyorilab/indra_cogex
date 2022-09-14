@@ -119,6 +119,7 @@ def reverse_causal_reasoning(
             minimum_belief=minimum_belief,
         ),
         client=client,
+        cache_file=...,  # FIXME
     )
     database_negative = collect_gene_sets(
         query=_query(
@@ -127,6 +128,7 @@ def reverse_causal_reasoning(
             minimum_belief=minimum_belief,
         ),
         client=client,
+        cache_file=...,  # FIXME
     )
     entities = set(database_positive).union(database_negative)
 
