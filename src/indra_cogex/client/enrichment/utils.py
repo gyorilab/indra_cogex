@@ -3,9 +3,9 @@
 """Utilities for getting gene sets."""
 
 import logging
+import pickle
 from collections import defaultdict
 from pathlib import Path
-import pickle
 from textwrap import dedent
 from typing import Dict, Optional, Set, Tuple
 
@@ -283,7 +283,7 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
     query = dedent(
         """\
         MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
-        WHERE s.id STARTS WITH "HP" and gene.id STARTS WITH "hgnc"
+        WHERE s.id STARTS WITH "hp" and gene.id STARTS WITH "hgnc"
         RETURN s.id, s.name, collect(gene.id);
     """
     )
