@@ -22,7 +22,7 @@ __all__ = [
     "Curations",
 ]
 
-Curation = Dict[str, Optional[Union[str, int]]]
+Curation = Dict[str, Union[str, int, None]]
 Curations = List[Curation]
 
 
