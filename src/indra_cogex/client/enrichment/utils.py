@@ -36,16 +36,14 @@ GENE_SET_CACHE = {}
 def collect_gene_sets(
     query: str,
     *,
-    cache_file: Path,
     client: Neo4jClient,
     include_ontology_children: bool = False,
+    cache_file: Optional[Path] = None,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
     Parameters
     ----------
-    cache_file :
-        The path to the cache file.
     query:
         A cypher query
     client :
@@ -53,6 +51,8 @@ def collect_gene_sets(
     include_ontology_children :
         If True, extend the gene set associations with associations from
         child terms using the indra ontology
+    cache_file :
+        The path to the cache file.
 
     Returns
     -------
@@ -60,36 +60,37 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if cache_file.as_posix() in GENE_SET_CACHE:
+    if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         return GENE_SET_CACHE[cache_file.as_posix()]
-    elif cache_file.exists():
+    elif cache_file is not None and cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             res = pickle.load(fh)
-    else:
+        GENE_SET_CACHE[cache_file.as_posix()] = res
+        return res
+
+    if cache_file is not None:
         logger.info(
             "Running new query and caching results into %s" % cache_file.as_posix()
         )
-        curie_to_hgnc_ids = defaultdict(set)
-        for result in client.query_tx(query):
-            curie = result[0]
-            name = result[1]
-            hgnc_ids = {
-                hgnc_curie.lower().replace("hgnc:", "")
-                if hgnc_curie.lower().startswith("hgnc:")
-                else hgnc_curie.lower()
-                for hgnc_curie in result[2]
-            }
-            curie_to_hgnc_ids[curie, name].update(hgnc_ids)
-        res = dict(curie_to_hgnc_ids)
+    curie_to_hgnc_ids = defaultdict(set)
+    for curie, name, hgnc_curies in client.query_tx(query):
+        curie_to_hgnc_ids[curie, name].update(
+            hgnc_curie.lower().replace("hgnc:", "")
+            if hgnc_curie.lower().startswith("hgnc:")
+            else hgnc_curie.lower()
+            for hgnc_curie in hgnc_curies
+        )
+    res = dict(curie_to_hgnc_ids)
 
-        if include_ontology_children:
-            extend_by_ontology(res)
+    if include_ontology_children:
+        extend_by_ontology(res)
 
+    if cache_file is not None:
         with open(cache_file, "wb") as fh:
             pickle.dump(res, fh)
-    GENE_SET_CACHE[cache_file.as_posix()] = res
+        GENE_SET_CACHE[cache_file.as_posix()] = res
     return res
 
 
