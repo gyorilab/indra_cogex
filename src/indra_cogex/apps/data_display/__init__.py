@@ -38,8 +38,8 @@ data_display_blueprint = Blueprint("data_display", __name__)
 MORE_EVIDENCES_LIMIT = 10
 
 
-def stringify_curations(curation_list: Curations):
-    """Turn pa_hash and source_hash entries to strings for JSs compatibility
+def stringify_curations(curation_list: Curations) -> Curations:
+    """Turn pa_hash and source_hash entries to strings for JS compatibility
 
     Parameters
     ----------
@@ -47,11 +47,19 @@ def stringify_curations(curation_list: Curations):
         A list of curations to change the type for the source_hash and
         pa_hash in.
     """
+    stringed_curations = []
     for curation in curation_list:
+        # stringify hashes
         pa_hash = str(curation["pa_hash"])
         source_hash = str(curation["source_hash"])
-        curation["pa_hash"] = pa_hash
-        curation["source_hash"] = source_hash
+
+        # Copy curation dict and update the hashes to str versions
+        curation_copy = curation.copy()
+        curation_copy["pa_hash"] = pa_hash
+        curation_copy["source_hash"] = source_hash
+        stringed_curations.append(curation_copy)
+
+    return stringed_curations
 
 
 def format_ev_json(
@@ -373,5 +381,5 @@ def submit_curation_endpoint(hash_val: str):
 @data_display_blueprint.route("/curation/list/<stmt_hash>/<src_hash>", methods=["GET"])
 def list_curations(stmt_hash, src_hash):
     curations_list = curation_cache.get_curations(int(stmt_hash), source_hash=int(src_hash))
-    stringify_curations(curations_list)
+    curations_list = stringify_curations(curations_list)
     return jsonify(curations_list)
