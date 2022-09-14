@@ -22,7 +22,7 @@
             $("#table-go").DataTable(datatablesConf);
             $("#table-reactome").DataTable(datatablesConf);
             $("#table-wikipathways").DataTable(datatablesConf);
-            $("#table-phenotype").DataTable(datatablesConf);
+            $("#table-hpo").DataTable(datatablesConf);
             {% if indra_downstream_results is not none %}
             $("#table-downstream").DataTable(datatablesConf);
             $("#table-upstream").DataTable(datatablesConf);
@@ -95,6 +95,12 @@
                             WikiPathways
                         </a>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="hpo-tab" data-toggle="tab" href="#hpo" role="tab"
+                           aria-controls="hpo" aria-selected="false">
+                            HPO
+                        </a>
+                    </li>
                     {% if indra_downstream_results is not none %}
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="downstream-tab" data-toggle="tab" href="#downstream" role="tab"
@@ -141,13 +147,13 @@
                         </p>
                         {{ render_table(wikipathways_results, "table-wikipathways") }}
                     </div>
-                    <div class="tab-pane" id="wikipathways" role="tabpanel" aria-labelledby="wikipathways-tab">
+                    <div class="tab-pane" id="hpo" role="tabpanel" aria-labelledby="hpo-tab">
                         <p>
                             These results are acquired by running over-representation analysis using Fisher's exact test
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to phenotypes in
                             the <a href="https://hpo.jax.org/">Human Phenotype Ontology annotation database</a>.
                         </p>
-                        {{ render_table(phenotype_results, "table-phenotype") }}
+                        {{ render_table(phenotype_results, "table-hpo") }}
                     </div>
                     {% if indra_downstream_results is not none %}
                         <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
