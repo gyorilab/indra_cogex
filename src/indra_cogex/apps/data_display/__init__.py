@@ -38,6 +38,22 @@ data_display_blueprint = Blueprint("data_display", __name__)
 MORE_EVIDENCES_LIMIT = 10
 
 
+def stringify_curations(curation_list: Curations):
+    """Turn pa_hash and source_hash entries to strings for JSs compatibility
+
+    Parameters
+    ----------
+    curation_list :
+        A list of curations to change the type for the source_hash and
+        pa_hash in.
+    """
+    for curation in curation_list:
+        pa_hash = str(curation["pa_hash"])
+        source_hash = str(curation["source_hash"])
+        curation["pa_hash"] = pa_hash
+        curation["source_hash"] = source_hash
+
+
 def format_ev_json(
     ev_list: Iterable[Dict[str, Any]],
     curations_for_stmt: Dict[int, Curations],
