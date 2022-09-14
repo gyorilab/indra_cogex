@@ -8,13 +8,12 @@ import flask
 from flask import Response, abort, redirect, render_template, url_for
 from flask_jwt_extended import jwt_optional
 from flask_wtf import FlaskForm
-from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from wtforms import BooleanField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps import proxies
-from indra_cogex.apps.proxies import client
+from indra_cogex.apps.proxies import client, curation_cache
 from indra_cogex.client.curation import (
     get_disprot_statements,
     get_dub_statements,
@@ -107,7 +106,7 @@ def _enrich_render_statements(
     curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> Response:
     if curations is None:
-        curations = get_curations()
+        curations = curation_cache.get_curations()
     stmts = remove_curated_statements(stmts, curations=curations)
     stmts = stmts[: proxies.limit]
 
@@ -187,7 +186,7 @@ def _curate_mesh_helper(
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
-        curations = list(get_curations())
+        curations = curation_cache.get_curations()
         logger.debug(f"Got {len(curations)} curations")
 
     logger.info(f"Getting statements for mesh:{term}")
@@ -275,7 +274,7 @@ def _render_evidence_counts(
     filter_curated: bool = True,
     description: Optional[str] = None,
 ) -> Response:
-    curations = get_curations()
+    curations = curation_cache.get_curations()
     logger.debug(f"loaded {len(curations):,} curations")
     # Prepare prioritized statement hash list sorted by decreasing evidence count
     pa_hashes = sorted(evidence_counts, key=evidence_counts.get, reverse=True)
@@ -566,7 +565,7 @@ def _curate_paper(
         (prefix, identifier), return_evidence_counts=True
     )
     if curations is None:
-        curations = get_curations()
+        curations = curation_cache.get_curations()
     if filter_curated:
         stmts = remove_curated_evidences(stmts, curations=curations)
     return render_statements(

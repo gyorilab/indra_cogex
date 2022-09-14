@@ -10,7 +10,6 @@ from indra.assemblers.indranet import IndraNetAssembler
 from indra.databases.hgnc_client import get_current_hgnc_id, kinases, phosphatases, tfs
 from indra.databases.mirbase_client import _hgnc_id_to_mirbase_id
 from indra.ontology.bio import bio_ontology
-from indra.sources.indra_db_rest import get_curations
 from indra.statements import (
     Activation,
     Complex,
@@ -27,6 +26,7 @@ from networkx.algorithms import edge_betweenness_centrality
 
 from .neo4j_client import Neo4jClient, autoclient
 from .subnetwork import indra_subnetwork_go
+from ..apps.proxies import curation_cache
 from ..representation import indra_stmts_from_relations
 from ..resources import ensure_disprot
 
@@ -34,7 +34,6 @@ __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
-    "get_curations",
     "get_ppi_evidence_counts",
     "get_goa_evidence_counts",
     "get_tf_statements",
@@ -59,7 +58,7 @@ def _get_text(stmt: Statement) -> Optional[str]:
 
 
 def _get_curated_statement_hashes() -> Set[int]:
-    stmt_jsons = get_curations()
+    stmt_jsons = curation_cache.get_curations()
     return {curation["pa_hash"] for curation in stmt_jsons}
 
 
@@ -156,9 +155,6 @@ def get_go_curation_hashes(
     return get_prioritized_stmt_hashes(stmts)
 
 
-databases_str = ", ".join(f'"{d}"' for d in sorted(db_sources))
-
-
 def _limit_line(limit: Optional[int] = None) -> str:
     if limit is None:
         return ""
@@ -189,14 +185,11 @@ def get_ppi_evidence_counts(
     """
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH
-            a, b, r, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
             a.id STARTS WITH 'hgnc'
-            and b.id STARTS WITH 'hgnc'
-            and r.stmt_type in ["Complex"]
-            // This checks that no sources are database
-            and not apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND b.id STARTS WITH 'hgnc'
+            AND r.stmt_type = 'Complex'
+            AND NOT r.has_database_evidence
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
         {_limit_line(limit)}
@@ -387,16 +380,16 @@ def _help(
 ) -> Mapping[int, int]:
     if object_prefix is None:
         object_prefix = "hgnc"
+    # Get relations that are **not** medscan only and are **not** supported by
+    # database evidence
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH
-            a, b, r, p, keys(apoc.convert.fromJsonMap(r.source_counts)) as sources
         WHERE
             a.id in {sources!r}
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH '{object_prefix}'
-            AND NOT apoc.coll.intersection(sources, [{databases_str}])
-            AND NOT sources = ['medscan']
+            AND NOT r.has_database_evidence
+            AND NOT r.medscan_only
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
@@ -415,11 +408,9 @@ def get_entity_evidence_counts(
 ) -> Mapping[int, int]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WITH
-            a, b, r, p, apoc.convert.fromJsonMap(r.source_counts) as sources
         WHERE
             a.id = "{prefix}:{identifier}"
-            AND NOT apoc.coll.intersection(keys(sources), [{databases_str}])
+            AND NOT r.has_database_evidence
             AND a.id <> b.id
         RETURN r.stmt_hash, r.evidence_count
         ORDER BY r.evidence_count DESC
@@ -444,19 +435,13 @@ def get_conflicting_statements(
         MATCH
             p=(a:BioEntity)-[r1:indra_rel]->(b:BioEntity)<-[r2:indra_rel]-(a:BioEntity)
         WITH
-            a, b, p,
-            r1, apoc.convert.fromJsonMap(r1.source_counts) as r1_sources,
-            r2, apoc.convert.fromJsonMap(r1.source_counts) as r2_sources,
-            r1.evidence_count + r2.evidence_count as total_evidence_count
+            p, r1, r2, r1.evidence_count + r2.evidence_count as total_evidence_count
         WHERE
             a.id STARTS WITH 'hgnc'
             AND b.id STARTS WITH 'hgnc'
             AND r1.stmt_type in ['{positive_stmt_type.__name__}']
             AND r2.stmt_type in ['{negative_stmt_type.__name__}']
-            AND (
-                NOT apoc.coll.intersection(keys(r1_sources), [{databases_str}])
-                OR NOT apoc.coll.intersection(keys(r2_sources), [{databases_str}])
-            )
+            AND (NOT r1.has_database_evidence OR NOT r2.has_database_evidence)
         RETURN p
         ORDER BY total_evidence_count DESC
         {_limit_line(limit)}

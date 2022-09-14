@@ -9,8 +9,14 @@ from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
-from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION, STATIC_DIR, TEMPLATES_DIR
+from indra_cogex.apps.constants import (
+    INDRA_COGEX_EXTENSION,
+    STATIC_DIR,
+    TEMPLATES_DIR,
+    STATEMENT_CURATION_CACHE,
+)
 from indra_cogex.apps.curator import curator_blueprint
+from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
@@ -33,6 +39,7 @@ app.register_blueprint(curator_blueprint)
 api.init_app(app)
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
+app.extensions[STATEMENT_CURATION_CACHE] = CurationCache()
 
 config_auth(app)
 

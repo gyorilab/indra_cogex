@@ -1,5 +1,6 @@
 import codecs
 import json
+import numpy
 import logging
 import time
 from collections import defaultdict
@@ -18,20 +19,20 @@ from typing import (
 
 from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
-from indra.sources.indra_db_rest import get_curations
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
 from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
+from indra_cogex.apps.curation_cache.curation_cache import Curations
+from indra_cogex.apps.proxies import curation_cache
 from indralab_auth_tools.auth import resolve_auth
 
 logger = logging.getLogger(__name__)
 
 StmtRow = Tuple[str, str, str, str, str, str]
-CurationType = List[Mapping[str, Any]]
 
 
 def count_curations(
-    curations: CurationType, stmts_by_hash: Dict[int, Statement]
+    curations: Curations, stmts_by_hash: Dict[int, Statement]
 ) -> Dict[int, Dict[str, DefaultDict[str, int]]]:
     """Count curations for each statement.
 
@@ -150,7 +151,7 @@ def format_stmts(
     stmts: Iterable[Statement],
     evidence_counts: Optional[Mapping[int, int]] = None,
     limit: Optional[int] = None,
-    curations: Optional[List[Mapping[str, Any]]] = None,
+    curations: Curations = None,
     remove_medscan: bool = True,
     source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
@@ -204,7 +205,8 @@ def format_stmts(
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
-        curations = get_curations()
+        curations = curation_cache.get_curations(pa_hash=list(all_pa_hashes))
+
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
     for cur in curations:
@@ -214,7 +216,7 @@ def format_stmts(
     cur_counts = count_curations(curations, stmts_by_hash)
     if cur_counts:
         assert isinstance(
-            list(cur_counts.keys())[0], int
+            list(cur_counts.keys())[0], (int, numpy.integer)
         ), f"{list(cur_counts.keys())[0]} is not an int"
         key = list(cur_counts.keys())[0]
         assert isinstance(
@@ -314,7 +316,8 @@ def _stmt_to_row(
             },
         )
     if cur_counts and hash_int in cur_counts:
-        num = cur_counts[hash_int]["this"]["correct"]
+        # Ensure numpy ints are converted to json serializable ints
+        num = int(cur_counts[hash_int]["this"]["correct"])
         badges.append(
             {
                 "label": "correct_this",
@@ -352,9 +355,8 @@ def get_curated_pa_hashes(
     curations: Optional[List[Mapping[str, Any]]] = None, only_correct: bool = True
 ) -> Mapping[int, Set[int]]:
     """Get a mapping from statement hashes to evidence hashes."""
-    # TODO replace with CurationCache.get_curated_pa_hashes
     if curations is None:
-        curations = get_curations()
+        curations = curation_cache.get_curation_cache()
     rv = defaultdict(set)
     for curation in curations:
         if not only_correct or curation["tag"] == "correct":

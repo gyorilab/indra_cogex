@@ -22,11 +22,14 @@ __all__ = [
     "Curations",
 ]
 
-Curation = Dict[str, Optional[Union[str, int]]]
+Curation = Dict[str, Union[str, int, None]]
 Curations = List[Curation]
 
 
 class CurationCache:
+    # Todo: store static sets and lists, like the set of all curated
+    #  statement hashes, for direct return instead of looping the curations
+    #  every time it's requested (unless refreshed of course)
     update_interval: timedelta
     last_update: datetime
     curation_list: Curations
@@ -61,7 +64,13 @@ class CurationCache:
 
     @staticmethod
     def _process_curation(curation) -> Curation:
-        curation["date"] = dateutil.parser.parse(curation["date"])
+        # Extra type check for tests
+        if isinstance(curation["date"], datetime):
+            pass
+        elif isinstance(curation["date"], str):
+            curation["date"] = dateutil.parser.parse(curation["date"])
+        else:
+            raise TypeError(f"Unhandled type for date {type(curation['date'])}")
         return curation
 
     def get_curation_cache(
@@ -105,21 +114,21 @@ class CurationCache:
 
     def get_curations(
         self,
-        pa_hash: Optional[int] = None,
-        source_hash: Optional[int] = None,
+        pa_hash: Optional[Union[int, List[int]]] = None,
+        source_hash: Optional[Union[int, List[int]]] = None,
         refresh: bool = False,
     ) -> Curations:
         """Get curations from the cache based on pa_hash and source_hash
 
-        Note: If all curations are needed, it is more efficient to use
+        Note: If all curations are needed, it is more efficient to use the
         get_curation_cache() method.
 
         Parameters
         ----------
         pa_hash :
-            The statement hash
+            The statement hash(es)
         source_hash :
-            The source hash of the evidence
+            The source hash(es) of the evidence(s)
         refresh :
             Whether to refresh the curation cache
 
@@ -137,9 +146,17 @@ class CurationCache:
 
         temp_df = self.curations_df
         if pa_hash is not None:
-            temp_df = temp_df[temp_df.pa_hash == pa_hash]
+            if isinstance(pa_hash, int):
+                temp_df = temp_df[temp_df.pa_hash == pa_hash]
+            else:
+                # pa_hash is a list
+                temp_df = temp_df[temp_df.pa_hash.isin(pa_hash)]
         if source_hash is not None:
-            temp_df = temp_df[temp_df.source_hash == source_hash]
+            if isinstance(source_hash, int):
+                temp_df = temp_df[temp_df.source_hash == source_hash]
+            else:
+                # source_hash is a list
+                temp_df = temp_df[temp_df.source_hash.isin(source_hash)]
 
         return temp_df.copy().to_dict(orient="records")
 
@@ -258,4 +275,24 @@ class CurationCache:
             curation["pa_hash"]
             for curation in self.get_curation_cache(only_most_recent=only_most_recent)
             if curation["tag"] == "correct"
+        }
+
+    def get_curated_statement_hashes(self, only_most_recent: bool = False) -> Set[int]:
+        """Get the set of all statement hashes that have curated evidence
+
+        Parameters
+        ----------
+        only_most_recent :
+            If True, filter out all but the most recent curation entry
+            (based on date) for all given curator/statement/evidence triples.
+
+        Returns
+        -------
+        :
+            A set of statement hashes that have any evidence that has been
+            curated
+        """
+        return {
+            curation["pa_hash"]
+            for curation in self.get_curation_cache(only_most_recent=only_most_recent)
         }
