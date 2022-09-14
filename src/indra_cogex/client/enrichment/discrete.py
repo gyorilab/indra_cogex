@@ -99,6 +99,8 @@ def count_human_genes(*, client: Neo4jClient) -> int:
         RETURN count(n) as count
     """
     results = client.query_tx(query)
+    if results is None:
+        raise ValueError
     return results[0][0]
 
 

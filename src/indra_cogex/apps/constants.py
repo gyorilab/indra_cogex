@@ -67,8 +67,8 @@ VUE_BASE = f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{VUE_DEPLOYME
 VUE_JS = "IndralabVue.umd.min.js"
 VUE_CSS = "IndralabVue.css"
 if LOCAL_VUE:
-    VUE_SRC_JS = False
-    VUE_SRC_CSS = False
+    VUE_SRC_JS: Union[bool, str] = False
+    VUE_SRC_CSS: Union[bool, str] = False
 else:
     VUE_SRC_JS = f"{VUE_BASE}{VUE_JS}"
     VUE_SRC_CSS = f"{VUE_BASE}{VUE_CSS}"

@@ -50,7 +50,7 @@ def count_curations(
         types to counts.
     """
     correct_tags = ["correct", "act_vs_amt", "hypothesis"]
-    cur_counts = {}
+    cur_counts: Dict[int, Dict[str, DefaultDict[str, int]]] = {}
     for cur in curations:
         stmt_hash = cur["pa_hash"]
         if stmt_hash not in stmts_by_hash:

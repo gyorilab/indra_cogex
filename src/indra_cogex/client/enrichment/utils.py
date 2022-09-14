@@ -7,7 +7,7 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, Optional, Set, Tuple
 
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
@@ -29,7 +29,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-GENE_SET_CACHE = {}
+GENE_SET_CACHE: Dict[str, Any] = {}
 
 
 @autoclient()
@@ -74,8 +74,11 @@ def collect_gene_sets(
         logger.info(
             "Running new query and caching results into %s" % cache_file.as_posix()
         )
-    curie_to_hgnc_ids = defaultdict(set)
-    for curie, name, hgnc_curies in client.query_tx(query):
+    curie_to_hgnc_ids: DefaultDict[Tuple[str, str], Set[str]] = defaultdict(set)
+    res = client.query_tx(query)
+    if res is None:
+        raise ValueError
+    for curie, name, hgnc_curies in res:
         curie_to_hgnc_ids[curie, name].update(
             hgnc_curie.lower().replace("hgnc:", "")
             if hgnc_curie.lower().startswith("hgnc:")
@@ -118,7 +121,7 @@ def extend_by_ontology(gene_set_mapping: Dict[Tuple[str, str], Set[str]]):
 def collect_genes_with_confidence(
     query: str,
     *,
-    cache_file: Path = None,
+    cache_file: Optional[Path] = None,
     client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Collect gene sets based on the given query.
@@ -138,48 +141,53 @@ def collect_genes_with_confidence(
         pointing to the maximum belief and evidence count associated with
         the given HGNC gene.
     """
-    if cache_file.as_posix() in GENE_SET_CACHE:
+    if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         return GENE_SET_CACHE[cache_file.as_posix()]
-    elif cache_file.exists():
+    elif cache_file is not None and cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             curie_to_hgnc_ids = pickle.load(fh)
-    else:
+        GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
+        return curie_to_hgnc_ids
+
+    if cache_file is not None:
         logger.info(
             "Running new query and caching results into %s" % cache_file.as_posix()
         )
-        curie_to_hgnc_ids = defaultdict(dict)
-        max_beliefs = {}
-        max_ev_counts = {}
-        for result in client.query_tx(query):
-            curie = result[0]
-            name = result[1]
-            hgnc_ids = set()
-            for hgnc_curie, belief, ev_count in result[2]:
-                hgnc_id = (
-                    hgnc_curie.lower().replace("hgnc:", "")
-                    if hgnc_curie.lower().startswith("hgnc:")
-                    else hgnc_curie.lower()
-                )
-                max_beliefs[(curie, name, hgnc_id)] = max(
-                    belief, max_beliefs.get((curie, name, hgnc_id), 0.0)
-                )
-                max_ev_counts[(curie, name, hgnc_id)] = max(
-                    ev_count, max_ev_counts.get((curie, name, hgnc_id), 0)
-                )
-                hgnc_ids.add(hgnc_id)
-            curie_to_hgnc_ids[(curie, name)] = {
-                hgnc_id: (
-                    max_beliefs[(curie, name, hgnc_id)],
-                    max_ev_counts[(curie, name, hgnc_id)],
-                )
-                for hgnc_id in hgnc_ids
-            }
-        curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
+    curie_to_hgnc_ids = defaultdict(dict)
+    max_beliefs: Dict[Tuple[str, str, str], float] = {}
+    max_ev_counts: Dict[Tuple[str, str, str], int] = {}
+    for result in client.query_tx(query):
+        curie = result[0]
+        name = result[1]
+        hgnc_ids = set()
+        for hgnc_curie, belief, ev_count in result[2]:
+            hgnc_id = (
+                hgnc_curie.lower().replace("hgnc:", "")
+                if hgnc_curie.lower().startswith("hgnc:")
+                else hgnc_curie.lower()
+            )
+            max_beliefs[(curie, name, hgnc_id)] = max(
+                belief, max_beliefs.get((curie, name, hgnc_id), 0.0)
+            )
+            max_ev_counts[(curie, name, hgnc_id)] = max(
+                ev_count, max_ev_counts.get((curie, name, hgnc_id), 0)
+            )
+            hgnc_ids.add(hgnc_id)
+        curie_to_hgnc_ids[(curie, name)] = {
+            hgnc_id: (
+                max_beliefs[(curie, name, hgnc_id)],
+                max_ev_counts[(curie, name, hgnc_id)],
+            )
+            for hgnc_id in hgnc_ids
+        }
+    curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
+
+    if cache_file is not None:
         with open(cache_file, "wb") as fh:
             pickle.dump(curie_to_hgnc_ids, fh)
-    GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
+        GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
     return curie_to_hgnc_ids
 
 
