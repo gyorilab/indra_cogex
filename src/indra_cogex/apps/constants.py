@@ -62,7 +62,7 @@ if not SOURCE_BADGES_CSS.exists():
 LOCAL_VUE: Union[str, bool] = get_config("LOCAL_VUE") or False
 
 # Set up indralab-vue Vue components, either from local build or from S3
-VUE_DEPLOYMENT = get_config("VUE_DEPLOYMENT", "latest")
+VUE_DEPLOYMENT = get_config("VUE_DEPLOYMENT") or "latest"
 VUE_BASE = f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{VUE_DEPLOYMENT}/"
 VUE_JS = "IndralabVue.umd.min.js"
 VUE_CSS = "IndralabVue.css"
