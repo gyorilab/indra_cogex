@@ -17,7 +17,8 @@ PATH = HERE.joinpath("example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
 STATEMENTS_PKL_PATH = OUTPUT_MODULE.join(name="statements.pkl")
 STATEMENTS_DF_PATH = OUTPUT_MODULE.join(name="indranet.tsv")
-PROCESSED_PATH = OUTPUT_MODULE.join(name="example_data_processed.csv")
+PROCESSED_PATH = OUTPUT_MODULE.join(name="data.tsv")
+PROCESSED_FILTERED_PATH = OUTPUT_MODULE.join(name="data_filtered.tsv")
 
 
 
@@ -55,13 +56,17 @@ def analysis(path: Path, target_hgnc_ids: set[str], *, client: Optional[Neo4jCli
     df["in_neighbors"] = df["hgnc"].map(neighbor_hgnc_ids.__contains__)
     df.to_csv(PROCESSED_PATH, sep="\t", index=False)
 
+    df[df["in_neighbors"]].to_csv(PROCESSED_FILTERED_PATH, sep="\t", index=False)
+
 
 def _read_df(path):
     df = pd.read_csv(path, sep=",")
-    initial_columns = list(df.columns)
-    df["hgnc"] = df[initial_columns[0]].map(uniprot_client.get_hgnc_id)
+    columns = list(df.columns)
+    columns[0] = "uniprot"
+    df.columns = columns
+    df["hgnc"] = df["uniprot"].map(uniprot_client.get_hgnc_id)
     df = df[df["hgnc"].notna()]
-    df = df[["hgnc", *initial_columns]]
+    df = df[["hgnc", *columns]]
     return df
 
 
