@@ -7,7 +7,7 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, DefaultDict, Dict, Mapping, Optional, Set, Tuple, TypeVar
+from typing import Any, DefaultDict, Dict, Iterable, Mapping, Optional, Set, Tuple, TypeVar
 
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
