@@ -17,6 +17,8 @@ PATH = HERE.joinpath("example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
 STATEMENTS_PKL_PATH = OUTPUT_MODULE.join(name="statements.pkl")
 STATEMENTS_DF_PATH = OUTPUT_MODULE.join(name="indranet.tsv")
+PROCESSED_PATH = OUTPUT_MODULE.join(name="example_data_processed.csv")
+
 
 
 def _hgnc_from_stmts(stmts: Iterable[Statement]) -> Set[str]:
@@ -25,10 +27,10 @@ def _hgnc_from_stmts(stmts: Iterable[Statement]) -> Set[str]:
 
 @autoclient()
 def analysis(path: Path, target_hgnc_ids: set[str], *, client: Optional[Neo4jClient] = None):
-    if not STATEMENTS_PKL_PATH.is_file():
-        df = _read_df(path)
-        measured = set(df[df.columns[0]])
+    df = _read_df(path)
+    measured = set(df["hgnc"])
 
+    if not STATEMENTS_PKL_PATH.is_file():
         pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
         stmts = subnetwork.get_neighbor_network_statements(
             pairs, client=client, node_prefix="hgnc",
@@ -49,18 +51,17 @@ def analysis(path: Path, target_hgnc_ids: set[str], *, client: Optional[Neo4jCli
     # assembler.make_model()
     # assembler.save_model(STATEMENTS_SIF_DF_PATH)
 
-
-    # neighbor_hgnc_ids = _hgnc_from_stmts(stmts)
-
-    # overlap = measured.intersection(neighbor_hgnc_ids)
-    # unmeasured = measured.difference(neighbor_hgnc_ids)
+    neighbor_hgnc_ids = set(stmts_df["agA_id"]).union(stmts_df["agB_id"])
+    df["in_neighbors"] = df["hgnc"].map(neighbor_hgnc_ids.__contains__)
+    df.to_csv(PROCESSED_PATH, sep="\t", index=False)
 
 
 def _read_df(path):
     df = pd.read_csv(path, sep=",")
-    index_column = df.columns[0]
-    df[index_column] = df[index_column].map(uniprot_client.get_hgnc_id)
-    df = df[df[index_column].notna()]
+    initial_columns = list(df.columns)
+    df["hgnc"] = df[initial_columns[0]].map(uniprot_client.get_hgnc_id)
+    df = df[df["hgnc"].notna()]
+    df = df[["hgnc", *initial_columns]]
     return df
 
 
