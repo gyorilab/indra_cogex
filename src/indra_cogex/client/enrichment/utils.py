@@ -7,7 +7,7 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, DefaultDict, Dict, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, Mapping, Optional, Set, Tuple, TypeVar
 
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
@@ -28,6 +28,17 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+X = TypeVar("X")
+Y = TypeVar("Y")
+APP_CACHE_MODULE = pystow.module("indra", "cogex", "app_cache")
+GO_GENE_SET_PATH = APP_CACHE_MODULE.join(name="go.pkl")
+WIKIPATHWAYS_GENE_SET_PATH = APP_CACHE_MODULE.join(name="wiki.pkl")
+REACTOME_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="reactome.pkl")
+HPO_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="hpo.pkl")
+TO_REGULATORS_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="to_regs.pkl")
+TO_TARGETS_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="to_targets.pkl")
+NEGATIVES_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="negatives.pkl")
+POSITIVES_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="positives.pkl")
 
 GENE_SET_CACHE: Dict[str, Any] = {}
 
@@ -206,7 +217,6 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each GO term
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="go.pkl")
     query = dedent(
         """\
         MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
@@ -216,7 +226,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     return collect_gene_sets(
         client=client,
         query=query,
-        cache_file=cache_file,
+        cache_file=GO_GENE_SET_PATH,
         include_ontology_children=True,
     )
 
@@ -236,7 +246,6 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each WikiPathway
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="wiki.pkl")
     query = dedent(
         """\
         MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
@@ -244,7 +253,9 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    return collect_gene_sets(
+        client=client, query=query, cache_file=WIKIPATHWAYS_GENE_SET_PATH
+    )
 
 
 @autoclient()
@@ -262,7 +273,6 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         A dictionary whose keys that are 2-tuples of CURIE and name of each Reactome
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="reactome.pkl")
     query = dedent(
         """\
         MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
@@ -270,7 +280,9 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    return collect_gene_sets(
+        client=client, query=query, cache_file=REACTOME_GENE_SETS_PATH
+    )
 
 
 @autoclient()
@@ -288,7 +300,6 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
         A dictionary whose keys that are 2-tuples of CURIE and name of each phenotype
         gene set and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="hpo.pkl")
     query = dedent(
         """\
         MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
@@ -296,8 +307,27 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
         RETURN s.id, s.name, collect(gene.id);
     """
     )
-    logger.info("caching phenotype gene sets with Cypher query: %s", query)
-    return collect_gene_sets(client=client, query=query, cache_file=cache_file)
+    return collect_gene_sets(client=client, query=query, cache_file=HPO_GENE_SETS_PATH)
+
+
+def filter_gene_set_confidences(
+    data: Dict[X, Dict[Y, Tuple[float, int]]],
+    minimum_belief: Optional[float] = None,
+    minimum_evidence_count: Optional[int] = None,
+) -> Mapping[X, Set[Y]]:
+    """Filter the confidences from a dictionary."""
+    if minimum_belief is None:
+        minimum_belief = 0.0
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 0
+    rv = {}
+    for key, confidences in data.items():
+        rv[key] = {
+            identifier
+            for identifier, (belief, ev_count) in confidences.items()
+            if belief >= minimum_belief and ev_count >= minimum_evidence_count
+        }
+    return rv
 
 
 @autoclient()
@@ -327,7 +357,6 @@ def get_entity_to_targets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="to_targets.pkl")
     query = dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
@@ -342,16 +371,13 @@ def get_entity_to_targets(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=cache_file
+        client=client, query=query, cache_file=TO_TARGETS_GENE_SETS_PATH
     )
-    curie_to_hgnc_id = defaultdict(set)
-    for (curie, name), hgnc_with_confidence in genes_with_confidence.items():
-        curie_to_hgnc_id[(curie, name)] = {
-            hgnc_id
-            for hgnc_id, (belief, ev_count) in hgnc_with_confidence.items()
-            if belief >= minimum_belief and ev_count >= minimum_evidence_count
-        }
-    return dict(curie_to_hgnc_id)
+    return filter_gene_set_confidences(
+        genes_with_confidence,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
 
 
 @autoclient()
@@ -381,7 +407,6 @@ def get_entity_to_regulators(
         A dictionary whose keys that are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    cache_file = pystow.join("indra", "cogex", "app_cache", name="to_regs.pkl")
     query = dedent(
         f"""\
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
@@ -396,16 +421,13 @@ def get_entity_to_regulators(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=cache_file
+        client=client, query=query, cache_file=TO_REGULATORS_GENE_SETS_PATH
     )
-    curie_to_hgnc_id = defaultdict(set)
-    for (curie, name), hgnc_with_confidence in genes_with_confidence.items():
-        curie_to_hgnc_id[(curie, name)] = {
-            hgnc_id
-            for hgnc_id, (belief, ev_count) in hgnc_with_confidence.items()
-            if belief >= minimum_belief and ev_count >= minimum_evidence_count
-        }
-    return dict(curie_to_hgnc_id)
+    return filter_gene_set_confidences(
+        genes_with_confidence,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
 
 
 def minimum_evidence_helper(
@@ -424,6 +446,126 @@ def minimum_belief_helper(
     return f"AND {name}.belief >= {minimum_belief}"
 
 
+# TODO should this include other statement types? is the mechanism linker applied before
+#  importing the database into CoGEx?
+
+POSITIVE_STMT_TYPES = ["Activation", "IncreaseAmount"]
+NEGATIVE_STMT_TYPES = ["Inhibition", "DecreaseAmount"]
+
+
+# FIXME should we further limit this query to only a certain type of entities,
+#  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
+
+
+def _query(
+    stmt_types: Iterable[str],
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> str:
+    """Return a query over INDRA relations f the given statement types."""
+    query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
+    if minimum_evidence_count is None or minimum_evidence_count == 1:
+        evidence_line = ""
+    else:
+        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
+    if minimum_belief is None or minimum_belief == 0.0:
+        belief_line = ""
+    else:
+        belief_line = f"AND r.belief >= {minimum_belief}"
+    return dedent(
+        f"""\
+        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
+        WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
+            AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
+            AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            {evidence_line}
+            {belief_line}
+        RETURN 
+            regulator.id, 
+            regulator.name, 
+            collect([gene.id, r.belief, r.evidence_count]);
+    """
+    )
+
+
+@autoclient()
+def get_positive_stmt_sets(
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
+) -> Dict[Tuple[str, str], Set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of
+    entities that are causally downstream of human genes via an "activates"
+    or "increases amount of" relationship.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship.
+        Defaults to 0.0 (i.e., cutoff not applied).
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    return filter_gene_set_confidences(
+        collect_genes_with_confidence(
+            query=_query(POSITIVE_STMT_TYPES),
+            client=client,
+            cache_file=POSITIVES_GENE_SETS_PATH,
+        ),
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
+
+
+@autoclient()
+def get_negative_stmt_sets(
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
+) -> Dict[Tuple[str, str], Set[str]]:
+    """Get a mapping from each entity in the INDRA database to the set of
+    entities that are causally downstream of human genes via an "inhibits"
+    or "decreases amount of" relationship.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship.
+        Defaults to 1 (i.e., cutoff not applied.
+    minimum_belief :
+        The minimum belief for a relationship.
+        Defaults to 0.0 (i.e., cutoff not applied).
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        and whose values are sets of HGNC gene identifiers (as strings)
+    """
+    return filter_gene_set_confidences(
+        collect_genes_with_confidence(
+            query=_query(NEGATIVE_STMT_TYPES),
+            client=client,
+            cache_file=NEGATIVES_GENE_SETS_PATH,
+        ),
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
+
+
 def build_caches():
     """Call each gene set constuction to build up cache,"""
     logger.info("Building up caches for gene set enrichment analysis...")
@@ -432,4 +574,6 @@ def build_caches():
     get_wikipathways()
     get_entity_to_targets(minimum_evidence_count=1, minimum_belief=0.0)
     get_entity_to_regulators(minimum_evidence_count=1, minimum_belief=0.0)
+    get_negative_stmt_sets()
+    get_positive_stmt_sets()
     logger.info("Finished building caches for gene set enrichment analysis.")
