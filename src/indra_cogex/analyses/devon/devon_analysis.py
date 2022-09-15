@@ -16,7 +16,7 @@ HERE = Path(__file__).parent.resolve()
 PATH = HERE.joinpath("example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
 STATEMENTS_PKL_PATH = OUTPUT_MODULE.join(name="statements.pkl")
-STATEMENTS_DF_PATH = OUTPUT_MODULE.join(name="statements.tsv")
+STATEMENTS_DF_PATH = OUTPUT_MODULE.join(name="indranet.tsv")
 
 
 def _hgnc_from_stmts(stmts: Iterable[Statement]) -> Set[str]:
@@ -25,19 +25,30 @@ def _hgnc_from_stmts(stmts: Iterable[Statement]) -> Set[str]:
 
 @autoclient()
 def analysis(path: Path, target_hgnc_ids: set[str], *, client: Optional[Neo4jClient] = None):
-    df = _read_df(path)
-    measured = set(df[df.columns[0]])
+    if not STATEMENTS_PKL_PATH.is_file():
+        df = _read_df(path)
+        measured = set(df[df.columns[0]])
 
-    pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
-    stmts = subnetwork.get_neighbor_network_statements(
-        pairs, client=client, node_prefix="hgnc",
-        minimum_evidence_count=10,
-    )
-    STATEMENTS_PKL_PATH.write_bytes(pickle.dumps(stmts))
+        pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
+        stmts = subnetwork.get_neighbor_network_statements(
+            pairs, client=client, node_prefix="hgnc",
+            minimum_evidence_count=8,
+        )
+        STATEMENTS_PKL_PATH.write_bytes(pickle.dumps(stmts))
+    else:
+        stmts = pickle.loads(STATEMENTS_PKL_PATH.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
-    stmts_df = assembler.make_df()
+    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
+    stmts_df = stmts_df[stmts_df["stmt_type"] != "Complex"]
+    stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
     stmts_df.to_csv(STATEMENTS_DF_PATH, sep='\t', index=False)
+
+    # This doesn't print stuff that makes sense
+    # assembler = SifAssembler(stmts)
+    # assembler.make_model()
+    # assembler.save_model(STATEMENTS_SIF_DF_PATH)
+
 
     # neighbor_hgnc_ids = _hgnc_from_stmts(stmts)
 

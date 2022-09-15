@@ -1,6 +1,7 @@
 """Queries that generate statement subnetworks."""
 
 import json
+from textwrap import dedent
 from typing import Any, Iterable, List, Optional, Sequence, Tuple
 
 from indra.statements import Statement
@@ -30,7 +31,11 @@ __all__ = [
 
 @autoclient()
 def indra_subnetwork_relations(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -48,14 +53,20 @@ def indra_subnetwork_relations(
         objects.
     """
     nodes_str = get_nodes_str(nodes)
-    query = f"""\
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
+    query = dedent(
+        f"""\
         MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
         WHERE 
             n1.id IN [{nodes_str}]
             AND n2.id IN [{nodes_str}]
             AND n1.id <> n2.id
+            {belief_line}
+            {evidence_line}
         RETURN p
     """
+    )
     return client.query_relations(query)
 
 
@@ -375,13 +386,14 @@ def get_neighbor_network(
             "must specify at least one of upstream and downstream to be true"
         )
     nodes_str = get_nodes_str(nodes)
-    prefix_filter = f"AND n.id STARTS WITH {node_prefix}" if node_prefix else ""
+    prefix_filter = f"AND n.id STARTS WITH '{node_prefix}'" if node_prefix else ""
     evidence_line = minimum_evidence_helper(minimum_evidence_count)
     belief_line = minimum_belief_helper(minimum_belief)
     query = set(nodes)
     if upstream:
         match_clause = "MATCH (n:BioEntity)-[r:indra_rel]->(query:BioEntity)"
-        upstream_cypher = f"""\
+        upstream_cypher = dedent(
+            f"""\
             MATCH (n:BioEntity)-[r:indra_rel]->(query:BioEntity)
             WHERE 
                 query.id IN [{nodes_str}]
@@ -391,6 +403,7 @@ def get_neighbor_network(
                 {evidence_line}
             RETURN DISTINCT n
         """
+        )
         print("Upstream query:", upstream_cypher)
         upstream_res = client.query_nodes(upstream_cypher)
         if upstream_res is None:
@@ -399,7 +412,8 @@ def get_neighbor_network(
         print(f"got {len(upstream_nodes)} upstream nodes")
         query.update(upstream_nodes)
     if downstream:
-        downstream_cypher = f"""\
+        downstream_cypher = dedent(
+            f"""\
             MATCH (query:BioEntity)-[r:indra_rel]->(n:BioEntity)
             WHERE 
                 query.id IN [{nodes_str}]
@@ -409,6 +423,7 @@ def get_neighbor_network(
                 {evidence_line}
             RETURN DISTINCT n
         """
+        )
         print("downstream query", downstream_cypher)
         downstream_res = client.query_nodes(downstream_cypher)
         if downstream_res is None:
@@ -419,7 +434,12 @@ def get_neighbor_network(
         print(f"got {len(upstream_nodes)} downstream nodes")
         query.update(downstream_nodes)
     print(f"doign subnetwork query over {len(query)} nodes")
-    return indra_subnetwork_relations(nodes=sorted(query), client=client)
+    return indra_subnetwork_relations(
+        nodes=sorted(query),
+        client=client,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+    )
 
 
 @autoclient()
