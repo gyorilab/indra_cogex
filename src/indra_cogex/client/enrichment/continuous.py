@@ -12,7 +12,7 @@ expression experiments.
 """
 
 from pathlib import Path
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional, Set, Tuple, Union
 
 import gseapy
 import pandas as pd
@@ -66,7 +66,7 @@ def _guess_score_col(df: pd.DataFrame) -> str:
 
 def get_rat_scores(
     path: Union[Path, str, pd.DataFrame],
-    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
@@ -107,7 +107,7 @@ def get_rat_scores(
 
 def get_mouse_scores(
     path: Union[Path, str, pd.DataFrame],
-    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
@@ -148,7 +148,7 @@ def get_mouse_scores(
 
 def get_human_scores(
     path: Union[Path, str, pd.DataFrame],
-    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
@@ -182,7 +182,7 @@ def get_human_scores(
 
 def _get_species_scores(
     path: Union[Path, str, pd.DataFrame],
-    read_csv_kwargs: Optional[Dict[str, any]] = None,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
     gene_symbol_column_name: Optional[str] = None,
     score_column_name: Optional[str] = None,
     *,

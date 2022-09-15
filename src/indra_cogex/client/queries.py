@@ -3,17 +3,7 @@ import logging
 import time
 from collections import Counter, defaultdict
 from textwrap import dedent
-from typing import (
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
@@ -1027,9 +1017,7 @@ def get_stmts_for_stmt_hashes(
             {object_constraint}
         RETURN p
     """
-    logger.info(
-        f"Getting statements for {stmt_hashes_str.count(',') + 1} hashes"
-    )
+    logger.info(f"Getting statements for {stmt_hashes_str.count(',') + 1} hashes")
     rels = client.query_relations(stmts_query)
     stmts = indra_stmts_from_relations(rels)
 
@@ -1153,6 +1141,15 @@ def get_node_counter(*, client: Neo4jClient) -> Counter:
             for label in client.query_tx("call db.labels();", squeeze=True)
         }
     )
+
+
+@autoclient(cache=True)
+def get_prefix_counter(*, client: Neo4jClient) -> Counter:
+    """Count node prefixes."""
+    cypher = (
+        """MATCH (n) WITH split(n.id, ":")[0] as prefix RETURN prefix, count(prefix)"""
+    )
+    return Counter(dict(client.query_tx(cypher)))
 
 
 @autoclient(cache=True)
@@ -1418,3 +1415,9 @@ def _filter_out_medscan_evidence(
         for ev in ev_list
         if not (remove_medscan and ev["source_api"] == "medscan")
     ]
+
+
+if __name__ == "__main__":
+    print(get_prefix_counter())
+    print(get_node_counter())
+    print(get_edge_counter())

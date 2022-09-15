@@ -10,49 +10,13 @@ import pandas as pd
 import pystow
 import scipy.stats
 
-from indra_cogex.client.enrichment.utils import collect_gene_sets
+from indra_cogex.client.enrichment.utils import (
+    get_negative_stmt_sets,
+    get_positive_stmt_sets,
+)
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
 HERE = Path(__file__).parent.resolve()
-
-
-# FIXME should we further limit this query to only a certain type of entities,
-#  or split it up at least? (e.g., specific analysis for chemicals, genes, etc.)
-
-
-def _query(
-    stmt_types: Iterable[str],
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
-) -> str:
-    """Return a query over INDRA relations f the given statement types."""
-    query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
-    if minimum_evidence_count is None or minimum_evidence_count == 1:
-        evidence_line = ""
-    else:
-        evidence_line = f"AND r.evidence_count >= {minimum_evidence_count}"
-    if minimum_belief is None or minimum_belief == 0.0:
-        belief_line = ""
-    else:
-        belief_line = f"AND r.belief >= {minimum_belief}"
-    return dedent(
-        f"""\
-        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
-            AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
-            AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-            {evidence_line}
-            {belief_line}
-        RETURN regulator.id, regulator.name, collect(gene.id);
-    """
-    )
-
-
-# TODO should this include other statement types? is the mechanism linker applied before
-#  importing the database into CoGEx?
-
-POSITIVE_STMTS = ["Activation", "IncreaseAmount"]
-NEGATIVE_STMTS = ["Inhibition", "DecreaseAmount"]
 
 
 @autoclient()
@@ -60,8 +24,6 @@ def reverse_causal_reasoning(
     positive_hgnc_ids: Iterable[str],
     negative_hgnc_ids: Iterable[str],
     minimum_size: int = 4,
-    positive_stmts: Optional[Iterable[str]] = None,
-    negative_stmts: Optional[Iterable[str]] = None,
     alpha: Optional[float] = None,
     keep_insignificant: bool = True,
     *,
@@ -84,10 +46,6 @@ def reverse_causal_reasoning(
     minimum_size :
         The minimum number of entities marked as downstream
         of an entity for it to be usable as a hyp
-    positive_stmts :
-        A list of statement types for identifying positive genes
-    negative_stmts :
-        A list of statement types for identifying negative genes
     alpha :
         The cutoff for significance. Defaults to 0.05
     keep_insignificant :
@@ -112,21 +70,15 @@ def reverse_causal_reasoning(
         alpha = 0.05
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
-    database_positive = collect_gene_sets(
-        query=_query(
-            positive_stmts or POSITIVE_STMTS,
-            minimum_evidence_count=minimum_evidence_count,
-            minimum_belief=minimum_belief,
-        ),
+    database_positive = get_positive_stmt_sets(
         client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
     )
-    database_negative = collect_gene_sets(
-        query=_query(
-            negative_stmts or NEGATIVE_STMTS,
-            minimum_evidence_count=minimum_evidence_count,
-            minimum_belief=minimum_belief,
-        ),
+    database_negative = get_negative_stmt_sets(
         client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
     )
     entities = set(database_positive).union(database_negative)
 
