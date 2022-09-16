@@ -81,6 +81,7 @@ def render_statements(
     evidence_lookup_time: Optional[float] = None,
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
     **kwargs,
 ) -> Response:
     """Render INDRA statements."""
@@ -94,6 +95,7 @@ def render_statements(
         limit=limit,
         curations=curations,
         remove_medscan=remove_medscan,
+        source_counts_per_hash=source_counts_dict,
     )
     end_time = time.time() - start_time
 
