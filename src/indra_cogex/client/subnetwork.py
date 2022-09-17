@@ -1,6 +1,7 @@
 """Queries that generate statement subnetworks."""
 
-from typing import Iterable, List, Tuple
+import json
+from typing import Any, Iterable, List, Tuple
 
 from indra.statements import Statement
 
@@ -51,21 +52,24 @@ def indra_subnetwork_relations(
 @autoclient()
 def indra_subnetwork_meta(
     nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
-) -> List[List[str]]:
-    """Return the subnetwork induced by the given nodes as a set of Relations.
+) -> List[List[Any]]:
+    """Return the subnetwork induced by the given nodes as a list of metadata
+    on relations.
 
     Parameters
     ----------
-    client :
-        The Neo4j client.
     nodes :
         The nodes to query.
+    client :
+        The Neo4j client.
 
     Returns
     -------
     :
-        The subnetwork induced by the given nodes represented as Relation
-        objects.
+        The subnetwork induced by the given nodes represented as a list of
+        metadata on relations. The elements of each list are:
+        CURIE of source node, CURIE of target node, statement type,
+        statement hash, source counts.
     """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
     query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
@@ -76,7 +80,10 @@ def indra_subnetwork_meta(
         nodes_str,
         nodes_str,
     )
-    return client.query_tx(query)
+    res = client.query_tx(query)
+    # Turn source counts into dicts
+    res = [r[:-1] + [json.loads(r[-1])] for r in res]
+    return res
 
 
 @autoclient()
