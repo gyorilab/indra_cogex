@@ -49,6 +49,37 @@ def indra_subnetwork_relations(
 
 
 @autoclient()
+def indra_subnetwork_meta(
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+) -> List[List[str]]:
+    """Return the subnetwork induced by the given nodes as a set of Relations.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+
+    Returns
+    -------
+    :
+        The subnetwork induced by the given nodes represented as Relation
+        objects.
+    """
+    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+    query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+            WHERE n1.id IN [%s]
+            AND n2.id IN [%s]
+            AND n1.id <> n2.id
+            RETURN n1.id, n2.id, r.stmt_type, r.stmt_hash, r.source_counts""" % (
+        nodes_str,
+        nodes_str,
+    )
+    return client.query_tx(query)
+
+
+@autoclient()
 def indra_subnetwork(
     nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
 ) -> List[Statement]:
