@@ -971,6 +971,32 @@ class Neo4jClient:
         )
         self.create_tx(create_query)
 
+    def search(self, query: str, limit: int = 25) -> List[Entity]:
+        """Search nodes for a given name substring."""
+        query_lower = query.lower().replace("-", "").replace("_", "")
+        cypher = dedent(
+            f"""\
+            MATCH (n) 
+            WHERE 
+                replace(replace(toLower(n.name), '-', ''), '_', '') CONTAINS '{query_lower}'
+                OR any(
+                    synonym IN n.synonyms 
+                    WHERE replace(replace(toLower(synonym), '-', ''), '_', '') CONTAINS '{query_lower}'
+                )
+            RETURN n 
+            LIMIT {limit}
+        """
+        )
+        entities = [Entity(**n) for n in self.query_nodes(cypher)]
+
+        def _similarity(entity: Entity) -> float:
+            return max(
+                SequenceMatcher(None, query, s).ratio()
+                for s in [entity.name, *(entity.synonyms or [])]
+            )
+
+        return sorted(entities, key=_similarity, reverse=True)
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.
