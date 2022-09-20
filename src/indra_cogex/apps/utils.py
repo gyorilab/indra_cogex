@@ -84,7 +84,17 @@ def render_statements(
     source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
     **kwargs,
 ) -> Response:
-    """Render INDRA statements."""
+    """Render INDRA statements.
+
+    Parameters
+    ----------
+    stmts:
+
+    evidence_counts:
+        Mapping from statement hash to total number of evidences
+    source_counts_dict :
+        Mapping from statement hash to dictionaries of source name to source counts
+    """
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
 
@@ -157,7 +167,7 @@ def format_stmts(
     remove_medscan: bool = True,
     source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
-    """Format the statements for display
+    """Format the statements in the way that Patrick's Vue.js components expect.
 
     Wanted objects:
     - evidence: array of evidence json objects to be passed to <evidence>

@@ -224,7 +224,7 @@ def _curate_mesh_helper(
 
 
 def _render_func(
-    func: Callable[..., Mapping[int, int]],
+    func: Callable[..., Mapping[int, Mapping[str, int]]],
     *,
     title: str,
     description: str,
@@ -255,13 +255,13 @@ def _render_func(
         the statements is evidence count dictionary covers
     """
     start = time.time()
-    evidence_counts = func(client=client, **(func_kwargs or {}))
+    stmt_hash_to_source_counts = func(client=client, **(func_kwargs or {}))
     time_delta = time.time() - start
     logger.info(
-        f"got evidence counts for {len(evidence_counts)} statements in {time_delta:.2f} seconds."
+        f"got evidence counts for {len(stmt_hash_to_source_counts)} statements in {time_delta:.2f} seconds."
     )
     return _render_evidence_counts(
-        evidence_counts,
+        stmt_hash_to_source_counts,
         title=title,
         description=description,
         **kwargs,
@@ -269,13 +269,17 @@ def _render_func(
 
 
 def _render_evidence_counts(
-    evidence_counts: Mapping[int, int],
+    stmt_hash_to_source_counts: Mapping[int, Mapping[str, int]],
     title: str,
     filter_curated: bool = True,
     description: Optional[str] = None,
 ) -> Response:
     curations = curation_cache.get_curations()
     logger.debug(f"loaded {len(curations):,} curations")
+    evidence_counts = {
+        stmt_hash: sum(source_counts.values())
+        for stmt_hash, source_counts in stmt_hash_to_source_counts.items()
+    }
     # Prepare prioritized statement hash list sorted by decreasing evidence count
     pa_hashes = sorted(evidence_counts, key=evidence_counts.get, reverse=True)
     if filter_curated:
@@ -298,6 +302,7 @@ def _render_evidence_counts(
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
         description=description,
+        source_counts_dict=stmt_hash_to_source_counts,
         # no limit necessary here since it was already applied above
     )
 
