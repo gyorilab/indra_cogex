@@ -230,7 +230,6 @@ def format_stmts(
         row = _stmt_to_row(
             stmt,
             cur_dict=cur_dict,
-            evidence_counts=evidence_counts,
             cur_counts=cur_counts,
             remove_medscan=remove_medscan,
             source_counts=source_counts_per_hash.get(stmt.get_hash())
@@ -245,8 +244,8 @@ def format_stmts(
 
 def _stmt_to_row(
     stmt: Statement,
+    *,
     cur_dict,
-    evidence_counts,
     cur_counts,
     remove_medscan: bool = True,
     source_counts: Dict[str, int] = None,
@@ -291,11 +290,13 @@ def _stmt_to_row(
     else:
         sources = source_counts
 
-    # Remove medscan sources from the count if requested
-    if remove_medscan:
-        sources = {k: v for k, v in sources.items() if k != "medscan"}
+    # Remove medscan from the sources count and decrement the total count.
+    if remove_medscan and "medscan" in sources:
+        del sources["medscan"]
 
-    total_evidence = evidence_counts.get(hash_int, len(stmt.evidence))
+    # Calculate the total evidence as the sum of each of the sources' evidences
+    total_evidence = sum(sources.values())
+
     badges = [
         {
             "label": "evidence",
