@@ -81,9 +81,20 @@ def render_statements(
     evidence_lookup_time: Optional[float] = None,
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
     **kwargs,
 ) -> Response:
-    """Render INDRA statements."""
+    """Render INDRA statements.
+
+    Parameters
+    ----------
+    stmts:
+
+    evidence_counts:
+        Mapping from statement hash to total number of evidences
+    source_counts_dict :
+        Mapping from statement hash to dictionaries of source name to source counts
+    """
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
 
@@ -94,6 +105,7 @@ def render_statements(
         limit=limit,
         curations=curations,
         remove_medscan=remove_medscan,
+        source_counts_per_hash=source_counts_dict,
     )
     end_time = time.time() - start_time
 
@@ -155,7 +167,7 @@ def format_stmts(
     remove_medscan: bool = True,
     source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
-    """Format the statements for display
+    """Format the statements in the way that Patrick's Vue.js components expect.
 
     Wanted objects:
     - evidence: array of evidence json objects to be passed to <evidence>
@@ -228,7 +240,6 @@ def format_stmts(
         row = _stmt_to_row(
             stmt,
             cur_dict=cur_dict,
-            evidence_counts=evidence_counts,
             cur_counts=cur_counts,
             remove_medscan=remove_medscan,
             source_counts=source_counts_per_hash.get(stmt.get_hash())
@@ -243,8 +254,8 @@ def format_stmts(
 
 def _stmt_to_row(
     stmt: Statement,
+    *,
     cur_dict,
-    evidence_counts,
     cur_counts,
     remove_medscan: bool = True,
     source_counts: Dict[str, int] = None,
@@ -289,11 +300,13 @@ def _stmt_to_row(
     else:
         sources = source_counts
 
-    # Remove medscan sources from the count if requested
-    if remove_medscan:
-        sources = {k: v for k, v in sources.items() if k != "medscan"}
+    # Remove medscan from the sources count and decrement the total count.
+    if remove_medscan and "medscan" in sources:
+        del sources["medscan"]
 
-    total_evidence = evidence_counts.get(hash_int, len(stmt.evidence))
+    # Calculate the total evidence as the sum of each of the sources' evidences
+    total_evidence = sum(sources.values())
+
     badges = [
         {
             "label": "evidence",

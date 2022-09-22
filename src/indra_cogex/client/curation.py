@@ -167,16 +167,21 @@ def _limit_line(limit: Optional[int] = None) -> str:
 def get_ppi_evidence_counts(
     *,
     client: Neo4jClient,
-    limit: Optional[int] = None,
-) -> Mapping[int, int]:
+    minimum_evidences: int = 20,
+) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-gene relationships.
 
     Parameters
     ----------
     client :
         The Neo4j client.
-    limit :
-        Number of statements to return
+
+    minimum_evidences :
+        note that as the minimum number of evidences is lowered,
+        many more statements are returned which makes the query much slower.
+        for example, with no cutoff, this took 26 seconds~ for about 70K statments.
+        with a minimum of 10, this took around 15 seconds. With a cutoff of
+        20, this took about 10 seconds for 6.5k statements
 
     Returns
     -------
@@ -189,28 +194,26 @@ def get_ppi_evidence_counts(
             a.id STARTS WITH 'hgnc'
             AND b.id STARTS WITH 'hgnc'
             AND r.stmt_type = 'Complex'
+            AND a.id < b.id
             AND NOT r.has_database_evidence
-        RETURN r.stmt_hash, r.evidence_count
-        ORDER BY r.evidence_count DESC
-        {_limit_line(limit)}
+            AND r.evidence_count > {minimum_evidences}
+        RETURN r.stmt_hash, r.source_counts
     """
-    return client.query_dict(query)
+    return client.query_dict_value_json(query)
 
 
 @autoclient()
 def get_goa_evidence_counts(
     *,
     client: Neo4jClient,
-    limit: Optional[int] = None,
-) -> Mapping[int, int]:
+    minimum_evidences: int = 10,
+) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-GO annotations..
 
     Parameters
     ----------
     client :
         The Neo4j client.
-    limit :
-        Number of statements to return
 
     Returns
     -------
@@ -223,12 +226,10 @@ def get_goa_evidence_counts(
             NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
             and a.id STARTS WITH 'hgnc'
             and b.id STARTS WITH 'go'
-            and r.evidence_count > 10
-        RETURN r.stmt_hash, r.evidence_count
-        ORDER BY r.evidence_count DESC
-        {_limit_line(limit)}
+            and r.evidence_count > {minimum_evidences}
+        RETURN r.stmt_hash, r.source_counts
     """
-    return client.query_dict(query)
+    return client.query_dict_value_json(query)
 
 
 def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
@@ -376,12 +377,22 @@ def _help(
     stmt_types: List[Type[Statement]],
     client: Neo4jClient,
     limit: Optional[int] = None,
+    minimum_evidences: int = 3,
     object_prefix: Optional[str] = None,
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
+    """
+    Get relations that are:
+
+    1. **not** medscan only
+    2. are **not** supported by database evidence
+    3. Have a minimum evidence count
+
+    Returns
+    -------
+    A mapping from statement hashes to source count dictionaries
+    """
     if object_prefix is None:
         object_prefix = "hgnc"
-    # Get relations that are **not** medscan only and are **not** supported by
-    # database evidence
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
@@ -391,11 +402,10 @@ def _help(
             AND NOT r.has_database_evidence
             AND NOT r.medscan_only
             AND a.id <> b.id
-        RETURN r.stmt_hash, r.evidence_count
-        ORDER BY r.evidence_count DESC
-        {_limit_line(limit)}
+            AND r.evidence_count > {minimum_evidences}
+        RETURN r.stmt_hash, r.source_counts
     """
-    return client.query_dict(query)
+    return client.query_dict_value_json(query)
 
 
 @autoclient()
@@ -446,6 +456,7 @@ def get_conflicting_statements(
         ORDER BY total_evidence_count DESC
         {_limit_line(limit)}
     """
+    # TODO make this more efficient
     res = client.query_tx(query, squeeze=True)
     return indra_stmts_from_relations(
         chain.from_iterable(client.neo4j_to_relations(row) for row in res)

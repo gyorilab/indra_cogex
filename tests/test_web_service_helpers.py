@@ -45,12 +45,10 @@ def test__stmt_to_row():
     a = Agent("a")
     b = Agent("b")
     db_stmt = Activation(a, b, evidence=[db_ev])
-    stmt_hash = db_stmt.get_hash()
     source_counts = {"biopax": 1}
     ev_array, english, stmt_hash, sources, total_evidence, badges, = _stmt_to_row(
         stmt=db_stmt,
         cur_dict={},
-        evidence_counts={stmt_hash: 1},
         cur_counts={},
         source_counts=source_counts,
         include_belief_badge=True,
