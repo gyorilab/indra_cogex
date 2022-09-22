@@ -111,7 +111,6 @@ def collect_gene_sets(
 def extend_by_ontology(gene_set_mapping: Dict[Tuple[str, str], Set[str]]):
     """Extend the gene set mapping by ontology."""
 
-    bio_ontology.initialize()
     # Keys are tuples of (curie, name)
     for curie, name in gene_set_mapping:
 
