@@ -1,5 +1,6 @@
 """"""
 
+import bioregistry
 import pandas as pd
 
 from pathlib import Path
@@ -15,48 +16,64 @@ from indra.assemblers.indranet import IndraNetAssembler
 HERE = Path(__file__).parent.resolve()
 PATH = HERE.joinpath("example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
-STATEMENTS_PKL_PATH = OUTPUT_MODULE.join(name="statements.pkl")
-STATEMENTS_DF_PATH = OUTPUT_MODULE.join(name="indranet.tsv")
-PROCESSED_PATH = OUTPUT_MODULE.join(name="data.tsv")
-PROCESSED_FILTERED_PATH = OUTPUT_MODULE.join(name="data_filtered.tsv")
 
 
-
-def _hgnc_from_stmts(stmts: Iterable[Statement]) -> Set[str]:
-    raise NotImplementedError
+def get_query(fname: str) -> Set[str]:
+    """Get the query HGNC identifier set from one of the files in this directory by name."""
+    prefix, *lines = HERE.joinpath(fname).read_text().splitlines()
+    lines = {line.strip() for line in lines if line.strip()}
+    norm_prefix = bioregistry.normalize_prefix(prefix)
+    if norm_prefix is None:
+        raise ValueError(f"invalid prefix: {prefix}")
+    if norm_prefix == "hgnc":
+        return lines
+    elif norm_prefix == "uniprot":
+        return {
+            uniprot_client.get_hgnc_id(line)
+            for line in lines
+        }
+    else:
+        raise ValueError(f"unhandled prefix: {norm_prefix}")
 
 
 @autoclient()
-def analysis(path: Path, target_hgnc_ids: set[str], *, client: Optional[Neo4jClient] = None):
-    df = _read_df(path)
+def analysis_hgnc(
+    data_path: Path,
+    target_hgnc_ids: Iterable[str], *,
+    analysis_id: str,
+    client: Optional[Neo4jClient] = None,
+):
+    analysis_module = OUTPUT_MODULE.module(analysis_id)
+    statements_pkl_path = analysis_module.join(name="statements.pkl")
+    statements_df_path = analysis_module.join(name="indranet.tsv")
+    processed_path = analysis_module.join(name="data.tsv")
+    processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
+
+    target_hgnc_ids = set(target_hgnc_ids)
+    df = _read_df(data_path)
     measured = set(df["hgnc"])
 
-    if not STATEMENTS_PKL_PATH.is_file():
+    if not statements_pkl_path.is_file():
         pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
         stmts = subnetwork.get_neighbor_network_statements(
             pairs, client=client, node_prefix="hgnc",
             minimum_evidence_count=8,
         )
-        STATEMENTS_PKL_PATH.write_bytes(pickle.dumps(stmts))
+        statements_pkl_path.write_bytes(pickle.dumps(stmts))
     else:
-        stmts = pickle.loads(STATEMENTS_PKL_PATH.read_bytes())
+        stmts = pickle.loads(statements_pkl_path.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
     stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
     stmts_df = stmts_df[stmts_df["stmt_type"] != "Complex"]
     stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
-    stmts_df.to_csv(STATEMENTS_DF_PATH, sep='\t', index=False)
-
-    # This doesn't print stuff that makes sense
-    # assembler = SifAssembler(stmts)
-    # assembler.make_model()
-    # assembler.save_model(STATEMENTS_SIF_DF_PATH)
+    stmts_df.to_csv(statements_df_path, sep='\t', index=False)
 
     neighbor_hgnc_ids = set(stmts_df["agA_id"]).union(stmts_df["agB_id"])
     df["in_neighbors"] = df["hgnc"].map(neighbor_hgnc_ids.__contains__)
-    df.to_csv(PROCESSED_PATH, sep="\t", index=False)
+    df.to_csv(processed_path, sep="\t", index=False)
 
-    df[df["in_neighbors"]].to_csv(PROCESSED_FILTERED_PATH, sep="\t", index=False)
+    df[df["in_neighbors"]].to_csv(processed_filtered_path, sep="\t", index=False)
 
 
 def _read_df(path):
@@ -88,7 +105,10 @@ def main():
         "6871",
         "6877",
     ]
-    analysis(path=PATH, target_hgnc_ids=query)
+    client = Neo4jClient()
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client)
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("Exploratory_query.csv"), analysis_id="exploratory", client=client)
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("MAPK_downstream.csv"), analysis_id="mapk_downstream", client=client)
 
 
 if __name__ == '__main__':
