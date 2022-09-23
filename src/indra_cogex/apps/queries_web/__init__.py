@@ -70,7 +70,7 @@ SKIP_ARGUMENTS = {
 
 # This is the list of functions to be included
 module_functions = [(queries, fn) for fn in queries.__all__] + [
-    (subnetwork, fn) for fn in ["indra_subnetwork_relations"]
+    (subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]
 ]
 
 func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
