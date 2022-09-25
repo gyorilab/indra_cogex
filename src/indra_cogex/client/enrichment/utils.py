@@ -576,6 +576,7 @@ def _query(
 def get_positive_stmt_sets(
     *,
     client: Neo4jClient,
+    background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -587,6 +588,9 @@ def get_positive_stmt_sets(
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         The minimum number of evidences for a relationship.
         Defaults to 1 (i.e., cutoff not applied.
@@ -605,6 +609,7 @@ def get_positive_stmt_sets(
             query=_query(POSITIVE_STMT_TYPES),
             client=client,
             cache_file=POSITIVES_GENE_SETS_PATH,
+            background_gene_ids=background_gene_ids,
         ),
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
@@ -615,6 +620,7 @@ def get_positive_stmt_sets(
 def get_negative_stmt_sets(
     *,
     client: Neo4jClient,
+    background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -626,6 +632,9 @@ def get_negative_stmt_sets(
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         The minimum number of evidences for a relationship.
         Defaults to 1 (i.e., cutoff not applied.
@@ -644,6 +653,7 @@ def get_negative_stmt_sets(
             query=_query(NEGATIVE_STMT_TYPES),
             client=client,
             cache_file=NEGATIVES_GENE_SETS_PATH,
+            background_gene_ids=background_gene_ids,
         ),
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
