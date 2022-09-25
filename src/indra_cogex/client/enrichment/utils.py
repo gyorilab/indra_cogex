@@ -148,6 +148,7 @@ def collect_genes_with_confidence(
     query: str,
     *,
     cache_file: Optional[Path] = None,
+    background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Collect gene sets based on the given query.
@@ -156,6 +157,9 @@ def collect_genes_with_confidence(
     ----------
     query :
         A Cypher query collecting gene sets.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     cache_file :
         A file serving as a cache for the collected gene sets to avoid having
         to query multiple times.
@@ -170,54 +174,66 @@ def collect_genes_with_confidence(
         pointing to the maximum belief and evidence count associated with
         the given HGNC gene.
     """
+    # If we are using caching and already have the cache loaded in memory
     if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
-        return GENE_SET_CACHE[cache_file.as_posix()]
+        res = GENE_SET_CACHE[cache_file.as_posix()]
+    # If we are using caching but it's not in memory yet so we need to load
+    # it from a file
     elif cache_file is not None and cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             curie_to_hgnc_ids = pickle.load(fh)
         GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
-        return curie_to_hgnc_ids
+        res = curie_to_hgnc_ids
+    # Otherwise we need to run the query again and if necessary, cache the
+    # results.
+    else:
+        if cache_file is not None:
+            logger.info(
+                "Running new query and caching results into %s" % cache_file.as_posix()
+            )
+        curie_to_hgnc_ids = defaultdict(dict)
+        max_beliefs: Dict[Tuple[str, str, str], float] = {}
+        max_ev_counts: Dict[Tuple[str, str, str], int] = {}
+        for result in client.query_tx(query):
+            curie = result[0]
+            name = result[1]
+            hgnc_ids = set()
+            for hgnc_curie, belief, ev_count in result[2]:
+                hgnc_id = (
+                    hgnc_curie.lower().replace("hgnc:", "")
+                    if hgnc_curie.lower().startswith("hgnc:")
+                    else hgnc_curie.lower()
+                )
+                max_beliefs[(curie, name, hgnc_id)] = max(
+                    belief, max_beliefs.get((curie, name, hgnc_id), 0.0)
+                )
+                max_ev_counts[(curie, name, hgnc_id)] = max(
+                    ev_count, max_ev_counts.get((curie, name, hgnc_id), 0)
+                )
+                hgnc_ids.add(hgnc_id)
+            curie_to_hgnc_ids[(curie, name)] = {
+                hgnc_id: (
+                    max_beliefs[(curie, name, hgnc_id)],
+                    max_ev_counts[(curie, name, hgnc_id)],
+                )
+                for hgnc_id in hgnc_ids
+            }
+        curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
 
-    if cache_file is not None:
-        logger.info(
-            "Running new query and caching results into %s" % cache_file.as_posix()
-        )
-    curie_to_hgnc_ids = defaultdict(dict)
-    max_beliefs: Dict[Tuple[str, str, str], float] = {}
-    max_ev_counts: Dict[Tuple[str, str, str], int] = {}
-    for result in client.query_tx(query):
-        curie = result[0]
-        name = result[1]
-        hgnc_ids = set()
-        for hgnc_curie, belief, ev_count in result[2]:
-            hgnc_id = (
-                hgnc_curie.lower().replace("hgnc:", "")
-                if hgnc_curie.lower().startswith("hgnc:")
-                else hgnc_curie.lower()
-            )
-            max_beliefs[(curie, name, hgnc_id)] = max(
-                belief, max_beliefs.get((curie, name, hgnc_id), 0.0)
-            )
-            max_ev_counts[(curie, name, hgnc_id)] = max(
-                ev_count, max_ev_counts.get((curie, name, hgnc_id), 0)
-            )
-            hgnc_ids.add(hgnc_id)
-        curie_to_hgnc_ids[(curie, name)] = {
-            hgnc_id: (
-                max_beliefs[(curie, name, hgnc_id)],
-                max_ev_counts[(curie, name, hgnc_id)],
-            )
-            for hgnc_id in hgnc_ids
-        }
-    curie_to_hgnc_ids = dict(curie_to_hgnc_ids)
+        if cache_file is not None:
+            with open(cache_file, "wb") as fh:
+                pickle.dump(curie_to_hgnc_ids, fh)
+            GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
+        res = curie_to_hgnc_ids
 
-    if cache_file is not None:
-        with open(cache_file, "wb") as fh:
-            pickle.dump(curie_to_hgnc_ids, fh)
-        GENE_SET_CACHE[cache_file.as_posix()] = curie_to_hgnc_ids
-    return curie_to_hgnc_ids
+    # We now apply filtering to the background gene set if necessary
+    if background_gene_ids:
+        for curie_key, hgnc_dict in res.items():
+            res[curie_key] = {hgnc_id: v for k, v in hgnc_dict.items()
+                              if hgnc_id in background_gene_ids}
+    return res
 
 
 @autoclient(cache=True)
@@ -259,13 +275,20 @@ def get_go(
 
 
 @autoclient()
-def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+def get_wikipathways(
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    client: Neo4jClient
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
     Parameters
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
 
     Returns
     -------
@@ -282,18 +305,26 @@ def get_wikipathways(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """
     )
     return collect_gene_sets(
-        client=client, query=query, cache_file=WIKIPATHWAYS_GENE_SET_PATH
+        client=client, query=query, cache_file=WIKIPATHWAYS_GENE_SET_PATH,
+        background_gene_ids=background_gene_ids
     )
 
 
 @autoclient()
-def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+def get_reactome(
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    client: Neo4jClient
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
     Parameters
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
 
     Returns
     -------
@@ -310,18 +341,26 @@ def get_reactome(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
     """
     )
     return collect_gene_sets(
-        client=client, query=query, cache_file=REACTOME_GENE_SETS_PATH
+        client=client, query=query, cache_file=REACTOME_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids
     )
 
 
 @autoclient()
-def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+def get_phenotype_gene_sets(
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    client: Neo4jClient
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
     Parameters
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
 
     Returns
     -------
@@ -337,7 +376,9 @@ def get_phenotype_gene_sets(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set
         RETURN s.id, s.name, collect(gene.id);
     """
     )
-    return collect_gene_sets(client=client, query=query, cache_file=HPO_GENE_SETS_PATH)
+    return collect_gene_sets(
+        client=client, query=query, cache_file=HPO_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids)
 
 
 def filter_gene_set_confidences(
@@ -364,6 +405,7 @@ def filter_gene_set_confidences(
 def get_entity_to_targets(
     *,
     client: Neo4jClient,
+    background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -374,6 +416,9 @@ def get_entity_to_targets(
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         The minimum number of evidences for a relationship to count it as a regulator.
         Defaults to 1 (i.e., cutoff not applied.
@@ -402,7 +447,8 @@ def get_entity_to_targets(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=TO_TARGETS_GENE_SETS_PATH
+        client=client, query=query, cache_file=TO_TARGETS_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids
     )
     return filter_gene_set_confidences(
         genes_with_confidence,
@@ -415,6 +461,7 @@ def get_entity_to_targets(
 def get_entity_to_regulators(
     *,
     client: Neo4jClient,
+    background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -425,6 +472,9 @@ def get_entity_to_regulators(
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         The minimum number of evidences for a relationship to count it as a regulator.
         Defaults to 1 (i.e., cutoff not applied.
@@ -453,7 +503,8 @@ def get_entity_to_regulators(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=TO_REGULATORS_GENE_SETS_PATH
+        client=client, query=query, cache_file=TO_REGULATORS_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids
     )
     return filter_gene_set_confidences(
         genes_with_confidence,
