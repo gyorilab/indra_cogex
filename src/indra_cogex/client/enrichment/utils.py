@@ -75,7 +75,6 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
-    dump_cache = False
     # If we are using caching and already have the cache loaded in memory
     if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
@@ -91,7 +90,6 @@ def collect_gene_sets(
     # results.
     else:
         if cache_file is not None:
-            dump_cache = True
             logger.info(
                 "Running new query and caching results into %s" % cache_file.as_posix()
             )
@@ -110,18 +108,18 @@ def collect_gene_sets(
 
         if include_ontology_children:
             extend_by_ontology(res)
+        # If necessary, we dump the result into a cache file and also store
+        # it in memory. Note that this has to be done before filtering for
+        # background gene IDs which can change during runtime.
+        if cache_file is not None:
+            with open(cache_file, "wb") as fh:
+                pickle.dump(res, fh)
+            GENE_SET_CACHE[cache_file.as_posix()] = res
 
     # We now apply filtering to the background gene set if necessary
     if background_gene_ids:
         for k, v in res.items():
             res[k] = {vv for vv in v if vv in background_gene_ids}
-
-    # If necessary, we dump the result into a cache file and also store
-    # it in memory
-    if dump_cache:
-        with open(cache_file, "wb") as fh:
-            pickle.dump(res, fh)
-        GENE_SET_CACHE[cache_file.as_posix()] = res
 
     return res
 
