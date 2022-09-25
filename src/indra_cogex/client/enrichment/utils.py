@@ -48,6 +48,7 @@ def collect_gene_sets(
     query: str,
     *,
     client: Neo4jClient,
+    background_gene_ids: Optional[Iterable[str]] = None,
     include_ontology_children: bool = False,
     cache_file: Optional[Path] = None,
 ) -> Dict[Tuple[str, str], Set[str]]:
@@ -59,6 +60,9 @@ def collect_gene_sets(
         A cypher query
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     include_ontology_children :
         If True, extend the gene set associations with associations from
         child terms using the indra ontology
@@ -71,40 +75,54 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
+    dump_cache = False
+    # If we are using caching and already have the cache loaded in memory
     if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
-        return GENE_SET_CACHE[cache_file.as_posix()]
+        res = GENE_SET_CACHE[cache_file.as_posix()]
+    # If we are using caching but it's not in memory yet so we need to load
+    # it from a file
     elif cache_file is not None and cache_file.exists():
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             res = pickle.load(fh)
         GENE_SET_CACHE[cache_file.as_posix()] = res
-        return res
+    # Otherwise we need to run the query again and if necessary, cache the
+    # results.
+    else:
+        if cache_file is not None:
+            dump_cache = True
+            logger.info(
+                "Running new query and caching results into %s" % cache_file.as_posix()
+            )
+        curie_to_hgnc_ids: DefaultDict[Tuple[str, str], Set[str]] = defaultdict(set)
+        query_res = client.query_tx(query)
+        if query_res is None:
+            raise ValueError
+        for curie, name, hgnc_curies in query_res:
+            curie_to_hgnc_ids[curie, name].update(
+                hgnc_curie.lower().replace("hgnc:", "")
+                if hgnc_curie.lower().startswith("hgnc:")
+                else hgnc_curie.lower()
+                for hgnc_curie in hgnc_curies
+            )
+        res = dict(curie_to_hgnc_ids)
 
-    if cache_file is not None:
-        logger.info(
-            "Running new query and caching results into %s" % cache_file.as_posix()
-        )
-    curie_to_hgnc_ids: DefaultDict[Tuple[str, str], Set[str]] = defaultdict(set)
-    res = client.query_tx(query)
-    if res is None:
-        raise ValueError
-    for curie, name, hgnc_curies in res:
-        curie_to_hgnc_ids[curie, name].update(
-            hgnc_curie.lower().replace("hgnc:", "")
-            if hgnc_curie.lower().startswith("hgnc:")
-            else hgnc_curie.lower()
-            for hgnc_curie in hgnc_curies
-        )
-    res = dict(curie_to_hgnc_ids)
+        if include_ontology_children:
+            extend_by_ontology(res)
 
-    if include_ontology_children:
-        extend_by_ontology(res)
+    # We now apply filtering to the background gene set if necessary
+    if background_gene_ids:
+        for k, v in res.items():
+            res[k] = {vv for vv in v if vv in background_gene_ids}
 
-    if cache_file is not None:
+    # If necessary, we dump the result into a cache file and also store
+    # it in memory
+    if dump_cache:
         with open(cache_file, "wb") as fh:
             pickle.dump(res, fh)
         GENE_SET_CACHE[cache_file.as_posix()] = res
+
     return res
 
 
@@ -138,8 +156,11 @@ def collect_genes_with_confidence(
 
     Parameters
     ----------
-    query:
-        A cypher query
+    query :
+        A Cypher query collecting gene sets.
+    cache_file :
+        A file serving as a cache for the collected gene sets to avoid having
+        to query multiple times.
     client :
         The Neo4j client.
 
@@ -202,13 +223,20 @@ def collect_genes_with_confidence(
 
 
 @autoclient(cache=True)
-def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
+def get_go(
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    client: Neo4jClient,
+) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
     Parameters
     ----------
     client :
         The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
 
     Returns
     -------
@@ -226,6 +254,7 @@ def get_go(*, client: Neo4jClient) -> Dict[Tuple[str, str], Set[str]]:
         client=client,
         query=query,
         cache_file=GO_GENE_SET_PATH,
+        background_gene_ids=background_gene_ids,
         include_ontology_children=True,
     )
 
