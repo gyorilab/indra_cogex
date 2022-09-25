@@ -7,7 +7,17 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, DefaultDict, Dict, Iterable, Mapping, Optional, Set, Tuple, TypeVar
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    Iterable,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
@@ -231,8 +241,11 @@ def collect_genes_with_confidence(
     # We now apply filtering to the background gene set if necessary
     if background_gene_ids:
         for curie_key, hgnc_dict in res.items():
-            res[curie_key] = {hgnc_id: v for k, v in hgnc_dict.items()
-                              if hgnc_id in background_gene_ids}
+            res[curie_key] = {
+                hgnc_id: v
+                for hgnc_id, v in hgnc_dict.items()
+                if hgnc_id in background_gene_ids
+            }
     return res
 
 
@@ -276,9 +289,7 @@ def get_go(
 
 @autoclient()
 def get_wikipathways(
-    *,
-    background_gene_ids: Optional[Iterable[str]] = None,
-    client: Neo4jClient
+    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -305,16 +316,16 @@ def get_wikipathways(
     """
     )
     return collect_gene_sets(
-        client=client, query=query, cache_file=WIKIPATHWAYS_GENE_SET_PATH,
-        background_gene_ids=background_gene_ids
+        client=client,
+        query=query,
+        cache_file=WIKIPATHWAYS_GENE_SET_PATH,
+        background_gene_ids=background_gene_ids,
     )
 
 
 @autoclient()
 def get_reactome(
-    *,
-    background_gene_ids: Optional[Iterable[str]] = None,
-    client: Neo4jClient
+    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -341,16 +352,16 @@ def get_reactome(
     """
     )
     return collect_gene_sets(
-        client=client, query=query, cache_file=REACTOME_GENE_SETS_PATH,
-        background_gene_ids=background_gene_ids
+        client=client,
+        query=query,
+        cache_file=REACTOME_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids,
     )
 
 
 @autoclient()
 def get_phenotype_gene_sets(
-    *,
-    background_gene_ids: Optional[Iterable[str]] = None,
-    client: Neo4jClient
+    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
@@ -377,8 +388,11 @@ def get_phenotype_gene_sets(
     """
     )
     return collect_gene_sets(
-        client=client, query=query, cache_file=HPO_GENE_SETS_PATH,
-        background_gene_ids=background_gene_ids)
+        client=client,
+        query=query,
+        cache_file=HPO_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids,
+    )
 
 
 def filter_gene_set_confidences(
@@ -447,8 +461,10 @@ def get_entity_to_targets(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=TO_TARGETS_GENE_SETS_PATH,
-        background_gene_ids=background_gene_ids
+        client=client,
+        query=query,
+        cache_file=TO_TARGETS_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids,
     )
     return filter_gene_set_confidences(
         genes_with_confidence,
@@ -503,8 +519,10 @@ def get_entity_to_regulators(
     """
     )
     genes_with_confidence = collect_genes_with_confidence(
-        client=client, query=query, cache_file=TO_REGULATORS_GENE_SETS_PATH,
-        background_gene_ids=background_gene_ids
+        client=client,
+        query=query,
+        cache_file=TO_REGULATORS_GENE_SETS_PATH,
+        background_gene_ids=background_gene_ids,
     )
     return filter_gene_set_confidences(
         genes_with_confidence,

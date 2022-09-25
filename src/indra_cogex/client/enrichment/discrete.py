@@ -109,7 +109,6 @@ def gene_ontology_single_ora(
     client: Neo4jClient,
     go_term: Tuple[str, str],
     gene_ids: List[str],
-
 ) -> float:
     """Get the *p*-value for the Fisher exact test a given GO term.
 
@@ -188,7 +187,7 @@ def go_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
     background_gene_ids: Optional[Iterable[str]] = None,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all GO terms.
 
@@ -210,8 +209,11 @@ def go_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(get_go(client=client), query=gene_ids, count=count, **kwargs)
 
 
@@ -219,7 +221,7 @@ def wikipathways_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
     background_gene_ids: Optional[Iterable[str]] = None,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways.
 
@@ -241,8 +243,11 @@ def wikipathways_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(
         get_wikipathways(client=client), query=gene_ids, count=count, **kwargs
     )
@@ -252,7 +257,7 @@ def reactome_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
     background_gene_ids: Optional[Iterable[str]] = None,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways.
 
@@ -274,8 +279,11 @@ def reactome_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(get_reactome(client=client), query=gene_ids, count=count, **kwargs)
 
 
@@ -285,7 +293,7 @@ def phenotype_ora(
     background_gene_ids: Optional[Iterable[str]] = None,
     *,
     client: Neo4jClient,
-    **kwargs
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all HP phenotypes.
 
@@ -307,8 +315,11 @@ def phenotype_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(
         get_phenotype_gene_sets(client=client), query=gene_ids, count=count, **kwargs
     )
@@ -350,8 +361,11 @@ def indra_downstream_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(
         get_entity_to_regulators(
             client=client,
@@ -400,8 +414,11 @@ def indra_upstream_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client) if not background_gene_ids \
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
         else len(background_gene_ids)
+    )
     return _do_ora(
         get_entity_to_targets(
             client=client,
