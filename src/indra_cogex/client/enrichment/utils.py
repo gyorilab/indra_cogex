@@ -206,7 +206,10 @@ def collect_genes_with_confidence(
         curie_to_hgnc_ids = defaultdict(dict)
         max_beliefs: Dict[Tuple[str, str, str], float] = {}
         max_ev_counts: Dict[Tuple[str, str, str], int] = {}
-        for result in client.query_tx(query):
+        query_res = client.query_tx(query)
+        if query_res is None:
+            raise RuntimeError
+        for result in query_res:
             curie = result[0]
             name = result[1]
             hgnc_ids = set()
