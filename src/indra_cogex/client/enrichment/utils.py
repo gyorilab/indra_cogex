@@ -128,8 +128,10 @@ def collect_gene_sets(
 
     # We now apply filtering to the background gene set if necessary
     if background_gene_ids:
-        for k, v in res.items():
-            res[k] = {vv for vv in v if vv in background_gene_ids}
+        for curie_key, hgnc_ids in res.items():
+            res[curie_key] = {
+                hgnc_id for hgnc_id in hgnc_ids if hgnc_id in background_gene_ids
+            }
 
     return res
 
