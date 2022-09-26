@@ -2,7 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Collection, Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -186,7 +186,7 @@ def _do_ora(
 def go_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all GO terms.
@@ -220,7 +220,7 @@ def go_ora(
 def wikipathways_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways.
@@ -256,7 +256,7 @@ def wikipathways_ora(
 def reactome_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways.
@@ -290,7 +290,7 @@ def reactome_ora(
 @autoclient()
 def phenotype_ora(
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     *,
     client: Neo4jClient,
     **kwargs,
@@ -328,7 +328,7 @@ def phenotype_ora(
 def indra_downstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     *,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
@@ -381,7 +381,7 @@ def indra_downstream_ora(
 def indra_upstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
-    background_gene_ids: Optional[Iterable[str]] = None,
+    background_gene_ids: Optional[Collection[str]] = None,
     *,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
