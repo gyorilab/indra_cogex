@@ -83,6 +83,7 @@ class Neo4jClient:
         query_params :
             Parameters associated with the query.
         """
+        # todo: redo this to use `with ... as tx:` contexts like for query_tx
         tx = self.get_session().begin_transaction()
         try:
             tx.run(query, parameters=query_params)
@@ -122,15 +123,15 @@ class Neo4jClient:
             A list of results where each result is a list of one or more
             objects (typically neo4j nodes or relations).
         """
-        tx = self.get_session().begin_transaction()
-        try:
-            res = tx.run(query)
-        except Exception as e:
-            logger.error(e)
-            tx.close()
-            return
-        values = res.values()
-        tx.close()
+        # For documentation on the session and transaction classes see
+        # https://neo4j.com/docs/api/python-driver/current/api.html#session-construction
+        # and
+        # https://neo4j.com/docs/api/python-driver/current/api.html#explicit-transactions
+        with self.driver.session() as session:
+            with session.begin_transaction() as tx:
+                res = tx.run(query)
+                values = res.values()
+
         if squeeze:
             values = [value[0] for value in values]
         return values
