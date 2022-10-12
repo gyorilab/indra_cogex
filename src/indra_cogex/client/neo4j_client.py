@@ -83,15 +83,10 @@ class Neo4jClient:
         query_params :
             Parameters associated with the query.
         """
-        # todo: redo this to use `with ... as tx:` contexts like for query_tx
-        tx = self.get_session().begin_transaction()
-        try:
-            tx.run(query, parameters=query_params)
-            tx.commit()
-        except Exception as e:
-            logger.error(e)
-        finally:
-            tx.close()
+        with self.driver.session() as session:
+            with session.begin_transaction() as tx:
+                tx.run(query, parameters=query_params)
+                tx.commit()
 
     def query_dict(self, query: str) -> Dict:
         """Run a read-only query that generates a dictionary."""
