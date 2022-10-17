@@ -69,6 +69,12 @@ class Neo4jClient:
             max_connection_lifetime=3 * 60,
         )
 
+    def __del__(self):
+        # Safely shut down the driver as a Neo4jClient object is garbage collected
+        # https://neo4j.com/docs/api/python-driver/current/api.html#driver-object-lifetime
+        if self.driver is not None:
+            self.driver.close()
+
     def create_tx(
         self,
         query: str,
