@@ -11,7 +11,7 @@ from indra.config import get_config
 from indra.databases import identifiers
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Transaction, unit_of_work
 
 from indra_cogex.representation import Node, Relation, norm_id, triple_query
 
@@ -69,6 +69,12 @@ class Neo4jClient:
             max_connection_lifetime=3 * 60,
         )
 
+    def __del__(self):
+        # Safely shut down the driver as a Neo4jClient object is garbage collected
+        # https://neo4j.com/docs/api/python-driver/current/api.html#driver-object-lifetime
+        if self.driver is not None:
+            self.driver.close()
+
     def create_tx(
         self,
         query: str,
@@ -83,14 +89,10 @@ class Neo4jClient:
         query_params :
             Parameters associated with the query.
         """
-        tx = self.get_session().begin_transaction()
-        try:
-            tx.run(query, parameters=query_params)
-            tx.commit()
-        except Exception as e:
-            logger.error(e)
-        finally:
-            tx.close()
+        with self.driver.session() as session:
+            return session.write_transaction(
+                do_cypher_tx, query, query_params=query_params
+            )
 
     def query_dict(self, query: str) -> Dict:
         """Run a read-only query that generates a dictionary."""
@@ -122,15 +124,15 @@ class Neo4jClient:
             A list of results where each result is a list of one or more
             objects (typically neo4j nodes or relations).
         """
-        tx = self.get_session().begin_transaction()
-        try:
-            res = tx.run(query)
-        except Exception as e:
-            logger.error(e)
-            tx.close()
-            return
-        values = res.values()
-        tx.close()
+        # For documentation on the session and transaction classes see
+        # https://neo4j.com/docs/api/python-driver/current/api.html#session-construction
+        # and
+        # https://neo4j.com/docs/api/python-driver/current/api.html#explicit-transactions
+        # Documentation on transaction functions are here:
+        # https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+        with self.driver.session() as session:
+            values = session.read_transaction(do_cypher_tx, query)
+
         if squeeze:
             values = [value[0] for value in values]
         return values
@@ -1088,3 +1090,16 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
         return _wrapped
 
     return _decorator
+
+
+# Follows example here:
+# https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+# and from the docstring of neo4j.Session.read_transaction
+@unit_of_work()
+def do_cypher_tx(
+        tx: Transaction,
+        query: str,
+        query_params: Optional[Dict] = None
+) -> List[List]:
+    result = tx.run(query, parameters=query_params)
+    return [record.values() for record in result]

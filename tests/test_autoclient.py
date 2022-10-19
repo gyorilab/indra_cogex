@@ -49,7 +49,6 @@ def test_autoclient():
     client = Neo4jClient()
     tissues = get_tissues_for_gene(("HGNC", "9896"), client=client)
     _check_tissues(tissues)
-    assert client.session is not None
 
 
 def _check_tissues(tissues):
