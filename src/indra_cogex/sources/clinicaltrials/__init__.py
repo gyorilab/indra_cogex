@@ -94,10 +94,11 @@ class ClinicaltrialsProcessor(Processor):
                     )
                     found_disease_gilda = True
             if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
-                for mesh_id in row["ConditionMeshId"].split("|"):
-                    correct_mesh_id = get_correct_mesh_id(mesh_id)
+                for mesh_id, mesh_term in zip(row["ConditionMeshId"].split("|"),
+                                              row["ConditionMeshTerm"].split("|")):
+                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
-                        continue
+                        assert False
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append("MESH")
                     self.has_trial_cond_id.append(correct_mesh_id)
@@ -122,10 +123,11 @@ class ClinicaltrialsProcessor(Processor):
                         found_drug_gilda = True
             # If there is no Gilda much but there are some MeSH IDs given
             if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
-                for mesh_id in row["InterventionMeshId"].split("|"):
-                    correct_mesh_id = get_correct_mesh_id(mesh_id)
+                for mesh_id, mesh_term in zip(row["InterventionMeshId"].split("|"),
+                                              row["InterventionMeshTerm"].split("|")):
+                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
-                        continue
+                        assert False
                     self.tested_in_int_ns.append("MESH")
                     self.tested_in_int_id.append(correct_mesh_id)
                     self.tested_in_nct.append(row["NCTId"])
@@ -165,13 +167,26 @@ class ClinicaltrialsProcessor(Processor):
             )
 
 
-def get_correct_mesh_id(mesh_id):
+def get_correct_mesh_id(mesh_id, mesh_term=None):
     # A proxy for checking whether something is a valid MeSH term is
     # to look up its name
     if mesh_client.get_mesh_name(mesh_id, offline=True):
         return mesh_id
-    elif len(mesh_id) == 10:
+    # A common issue is with zero padding, where 9 digits are used
+    # instead of the correct 6, and we can remove the extra zeros
+    # to get a valid ID
+    else:
         short_id = mesh_id[0] + mesh_id[4:]
         if mesh_client.get_mesh_name(short_id, offline=True):
             return short_id
+    # Another pattern is one where the MeSH ID is simply invalid but the
+    # corresponding MeSH term allows us to get a valid ID via reverse
+    # ID lookup - done here as grounding just to not have to assume
+    # perfect / up to date naming conventions in the source data.
+    if mesh_term:
+        matches = gilda.ground(mesh_term, namespaces=['MESH'])
+        if len(matches) == 1:
+            for k, v in matches[0].get_groundings():
+                if k == 'MESH':
+                    return v
     return None
