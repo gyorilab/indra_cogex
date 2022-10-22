@@ -33,6 +33,7 @@ from pathlib import Path
 import pystow
 import tqdm
 from typing import Union
+from indra.databases import mesh_client
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 
@@ -94,10 +95,13 @@ class ClinicaltrialsProcessor(Processor):
                     found_disease_gilda = True
             if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
                 for mesh_id in row["ConditionMeshId"].split("|"):
+                    correct_mesh_id = get_correct_mesh_id(mesh_id)
+                    if not correct_mesh_id:
+                        continue
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append("MESH")
-                    self.has_trial_cond_id.append(mesh_id)
-                    yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
+                    self.has_trial_cond_id.append(correct_mesh_id)
+                    yield Node(db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"])
 
             # We first try grounding the names with Gilda, if any match, we
             # use it, if there are no matches, we go by provided MeSH ID
@@ -119,10 +123,13 @@ class ClinicaltrialsProcessor(Processor):
             # If there is no Gilda much but there are some MeSH IDs given
             if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
                 for mesh_id in row["InterventionMeshId"].split("|"):
+                    correct_mesh_id = get_correct_mesh_id(mesh_id)
+                    if not correct_mesh_id:
+                        continue
                     self.tested_in_int_ns.append("MESH")
-                    self.tested_in_int_id.append(mesh_id)
+                    self.tested_in_int_id.append(correct_mesh_id)
                     self.tested_in_nct.append(row["NCTId"])
-                    yield Node(db_ns="MESH", db_id=mesh_id, labels=["BioEntity"])
+                    yield Node(db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"])
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
             yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=["ClinicalTrial"])
@@ -156,3 +163,15 @@ class ClinicaltrialsProcessor(Processor):
                 target_id=target_id,
                 rel_type="tested_in",
             )
+
+
+def get_correct_mesh_id(mesh_id):
+    # A proxy for checking whether something is a valid MeSH term is
+    # to look up its name
+    if mesh_client.get_mesh_name(mesh_id, offline=True):
+        return mesh_id
+    elif len(mesh_id) == 10:
+        short_id = mesh_id[0] + mesh_id[4:]
+        if mesh_client.get_mesh_name(short_id, offline=True):
+            return short_id
+    return None
