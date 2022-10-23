@@ -27,15 +27,22 @@ gzip clinical_trials.csv to get clinical_trials.csv.gz, then place
 this file into <pystow home>/indra/cogex/clinicaltrials/
 """
 
+import logging
+from collections import Counter
+from pathlib import Path
+from typing import Union
+
 import gilda
 import pandas as pd
-from pathlib import Path
 import pystow
 import tqdm
-from typing import Union
+
 from indra.databases import mesh_client
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
+
+
+logger = logging.getLogger(__name__)
 
 
 class ClinicaltrialsProcessor(Processor):
@@ -62,6 +69,8 @@ class ClinicaltrialsProcessor(Processor):
         self.tested_in_int_ns = []
         self.tested_in_int_id = []
         self.tested_in_nct = []
+
+        self.problematic_mesh_ids = []
 
     def ground_condition(self, condition):
         matches = gilda.ground(condition)
@@ -98,7 +107,8 @@ class ClinicaltrialsProcessor(Processor):
                                               row["ConditionMeshTerm"].split("|")):
                     correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
-                        assert False
+                        self.problematic_mesh_ids.append((mesh_id, mesh_term))
+                        continue
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append("MESH")
                     self.has_trial_cond_id.append(correct_mesh_id)
@@ -127,7 +137,8 @@ class ClinicaltrialsProcessor(Processor):
                                               row["InterventionMeshTerm"].split("|")):
                     correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
-                        assert False
+                        self.problematic_mesh_ids.append((mesh_id, mesh_term))
+                        continue
                     self.tested_in_int_ns.append("MESH")
                     self.tested_in_int_id.append(correct_mesh_id)
                     self.tested_in_nct.append(row["NCTId"])
@@ -135,6 +146,9 @@ class ClinicaltrialsProcessor(Processor):
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
             yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=["ClinicalTrial"])
+
+        logger.info('Problematic MeSH IDs: %s' % str(
+            Counter(self.problematic_mesh_ids).most_common()))
 
     def get_relations(self):
         added = set()
