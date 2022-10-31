@@ -1105,14 +1105,36 @@ def _get_mesh_child_terms(
         to the graph.
     """
     meshid_norm = norm_id(*mesh_term)
+    # todo: figure out why [:isa|partof*1..] is ~170x faster than [:isa*1..]
+    #  for the query below
     query = (
         """
-        MATCH (c:BioEntity)-[:isa*1..]->(:BioEntity {id: "%s"})
-        RETURN DISTINCT c.id
+        MATCH p=(c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: "%s"})
+        RETURN p
     """
         % meshid_norm
     )
-    return set(client.query_tx(query, squeeze=True))
+    paths = client.query_tx(query, squeeze=True)
+    relations_list = [client.neo4j_to_relations(p) for p in paths]
+    mesh_ids = set()
+    for path_result in relations_list:
+        current_set = set()
+        for relation in path_result:
+            # Check if relation is 'isa' and if both nodes are mesh nodes
+            if relation.rel_type == "isa" and \
+                    relation.source_ns.lower() == "mesh" and\
+                    relation.target_ns.lower() == "mesh":
+                current_set.add(norm_id(relation.source_ns, relation.source_id))
+                current_set.add(norm_id(relation.target_ns, relation.target_id))
+            else:
+                # This path result contains a relation with something else
+                # than a mesh-[:isa]->mesh relation: reset the current set
+                # and continue to next path result
+                current_set = set()
+                break
+        mesh_ids |= current_set
+    # Remove the queried mesh id
+    return mesh_ids - {meshid_norm}
 
 
 @autoclient(cache=True)
