@@ -7,6 +7,7 @@ from indra_cogex.client.queries import *
 from indra_cogex.client.queries import (
     _filter_out_medscan_evidence,
     _get_ev_dict_from_hash_ev_query,
+    _get_mesh_child_terms,
 )
 from indra_cogex.representation import Node
 
@@ -223,6 +224,25 @@ def test_isa_or_partof():
     term = ("MESH", "D020263")
     parent = ("MESH", "D007855")
     assert isa_or_partof(term, parent, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_mesh_child_terms_empty():
+    client = _get_client()
+    term = ("MESH", "D015002")
+    child_terms = _get_mesh_child_terms(term, client=client)
+    assert isinstance(child_terms, set)
+    assert child_terms == set()
+
+
+@pytest.mark.nonpublic
+def test_get_mesh_child_terms_nonempty():
+    client = _get_client()
+    term = ("MESH", "D007855")
+    child_terms = _get_mesh_child_terms(term, client=client)
+    assert isinstance(child_terms, set)
+    assert len(child_terms) > 0
+    assert list(child_terms)[0].startswith("mesh:")
 
 
 @pytest.mark.nonpublic

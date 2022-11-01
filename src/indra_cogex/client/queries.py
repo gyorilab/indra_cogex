@@ -1105,9 +1105,11 @@ def _get_mesh_child_terms(
         to the graph.
     """
     meshid_norm = norm_id(*mesh_term)
+    # todo: figure out why [:isa|partof*1..] is ~170x faster than [:isa*1..]
+    #  for the query below
     query = (
         """
-        MATCH (c:BioEntity)-[:isa*1..]->(:BioEntity {id: "%s"})
+        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: "%s"})
         RETURN DISTINCT c.id
     """
         % meshid_norm
