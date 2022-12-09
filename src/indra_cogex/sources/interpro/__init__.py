@@ -81,16 +81,16 @@ class InterproProcessor(Processor):
             yield Node("HGNC", hgnc_id, ["BioEntity"])
 
     def get_relations(self):  # noqa:D102
-        for interpro_id in self.interpro_ids:
-            for child_interpro_id in self.parents.get(interpro_id, []):
+        for interpro_id in sorted(self.interpro_ids):
+            for child_interpro_id in sorted(self.parents.get(interpro_id, set())):
                 yield Relation(
                     "interpro", child_interpro_id, "interpro", interpro_id, "isa"
                 )
 
-            for go_id in self.interpro_to_goa.get(interpro_id, []):
+            for go_id in sorted(self.interpro_to_goa.get(interpro_id, [])):
                 yield Relation("interpro", interpro_id, "GO", go_id, "associated_with")
 
-            for hgnc_id in self.interpro_to_genes.get(interpro_id, []):
+            for hgnc_id in sorted(self.interpro_to_genes.get(interpro_id, []), key=int):
                 yield Relation("interpro", interpro_id, "HGNC", hgnc_id, "has_member")
 
 
@@ -121,15 +121,15 @@ def get_entries_df(*, force: bool = False, module: pystow.Module) -> pd.DataFram
 
 def get_parent_to_children(
     *, force: bool = False, module: pystow.Module
-) -> Mapping[str, List[str]]:
+) -> Mapping[str, Set[str]]:
     """The a mapping from parent InterPro ID to list of children InterPro IDs."""
     path = module.ensure(url=INTERPRO_TREE_URL, force=force)
     with open(path) as file:
-        return _parse_tree_helper(file)
+        return _help_parent_to_children(file)
 
 
-def _parse_tree_helper(lines: Iterable[str]) -> Mapping[str, List[str]]:
-    child_to_parents = defaultdict(list)
+def _help_parent_to_children(lines: Iterable[str]) -> Mapping[str, Set[str]]:
+    child_to_parents = defaultdict(set)
     previous_depth, previous_id = 0, None
     stack = [previous_id]
 
@@ -148,14 +148,14 @@ def _parse_tree_helper(lines: Iterable[str]) -> Mapping[str, List[str]]:
                 del stack[-1]
 
             child_id = stack[-1]
-            child_to_parents[child_id].append(parent_id)  # type:ignore
+            child_to_parents[child_id].add(parent_id)  # type:ignore
 
         previous_depth, previous_id = depth, parent_id
 
-    parent_to_children = defaultdict(list)
+    parent_to_children = defaultdict(set)
     for child_id, parent_ids in child_to_parents.items():
         for parent_id in parent_ids:
-            parent_to_children[parent_id].append(child_id)
+            parent_to_children[parent_id].add(child_id)
     return dict(parent_to_children)
 
 
