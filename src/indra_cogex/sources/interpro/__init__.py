@@ -200,45 +200,44 @@ def get_interpro_to_proteins(
     cache_path = module.join(name="protein2ipr_human.tsv")
 
     if cache_path.is_file():
-        interpro_to_uniprots = defaultdict(set)
+        rv = defaultdict(set)
         with cache_path.open() as file:
             for line in file:
                 interpro_id, uniprot_id, start, end = line.strip().split("\t")
-                interpro_to_uniprots[interpro_id].add(
-                    (uniprot_id, int(start), int(end))
-                )
-        return dict(interpro_to_uniprots)
+                rv[interpro_id].add((uniprot_id, int(start), int(end)))
+        return dict(rv)
 
     path = module.ensure(url=INTERPRO_PROTEINS_URL, force=force)
-    interpro_to_uniprots = defaultdict(set)
     with gzip.open(path, "rt") as file:
-        for line in tqdm(
-            file,
-            unit_scale=True,
-            unit="line",
-            desc="Processing ipr2protein",
-            total=1_216_508_710,
-        ):
-            uniprot_id, interpro_id, _name, _xref, start, end = line.split("\t")
-            if interpro_id not in interpro_ids:
-                continue
-            if uniprot_client.is_human(uniprot_id):
-                interpro_to_uniprots[interpro_id].add(
-                    (uniprot_id, int(start), int(end))
-                )
-
-    interpro_to_uniprots = dict(interpro_to_uniprots)
+        rv = _read_ipr2protein(file, interpro_ids)
 
     with cache_path.open("w") as file:
         for interpro_id, uniprot_ids in tqdm(
-            sorted(interpro_to_uniprots.items()),
+            sorted(rv.items()),
             unit_scale=True,
             desc="Writing human subset",
         ):
             for uniprot_id, start, end in sorted(uniprot_ids):
                 print(interpro_id, uniprot_id, start, end, sep="\t", file=file)
 
-    return interpro_to_uniprots
+    return rv
+
+
+def _read_ipr2protein(file, interpro_ids):
+    interpro_to_uniprots = defaultdict(set)
+    for line in tqdm(
+        file,
+        unit_scale=True,
+        unit="line",
+        desc="Processing ipr2protein",
+        total=1_216_508_710,
+    ):
+        uniprot_id, interpro_id, _name, _xref, start, end = line.split("\t")
+        if interpro_id not in interpro_ids:
+            continue
+        if uniprot_client.is_human(uniprot_id):
+            interpro_to_uniprots[interpro_id].add((uniprot_id, int(start), int(end)))
+    return dict(interpro_to_uniprots)
 
 
 def get_interpro_to_goa(
