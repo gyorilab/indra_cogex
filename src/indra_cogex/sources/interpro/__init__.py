@@ -65,12 +65,12 @@ class InterproProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         unique_go = set()
         unique_hgnc = set()
-        for interpro_id, interpro_type, name, short_name in self.entries_df.values:
+        for interpro_id, _type, name, short_name in self.entries_df.values:
             yield Node(
                 "interpro",
                 interpro_id,
                 ["BioEntity"],
-                dict(name=name, short_name=short_name, type=interpro_type),
+                dict(name=name, short_name=short_name),
             )
             unique_go.update(self.interpro_to_goa.get(interpro_id, set()))
             unique_hgnc.update(self.interpro_to_genes.get(interpro_id, set()))
