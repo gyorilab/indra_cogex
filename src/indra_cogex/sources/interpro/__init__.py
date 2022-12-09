@@ -8,7 +8,8 @@
 import gzip
 import logging
 from collections import defaultdict
-from typing import Iterable, List, Mapping, Set, Tuple
+from pathlib import Path
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import pandas as pd
 import pystow
@@ -211,10 +212,16 @@ def get_interpro_to_proteins(
 
 
 def get_interpro_to_goa(
-    *, force: bool = False, module: pystow.Module
+    *,
+    force: bool = False,
+    module: Optional[pystow.Module] = None,
+    path: Optional[Path] = None,
 ) -> Mapping[str, Set[str]]:
     """Get a mapping from InterPro identifiers to sets of GO id/name pairs.."""
-    path = module.ensure(url=INTERPRO_GO_URL, name="interpro2go.tsv", force=force)
+    if path is None:
+        if module is None:
+            raise ValueError
+        path = module.ensure(url=INTERPRO_GO_URL, name="interpro2go.tsv", force=force)
     interpro_to_go_annotations = defaultdict(set)
     with path.open() as file:
         for line in file:

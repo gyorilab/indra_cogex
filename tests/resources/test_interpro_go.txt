@@ -1,0 +1,7 @@
+!date: 2022/10/05 11:07:08
+!Mapping of InterPro entries to GO
+!external resource: http://www.ebi.ac.uk/interpro
+!citation: Blum et al. (2021) Nucl. Acids Res. 49:D344â€“D354
+!contact:interhelp@ebi.ac.uk!
+InterPro:IPR000003 Retinoid X receptor/HNF4 > GO:DNA binding ; GO:0003677
+InterPro:IPR000003 Retinoid X receptor/HNF4 > GO:nuclear steroid receptor activity ; GO:0003707
