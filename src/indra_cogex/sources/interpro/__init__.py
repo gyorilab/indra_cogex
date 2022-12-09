@@ -129,34 +129,46 @@ def get_parent_to_children(
 
 
 def _help_parent_to_children(lines: Iterable[str]) -> Mapping[str, Set[str]]:
-    child_to_parents = defaultdict(set)
-    previous_depth, previous_id = 0, None
-    stack = [previous_id]
-
-    for line in tqdm(lines, desc="parsing InterPro tree"):
-        depth = _count_leading_dashes(line)
-        parent_id, _ = line[depth:].split("::", 1)
-
-        if depth == 0:
-            stack.clear()
-            stack.append(parent_id)
-        else:
-            if depth > previous_depth:
-                stack.append(previous_id)
-
-            elif depth < previous_depth:
-                del stack[-1]
-
-            child_id = stack[-1]
-            child_to_parents[child_id].add(parent_id)  # type:ignore
-
-        previous_depth, previous_id = depth, parent_id
-
+    lines = [line.strip().split("::", 1)[0] for line in lines]
     parent_to_children = defaultdict(set)
-    for child_id, parent_ids in child_to_parents.items():
-        for parent_id in parent_ids:
-            parent_to_children[parent_id].add(child_id)
+    for parent_id, child_id in _unroll_tree(_format_tree(lines)):
+        parent_to_children[parent_id].add(child_id)
     return dict(parent_to_children)
+
+
+def _unroll_tree(d):
+    for parent, subdict in d.items():
+        for child, subsubdict in subdict.items():
+            yield parent, child
+            yield from _unroll_tree(subdict)
+
+
+def _format_tree(lines):
+    return {
+        parent: _format_tree(child_lines)
+        for parent, child_lines in descend(lines).items()
+    }
+
+
+def descend(lines):
+    if not lines:
+        return {}
+    groups = {}
+    # Assume the first one is always a root.
+    parent, *lines = lines
+    group = []
+    for line in lines:
+        if line.startswith("--"):
+            group.append(line[2:])
+        else:
+            # save the previous group
+            groups[parent] = group
+            # set a new parent
+            parent = line
+            group = []
+    # don't forget about the last one
+    groups[parent] = group
+    return groups
 
 
 def _count_leading_dashes(s: str) -> int:
