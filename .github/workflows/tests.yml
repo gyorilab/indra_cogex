@@ -25,7 +25,7 @@ jobs:
           echo $PYTEST_ADDOPTS
       - name: Install dependencies
         run: |
-          pip install tox
+          pip install "tox<4.0.0"
           BIOONTOLOGY_VERSION=1.28
           echo "bio ontology version: ${BIOONTOLOGY_VERSION}"
           mkdir -p $HOME/.indra/bio_ontology/$BIOONTOLOGY_VERSION
