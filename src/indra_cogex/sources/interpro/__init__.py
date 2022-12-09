@@ -9,10 +9,11 @@ import gzip
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Iterable, Mapping, Optional, Set, Tuple
 
 import pandas as pd
 import pystow
+import requests
 from protmapper import uniprot_client
 from tqdm import tqdm
 
@@ -46,6 +47,7 @@ class InterproProcessor(Processor):
 
     def __init__(self, force: bool = False):
         """Initialize the InterPro processor."""
+        self.version = get_current_version()
         self.entries_df = get_entries_df(module=self.module)
         self.interpro_ids = set(self.entries_df["ENTRY_AC"])
         self.parents = get_parent_to_children(force=force, module=self.module)
@@ -56,11 +58,11 @@ class InterproProcessor(Processor):
         )
         interpro_to_genes = defaultdict(set)
         for interpro_id, uniprot_ids in interpro_to_proteins.items():
-            for uniprot_id in uniprot_ids:
+            for uniprot_id, start, end in uniprot_ids:
                 hgnc_id = uniprot_client.get_hgnc_id(uniprot_id)
                 if hgnc_id is not None:
                     # there are a lot of TrEMBL entries, these will return none
-                    interpro_to_genes[interpro_id].add(hgnc_id)
+                    interpro_to_genes[interpro_id].add((hgnc_id, start, end))
         self.interpro_to_genes = dict(interpro_to_genes)
 
     def get_nodes(self):  # noqa:D102
@@ -71,10 +73,13 @@ class InterproProcessor(Processor):
                 "interpro",
                 interpro_id,
                 ["BioEntity"],
-                dict(name=name, short_name=short_name),
+                dict(name=name, short_name=short_name, version=self.version),
             )
             unique_go.update(self.interpro_to_goa.get(interpro_id, set()))
-            unique_hgnc.update(self.interpro_to_genes.get(interpro_id, set()))
+            unique_hgnc.update(
+                hgnc_id
+                for hgnc_id, _, _ in self.interpro_to_genes.get(interpro_id, set())
+            )
         for go_id in sorted(unique_go):
             yield Node("GO", go_id, ["BioEntity"])
         for hgnc_id in sorted(unique_hgnc, key=int):
@@ -90,8 +95,17 @@ class InterproProcessor(Processor):
             for go_id in sorted(self.interpro_to_goa.get(interpro_id, [])):
                 yield Relation("interpro", interpro_id, "GO", go_id, "associated_with")
 
-            for hgnc_id in sorted(self.interpro_to_genes.get(interpro_id, []), key=int):
-                yield Relation("interpro", interpro_id, "HGNC", hgnc_id, "has_member")
+            for hgnc_id, start, end in sorted(
+                self.interpro_to_genes.get(interpro_id, []), key=int
+            ):
+                yield Relation(
+                    "interpro",
+                    interpro_id,
+                    "HGNC",
+                    hgnc_id,
+                    "has_member",
+                    {"start:int": start, "end:int": end, "version": self.version},
+                )
 
 
 def get_entries_df(*, force: bool = False, module: pystow.Module) -> pd.DataFrame:
@@ -181,7 +195,7 @@ def _count_leading_dashes(s: str) -> int:
 
 def get_interpro_to_proteins(
     *, force: bool = False, interpro_ids, module: pystow.Module
-) -> Mapping[str, Set[str]]:
+) -> Mapping[str, Set[Tuple[str, int, int]]]:
     """Get a mapping from InterPro identifiers to a set of UniProt identifiers."""
     cache_path = module.join(name="protein2ipr_human.tsv")
 
@@ -189,8 +203,10 @@ def get_interpro_to_proteins(
         interpro_to_uniprots = defaultdict(set)
         with cache_path.open() as file:
             for line in file:
-                interpro_id, uniprot_id = line.strip().split("\t", 1)
-                interpro_to_uniprots[interpro_id].add(uniprot_id)
+                interpro_id, uniprot_id, start, end = line.strip().split("\t")
+                interpro_to_uniprots[interpro_id].add(
+                    (uniprot_id, int(start), int(end))
+                )
         return dict(interpro_to_uniprots)
 
     path = module.ensure(url=INTERPRO_PROTEINS_URL, force=force)
@@ -203,11 +219,13 @@ def get_interpro_to_proteins(
             desc="Processing ipr2protein",
             total=1_216_508_710,
         ):
-            uniprot_id, interpro_id, _ = line.split("\t", 2)
+            uniprot_id, interpro_id, _name, _xref, start, end = line.split("\t")
             if interpro_id not in interpro_ids:
                 continue
             if uniprot_client.is_human(uniprot_id):
-                interpro_to_uniprots[interpro_id].add(uniprot_id)
+                interpro_to_uniprots[interpro_id].add(
+                    (uniprot_id, int(start), int(end))
+                )
 
     interpro_to_uniprots = dict(interpro_to_uniprots)
 
@@ -217,8 +235,8 @@ def get_interpro_to_proteins(
             unit_scale=True,
             desc="Writing human subset",
         ):
-            for uniprot_id in sorted(uniprot_ids):
-                print(interpro_id, uniprot_id, sep="\t", file=file)
+            for uniprot_id, start, end in sorted(uniprot_ids):
+                print(interpro_id, uniprot_id, start, end, sep="\t", file=file)
 
     return interpro_to_uniprots
 
@@ -265,3 +283,16 @@ def process_go_mapping_line(line: str) -> Tuple[str, str]:
     line, _go_name = (part.strip() for part in line.rsplit(">", 1))
     interpro_id, _interpro_name = (part.strip() for part in line.split(" ", 1))
     return interpro_id, go_id
+
+
+def get_current_version() -> str:
+    """Get the latest version of InterPro."""
+    res = requests.get(
+        "https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/release_notes.txt"
+    )
+    release_lines = [
+        line.strip() for line in res.text.splitlines() if line.startswith("Release ")
+    ]
+    # pick the second line
+    line = release_lines[1]
+    return line[len("Release ")].split(",", 1)[0]
