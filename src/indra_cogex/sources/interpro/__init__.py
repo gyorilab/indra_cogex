@@ -96,7 +96,7 @@ class InterproProcessor(Processor):
                 yield Relation("interpro", interpro_id, "GO", go_id, "associated_with")
 
             for hgnc_id, start, end in sorted(
-                self.interpro_to_genes.get(interpro_id, []), key=int
+                self.interpro_to_genes.get(interpro_id, []), key=lambda t: int(t[0])
             ):
                 yield Relation(
                     "interpro",
