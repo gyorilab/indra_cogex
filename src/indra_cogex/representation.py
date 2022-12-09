@@ -3,7 +3,7 @@
 """Representations for nodes and relations to upload to Neo4j."""
 
 
-__all__ = ["Node", "Relation", "indra_stmts_from_relations"]
+__all__ = ["Node", "Relation", "indra_stmts_from_relations", "norm_id"]
 
 import codecs
 from typing import (
