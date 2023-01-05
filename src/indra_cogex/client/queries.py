@@ -1109,12 +1109,11 @@ def _get_mesh_child_terms(
     #  for the query below
     query = (
         """
-        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: "%s"})
+        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: $mesh_id}})
         RETURN DISTINCT c.id
     """
-        % meshid_norm
     )
-    return set(client.query_tx(query, squeeze=True))
+    return set(client.query_tx(query, squeeze=True, mesh_id=meshid_norm))
 
 
 @autoclient(cache=True)
