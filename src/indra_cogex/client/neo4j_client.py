@@ -106,7 +106,7 @@ class Neo4jClient:
         }
 
     def query_tx(
-        self, query: str, squeeze: bool = False
+        self, query: str, squeeze: bool = False, **query_params
     ) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
@@ -114,9 +114,11 @@ class Neo4jClient:
         ----------
         query :
             The query string to be executed.
-        squeeze:
+        squeeze :
             If true, unpacks the 0-indexed element in each value returned.
             Useful when only returning value per row of the results.
+        query_params :
+            kwargs to pass to query
 
         Returns
         -------
@@ -131,7 +133,13 @@ class Neo4jClient:
         # Documentation on transaction functions are here:
         # https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
         with self.driver.session() as session:
-            values = session.read_transaction(do_cypher_tx, query)
+            # do_cypher_tx is ultimately called as
+            # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
+            # where *args and **kwargs are passed through unchanged, meaning
+            # do_cypher_tx can expect query and **query_params
+            values = session.read_transaction(
+                do_cypher_tx, query, **query_params
+            )
 
         if squeeze:
             values = [value[0] for value in values]
@@ -153,7 +161,7 @@ class Neo4jClient:
         """
         return [self.neo4j_to_node(res) for res in self.query_tx(query, squeeze=True)]
 
-    def query_relations(self, query: str) -> List[Relation]:
+    def query_relations(self, query: str, **query_params) -> List[Relation]:
         """Run a read-only query for relations.
 
         Parameters
@@ -162,6 +170,9 @@ class Neo4jClient:
             The query string to be executed. Must have a ``RETURN``
             with a single element ``p`` where in the ``MATCH`` part
             of the query it has something like ``p=(h)-[r]->(t)``.
+        query_params :
+            Query parameters to pass to query transaction function that will
+            fill out the placeholders in the cypher query
 
         Returns
         -------
@@ -170,7 +181,8 @@ class Neo4jClient:
             to the results of the query
         """
         return [
-            self.neo4j_to_relation(res) for res in self.query_tx(query, squeeze=True)
+            self.neo4j_to_relation(res) for res in
+            self.query_tx(query, squeeze=True, **query_params)
         ]
 
     def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
@@ -1099,7 +1111,9 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 def do_cypher_tx(
         tx: Transaction,
         query: str,
-        query_params: Optional[Dict] = None
+        **query_params
 ) -> List[List]:
+    # 'parameters' and '**kwparameters' of tx.run are ultimately merged at query
+    # run-time
     result = tx.run(query, parameters=query_params)
     return [record.values() for record in result]
