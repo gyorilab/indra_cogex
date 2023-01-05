@@ -2,6 +2,8 @@
 
 """Processor for the InterPro database.
 
+This was added in https://github.com/bgyori/indra_cogex/pull/125.
+
 .. seealso:: https://ftp.ebi.ac.uk/pub/databases/interpro/current_release/
 """
 
@@ -19,6 +21,10 @@ from tqdm import tqdm
 
 from ..processor import Processor
 from ...representation import Node, Relation
+
+__all__ = [
+    "InterproProcessor",
+]
 
 logger = logging.getLogger(__name__)
 
