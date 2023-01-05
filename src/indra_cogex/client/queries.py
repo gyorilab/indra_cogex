@@ -660,23 +660,23 @@ def get_pmids_for_mesh(
     else:
         child_terms = set()
 
+    query_param = {}
     if child_terms:
-        terms = {norm_mesh} | child_terms
-        terms_str = ",".join(f'"{c}"' for c in terms)
+        mesh_terms = {norm_mesh} | child_terms
         query = (
             """MATCH (k:Publication)-[:annotated_with]->(b:BioEntity)
-               WHERE b.id IN [%s]
+               WHERE b.id IN $mesh_terms
                RETURN DISTINCT k"""
-            % terms_str
         )
+        query_param["mesh_terms"] = mesh_terms
     else:
-        match_clause = (
-            'MATCH (k:Publication)-[:annotated_with]->(b:BioEntity {id: "%s"})'
-            % norm_mesh
+        query = (
+            'MATCH (k:Publication)-[:annotated_with]->'
+            '(b:BioEntity {id: $mesh_term}) RETURN k'
         )
-        query = "%s RETURN k" % match_clause
+        query_param["mesh_term"] = norm_mesh
 
-    return client.query_nodes(query)
+    return client.query_nodes(query, **query_param)
 
 
 @autoclient()
