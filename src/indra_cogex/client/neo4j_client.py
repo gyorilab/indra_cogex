@@ -127,11 +127,11 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/current/api.html#session-construction
+        # https://neo4j.com/docs/api/python-driver/4.4/api.html#session-construction
         # and
-        # https://neo4j.com/docs/api/python-driver/current/api.html#explicit-transactions
+        # https://neo4j.com/docs/api/python-driver/4.4/api.html#explicit-transactions
         # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+        # https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
         with self.driver.session() as session:
             # do_cypher_tx is ultimately called as
             # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
@@ -1105,7 +1105,7 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 
 
 # Follows example here:
-# https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+# https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
 # and from the docstring of neo4j.Session.read_transaction
 @unit_of_work()
 def do_cypher_tx(
