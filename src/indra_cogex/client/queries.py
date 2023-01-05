@@ -886,14 +886,21 @@ def get_stmts_for_paper(
     #  stmt type
 
     if term[0].lower() in {"pmid", "pubmed"}:
-        curie = norm_id(*term)
-        publication_props = f"{{id: '{curie}'}}"
+        parameter = norm_id(*term)
+        publication_props = "{id: $parameter}"
+
     elif term[0].lower() == "doi":
-        publication_props = f"{{doi: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{doi: $parameter}"
+
     elif term[0].lower() in {"pmc", "pmcid"}:
-        publication_props = f"{{pmcid: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{pmcid: $parameter}"
+
     elif term[0].lower() == "trid":
-        publication_props = f"{{trid: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{trid: $parameter}"
+
     else:
         raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
 
@@ -901,7 +908,7 @@ def get_stmts_for_paper(
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-    result = client.query_tx(hash_query)
+    result = client.query_tx(hash_query, parameter=parameter)
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
