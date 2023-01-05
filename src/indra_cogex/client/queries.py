@@ -738,14 +738,16 @@ def get_evidences_for_mesh(
     else:
         child_terms = set()
 
+    query_params = {}
     if child_terms:
-        terms = {norm_mesh} | child_terms
-        terms_str = ",".join(f'"{c}"' for c in terms)
-        where_clause = "WHERE b.id IN [%s]" % terms_str
+        match_terms = {norm_mesh} | child_terms
+        where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
+        query_params["mesh_terms"] = match_terms
     else:
-        single_mesh_match = ' {id: "%s"}' % norm_mesh
+        single_mesh_match = ' {id: $mesh_id}'
         where_clause = ""
+        query_params["mesh_id"] = norm_mesh
 
     query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
            %s
@@ -753,7 +755,9 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
+    return _get_ev_dict_from_hash_ev_query(
+        client.query_tx(query, **query_params), remove_medscan=True
+    )
 
 
 @autoclient()
