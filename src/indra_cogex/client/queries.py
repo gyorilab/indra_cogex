@@ -1006,7 +1006,7 @@ def get_stmts_for_stmt_hashes(
     :
         The statements for the given statement hashes.
     """
-    query_params = {"stmt_hashes": stmt_hashes}
+    query_params = {"stmt_hashes": list(stmt_hashes)}
     if subject_prefix:
         subject_constraint = f"AND a.id STARTS WITH $subject_prefix"
         query_params["subject_prefix"] = subject_prefix
