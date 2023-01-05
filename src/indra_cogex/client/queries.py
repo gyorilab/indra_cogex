@@ -1006,23 +1006,29 @@ def get_stmts_for_stmt_hashes(
     :
         The statements for the given statement hashes.
     """
-    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
-    subject_constraint = (
-        f"AND a.id STARTS WITH '{subject_prefix}'" if subject_prefix else ""
-    )
-    object_constraint = (
-        f"AND b.id STARTS WITH '{object_prefix}'" if object_prefix else ""
-    )
+    query_params = {"stmt_hashes": stmt_hashes}
+    if subject_prefix:
+        subject_constraint = f"AND a.id STARTS WITH $subject_prefix"
+        query_params["subject_prefix"] = subject_prefix
+    else:
+        subject_constraint = ""
+
+    if object_prefix:
+        object_constraint = f"AND b.id STARTS WITH $object_prefix"
+        query_params["object_prefix"] = object_prefix
+    else:
+        object_constraint = ""
+
     stmts_query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
-            r.stmt_hash IN [{stmt_hashes_str}]
+            r.stmt_hash IN $stmt_hashes
             {subject_constraint}
             {object_constraint}
         RETURN p
     """
-    logger.info(f"Getting statements for {stmt_hashes_str.count(',') + 1} hashes")
-    rels = client.query_relations(stmts_query)
+    logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
+    rels = client.query_relations(stmts_query, **query_params)
     stmts = indra_stmts_from_relations(rels)
 
     if evidence_limit == 1:
