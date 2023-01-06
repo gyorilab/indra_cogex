@@ -1,4 +1,5 @@
-from indra_cogex.representation import node_query, norm_id, triple_query
+from indra_cogex.representation import node_query, norm_id, triple_query, \
+    triple_parameter_query
 
 
 def test_norm_id():
@@ -52,3 +53,30 @@ def test_triple_query():
         )
         == "({id: 'uniprot:P12345'})-[:relation]->(t)"
     )
+
+
+def test_triple_param_query():
+    assert triple_parameter_query(
+        source_name="s",
+        source_type="BioEntity",
+        relation_type="indra_rel",
+        relation_direction="left",
+        target_type="BioEntity",
+        target_prop_name="id",
+        target_prop_param="mesh_term",
+    ) == "(s:BioEntity)<-[:indra_rel]-(:BioEntity {id: $mesh_term})"
+
+    assert triple_parameter_query(
+        source_name="s",
+        source_type="BioEntity",
+        source_prop_name="id",
+        source_prop_param="mesh_term",
+        relation_name="r",
+        relation_type="indra_rel",
+        relation_direction="right",
+        target_name="t",
+        target_type="BioEntity",
+        target_prop_name="id",
+        target_prop_param="mesh_term",
+    ) == \
+           "(s:BioEntity {id: $mesh_term})-[r:indra_rel]->(t:BioEntity {id: $mesh_term})"
