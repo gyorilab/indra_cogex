@@ -47,6 +47,7 @@ __all__ = [
     "get_mutated_genes",
     "get_drugs_for_target",
     "get_targets_for_drug",
+    "get_targets_for_drugs",
     "is_drug_target",
     # Summary functions
     "get_node_counter",
