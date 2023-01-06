@@ -96,15 +96,15 @@ class Neo4jClient:
                 do_cypher_tx, query, query_params=query_params
             )
 
-    def query_dict(self, query: str) -> Dict:
+    def query_dict(self, query: str, **query_params) -> Dict:
         """Run a read-only query that generates a dictionary."""
-        return dict(self.query_tx(query))
+        return dict(self.query_tx(query, **query_params))
 
-    def query_dict_value_json(self, query: str) -> Dict:
+    def query_dict_value_json(self, query: str, **query_params) -> Dict:
         """Run a read-only query that generates a dictionary."""
         return {
             key: json.loads(j)
-            for key, j in self.query_tx(query)
+            for key, j in self.query_tx(query, **query_params)
         }
 
     def query_tx(
@@ -147,13 +147,15 @@ class Neo4jClient:
             values = [value[0] for value in values]
         return values
 
-    def query_nodes(self, query: str) -> List[Node]:
+    def query_nodes(self, query: str, **query_params) -> List[Node]:
         """Run a read-only query for nodes.
 
         Parameters
         ----------
         query :
             The query string to be executed.
+        query_params :
+            Query parameters to pass to cypher
 
         Returns
         -------
@@ -161,7 +163,8 @@ class Neo4jClient:
             A list of :class:`Node` instances corresponding
             to the results of the query
         """
-        return [self.neo4j_to_node(res) for res in self.query_tx(query, squeeze=True)]
+        return [self.neo4j_to_node(res)
+                for res in self.query_tx(query, squeeze=True, **query_params)]
 
     def query_relations(self, query: str, **query_params) -> List[Relation]:
         """Run a read-only query for relations.
