@@ -3,6 +3,7 @@
 import inspect
 import logging
 from functools import lru_cache, wraps
+from itertools import count
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 import json
 
@@ -13,7 +14,8 @@ from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
 from neo4j import GraphDatabase, Transaction, unit_of_work
 
-from indra_cogex.representation import Node, Relation, norm_id, triple_query
+from indra_cogex.representation import Node, Relation, norm_id, \
+    triple_query, triple_parameter_query
 
 __all__ = ["Neo4jClient", "autoclient"]
 
@@ -550,23 +552,32 @@ class Neo4jClient:
         sources
             A list of source nodes.
         """
-        parts = [
-            triple_query(
+        name_generator = (f"target_id{c}" for c in count(0))
+        prop_params = []
+        for _ in range(len(targets)):
+            prop_params.append(next(name_generator))
+
+        parts = []
+        query_params = {}
+        for prop_param, target in zip(prop_params, targets):
+            part = triple_parameter_query(
                 source_name="s",
                 source_type=source_type,
                 relation_type=relation,
-                target_id=norm_id(*target),
+                target_prop_name="id",
+                target_prop_param=prop_param,
                 target_type=target_type,
             )
-            for target in targets
-        ]
+            parts.append(part)
+            query_params[prop_param] = norm_id(*target)
         query = """
             MATCH %s
             RETURN DISTINCT s
         """ % ",".join(
             parts
         )
-        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
+        nodes = [self.neo4j_to_node(res[0])
+                 for res in self.query_tx(query, **query_params)]
         return nodes
 
     def get_targets(
