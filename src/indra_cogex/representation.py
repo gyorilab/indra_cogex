@@ -259,6 +259,45 @@ def norm_id(db_ns, db_id) -> str:
     return f"{identifiers_ns}:{identifiers_id}"
 
 
+def triple_parameter_query(
+    source_name: Optional[str] = None,
+    source_type: Optional[str] = None,
+    source_prop_name: Optional[str] = None,
+    source_prop_param: Optional[str] = None,
+    relation_name: Optional[str] = None,
+    relation_type: Optional[str] = None,
+    target_name: Optional[str] = None,
+    target_type: Optional[str] = None,
+    target_prop_name: Optional[str] = None,
+    target_prop_param: Optional[str] = None,
+    relation_direction: Optional[str] = "right",
+) -> str:
+    rel1, rel2 = "-", "-"
+    if relation_direction == "left":
+        rel1 = "<-"
+    elif relation_direction == "right":
+        rel2 = "->"
+
+    source = node_parameter_query(source_name, source_type,
+                                  source_prop_name, source_prop_param)
+    relation = node_parameter_query(relation_name, relation_type)
+    target = node_parameter_query(target_name, target_type,
+                                  target_prop_name, target_prop_param)
+    return f"({source}){rel1}[{relation}]{rel2}({target})"
+
+
+def node_parameter_query(
+    node_name: Optional[str] = None,
+    node_type: Optional[str] = None,
+    prop_name: Optional[str] = None,
+    prop_param: Optional[str] = None,
+) -> str:
+    # e.g. (n:Evidence {stmt_hash: $stmt_hash})
+    node_type_str = f":{node_type}" if node_type else ""
+    prop_match_str = " {%s: $%s}" % (prop_name, prop_param) if prop_name else ""
+    return f"{node_name or ''}{node_type_str}{prop_match_str}"
+
+
 def triple_query(
     source_name: Optional[str] = None,
     source_type: Optional[str] = None,
