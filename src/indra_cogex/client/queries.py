@@ -840,16 +840,17 @@ def get_evidences_for_stmt_hashes(
         A mapping of stmt hash to a list of evidence objects for the given
         statement hashes.
     """
-    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     limit_box = "" if limit is None else f"[..{limit}]"
     query = f"""\
         MATCH (n:Evidence)
         WHERE
-            n.stmt_hash IN [{stmt_hashes_str}]
-            AND n.source_api <> 'medscan'
+            n.stmt_hash IN $stmt_hashes
+            AND n.source_api <> $source_api
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
-    result = client.query_tx(query)
+    result = client.query_tx(
+        query, stmt_hashes=stmt_hashes, source_api="medscan"
+    )
     return {
         stmt_hash: _filter_out_medscan_evidence(
             (json.loads(evidence_str) for evidence_str in evidences),
