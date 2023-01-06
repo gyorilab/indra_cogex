@@ -637,23 +637,31 @@ class Neo4jClient:
         targets
             A list of target nodes.
         """
-        parts = [
-            triple_query(
-                source_id=norm_id(*source),
+        name_generator = (f"source_id{c}" for c in count(0))
+        prop_params = []
+        for _ in range(len(sources)):
+            prop_params.append(next(name_generator))
+
+        parts = []
+        query_params = {}
+        for prop_param, source in zip(prop_params, sources):
+            part = triple_parameter_query(
+                source_prop_name="id",
+                source_prop_param=prop_param,
                 source_type=source_type,
                 relation_type=relation,
                 target_name="t",
                 target_type=target_type,
             )
-            for source in sources
-        ]
+            parts.append(part)
+            query_params[prop_param] = norm_id(*source)
         query = """
             MATCH %s
             RETURN DISTINCT t
         """ % ",".join(
             parts
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, **query_params)
 
     def get_target_agents(
         self,
