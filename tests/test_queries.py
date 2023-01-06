@@ -378,6 +378,23 @@ def test_targets_for_drug():
 
 
 @pytest.mark.nonpublic
+def test_targets_for_drug():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:90227")
+    target_dict = get_targets_for_drugs([drug], client=client)
+    assert target_dict
+    assert isinstance(target_dict, dict)
+    drug = list(target_dict.keys())[0]
+    assert drug[0] == "CHEBI"
+    assert isinstance(target_dict[drug], list)
+    target_node = list(target_dict.values())[0][0]
+    assert isinstance(target_node, Node)
+    assert target_node.db_ns == "HGNC"
+    assert ("HGNC", "6840") in {n.grounding() for il in target_dict.values()
+                                for n in il}
+
+
+@pytest.mark.nonpublic
 def test_is_drug_target():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
