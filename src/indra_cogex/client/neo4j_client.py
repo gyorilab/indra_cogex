@@ -394,19 +394,15 @@ class Neo4jClient:
             target_type=target_type,
         )
         sources = [norm_id(*source) for source in sources]
-        sources_match = "[%s]" % ",".join(["'%s'" % s for s in sources])
         query = """
             MATCH p=%s
-            WHERE s.id IN %s
+            WHERE s.id IN $sources
             RETURN p
-        """ % (
-            match,
-            sources_match,
-        )
+        """ % match
         from collections import defaultdict
 
         rels = defaultdict(list)
-        for res in self.query_tx(query, squeeze=True):
+        for res in self.query_tx(query, squeeze=True, sources=sources):
             rel = self.neo4j_to_relation(res)
             rels[(rel.source_ns, rel.source_id)].append(rel)
         return rels
