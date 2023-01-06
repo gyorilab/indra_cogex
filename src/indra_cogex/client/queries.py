@@ -790,11 +790,16 @@ def get_evidences_for_stmt_hash(
         The evidence objects for the given statement hash.
     """
     remove_medscan = True  # Always remove medscan for now
-    where_clause = "WHERE n.source_api <> 'medscan'\n" if remove_medscan else ""
+    query_params = {"stmt_hash": stmt_hash}
+    if remove_medscan:
+        where_clause = "WHERE n.source_api <> $source_api\n"
+        query_params["source_api"] = "medscan"
+    else:
+        where_clause = ""
     query = (
-        """MATCH (n:Evidence {stmt_hash: %s})
+        """MATCH (n:Evidence {stmt_hash: $stmt_hash})
                %sRETURN n.evidence"""
-        % (stmt_hash, where_clause)
+        % where_clause
     )
 
     # Add limit and offset
@@ -809,7 +814,8 @@ def get_evidences_for_stmt_hash(
         query += "\nSKIP %d" % offset
     if limit is not None and limit > 0:
         query += "\nLIMIT %d" % limit
-    ev_jsons = [json.loads(r) for r in client.query_tx(query, squeeze=True)]
+    ev_jsons = [json.loads(r) for r in
+                client.query_tx(query, squeeze=True, **query_params)]
     return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
 
 
