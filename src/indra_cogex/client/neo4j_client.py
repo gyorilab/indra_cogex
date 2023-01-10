@@ -571,9 +571,7 @@ class Neo4jClient:
         """ % ",".join(
             parts
         )
-        nodes = [self.neo4j_to_node(res[0])
-                 for res in self.query_tx(query, **query_params)]
-        return nodes
+        return self.query_nodes(query, **query_params)
 
     def get_targets(
         self,
