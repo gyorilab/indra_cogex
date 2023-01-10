@@ -335,6 +335,7 @@ def belief_calc(refinements_graph: nx.DiGraph):
     be = BeliefEngine(refinements_graph=refinements_graph)
 
     # Load the source counts
+    logger.info("Loading source counts")
     with source_counts_fname.open("rb") as fh:
         source_counts = pickle.load(fh)
 
