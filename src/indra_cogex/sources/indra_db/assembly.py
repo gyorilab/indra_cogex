@@ -360,8 +360,7 @@ def belief_calc(
 
         # If there are refinements, add them to the source counts
         if stmt_hash in refinements_graph.nodes():
-            refiner_hashes = nx.ancestors(G=refinements_graph,
-                                          source=stmt_hash)
+            refiner_hashes = nx.ancestors(refinements_graph, stmt_hash)
             for refiner_hash in refiner_hashes:
                 summed_source_counts += Counter(source_counts[refiner_hash])
 
