@@ -163,7 +163,17 @@ def get_docstring(
         The docstring of the function
     """
     parsed_doc = parse(fun.__doc__)
+    if parsed_doc.returns is None:
+        raise ValueError(
+            f"Forgot to document return value in docstring of {fun.__name__}"
+        )
+    if parsed_doc.params is None:
+        raise ValueError(
+            f"Forgot to document parameters in docstring of {fun.__name__}"
+        )
     sig = signature(fun)
+    if sig.return_annotation is sig.empty:
+        raise ValueError("Forgot to type annotate function")
 
     full_docstr = """{title}
 
