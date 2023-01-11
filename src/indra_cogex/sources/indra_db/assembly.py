@@ -365,6 +365,13 @@ def belief_calc(refinements_graph: nx.DiGraph):
                 ev_list.append(Evidence(source_api=source))
         return ev_list
 
+    def _add_belief_scores_for_batch(batch: List[Tuple[int, Statement]]):
+        # Belief calculation for this batch
+        hashes, stmt_list = zip(*batch)
+        be.set_prior_probs(statements=stmt_list)
+        for sh, st in zip(hashes, stmt_list):
+            belief_scores[sh] = st.belief
+
     # Iterate over each unique statement
     with gzip.open(unique_stmts_fname.as_posix(), "rt") as fh:
         reader = csv.reader(fh, delimiter="\t")
@@ -373,22 +380,20 @@ def belief_calc(refinements_graph: nx.DiGraph):
             stmt_batch = []
             for _ in range(batch_size):
                 try:
-                    shs, sjs = next(reader)
-                    stmt = stmt_from_json(
-                        load_statement_json(sjs, remove_evidence=True)
+                    stmt_hash_string, statement_json_string = next(reader)
+                    statement = stmt_from_json(
+                        load_statement_json(
+                            statement_json_string, remove_evidence=True
+                        )
                     )
-                    this_hash = int(shs)
-                    stmt.evidence = _get_support_evidence_for_stmt(this_hash)
-                    stmt_batch.append((this_hash, stmt))
+                    this_hash = int(stmt_hash_string)
+                    statement.evidence = _get_support_evidence_for_stmt(this_hash)
+                    stmt_batch.append((this_hash, statement))
 
                 except StopIteration:
                     break
 
-            # Belief calculation for this batch
-            hashes, stmt_list = zip(*stmt_batch)
-            be.set_prior_probs(statements=stmt_list)
-            for sh, st in zip(hashes, stmt_list):
-                belief_scores[sh] = st.belief
+            _add_belief_scores_for_batch(stmt_batch)
 
     # Dump the belief scores
     with belief_scores_pkl_fname.open("wb") as fo:
