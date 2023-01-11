@@ -732,11 +732,12 @@ class Neo4jClient:
         predecessors
             A list of predecessor nodes.
         """
-        match = triple_query(
+        match = triple_parameter_query(
             source_name="s",
             source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
-            target_id=norm_id(*target),
+            target_prop_param="target",
+            target_prop_name="id",
             target_type=target_type,
         )
         query = (
@@ -746,7 +747,7 @@ class Neo4jClient:
         """
             % match
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, target=norm_id(*target))
 
     def get_successors(
         self,
@@ -771,10 +772,11 @@ class Neo4jClient:
         Returns
         -------
         predecessors
-            A list of predecessor nodes.
+            A list of successors nodes.
         """
-        match = triple_query(
-            source_id=norm_id(*source),
+        match = triple_parameter_query(
+            source_prop_param="source",
+            source_prop_name="id",
             source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_name="t",
@@ -787,7 +789,7 @@ class Neo4jClient:
         """
             % match
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, source=norm_id(*source))
 
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
