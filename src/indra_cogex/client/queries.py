@@ -46,6 +46,7 @@ __all__ = [
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
+    "get_drugs_for_targets",
     "get_targets_for_drug",
     "get_targets_for_drugs",
     "is_drug_target",
@@ -1309,13 +1310,26 @@ def get_drugs_for_target(
 @autoclient()
 def get_drugs_for_targets(
     targets: Iterable[Tuple[str, str]], *, client: Neo4jClient
-) -> Mapping[Tuple[str, str], Iterable[Agent]]:
-    """Return the drugs targeting each of the given targets."""
+) -> Mapping[str, Iterable[Agent]]:
+    """Return the drugs targeting each of the given targets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    targets :
+        The targets to query.
+
+    Returns
+    -------
+    :
+        A mapping of targets to the drugs targeting each of the given targets.
+    """
     rels = client.get_source_relations_for_targets(
         targets, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     drug_nodes = {
-        target: [
+        norm_id(*target): [
             _get_node_from_stmt_relation(rel, "source", "subj")
             for rel in target_rels
             if _is_drug_relation(rel)
@@ -1356,13 +1370,26 @@ def get_targets_for_drug(
 @autoclient()
 def get_targets_for_drugs(
     drugs: Iterable[Tuple[str, str]], *, client: Neo4jClient
-) -> Mapping[Tuple[str, str], Iterable[Agent]]:
-    """Return the proteins targeted by each of the given drugs."""
+) -> Mapping[str, Iterable[Agent]]:
+    """Return the proteins targeted by each of the given drugs
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drugs :
+        A list of drugs to get the targets for.
+
+    Returns
+    -------
+    :
+        A mapping from each drug to the proteins targeted by that drug.
+    """
     rels = client.get_target_relations_for_sources(
         drugs, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     target_nodes = {
-        drug: [
+        norm_id(*drug): [
             _get_node_from_stmt_relation(rel, "target", "obj")
             for rel in drug_rels
             if _is_drug_relation(rel)
