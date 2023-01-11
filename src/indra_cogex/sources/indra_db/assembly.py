@@ -5,6 +5,7 @@ import math
 import json
 import pickle
 import itertools
+from pathlib import Path
 from typing import List, Set, Tuple, Optional
 
 import networkx as nx
@@ -301,7 +302,14 @@ def sample_unique_stmts(
     return stmts
 
 
-def belief_calc(refinements_graph: nx.DiGraph):
+def belief_calc(
+        refinements_graph: nx.DiGraph,
+        num_batches: int,
+        batch_size: int,
+        unique_stmts_path: Path = unique_stmts_fname,
+        belief_scores_pkl_path: Path = belief_scores_pkl_fname,
+        source_counts_path: Path = source_counts_fname,
+):
     # Belief Calculations
     """
     Belief calculation idea:
@@ -336,7 +344,7 @@ def belief_calc(refinements_graph: nx.DiGraph):
 
     # Load the source counts
     logger.info("Loading source counts")
-    with source_counts_fname.open("rb") as fh:
+    with source_counts_path.open("rb") as fh:
         source_counts = pickle.load(fh)
 
     # Store hash: belief score
@@ -373,7 +381,7 @@ def belief_calc(refinements_graph: nx.DiGraph):
             belief_scores[sh] = st.belief
 
     # Iterate over each unique statement
-    with gzip.open(unique_stmts_fname.as_posix(), "rt") as fh:
+    with gzip.open(unique_stmts_path.as_posix(), "rt") as fh:
         reader = csv.reader(fh, delimiter="\t")
 
         for _ in tqdm.tqdm(range(num_batches), desc="Calculating belief"):
@@ -396,7 +404,7 @@ def belief_calc(refinements_graph: nx.DiGraph):
             _add_belief_scores_for_batch(stmt_batch)
 
     # Dump the belief scores
-    with belief_scores_pkl_fname.open("wb") as fo:
+    with belief_scores_pkl_path.open("wb") as fo:
         pickle.dump(belief_scores, fo)
 
 
