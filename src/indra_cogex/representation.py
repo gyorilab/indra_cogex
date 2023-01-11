@@ -272,6 +272,56 @@ def triple_parameter_query(
     target_prop_param: Optional[str] = None,
     relation_direction: Optional[str] = "right",
 ) -> str:
+    """Fills out the MATCH part of a query with cypher parameters
+
+    Parameters
+    ----------
+    source_name :
+        The name to use for the source node e.g. 's'
+    source_type :
+        The type used for the source node e.g. 'BioEntity'
+    source_prop_name :
+        The property name to match e.g. 'id'. Must be set for
+        source_prop_param to have any effect.
+    source_prop_param :
+        The property parameter name to use e.g. 'identifier'. Note that '$'
+        should be omitted, since it's added in the function.
+    relation_name :
+        The name to use for the relation e.g. 'r'
+    relation_type :
+        The relation type e.g. 'indra_rel'
+    target_name :
+        The name to use for the target node e.g. 't'
+    target_type :
+        The type to use for the target e.g. 'Publication'
+    target_prop_name :
+        The property name to match e.g. 'id'. Must be set for
+        target_prop_param to have any effect
+    target_prop_param :
+        The property parameter name to use e.g. 'identifier'. Noter that '$'
+        should be omitted since it's added in the function.
+    relation_direction :
+        One of 'left' or 'right'. Any other value will result in a
+        bidirectional relation search, i.e. ()-[]-()
+
+    Returns
+    -------
+    :
+        The MATCH part of cypher query
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        query = triple_parameter_query(
+            source_name='s',
+            source_type='BioEntity',
+            source_prop_name='id',
+            source_prop_param='identifier',
+        )
+        assert f"MATCH {query}" == "MATCH (s:BioEntity {id: $identifier})"
+    """
     rel1, rel2 = "-", "-"
     if relation_direction == "left":
         rel1 = "<-"
