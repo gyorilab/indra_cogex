@@ -9,7 +9,7 @@ from indra_cogex.client.queries import (
     _get_ev_dict_from_hash_ev_query,
     _get_mesh_child_terms,
 )
-from indra_cogex.representation import Node
+from indra_cogex.representation import Node, norm_id
 
 from .test_neo4j_client import _get_client
 
@@ -370,11 +370,12 @@ def test_drugs_for_target():
 def test_drugs_for_targets():
     client = _get_client()
     target = ("HGNC", "6840")
+    norm_target = norm_id(*target)
     drugs_dict = get_drugs_for_targets([target], client=client)
     assert drugs_dict
     assert isinstance(drugs_dict, dict)
-    assert target in drugs_dict
-    assert isinstance(drugs_dict[target], list)
+    assert norm_target in drugs_dict
+    assert isinstance(drugs_dict[norm_target], list)
     drug_node = list(drugs_dict.values())[0][0]
     assert isinstance(drug_node, Node)
     assert drug_node.db_ns == "CHEBI"
@@ -401,9 +402,9 @@ def test_targets_for_drug():
     target_dict = get_targets_for_drugs([drug], client=client)
     assert target_dict
     assert isinstance(target_dict, dict)
-    drug = list(target_dict.keys())[0]
-    assert drug[0] == "CHEBI"
-    assert isinstance(target_dict[drug], list)
+    norm_drug = list(target_dict.keys())[0]
+    assert norm_drug.startswith("chebi")
+    assert isinstance(target_dict[norm_drug], list)
     target_node = list(target_dict.values())[0][0]
     assert isinstance(target_node, Node)
     assert target_node.db_ns == "HGNC"
