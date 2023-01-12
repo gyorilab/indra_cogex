@@ -1135,7 +1135,7 @@ def _get_mesh_child_terms(
     #  for the query below
     query = (
         """
-        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: $mesh_id}})
+        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: $mesh_id})
         RETURN DISTINCT c.id
     """
     )
