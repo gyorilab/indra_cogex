@@ -46,7 +46,9 @@ __all__ = [
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
+    "get_drugs_for_targets",
     "get_targets_for_drug",
+    "get_targets_for_drugs",
     "is_drug_target",
     # Summary functions
     "get_node_counter",
@@ -660,23 +662,23 @@ def get_pmids_for_mesh(
     else:
         child_terms = set()
 
+    query_param = {}
     if child_terms:
-        terms = {norm_mesh} | child_terms
-        terms_str = ",".join(f'"{c}"' for c in terms)
+        mesh_terms = {norm_mesh} | child_terms
         query = (
             """MATCH (k:Publication)-[:annotated_with]->(b:BioEntity)
-               WHERE b.id IN [%s]
+               WHERE b.id IN $mesh_terms
                RETURN DISTINCT k"""
-            % terms_str
         )
+        query_param["mesh_terms"] = mesh_terms
     else:
-        match_clause = (
-            'MATCH (k:Publication)-[:annotated_with]->(b:BioEntity {id: "%s"})'
-            % norm_mesh
+        query = (
+            'MATCH (k:Publication)-[:annotated_with]->'
+            '(b:BioEntity {id: $mesh_term}) RETURN k'
         )
-        query = "%s RETURN k" % match_clause
+        query_param["mesh_term"] = norm_mesh
 
-    return client.query_nodes(query)
+    return client.query_nodes(query, **query_param)
 
 
 @autoclient()
@@ -738,14 +740,16 @@ def get_evidences_for_mesh(
     else:
         child_terms = set()
 
+    query_params = {}
     if child_terms:
-        terms = {norm_mesh} | child_terms
-        terms_str = ",".join(f'"{c}"' for c in terms)
-        where_clause = "WHERE b.id IN [%s]" % terms_str
+        match_terms = {norm_mesh} | child_terms
+        where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
+        query_params["mesh_terms"] = match_terms
     else:
-        single_mesh_match = ' {id: "%s"}' % norm_mesh
+        single_mesh_match = ' {id: $mesh_id}'
         where_clause = ""
+        query_params["mesh_id"] = norm_mesh
 
     query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
            %s
@@ -753,7 +757,9 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(client.query_tx(query), remove_medscan=True)
+    return _get_ev_dict_from_hash_ev_query(
+        client.query_tx(query, **query_params), remove_medscan=True
+    )
 
 
 @autoclient()
@@ -786,11 +792,16 @@ def get_evidences_for_stmt_hash(
         The evidence objects for the given statement hash.
     """
     remove_medscan = True  # Always remove medscan for now
-    where_clause = "WHERE n.source_api <> 'medscan'\n" if remove_medscan else ""
+    query_params = {"stmt_hash": stmt_hash}
+    if remove_medscan:
+        where_clause = "WHERE n.source_api <> $source_api\n"
+        query_params["source_api"] = "medscan"
+    else:
+        where_clause = ""
     query = (
-        """MATCH (n:Evidence {stmt_hash: %s})
+        """MATCH (n:Evidence {stmt_hash: $stmt_hash})
                %sRETURN n.evidence"""
-        % (stmt_hash, where_clause)
+        % where_clause
     )
 
     # Add limit and offset
@@ -805,7 +816,8 @@ def get_evidences_for_stmt_hash(
         query += "\nSKIP %d" % offset
     if limit is not None and limit > 0:
         query += "\nLIMIT %d" % limit
-    ev_jsons = [json.loads(r) for r in client.query_tx(query, squeeze=True)]
+    ev_jsons = [json.loads(r) for r in
+                client.query_tx(query, squeeze=True, **query_params)]
     return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
 
 
@@ -836,16 +848,17 @@ def get_evidences_for_stmt_hashes(
         A mapping of stmt hash to a list of evidence objects for the given
         statement hashes.
     """
-    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
     limit_box = "" if limit is None else f"[..{limit}]"
     query = f"""\
         MATCH (n:Evidence)
         WHERE
-            n.stmt_hash IN [{stmt_hashes_str}]
-            AND n.source_api <> 'medscan'
+            n.stmt_hash IN $stmt_hashes
+            AND n.source_api <> $source_api
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
-    result = client.query_tx(query)
+    result = client.query_tx(
+        query, stmt_hashes=stmt_hashes, source_api="medscan"
+    )
     return {
         stmt_hash: _filter_out_medscan_evidence(
             (json.loads(evidence_str) for evidence_str in evidences),
@@ -882,14 +895,21 @@ def get_stmts_for_paper(
     #  stmt type
 
     if term[0].lower() in {"pmid", "pubmed"}:
-        curie = norm_id(*term)
-        publication_props = f"{{id: '{curie}'}}"
+        parameter = norm_id(*term)
+        publication_props = "{id: $parameter}"
+
     elif term[0].lower() == "doi":
-        publication_props = f"{{doi: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{doi: $parameter}"
+
     elif term[0].lower() in {"pmc", "pmcid"}:
-        publication_props = f"{{pmcid: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{pmcid: $parameter}"
+
     elif term[0].lower() == "trid":
-        publication_props = f"{{trid: '{term[1]}'}}"
+        parameter = term[1]
+        publication_props = "{trid: $parameter}"
+
     else:
         raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
 
@@ -897,7 +917,7 @@ def get_stmts_for_paper(
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-    result = client.query_tx(hash_query)
+    result = client.query_tx(hash_query, parameter=parameter)
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
@@ -1002,23 +1022,29 @@ def get_stmts_for_stmt_hashes(
     :
         The statements for the given statement hashes.
     """
-    stmt_hashes_str = ",".join(str(h) for h in stmt_hashes)
-    subject_constraint = (
-        f"AND a.id STARTS WITH '{subject_prefix}'" if subject_prefix else ""
-    )
-    object_constraint = (
-        f"AND b.id STARTS WITH '{object_prefix}'" if object_prefix else ""
-    )
+    query_params = {"stmt_hashes": list(stmt_hashes)}
+    if subject_prefix:
+        subject_constraint = f"AND a.id STARTS WITH $subject_prefix"
+        query_params["subject_prefix"] = subject_prefix
+    else:
+        subject_constraint = ""
+
+    if object_prefix:
+        object_constraint = f"AND b.id STARTS WITH $object_prefix"
+        query_params["object_prefix"] = object_prefix
+    else:
+        object_constraint = ""
+
     stmts_query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
-            r.stmt_hash IN [{stmt_hashes_str}]
+            r.stmt_hash IN $stmt_hashes
             {subject_constraint}
             {object_constraint}
         RETURN p
     """
-    logger.info(f"Getting statements for {stmt_hashes_str.count(',') + 1} hashes")
-    rels = client.query_relations(stmts_query)
+    logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
+    rels = client.query_relations(stmts_query, **query_params)
     stmts = indra_stmts_from_relations(rels)
 
     if evidence_limit == 1:
@@ -1109,12 +1135,11 @@ def _get_mesh_child_terms(
     #  for the query below
     query = (
         """
-        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: "%s"})
+        MATCH (c:BioEntity)-[:isa|partof*1..]->(:BioEntity {id: $mesh_id})
         RETURN DISTINCT c.id
     """
-        % meshid_norm
     )
-    return set(client.query_tx(query, squeeze=True))
+    return set(client.query_tx(query, squeeze=True, mesh_id=meshid_norm))
 
 
 @autoclient(cache=True)
@@ -1285,13 +1310,26 @@ def get_drugs_for_target(
 @autoclient()
 def get_drugs_for_targets(
     targets: Iterable[Tuple[str, str]], *, client: Neo4jClient
-) -> Mapping[Tuple[str, str], Iterable[Agent]]:
-    """Return the drugs targeting each of the given targets."""
+) -> Mapping[str, Iterable[Agent]]:
+    """Return the drugs targeting each of the given targets.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    targets :
+        The targets to query.
+
+    Returns
+    -------
+    :
+        A mapping of targets to the drugs targeting each of the given targets.
+    """
     rels = client.get_source_relations_for_targets(
         targets, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     drug_nodes = {
-        target: [
+        norm_id(*target): [
             _get_node_from_stmt_relation(rel, "source", "subj")
             for rel in target_rels
             if _is_drug_relation(rel)
@@ -1332,13 +1370,26 @@ def get_targets_for_drug(
 @autoclient()
 def get_targets_for_drugs(
     drugs: Iterable[Tuple[str, str]], *, client: Neo4jClient
-) -> Mapping[Tuple[str, str], Iterable[Agent]]:
-    """Return the proteins targeted by each of the given drugs."""
+) -> Mapping[str, Iterable[Agent]]:
+    """Return the proteins targeted by each of the given drugs
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drugs :
+        A list of drugs to get the targets for.
+
+    Returns
+    -------
+    :
+        A mapping from each drug to the proteins targeted by that drug.
+    """
     rels = client.get_target_relations_for_sources(
         drugs, "indra_rel", source_type="BioEntity", target_type="BioEntity"
     )
     target_nodes = {
-        drug: [
+        norm_id(*drug): [
             _get_node_from_stmt_relation(rel, "target", "obj")
             for rel in drug_rels
             if _is_drug_relation(rel)

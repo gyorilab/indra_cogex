@@ -9,7 +9,7 @@ from indra_cogex.client.queries import (
     _get_ev_dict_from_hash_ev_query,
     _get_mesh_child_terms,
 )
-from indra_cogex.representation import Node
+from indra_cogex.representation import Node, norm_id
 
 from .test_neo4j_client import _get_client
 
@@ -367,6 +367,24 @@ def test_drugs_for_target():
 
 
 @pytest.mark.nonpublic
+def test_drugs_for_targets():
+    client = _get_client()
+    target = ("HGNC", "6840")
+    norm_target = norm_id(*target)
+    drugs_dict = get_drugs_for_targets([target], client=client)
+    assert drugs_dict
+    assert isinstance(drugs_dict, dict)
+    assert norm_target in drugs_dict
+    assert isinstance(drugs_dict[norm_target], list)
+    drug_node = list(drugs_dict.values())[0][0]
+    assert isinstance(drug_node, Node)
+    assert drug_node.db_ns == "CHEBI"
+    assert ("CHEBI", "CHEBI:90227") in {
+        n.grounding() for il in drugs_dict.values() for n in il
+    }
+
+
+@pytest.mark.nonpublic
 def test_targets_for_drug():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
@@ -375,6 +393,23 @@ def test_targets_for_drug():
     assert isinstance(targets[0], Node)
     assert targets[0].db_ns == "HGNC"
     assert ("HGNC", "6840") in {t.grounding() for t in targets}
+
+
+@pytest.mark.nonpublic
+def test_targets_for_drugs():
+    client = _get_client()
+    drug = ("CHEBI", "CHEBI:90227")
+    target_dict = get_targets_for_drugs([drug], client=client)
+    assert target_dict
+    assert isinstance(target_dict, dict)
+    norm_drug = list(target_dict.keys())[0]
+    assert norm_drug.startswith("chebi")
+    assert isinstance(target_dict[norm_drug], list)
+    target_node = list(target_dict.values())[0][0]
+    assert isinstance(target_node, Node)
+    assert target_node.db_ns == "HGNC"
+    assert ("HGNC", "6840") in {n.grounding() for il in target_dict.values()
+                                for n in il}
 
 
 @pytest.mark.nonpublic

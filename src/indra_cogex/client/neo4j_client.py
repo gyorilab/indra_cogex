@@ -3,6 +3,7 @@
 import inspect
 import logging
 from functools import lru_cache, wraps
+from itertools import count
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 import json
 
@@ -13,7 +14,8 @@ from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
 from neo4j import GraphDatabase, Transaction, unit_of_work
 
-from indra_cogex.representation import Node, Relation, norm_id, triple_query
+from indra_cogex.representation import Node, Relation, norm_id, \
+    triple_query, triple_parameter_query
 
 __all__ = ["Neo4jClient", "autoclient"]
 
@@ -94,19 +96,19 @@ class Neo4jClient:
                 do_cypher_tx, query, query_params=query_params
             )
 
-    def query_dict(self, query: str) -> Dict:
+    def query_dict(self, query: str, **query_params) -> Dict:
         """Run a read-only query that generates a dictionary."""
-        return dict(self.query_tx(query))
+        return dict(self.query_tx(query, **query_params))
 
-    def query_dict_value_json(self, query: str) -> Dict:
+    def query_dict_value_json(self, query: str, **query_params) -> Dict:
         """Run a read-only query that generates a dictionary."""
         return {
             key: json.loads(j)
-            for key, j in self.query_tx(query)
+            for key, j in self.query_tx(query, **query_params)
         }
 
     def query_tx(
-        self, query: str, squeeze: bool = False
+        self, query: str, squeeze: bool = False, **query_params
     ) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
@@ -114,9 +116,11 @@ class Neo4jClient:
         ----------
         query :
             The query string to be executed.
-        squeeze:
+        squeeze :
             If true, unpacks the 0-indexed element in each value returned.
             Useful when only returning value per row of the results.
+        query_params :
+            kwargs to pass to query
 
         Returns
         -------
@@ -125,25 +129,33 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/current/api.html#session-construction
+        # https://neo4j.com/docs/api/python-driver/4.4/api.html#session-construction
         # and
-        # https://neo4j.com/docs/api/python-driver/current/api.html#explicit-transactions
+        # https://neo4j.com/docs/api/python-driver/4.4/api.html#explicit-transactions
         # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+        # https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
         with self.driver.session() as session:
-            values = session.read_transaction(do_cypher_tx, query)
+            # do_cypher_tx is ultimately called as
+            # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
+            # where *args and **kwargs are passed through unchanged, meaning
+            # do_cypher_tx can expect query and **query_params
+            values = session.read_transaction(
+                do_cypher_tx, query, **query_params
+            )
 
         if squeeze:
             values = [value[0] for value in values]
         return values
 
-    def query_nodes(self, query: str) -> List[Node]:
+    def query_nodes(self, query: str, **query_params) -> List[Node]:
         """Run a read-only query for nodes.
 
         Parameters
         ----------
         query :
             The query string to be executed.
+        query_params :
+            Query parameters to pass to cypher
 
         Returns
         -------
@@ -151,9 +163,10 @@ class Neo4jClient:
             A list of :class:`Node` instances corresponding
             to the results of the query
         """
-        return [self.neo4j_to_node(res) for res in self.query_tx(query, squeeze=True)]
+        return [self.neo4j_to_node(res)
+                for res in self.query_tx(query, squeeze=True, **query_params)]
 
-    def query_relations(self, query: str) -> List[Relation]:
+    def query_relations(self, query: str, **query_params) -> List[Relation]:
         """Run a read-only query for relations.
 
         Parameters
@@ -162,6 +175,9 @@ class Neo4jClient:
             The query string to be executed. Must have a ``RETURN``
             with a single element ``p`` where in the ``MATCH`` part
             of the query it has something like ``p=(h)-[r]->(t)``.
+        query_params :
+            Query parameters to pass to query transaction function that will
+            fill out the placeholders in the cypher query
 
         Returns
         -------
@@ -170,7 +186,8 @@ class Neo4jClient:
             to the results of the query
         """
         return [
-            self.neo4j_to_relation(res) for res in self.query_tx(query, squeeze=True)
+            self.neo4j_to_relation(res) for res in
+            self.query_tx(query, squeeze=True, **query_params)
         ]
 
     def get_session(self, renew: Optional[bool] = False) -> neo4j.Session:
@@ -377,19 +394,15 @@ class Neo4jClient:
             target_type=target_type,
         )
         sources = [norm_id(*source) for source in sources]
-        sources_match = "[%s]" % ",".join(["'%s'" % s for s in sources])
         query = """
             MATCH p=%s
-            WHERE s.id IN %s
+            WHERE s.id IN $sources
             RETURN p
-        """ % (
-            match,
-            sources_match,
-        )
+        """ % match
         from collections import defaultdict
 
         rels = defaultdict(list)
-        for res in self.query_tx(query, squeeze=True):
+        for res in self.query_tx(query, squeeze=True, sources=sources):
             rel = self.neo4j_to_relation(res)
             rels[(rel.source_ns, rel.source_id)].append(rel)
         return rels
@@ -408,19 +421,15 @@ class Neo4jClient:
             target_type=target_type,
         )
         targets = [norm_id(*target) for target in targets]
-        targets_match = "[%s]" % ",".join(["'%s'" % t for t in targets])
         query = """
             MATCH p=%s
-            WHERE t.id IN %s
+            WHERE t.id IN $targets
             RETURN p
-        """ % (
-            match,
-            targets_match,
-        )
+        """ % match
         from collections import defaultdict
 
         rels = defaultdict(list)
-        for res in self.query_tx(query, squeeze=True):
+        for res in self.query_tx(query, squeeze=True, targets=targets):
             rel = self.neo4j_to_relation(res)
             rels[(rel.target_ns, rel.target_id)].append(rel)
         return rels
@@ -538,24 +547,31 @@ class Neo4jClient:
         sources
             A list of source nodes.
         """
-        parts = [
-            triple_query(
+        name_generator = (f"target_id{c}" for c in count(0))
+        prop_params = []
+        for _ in range(len(targets)):
+            prop_params.append(next(name_generator))
+
+        parts = []
+        query_params = {}
+        for prop_param, target in zip(prop_params, targets):
+            part = triple_parameter_query(
                 source_name="s",
                 source_type=source_type,
                 relation_type=relation,
-                target_id=norm_id(*target),
+                target_prop_name="id",
+                target_prop_param=prop_param,
                 target_type=target_type,
             )
-            for target in targets
-        ]
+            parts.append(part)
+            query_params[prop_param] = norm_id(*target)
         query = """
             MATCH %s
             RETURN DISTINCT s
         """ % ",".join(
             parts
         )
-        nodes = [self.neo4j_to_node(res[0]) for res in self.query_tx(query)]
-        return nodes
+        return self.query_nodes(query, **query_params)
 
     def get_targets(
         self,
@@ -615,23 +631,31 @@ class Neo4jClient:
         targets
             A list of target nodes.
         """
-        parts = [
-            triple_query(
-                source_id=norm_id(*source),
+        name_generator = (f"source_id{c}" for c in count(0))
+        prop_params = []
+        for _ in range(len(sources)):
+            prop_params.append(next(name_generator))
+
+        parts = []
+        query_params = {}
+        for prop_param, source in zip(prop_params, sources):
+            part = triple_parameter_query(
+                source_prop_name="id",
+                source_prop_param=prop_param,
                 source_type=source_type,
                 relation_type=relation,
                 target_name="t",
                 target_type=target_type,
             )
-            for source in sources
-        ]
+            parts.append(part)
+            query_params[prop_param] = norm_id(*source)
         query = """
             MATCH %s
             RETURN DISTINCT t
         """ % ",".join(
             parts
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, **query_params)
 
     def get_target_agents(
         self,
@@ -708,11 +732,12 @@ class Neo4jClient:
         predecessors
             A list of predecessor nodes.
         """
-        match = triple_query(
+        match = triple_parameter_query(
             source_name="s",
             source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
-            target_id=norm_id(*target),
+            target_prop_param="target",
+            target_prop_name="id",
             target_type=target_type,
         )
         query = (
@@ -722,7 +747,7 @@ class Neo4jClient:
         """
             % match
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, target=norm_id(*target))
 
     def get_successors(
         self,
@@ -747,10 +772,11 @@ class Neo4jClient:
         Returns
         -------
         predecessors
-            A list of predecessor nodes.
+            A list of successors nodes.
         """
-        match = triple_query(
-            source_id=norm_id(*source),
+        match = triple_parameter_query(
+            source_prop_param="source",
+            source_prop_name="id",
             source_type=source_type,
             relation_type="%s*1.." % "|".join(relations),
             target_name="t",
@@ -763,7 +789,7 @@ class Neo4jClient:
         """
             % match
         )
-        return self.query_nodes(query)
+        return self.query_nodes(query, source=norm_id(*source))
 
     @staticmethod
     def neo4j_to_node(neo4j_node: neo4j.graph.Node) -> Node:
@@ -1093,13 +1119,15 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 
 
 # Follows example here:
-# https://neo4j.com/docs/python-manual/current/session-api/#python-driver-simple-transaction-fn
+# https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
 # and from the docstring of neo4j.Session.read_transaction
 @unit_of_work()
 def do_cypher_tx(
         tx: Transaction,
         query: str,
-        query_params: Optional[Dict] = None
+        **query_params
 ) -> List[List]:
+    # 'parameters' and '**kwparameters' of tx.run are ultimately merged at query
+    # run-time
     result = tx.run(query, parameters=query_params)
     return [record.values() for record in result]

@@ -126,6 +126,9 @@ def get_web_return_annotation(sig: Signature) -> Type:
     # Iterable[Statement] -> List[Dict[int, Any]]
     # Counter -> Dict[str, int]
     # Iterable[Agent] -> List[Dict[str, Any]]
+    # Agent -> Dict[str, Any]
+    # Mapping[str, Iterable[indra.statements.agent.Agent]]
+    #   -> Dict[str, List[Dict[str, Any]]]
 
     if return_annotation is Iterable[Node]:
         return List[Dict[str, Any]]
@@ -141,6 +144,10 @@ def get_web_return_annotation(sig: Signature) -> Type:
         return Dict[str, int]
     elif return_annotation is Iterable[Agent]:
         return List[Dict[str, Any]]
+    elif return_annotation is Agent:
+        return Dict[str, Any]
+    elif return_annotation is Mapping[str, Iterable[Agent]]:
+        return Dict[str, List[Dict[str, Any]]]
     else:
         return return_annotation
 
@@ -163,7 +170,17 @@ def get_docstring(
         The docstring of the function
     """
     parsed_doc = parse(fun.__doc__)
+    if parsed_doc.returns is None:
+        raise ValueError(
+            f"Forgot to document return value in docstring of {fun.__name__}"
+        )
+    if parsed_doc.params is None:
+        raise ValueError(
+            f"Forgot to document parameters in docstring of {fun.__name__}"
+        )
     sig = signature(fun)
+    if sig.return_annotation is sig.empty:
+        raise ValueError("Forgot to type annotate function")
 
     full_docstr = """{title}
 
