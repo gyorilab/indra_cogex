@@ -396,7 +396,7 @@ def test_targets_for_drug():
 
 
 @pytest.mark.nonpublic
-def test_targets_for_drug():
+def test_targets_for_drugs():
     client = _get_client()
     drug = ("CHEBI", "CHEBI:90227")
     target_dict = get_targets_for_drugs([drug], client=client)
