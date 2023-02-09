@@ -10,6 +10,7 @@ from .cbioportal import (
     CcleDrugResponseProcessor,
     CcleMutationsProcessor,
 )
+from .cellmarker import CellMarkerProcessor
 from .chembl import ChemblIndicationsProcessor
 from .clinicaltrials import ClinicaltrialsProcessor
 from .goa import GoaProcessor
@@ -44,6 +45,7 @@ __all__ = [
     "HpPhenotypeGeneProcessor",
     "NihReporterProcessor",
     "InterproProcessor",
+    "CellMarkerProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)
