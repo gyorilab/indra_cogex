@@ -36,6 +36,23 @@ def get_query(fname: str) -> Set[str]:
         raise ValueError(f"unhandled prefix: {norm_prefix}")
 
 
+def get_query_from_tsv(fname, *, column, sep=',') -> Set[str]:
+    """Get a gene list query from a TSV file"""
+    df = pd.read_csv(fname, sep=sep)
+    df = df[df[column].notna()]
+    lines = set(df[column])
+    if column == "hgnc":
+        return lines
+    elif column == "uniprot":
+        rv = {
+            uniprot_client.get_hgnc_id(line)
+            for line in lines
+        }
+        return {r for r in rv if r}
+    else:
+        raise ValueError(f"unhandled column: {column}")
+
+
 @autoclient()
 def analysis_hgnc(
     data_path: Path,
@@ -51,7 +68,7 @@ def analysis_hgnc(
 
     target_hgnc_ids = set(target_hgnc_ids)
     df = _read_df(data_path)
-    measured = set(df["hgnc"])
+    # measured = set(df["hgnc"])
 
     if not statements_pkl_path.is_file():
         pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
@@ -108,6 +125,8 @@ def main():
     client = Neo4jClient()
     analysis_hgnc(data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client)
     analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("Exploratory_query.csv"), analysis_id="exploratory", client=client)
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query_from_tsv("gene_list.csv", column="uniprot"), analysis_id="slavov", client=client)
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("MAPK_downstream.csv"), analysis_id="mapk_downstream", client=client)
     analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("MAPK_downstream.csv"), analysis_id="mapk_downstream", client=client)
 
 

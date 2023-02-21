@@ -409,7 +409,7 @@ def get_neighbor_network(
         if upstream_res is None:
             raise ValueError
         upstream_nodes = {upstream_node.grounding() for upstream_node in upstream_res}
-        print(f"got {len(upstream_nodes)} upstream nodes")
+        print(f"got {len(upstream_nodes):,} upstream nodes")
         query.update(upstream_nodes)
     if downstream:
         downstream_cypher = dedent(
@@ -431,9 +431,9 @@ def get_neighbor_network(
         downstream_nodes = {
             downstream_node.grounding() for downstream_node in downstream_res
         }
-        print(f"got {len(upstream_nodes)} downstream nodes")
+        print(f"got {len(upstream_nodes):,} downstream nodes")
         query.update(downstream_nodes)
-    print(f"doign subnetwork query over {len(query)} nodes")
+    print(f"doing subnetwork query over {len(query):,} nodes")
     return indra_subnetwork_relations(
         nodes=sorted(query),
         client=client,
