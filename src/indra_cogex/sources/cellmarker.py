@@ -63,14 +63,14 @@ class CellMarkerProcessor(Processor):
         """Get cell, tissue, and gene nodes."""
         for cl_id in sorted(self.df["cl"].unique()):
             yield Node.standardized(
-                db_ns="cl",
-                db_id=f"CL:{cl_id}",  # FIXME redundant
+                db_ns="CL",
+                db_id=f"CL:{cl_id}",
                 name=pyobo.get_name("cl", cl_id),
                 labels=["BioEntity"],
             )
         for hgnc_id in sorted(self.df["hgnc"].unique()):
             yield Node.standardized(
-                db_ns="hgnc",
+                db_ns="HGNC",
                 db_id=hgnc_id,
                 name=hgnc_client.get_hgnc_name(hgnc_id),
                 labels=["BioEntity"],
@@ -93,9 +93,9 @@ class CellMarkerProcessor(Processor):
                 "tissue_uberon_ids": _join(all_tissues),
             }
             yield Relation(
-                "cl",
-                f"CL:{cl}",  # FIXME why do we need redundant namespace here?
-                "hgnc",
+                "CL",
+                f"CL:{cl}",
+                "HGNC",
                 hgnc,
                 self.rel_type,
                 data,
