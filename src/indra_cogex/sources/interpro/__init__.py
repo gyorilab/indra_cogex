@@ -76,7 +76,7 @@ class InterproProcessor(Processor):
         unique_hgnc = set()
         for interpro_id, _type, name, short_name in self.entries_df.values:
             yield Node(
-                "interpro",
+                "IP",
                 interpro_id,
                 ["BioEntity"],
                 dict(name=name, short_name=short_name, version=self.version),
@@ -95,21 +95,21 @@ class InterproProcessor(Processor):
         for interpro_id in sorted(self.interpro_ids):
             for child_interpro_id in sorted(self.parents.get(interpro_id, set())):
                 yield Relation(
-                    "interpro", child_interpro_id, "interpro", interpro_id, "isa"
+                    "IP", child_interpro_id, "IP", interpro_id, "isa"
                 )
 
             for go_id in sorted(self.interpro_to_goa.get(interpro_id, [])):
-                yield Relation("interpro", interpro_id, "GO", go_id, "associated_with")
+                yield Relation("IP", interpro_id, "GO", go_id, "associated_with")
 
             for hgnc_id, start, end in sorted(
                 self.interpro_to_genes.get(interpro_id, []), key=lambda t: int(t[0])
             ):
                 yield Relation(
-                    "interpro",
-                    interpro_id,
                     "HGNC",
                     hgnc_id,
-                    "has_member",
+                    "IP",
+                    interpro_id,
+                    "has_domain",
                     {"start:int": start, "end:int": end, "version": self.version},
                 )
 
