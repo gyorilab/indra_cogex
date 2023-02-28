@@ -2,7 +2,7 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Collection, Iterable, List, Mapping, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -54,16 +54,16 @@ def _prepare_hypergeometric_test(
     Parameters
     ----------
     query_set:
-        gene set to test against pathway
+        Input gene set to test against a target set (e.g., a pathway).
     target_set:
-        pathway gene set
+        The target gene set (e.g., a pathway).
     universe_size:
-        number of HGNC symbols
+        Size of the background gene set.
 
     Returns
     -------
     :
-        A 2x2 matrix
+        A 2x2 matrix used as input for Fisher's exact test.
     """
     return np.array(
         [
@@ -96,6 +96,7 @@ def count_human_genes(*, client: Neo4jClient) -> int:
     query = """\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
+        AND NOT n.obsolete = "True"
         RETURN count(n) as count
     """
     results = client.query_tx(query)
@@ -105,7 +106,9 @@ def count_human_genes(*, client: Neo4jClient) -> int:
 
 
 def gene_ontology_single_ora(
-    client: Neo4jClient, go_term: Tuple[str, str], gene_ids: List[str]
+    client: Neo4jClient,
+    go_term: Tuple[str, str],
+    gene_ids: List[str],
 ) -> float:
     """Get the *p*-value for the Fisher exact test a given GO term.
 
@@ -180,7 +183,12 @@ def _do_ora(
     return df
 
 
-def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFrame:
+def go_ora(
+    client: Neo4jClient,
+    gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
+    **kwargs,
+) -> pd.DataFrame:
     """Calculate over-representation on all GO terms.
 
     Parameters
@@ -189,6 +197,9 @@ def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFra
         Neo4jClient
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -198,12 +209,19 @@ def go_ora(client: Neo4jClient, gene_ids: Iterable[str], **kwargs) -> pd.DataFra
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(get_go(client=client), query=gene_ids, count=count, **kwargs)
 
 
 def wikipathways_ora(
-    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+    client: Neo4jClient,
+    gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all WikiPathway pathways.
 
@@ -213,6 +231,9 @@ def wikipathways_ora(
         Neo4jClient
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -222,14 +243,21 @@ def wikipathways_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(
         get_wikipathways(client=client), query=gene_ids, count=count, **kwargs
     )
 
 
 def reactome_ora(
-    client: Neo4jClient, gene_ids: Iterable[str], **kwargs
+    client: Neo4jClient,
+    gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all Reactome pathways.
 
@@ -239,6 +267,9 @@ def reactome_ora(
         Neo4jClient
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     **kwargs :
         Additional keyword arguments to pass to _do_ora
 
@@ -248,13 +279,21 @@ def reactome_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(get_reactome(client=client), query=gene_ids, count=count, **kwargs)
 
 
 @autoclient()
 def phenotype_ora(
-    gene_ids: Iterable[str], *, client: Neo4jClient, **kwargs
+    gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> pd.DataFrame:
     """Calculate over-representation on all HP phenotypes.
 
@@ -262,6 +301,9 @@ def phenotype_ora(
     ----------
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     client :
         Neo4jClient
     **kwargs :
@@ -273,7 +315,11 @@ def phenotype_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(
         get_phenotype_gene_sets(client=client), query=gene_ids, count=count, **kwargs
     )
@@ -282,6 +328,7 @@ def phenotype_ora(
 def indra_downstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
     *,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
@@ -298,6 +345,9 @@ def indra_downstream_ora(
         Neo4jClient
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         Minimum number of evidences to consider a causal relationship
     minimum_belief :
@@ -311,7 +361,11 @@ def indra_downstream_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(
         get_entity_to_regulators(
             client=client,
@@ -327,6 +381,7 @@ def indra_downstream_ora(
 def indra_upstream_ora(
     client: Neo4jClient,
     gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
     *,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
@@ -343,6 +398,9 @@ def indra_upstream_ora(
         Neo4jClient
     gene_ids :
         List of HGNC gene identifiers
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         Minimum number of evidences to consider a causal relationship
     minimum_belief :
@@ -356,7 +414,11 @@ def indra_upstream_ora(
         DataFrame with columns:
         curie, name, p, q, mlp, mlq
     """
-    count = count_human_genes(client=client)
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
     return _do_ora(
         get_entity_to_targets(
             client=client,
