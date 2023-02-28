@@ -13,14 +13,15 @@ from .cbioportal import (
 from .chembl import ChemblIndicationsProcessor
 from .clinicaltrials import ClinicaltrialsProcessor
 from .goa import GoaProcessor
+from .hpoa import HpDiseasePhenotypeProcessor, HpPhenotypeGeneProcessor
 from .indra_db import DbProcessor, EvidenceProcessor
 from .indra_ontology import OntologyProcessor
+from .interpro import InterproProcessor
+from .nih_reporter import NihReporterProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
-from .hpoa import HpDiseasePhenotypeProcessor, HpPhenotypeGeneProcessor
-from .nih_reporter import NihReporterProcessor
 
 __all__ = [
     "processor_resolver",
@@ -41,7 +42,8 @@ __all__ = [
     "PubmedProcessor",
     "HpDiseasePhenotypeProcessor",
     "HpPhenotypeGeneProcessor",
-    "NihReporterProcessor"
+    "NihReporterProcessor",
+    "InterproProcessor",
 ]
 
 processor_resolver = Resolver.from_subclasses(Processor)

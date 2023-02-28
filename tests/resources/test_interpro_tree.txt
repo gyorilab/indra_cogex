@@ -1,0 +1,6 @@
+IPR000053::Thymidine/pyrimidine-nucleoside phosphorylase::
+--IPR013466::Thymidine phosphorylase/AMP phosphorylase::
+----IPR017713::AMP phosphorylase::
+----IPR028579::Putative thymidine phosphorylase::
+--IPR018090::Pyrimidine-nucleoside phosphorylase, bacterial/eukaryotic::
+----IPR013465::Thymidine phosphorylase::

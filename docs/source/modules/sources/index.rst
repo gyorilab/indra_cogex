@@ -15,6 +15,7 @@ INDRA CoGEx Sources
    goa
    indra_db
    indra_ontology
+   interpro
    odinson/index
    pathways
    pubmed
