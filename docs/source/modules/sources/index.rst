@@ -10,6 +10,7 @@ INDRA CoGEx Sources
    sources_processor
    bgee
    cbioportal
+   cellmarker
    chembl
    clinicaltrials
    goa
