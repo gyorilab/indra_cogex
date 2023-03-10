@@ -41,7 +41,7 @@ def index_nodes_on_id(client: Neo4jClient, exist_ok: bool = False):
 
 
 def index_evidence_on_stmt_hash(client: Neo4jClient, exist_ok: bool = False):
-    """Index all Evidence nodes on the statement hash
+    """Index all Evidence nodes on the stmt_hash property
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def index_evidence_on_stmt_hash(client: Neo4jClient, exist_ok: bool = False):
 
 
 def index_indra_rel_on_stmt_hash(client: Neo4jClient):
-    """Index all indra_rel relationships on stmt_hash
+    """Index all indra_rel relationships on stmt_hash property
 
     Parameters
     ----------
