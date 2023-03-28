@@ -870,7 +870,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+    paper_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -878,7 +878,7 @@ def get_stmts_for_paper(
     ----------
     client :
         The Neo4j client.
-    term :
+    paper_term :
         The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
 
     Returns
@@ -894,24 +894,24 @@ def get_stmts_for_paper(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
 
-    if term[0].lower() in {"pmid", "pubmed"}:
-        parameter = norm_id(*term)
+    if paper_term[0].lower() in {"pmid", "pubmed"}:
+        parameter = norm_id(*paper_term)
         publication_props = "{id: $parameter}"
 
-    elif term[0].lower() == "doi":
-        parameter = term[1]
+    elif paper_term[0].lower() == "doi":
+        parameter = paper_term[1]
         publication_props = "{doi: $parameter}"
 
-    elif term[0].lower() in {"pmc", "pmcid"}:
-        parameter = term[1]
+    elif paper_term[0].lower() in {"pmc", "pmcid"}:
+        parameter = paper_term[1]
         publication_props = "{pmcid: $parameter}"
 
-    elif term[0].lower() == "trid":
-        parameter = term[1]
+    elif paper_term[0].lower() == "trid":
+        parameter = paper_term[1]
         publication_props = "{trid: $parameter}"
 
     else:
-        raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
+        raise ValueError(f"Invalid prefix for publication lookup: {paper_term[0]}")
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
