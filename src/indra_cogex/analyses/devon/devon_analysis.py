@@ -1,20 +1,21 @@
-""""""
+"""Run Vitek lab analysis - get PKN based on mass spec results."""
+
+import logging
+import pickle
+from pathlib import Path
+from typing import Iterable, Optional, Set, Union
 
 import bioregistry
 import pandas as pd
-
-from pathlib import Path
-from protmapper import uniprot_client
-from typing import Optional, Sequence, Iterable, Set
-from indra.statements import Statement
-from indra_cogex.client import queries, subnetwork
-from indra_cogex.client import autoclient, Neo4jClient
 import pystow
-import pickle
 from indra.assemblers.indranet import IndraNetAssembler
+from protmapper import uniprot_client
 
+from indra_cogex.client import Neo4jClient, autoclient, subnetwork
+
+logger = logging.getLogger(__name__)
 HERE = Path(__file__).parent.resolve()
-PATH = HERE.joinpath("example_data.csv")
+PATH = HERE.joinpath("devon/example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
 
 
@@ -28,26 +29,29 @@ def get_query(fname: str) -> Set[str]:
     if norm_prefix == "hgnc":
         return lines
     elif norm_prefix == "uniprot":
-        return {
-            uniprot_client.get_hgnc_id(line)
-            for line in lines
-        }
+        return {uniprot_client.get_hgnc_id(line) for line in lines}
     else:
         raise ValueError(f"unhandled prefix: {norm_prefix}")
 
 
-def get_query_from_tsv(fname, *, column, sep=',') -> Set[str]:
+def get_query_from_tsv(fname, *, column, sep=",") -> Set[str]:
     """Get a gene list query from a TSV file"""
     df = pd.read_csv(fname, sep=sep)
+    return _get_query_from_df(df, column=column)
+
+
+def get_query_from_xlsx(fname, *, column: str) -> Set[str]:
+    df = pd.read_excel(fname)
+    return _get_query_from_df(df, column=column)
+
+
+def _get_query_from_df(df: pd.DataFrame, column) -> Set[str]:
     df = df[df[column].notna()]
     lines = set(df[column])
     if column == "hgnc":
         return lines
-    elif column == "uniprot":
-        rv = {
-            uniprot_client.get_hgnc_id(line)
-            for line in lines
-        }
+    elif column in {"uniprot", "UniprotID"}:
+        rv = {uniprot_client.get_hgnc_id(line) for line in lines}
         return {r for r in rv if r}
     else:
         raise ValueError(f"unhandled column: {column}")
@@ -55,25 +59,26 @@ def get_query_from_tsv(fname, *, column, sep=',') -> Set[str]:
 
 @autoclient()
 def analysis_hgnc(
-    data_path: Path,
-    target_hgnc_ids: Iterable[str], *,
+    target_hgnc_ids: Iterable[str],
+    *,
+    data_path: Optional[Path] = None,
     analysis_id: str,
     client: Optional[Neo4jClient] = None,
 ):
+    logger.info("running analysis: %s", analysis_id)
     analysis_module = OUTPUT_MODULE.module(analysis_id)
     statements_pkl_path = analysis_module.join(name="statements.pkl")
     statements_df_path = analysis_module.join(name="indranet.tsv")
     processed_path = analysis_module.join(name="data.tsv")
-    processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
 
     target_hgnc_ids = set(target_hgnc_ids)
-    df = _read_df(data_path)
-    # measured = set(df["hgnc"])
 
     if not statements_pkl_path.is_file():
         pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
         stmts = subnetwork.get_neighbor_network_statements(
-            pairs, client=client, node_prefix="hgnc",
+            pairs,
+            client=client,
+            node_prefix="hgnc",
             minimum_evidence_count=8,
         )
         statements_pkl_path.write_bytes(pickle.dumps(stmts))
@@ -81,19 +86,27 @@ def analysis_hgnc(
         stmts = pickle.loads(statements_pkl_path.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
-    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
+    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(
+        ["agA_name", "agB_name"]
+    )
     stmts_df = stmts_df[stmts_df["stmt_type"] != "Complex"]
     stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
-    stmts_df.to_csv(statements_df_path, sep='\t', index=False)
+    stmts_df.to_csv(statements_df_path, sep="\t", index=False)
 
-    neighbor_hgnc_ids = set(stmts_df["agA_id"]).union(stmts_df["agB_id"])
-    df["in_neighbors"] = df["hgnc"].map(neighbor_hgnc_ids.__contains__)
-    df.to_csv(processed_path, sep="\t", index=False)
+    if data_path is not None:
+        data_df = _read_df(data_path)
+        # measured = set(df["hgnc"])
+        neighbor_hgnc_ids = set(stmts_df["agA_id"]).union(stmts_df["agB_id"])
+        data_df["in_neighbors"] = data_df["hgnc"].map(neighbor_hgnc_ids.__contains__)
+        data_df.to_csv(processed_path, sep="\t", index=False)
+        processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
+        data_df[data_df["in_neighbors"]].to_csv(
+            processed_filtered_path, sep="\t", index=False
+        )
 
-    df[df["in_neighbors"]].to_csv(processed_filtered_path, sep="\t", index=False)
 
-
-def _read_df(path):
+def _read_df(path: Union[str, Path]) -> pd.DataFrame:
+    path = Path(path).resolve()
     df = pd.read_csv(path, sep=",")
     columns = list(df.columns)
     columns[0] = "uniprot"
@@ -123,12 +136,46 @@ def main():
         "6877",
     ]
     client = Neo4jClient()
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client)
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("Exploratory_query.csv"), analysis_id="exploratory", client=client)
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query_from_tsv("gene_list.csv", column="uniprot"), analysis_id="slavov", client=client)
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("MAPK_downstream.csv"), analysis_id="mapk_downstream", client=client)
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=get_query("MAPK_downstream.csv"), analysis_id="mapk_downstream", client=client)
+    analysis_hgnc(
+        data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client
+    )
+    analysis_hgnc(
+        target_hgnc_ids=get_query_from_tsv("vartika/OV_ruth_1.csv", column="UniprotID"),
+        analysis_id="huettenhain",
+        client=client,
+    )
+    analysis_hgnc(
+        target_hgnc_ids=get_query_from_xlsx(
+            "vartika/CRC_silvia_1.xlsx", column="UniprotID"
+        ),
+        analysis_id="surinova",
+        client=client,
+    )
+    analysis_hgnc(
+        data_path=PATH,
+        target_hgnc_ids=get_query("devon/Exploratory_query.csv"),
+        analysis_id="exploratory",
+        client=client,
+    )
+    analysis_hgnc(
+        data_path=PATH,
+        target_hgnc_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
+        analysis_id="slavov",
+        client=client,
+    )
+    analysis_hgnc(
+        data_path=PATH,
+        target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
+        analysis_id="mapk_downstream",
+        client=client,
+    )
+    analysis_hgnc(
+        data_path=PATH,
+        target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
+        analysis_id="mapk_downstream",
+        client=client,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
