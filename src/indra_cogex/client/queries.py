@@ -40,6 +40,7 @@ __all__ = [
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
     "get_stmts_for_paper",
+    "get_stmts_for_pubmeds",
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
@@ -918,6 +919,38 @@ def get_stmts_for_paper(
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, parameter=parameter)
+    return _run(client=client, result=result, **kwargs)
+
+
+@autoclient()
+def get_stmts_for_pubmeds(
+    pubmeds: List[str], *, client: Neo4jClient, **kwargs
+) -> List[Statement]:
+    """Return the statements with evidence from the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pubmeds :
+        The PMIDs to query
+
+    Returns
+    -------
+    :
+        The statements for the given PubMed ID.
+    """
+    pubmeds = sorted(f"pubmed:{pubmed}" for pubmed in pubmeds)
+    hash_query = f"""\
+        MATCH (e:Evidence)-[:has_citation]->(p:Publication)
+        WHERE p.id IN {repr(pubmeds)}
+        RETURN e.stmt_hash, e.evidence
+    """
+    result = client.query_tx(hash_query)
+    return _run(client=client, result=result, **kwargs)
+
+
+def _run(client, result, **kwargs) -> List[Statement]:
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
