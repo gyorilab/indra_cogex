@@ -924,7 +924,7 @@ def get_stmts_for_paper(
 
 @autoclient()
 def get_stmts_for_pubmeds(
-    pubmeds: List[str], *, client: Neo4jClient, **kwargs
+    pubmeds: List[Union[str, int]], *, client: Neo4jClient, **kwargs
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -938,7 +938,16 @@ def get_stmts_for_pubmeds(
     Returns
     -------
     :
-        The statements for the given PubMed ID.
+        The statements for the given PubMed identifiers.
+
+    Example
+    -------
+    .. code-block::
+
+        from indra_cogex.client.queries import get_stmts_for_pubmeds
+
+        pubmeds = [20861832, 19503834]
+        stmts = get_stmts_for_pubmeds(pubmeds)
     """
     pubmeds = sorted(f"pubmed:{pubmed}" for pubmed in pubmeds)
     hash_query = f"""\
