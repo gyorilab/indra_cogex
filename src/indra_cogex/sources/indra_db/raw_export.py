@@ -203,6 +203,8 @@ if __name__ == "__main__":
     Time estimate: ~2.5 mins
     """
 
+    # This checks for the initial files dumped directly from the principal
+    # database and raises an error if they are not found
     needed_files = [reading_text_content_fname, text_refs_fname, raw_stmts_fname]
     if any(not f.exists() for f in needed_files):
         missing = [f.as_posix() for f in needed_files if not f.exists()]
@@ -211,18 +213,26 @@ if __name__ == "__main__":
             f"{', '.join(missing)} missing, please run the dump commands above to get them."
         )
 
+    # This checks if the INDRA DB Lite location is set. It is needed to
+    # significantly speed up the process of getting text refs in the
+    # assembly process
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # This checks if there are any adeft models available. They are needed to
     if len(get_available_models()) == 0:
         raise ValueError(
-            "No adeft models detected, run 'python -m adeft.download' to download models"
+            "No adeft models detected, run 'python -m adeft.download' to "
+            "download models"
         )
+    logger.info(f"Found {len(get_available_models())} adeft models")
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
     # reader version used to produce it.
     if not drop_readings_fname.exists() or not reading_to_text_ref_map.exists():
+        logger.info("Running statement distillation")
+        logger.info("Loading reading and text content into dataframe")
         df = pandas.read_csv(
             reading_text_content_fname,
             header=None,
@@ -243,7 +253,9 @@ if __name__ == "__main__":
         contents = defaultdict(list)
 
         # This takes around 1.5 hours
-        for row in tqdm.tqdm(df.itertuples(), total=len(df)):
+        for row in tqdm.tqdm(df.itertuples(),
+                             total=len(df),
+                             desc="Distilling statements"):
             if row.text_ref_id != trid:
                 for reader, reader_contents in contents.items():
                     if len(reader_contents) < 2:
