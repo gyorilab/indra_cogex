@@ -277,11 +277,13 @@ if __name__ == "__main__":
             trid = row.text_ref_id
 
         with open(drop_readings_fname, "wb") as fh:
+            logger.info(f"Dumping {drop_readings_fname.as_posix()}")
             pickle.dump(drop_readings, fh)
 
         # Dump mapping of reading_id to text_ref_id
         reading_id_to_text_ref_id = dict(zip(df.reading_id, df.text_ref_id))
         with reading_to_text_ref_map.open("wb") as fh:
+            logger.info(f"Dumping {reading_to_text_ref_map.as_posix()}")
             pickle.dump(reading_id_to_text_ref_id, fh)
 
     else:
