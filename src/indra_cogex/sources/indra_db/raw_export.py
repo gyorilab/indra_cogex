@@ -252,7 +252,7 @@ if __name__ == "__main__":
         trid = df["text_ref_id"].iloc[0]
         contents = defaultdict(list)
 
-        # This takes around 1.5 hours
+        # This takes around ~10 min
         for row in tqdm.tqdm(df.itertuples(),
                              total=len(df),
                              desc="Distilling statements"):
