@@ -114,6 +114,7 @@ def load_text_refs_by_trid(fname: str):
     text_refs = {}
     for line in tqdm.tqdm(
         gzip.open(fname, "rt", encoding="utf-8"),
+        total=36223169,
         desc="Processing text refs into a lookup dictionary",
     ):
         ids = line.strip().split("\t")
