@@ -440,4 +440,6 @@ if __name__ == "__main__":
             f"and cycles saved to {refinement_cycles_fname.as_posix()}"
         )
     else:
-        belief_calc(refinement_graph)
+        belief_calc(refinement_graph,
+                    batch_size=batch_size,
+                    num_batches=num_batches)

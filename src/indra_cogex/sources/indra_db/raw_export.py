@@ -308,7 +308,7 @@ if __name__ == "__main__":
         ) as fh_out:
             reader = csv.reader(fh, delimiter="\t")
             writer = csv.writer(fh_out, delimiter="\t")
-            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7586):
+            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7581):
                 stmts_jsons = []
                 for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                     # NOTE: We might want to propagate the raw_stmt_id for
