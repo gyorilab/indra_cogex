@@ -412,7 +412,7 @@ if __name__ == "__main__":
     if not unique_stmts_fname.exists() or not source_counts_fname.exists():
         raise ValueError(
             f"Missing one or both of the required files: "
-            f"{', '.join(r.as_possix() for r in required)}"
+            f"{', '.join(r.as_posix() for r in required)}"
         )
 
     # Global variables
