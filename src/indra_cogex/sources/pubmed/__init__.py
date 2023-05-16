@@ -256,8 +256,8 @@ def download_medline_pubmed_xml_resource(
     force :
         If True, will download a file even if it already exists.
     raise_http_error :
-        If True, will ignore HTTP errors when downloading the files.
-        Default: False.
+        If True, will raise error instead of skipping the file when
+        downloading. Default: False.
     """
     for xml_file, stow, base_url in xml_path_generator(description="Download"):
         # Check if resource already exists
@@ -266,8 +266,15 @@ def download_medline_pubmed_xml_resource(
 
         # Download the resource
         response = requests.get(base_url + xml_file)
-        if not raise_http_error:
-            response.raise_for_status()
+        if response.status_code != 200:
+            if raise_http_error:
+                response.raise_for_status()
+            else:
+                logger.warning(
+                    f"Skipping {xml_file} due to HTTP status {response.status_code}"
+                )
+                continue
+
         md5_response = requests.get(base_url + xml_file + ".md5")
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
