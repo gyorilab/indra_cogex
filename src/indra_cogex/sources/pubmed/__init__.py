@@ -194,7 +194,11 @@ def extract_info_from_medline_xml(
         years = list(
             medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
         ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
-        min_year = min(int(year.text) for year in years)
+        min_year = min((int(year.text) for year in years), default=None)
+        if min_year is None:
+            logger.warning(
+                f"Could not find year for PMID {medline_citation.find('PMID').text}"
+            )
         pmid = medline_citation.find("PMID").text
 
         mesh_annotations = _get_annotations(medline_citation)
