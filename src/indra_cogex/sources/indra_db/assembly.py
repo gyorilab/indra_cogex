@@ -73,7 +73,7 @@ def get_refinement_graph() -> nx.DiGraph:
     if not refinements_fname.exists():
         logger.info("Calculating refinements")
         refinements = set()
-        # This takes ~9-10 hours to run
+        # This takes ~10-11 hours to run
         with gzip.open(unique_stmts_fname, "rt") as fh1:
             reader1 = csv.reader(fh1, delimiter="\t")
             for outer_batch_ix in tqdm.tqdm(
