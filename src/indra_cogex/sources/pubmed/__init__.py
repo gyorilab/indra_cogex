@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from hashlib import md5
+from itertools import chain
 from typing import Tuple, Generator, Mapping
 
 import pystow
@@ -11,6 +12,7 @@ import textwrap
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
@@ -25,10 +27,6 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
-year_index = 23
-max_file_index = 1166  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
-max_update_index = 1348  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
-xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
@@ -127,6 +125,30 @@ class PubmedProcessor(Processor):
                 batch, self.edges_path, sample_path, write_mode
             )
         return edges_path
+
+
+def get_url_paths(url: str) -> Generator:
+    """Get the paths to all XML files on the PubMed FTP server."""
+    logger.info("Getting URL paths from %s" % url)
+
+    # Get page
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Make soup
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Append trailing slash if not present
+    url = url if url.endswith("/") else url + "/"
+
+    # Loop over all links
+    for link in soup.find_all("a"):
+        href = link.get("href")
+        # yield if href matches
+        # 'pubmed<2 digit year>n<4 digit file index>.xml.gz'
+        # but skip the md5 files
+        if href and href.startswith("pubmed") and href.endswith(".xml.gz"):
+            yield url + href
 
 
 def ensure_text_refs(fname):
@@ -279,23 +301,26 @@ def xml_path_generator(
         Tuple of (xml_file, xml_path, xml_url).
     """
 
-    def _get_tuple(ix: int) -> Tuple[str, Path, str]:
-        file = xml_file_temp.format(index=str(ix).zfill(4))
+    def _get_tuple(url: str) -> Tuple[str, Path, str]:
+        file = url.split("/")[-1]
         stow = raw_xml.join(name=file)
 
-        # If index <= max_update_index, then the resource file is from the
-        # /baseline directory, otherwise it's from the /updatefiles
-        # directory on the server
-        base_url = pubmed_base_url if ix <= max_file_index else pubmed_update_url
+        # Get the base url
+        base_url = url.replace(file, "")
         return file, stow, base_url
 
+    baseline_urls = get_url_paths(pubmed_base_url)
+    update_urls = get_url_paths(pubmed_update_url)
+
     if bar:
-        for i in tqdm(
-            range(1, max_update_index + 1),
-            total=max_update_index,
+        baseline_urls = [u for u in baseline_urls]
+        update_urls = [u for u in update_urls]
+        all_urls = baseline_urls + update_urls
+        for pubmed_url in tqdm(
+            all_urls,
             desc=description,
         ):
-            yield _get_tuple(i)
+            yield _get_tuple(pubmed_url)
     else:
-        for i in range(1, max_update_index + 1):
-            yield _get_tuple(i)
+        for pubmed_url in chain(baseline_urls, update_urls):
+            yield _get_tuple(pubmed_url)
