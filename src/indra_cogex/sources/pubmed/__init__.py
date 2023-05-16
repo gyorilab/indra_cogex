@@ -19,6 +19,7 @@ from indra.util import batch_iter
 from indra.literature.pubmed_client import _get_annotations
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+from indra_cogex.sources.indra_db.raw_export import text_refs_fname
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class PubmedProcessor(Processor):
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.text_refs_path = pystow.join("indra", "db", name="text_refs_principal.tsv.gz")
+        self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
         pmid_node_type = "Publication"
