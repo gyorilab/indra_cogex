@@ -220,7 +220,10 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
                 writer_year.writerow([pmid, year])
 
 
-def download_medline_pubmed_xml_resource(force: bool = False) -> None:
+def download_medline_pubmed_xml_resource(
+    force: bool = False,
+    raise_http_error: bool = False
+) -> None:
     """Downloads the medline and pubmed data from the NCBI ftp site.
 
     The location of the downloaded data is determined by pystow
@@ -229,6 +232,9 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
     ----------
     force :
         If True, will download a file even if it already exists.
+    raise_http_error :
+        If True, will ignore HTTP errors when downloading the files.
+        Default: False.
     """
     for xml_file, stow, base_url in xml_path_generator(description="Download"):
         # Check if resource already exists
@@ -237,6 +243,8 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
 
         # Download the resource
         response = requests.get(base_url + xml_file)
+        if not raise_http_error:
+            response.raise_for_status()
         md5_response = requests.get(base_url + xml_file + ".md5")
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
