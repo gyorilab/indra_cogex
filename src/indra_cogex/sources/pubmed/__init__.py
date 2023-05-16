@@ -25,9 +25,9 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
-year_index = 22
-max_file_index = 1114  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
-max_update_index = 1405  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
+year_index = 23
+max_file_index = 1166  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
+max_update_index = 1348  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
 xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
