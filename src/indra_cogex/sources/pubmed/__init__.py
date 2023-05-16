@@ -238,6 +238,10 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
             for pmid, year, mesh_annotations in extract_info_from_medline_xml(
                 xml_path.as_posix()
             ):
+                # Skip if year could not be found
+                if not year:
+                    continue
+
                 for annot in mesh_annotations:
                     writer.writerow(
                         (annot["mesh"], 1 if annot["major_topic"] else 0, pmid)
