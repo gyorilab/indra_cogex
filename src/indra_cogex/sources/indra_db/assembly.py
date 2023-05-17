@@ -380,6 +380,7 @@ def belief_calc(
             belief_scores[sh] = st.belief
 
     # Iterate over each unique statement
+    # Takes ~30-40 minutes
     with gzip.open(unique_stmts_path.as_posix(), "rt") as fh:
         reader = csv.reader(fh, delimiter="\t")
 
