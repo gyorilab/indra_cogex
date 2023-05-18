@@ -114,6 +114,7 @@ def load_text_refs_by_trid(fname: str):
     text_refs = {}
     for line in tqdm.tqdm(
         gzip.open(fname, "rt", encoding="utf-8"),
+        total=36223169,
         desc="Processing text refs into a lookup dictionary",
     ):
         ids = line.strip().split("\t")
@@ -203,6 +204,8 @@ if __name__ == "__main__":
     Time estimate: ~2.5 mins
     """
 
+    # This checks for the initial files dumped directly from the principal
+    # database and raises an error if they are not found
     needed_files = [reading_text_content_fname, text_refs_fname, raw_stmts_fname]
     if any(not f.exists() for f in needed_files):
         missing = [f.as_posix() for f in needed_files if not f.exists()]
@@ -211,18 +214,26 @@ if __name__ == "__main__":
             f"{', '.join(missing)} missing, please run the dump commands above to get them."
         )
 
+    # This checks if the INDRA DB Lite location is set. It is needed to
+    # significantly speed up the process of getting text refs in the
+    # assembly process
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # This checks if there are any adeft models available. They are needed to
     if len(get_available_models()) == 0:
         raise ValueError(
-            "No adeft models detected, run 'python -m adeft.download' to download models"
+            "No adeft models detected, run 'python -m adeft.download' to "
+            "download models"
         )
+    logger.info(f"Found {len(get_available_models())} adeft models")
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
     # reader version used to produce it.
     if not drop_readings_fname.exists() or not reading_to_text_ref_map.exists():
+        logger.info("Running statement distillation")
+        logger.info("Loading reading and text content into dataframe")
         df = pandas.read_csv(
             reading_text_content_fname,
             header=None,
@@ -242,8 +253,10 @@ if __name__ == "__main__":
         trid = df["text_ref_id"].iloc[0]
         contents = defaultdict(list)
 
-        # This takes around 1.5 hours
-        for row in tqdm.tqdm(df.itertuples(), total=len(df)):
+        # This takes around ~10 min
+        for row in tqdm.tqdm(df.itertuples(),
+                             total=len(df),
+                             desc="Distilling statements"):
             if row.text_ref_id != trid:
                 for reader, reader_contents in contents.items():
                     if len(reader_contents) < 2:
@@ -265,11 +278,13 @@ if __name__ == "__main__":
             trid = row.text_ref_id
 
         with open(drop_readings_fname, "wb") as fh:
+            logger.info(f"Dumping {drop_readings_fname.as_posix()}")
             pickle.dump(drop_readings, fh)
 
         # Dump mapping of reading_id to text_ref_id
         reading_id_to_text_ref_id = dict(zip(df.reading_id, df.text_ref_id))
         with reading_to_text_ref_map.open("wb") as fh:
+            logger.info(f"Dumping {reading_to_text_ref_map.as_posix()}")
             pickle.dump(reading_id_to_text_ref_id, fh)
 
     else:
@@ -293,7 +308,7 @@ if __name__ == "__main__":
         ) as fh_out:
             reader = csv.reader(fh, delimiter="\t")
             writer = csv.writer(fh_out, delimiter="\t")
-            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7185):
+            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7581):
                 stmts_jsons = []
                 for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                     # NOTE: We might want to propagate the raw_stmt_id for

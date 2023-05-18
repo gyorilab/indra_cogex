@@ -73,7 +73,7 @@ def get_refinement_graph() -> nx.DiGraph:
     if not refinements_fname.exists():
         logger.info("Calculating refinements")
         refinements = set()
-        # This takes ~9-10 hours to run
+        # This takes ~10-11 hours to run
         with gzip.open(unique_stmts_fname, "rt") as fh1:
             reader1 = csv.reader(fh1, delimiter="\t")
             for outer_batch_ix in tqdm.tqdm(
@@ -380,6 +380,7 @@ def belief_calc(
             belief_scores[sh] = st.belief
 
     # Iterate over each unique statement
+    # Takes ~30-40 minutes
     with gzip.open(unique_stmts_path.as_posix(), "rt") as fh:
         reader = csv.reader(fh, delimiter="\t")
 
@@ -412,7 +413,7 @@ if __name__ == "__main__":
     if not unique_stmts_fname.exists() or not source_counts_fname.exists():
         raise ValueError(
             f"Missing one or both of the required files: "
-            f"{', '.join(r.as_possix() for r in required)}"
+            f"{', '.join(r.as_posix() for r in required)}"
         )
 
     # Global variables
@@ -440,4 +441,6 @@ if __name__ == "__main__":
             f"and cycles saved to {refinement_cycles_fname.as_posix()}"
         )
     else:
-        belief_calc(refinement_graph)
+        belief_calc(refinement_graph,
+                    batch_size=batch_size,
+                    num_batches=num_batches)

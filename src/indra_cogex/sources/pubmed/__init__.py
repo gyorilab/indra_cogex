@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from hashlib import md5
+from itertools import chain
 from typing import Tuple, Generator, Mapping
 
 import pystow
@@ -11,12 +12,14 @@ import textwrap
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
 from indra.literature.pubmed_client import _get_annotations
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+from indra_cogex.sources.indra_db.raw_export import text_refs_fname
 
 
 logger = logging.getLogger(__name__)
@@ -25,10 +28,6 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
-year_index = 22
-max_file_index = 1114  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/
-max_update_index = 1405  # Check https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/
-xml_file_temp = "pubmed%sn{index}.xml.gz" % year_index
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
@@ -40,7 +39,7 @@ class PubmedProcessor(Processor):
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.text_refs_path = pystow.join("indra", "db", name="text_refs_principal.tsv.gz")
+        self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
         pmid_node_type = "Publication"
@@ -129,6 +128,30 @@ class PubmedProcessor(Processor):
         return edges_path
 
 
+def get_url_paths(url: str) -> Generator:
+    """Get the paths to all XML files on the PubMed FTP server."""
+    logger.info("Getting URL paths from %s" % url)
+
+    # Get page
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Make soup
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Append trailing slash if not present
+    url = url if url.endswith("/") else url + "/"
+
+    # Loop over all links
+    for link in soup.find_all("a"):
+        href = link.get("href")
+        # yield if href matches
+        # 'pubmed<2 digit year>n<4 digit file index>.xml.gz'
+        # but skip the md5 files
+        if href and href.startswith("pubmed") and href.endswith(".xml.gz"):
+            yield url + href
+
+
 def ensure_text_refs(fname):
     if os.path.exists(fname):
         logger.info(f"Found existing text refs in {fname}")
@@ -171,8 +194,10 @@ def extract_info_from_medline_xml(
         years = list(
             medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
         ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
-        min_year = min(int(year.text) for year in years)
+        min_year = min((int(year.text) for year in years), default=None)
         pmid = medline_citation.find("PMID").text
+        if min_year is None:
+            logger.warning(f"Could not find year for PMID {pmid}")
 
         mesh_annotations = _get_annotations(medline_citation)
         yield pmid, min_year, mesh_annotations["mesh_annotations"]
@@ -213,6 +238,10 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
             for pmid, year, mesh_annotations in extract_info_from_medline_xml(
                 xml_path.as_posix()
             ):
+                # Skip if year could not be found
+                if not year:
+                    continue
+
                 for annot in mesh_annotations:
                     writer.writerow(
                         (annot["mesh"], 1 if annot["major_topic"] else 0, pmid)
@@ -220,7 +249,10 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
                 writer_year.writerow([pmid, year])
 
 
-def download_medline_pubmed_xml_resource(force: bool = False) -> None:
+def download_medline_pubmed_xml_resource(
+    force: bool = False,
+    raise_http_error: bool = False
+) -> None:
     """Downloads the medline and pubmed data from the NCBI ftp site.
 
     The location of the downloaded data is determined by pystow
@@ -229,6 +261,9 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
     ----------
     force :
         If True, will download a file even if it already exists.
+    raise_http_error :
+        If True, will raise error instead of skipping the file when
+        downloading. Default: False.
     """
     for xml_file, stow, base_url in xml_path_generator(description="Download"):
         # Check if resource already exists
@@ -237,6 +272,15 @@ def download_medline_pubmed_xml_resource(force: bool = False) -> None:
 
         # Download the resource
         response = requests.get(base_url + xml_file)
+        if response.status_code != 200:
+            if raise_http_error:
+                response.raise_for_status()
+            else:
+                logger.warning(
+                    f"Skipping {xml_file} due to HTTP status {response.status_code}"
+                )
+                continue
+
         md5_response = requests.get(base_url + xml_file + ".md5")
         actual_checksum = md5(response.content).hexdigest()
         expected_checksum = re.search(
@@ -271,23 +315,26 @@ def xml_path_generator(
         Tuple of (xml_file, xml_path, xml_url).
     """
 
-    def _get_tuple(ix: int) -> Tuple[str, Path, str]:
-        file = xml_file_temp.format(index=str(ix).zfill(4))
+    def _get_tuple(url: str) -> Tuple[str, Path, str]:
+        file = url.split("/")[-1]
         stow = raw_xml.join(name=file)
 
-        # If index <= max_update_index, then the resource file is from the
-        # /baseline directory, otherwise it's from the /updatefiles
-        # directory on the server
-        base_url = pubmed_base_url if ix <= max_file_index else pubmed_update_url
+        # Get the base url
+        base_url = url.replace(file, "")
         return file, stow, base_url
 
+    baseline_urls = get_url_paths(pubmed_base_url)
+    update_urls = get_url_paths(pubmed_update_url)
+
     if bar:
-        for i in tqdm(
-            range(1, max_update_index + 1),
-            total=max_update_index,
+        baseline_urls = [u for u in baseline_urls]
+        update_urls = [u for u in update_urls]
+        all_urls = baseline_urls + update_urls
+        for pubmed_url in tqdm(
+            all_urls,
             desc=description,
         ):
-            yield _get_tuple(i)
+            yield _get_tuple(pubmed_url)
     else:
-        for i in range(1, max_update_index + 1):
-            yield _get_tuple(i)
+        for pubmed_url in chain(baseline_urls, update_urls):
+            yield _get_tuple(pubmed_url)
