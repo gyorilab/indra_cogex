@@ -116,7 +116,10 @@ def get_hpoa_df(version: Optional[str] = None) -> pd.DataFrame:
     return process_hpoa_df(df)
 
 
-def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
+def process_hpoa_df(
+    df: pd.DataFrame,
+    disease_col: str = "database_id"
+) -> pd.DataFrame:
     """Process the HPOA dataframe, in place."""
     # 1. Get several mappings not currently available in INDRA's bioontology
     omim_to_mondo = pyobo.get_filtered_xrefs("mondo", "omim", flip=True)
@@ -127,7 +130,7 @@ def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
     # Prepare disease mappings from CURIE (either OMIM, Orphanet,
     # or DECIPHER) to DOID and MONDO
     disease_standards = {}
-    for disease in df.disease:
+    for disease in df[disease_col]:
         prefix, lui = bioregistry.parse_curie(disease)
         db_xrefs = {
             prefix: lui,
@@ -159,8 +162,8 @@ def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
         df["disease_prefix"],
         df["disease_id"],
         df["disease_name"],
-    ) = zip(*df["disease"].map(lambda s: disease_standards.get(s, (None, None, None))))
-    del df["disease"]
+    ) = zip(*df[disease_col].map(lambda s: disease_standards.get(s, (None, None, None))))
+    del df[disease_col]
     # Remove unmappable entries (e.g., DECIPHER entries)
     df = df[df.disease_prefix.notna()]
 
