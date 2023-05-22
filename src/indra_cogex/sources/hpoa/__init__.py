@@ -167,11 +167,10 @@ def process_hpoa_df(
     # Remove unmappable entries (e.g., DECIPHER entries)
     df = df[df.disease_prefix.notna()]
 
-    df = process_phenotypes(df)
-    return df
+    return process_phenotypes(df)
 
 
-def process_phenotypes(df: pd.DataFrame, column: str = "phenotype") -> pd.DataFrame:
+def process_phenotypes(df: pd.DataFrame, column: str = "hpo_id") -> pd.DataFrame:
     """Process the phenotype-gene dataframe, in place."""
     phenotype_standards = {}
     for hp_id in df[column].unique():
@@ -260,7 +259,7 @@ def get_phenotype_gene_df(version: Optional[str] = None) -> pd.DataFrame:
 
 def process_phenotype_gene(df) -> pd.DataFrame:
     """"""
-    df = process_phenotypes(df, column="hpo_id")
+    df = process_phenotypes(df)
     df["hgnc_id"] = df["ncbi_gene_id"].map(hgnc_client.get_hgnc_from_entrez)
     df = df[df.hgnc_id.notna()]
     return df
