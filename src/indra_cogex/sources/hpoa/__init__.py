@@ -214,14 +214,11 @@ class HpPhenotypeGeneProcessor(Processor):
             yield Node.standardized(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
     def get_relations(self):  # noqa:D102
-        for (phenotype_prefix, phenotype_id, hgnc_id,), evidences in self.df.groupby(
+        for (phenotype_prefix, phenotype_id, hgnc_id,), sub_df in self.df.groupby(
             ["phenotype_prefix", "phenotype_id", "hgnc_id"]
-        )["source"]:
-            evidence = ",".join(sorted(set(evidences)))
-            # Possible properties could be e.g., evidence codes
-            data = {"evidence_codes:string": evidence, "source": self.name}
-            if self.version:
-                data["version"] = self.version
+        ):
+            # Possible other properties could be e.g., evidence codes
+            data = {"version": self.version} if self.version else None
             yield Relation(
                 phenotype_prefix,
                 phenotype_id,
