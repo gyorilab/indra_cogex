@@ -252,9 +252,6 @@ def get_phenotype_gene_df(version: Optional[str] = None) -> pd.DataFrame:
     df = pd.read_csv(
         url,
         sep="\t",
-        skiprows=2,
-        names=["phenotype", "ncbigene", "source"],
-        usecols=[0, 2, 5],
         dtype=str,
     )
     df.drop_duplicates(inplace=True)
