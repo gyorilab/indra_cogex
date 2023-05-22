@@ -171,7 +171,7 @@ def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
 def process_phenotypes(df: pd.DataFrame, column: str = "phenotype") -> pd.DataFrame:
     """Process the phenotype-gene dataframe, in place."""
     phenotype_standards = {}
-    for hp_id in df.phenotype.unique():
+    for hp_id in df[column].unique():
         new_name, new_db_xrefs = standardize_name_db_refs({"HP": hp_id})
         standard_db, standard_id = get_grounding(new_db_xrefs)
         if not new_name:
