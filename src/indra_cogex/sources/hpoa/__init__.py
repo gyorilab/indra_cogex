@@ -108,9 +108,9 @@ def get_hpoa_df(version: Optional[str] = None) -> pd.DataFrame:
     df = pd.read_csv(
         url,
         sep="\t",
-        skiprows=5,
-        usecols=[0, 3, 4, 5],
-        names=["disease", "phenotype", "reference", "evidence"],
+        header=4,
+        #        "disease", "phenotype", "reference", "evidence"
+        usecols=["database_id", "hpo_id", "reference", "evidence"],
     )
     df.drop_duplicates(inplace=True)
     return process_hpoa_df(df)
