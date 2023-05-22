@@ -260,7 +260,7 @@ def get_phenotype_gene_df(version: Optional[str] = None) -> pd.DataFrame:
 
 def process_phenotype_gene(df) -> pd.DataFrame:
     """"""
-    df = process_phenotypes(df)
-    df["hgnc_id"] = df["ncbigene"].map(hgnc_client.get_hgnc_from_entrez)
+    df = process_phenotypes(df, column="hpo_id")
+    df["hgnc_id"] = df["ncbi_gene_id"].map(hgnc_client.get_hgnc_from_entrez)
     df = df[df.hgnc_id.notna()]
     return df
