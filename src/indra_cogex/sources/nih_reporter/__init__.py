@@ -154,7 +154,7 @@ class NihReporterProcessor(Processor):
         for _, patent_file in self.data_files.get("patent").items():
             df = pandas.read_csv(patent_file)
             for _, row in df.iterrows():
-                pat_id = row["PATENT_ID"]
+                pat_id = row["PATENT_ID"].strip()
                 if pat_id and pat_id not in yielded_patents:
                     yield Node(
                         db_ns="GOOGLE.PATENT",
