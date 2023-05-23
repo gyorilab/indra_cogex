@@ -134,7 +134,8 @@ class NihReporterProcessor(Processor):
         # Publications
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
-            for row in df.itertuples():
+            # Drop duplicated PMIDs and iterate over rows
+            for row in df.drop_duplicates(subset=["PMID"]).itertuples():
                 yield Node(
                     db_ns="PUBMED",
                     db_id=str(row.PMID),
