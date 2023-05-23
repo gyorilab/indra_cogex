@@ -150,15 +150,19 @@ class NihReporterProcessor(Processor):
                     labels=["ClinicalTrial"],
                 )
         # Patents
+        yielded_patents = set()
         for _, patent_file in self.data_files.get("patent").items():
             df = pandas.read_csv(patent_file)
             for _, row in df.iterrows():
-                yield Node(
-                    db_ns="GOOGLE.PATENT",
-                    db_id="US%s" % row["PATENT_ID"],
-                    data={"name": row["PATENT_TITLE"]},
-                    labels=["Patent"],
-                )
+                pat_id = row["PATENT_ID"]
+                if pat_id and pat_id not in yielded_patents:
+                    yield Node(
+                        db_ns="GOOGLE.PATENT",
+                        db_id="US%s" % row["PATENT_ID"],
+                        data={"name": row["PATENT_TITLE"]},
+                        labels=["Patent"],
+                    )
+                    yielded_patents.add(pat_id)
 
     def get_relations(self) -> Iterable[Relation]:
         # Project publications
