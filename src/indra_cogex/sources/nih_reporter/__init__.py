@@ -112,12 +112,18 @@ class NihReporterProcessor(Processor):
             for _, row in df.iterrows():
                 if not pandas.isna(row["SUBPROJECT_ID"]):
                     continue
-                data = {
-                    pc: newline_escape(row[pc]) if not pandas.isna(row[pc]) else None
-                    for pc in project_columns
-                    # Not all columns are available in all years
-                    if pc in row
-                }
+                data = {}
+                for pc in project_columns:
+                    if pc in row:
+                        if "FY" == pc:
+                            pc_key = "FY:int"
+                        else:
+                            pc_key = pc
+
+                        if pandas.isna(row[pc]):
+                            data[pc_key] = None
+                        else:
+                            data[pc_key] = newline_escape(row[pc])
                 yield Node(
                     db_ns="NIHREPORTER.PROJECT",
                     db_id=row.APPLICATION_ID,
