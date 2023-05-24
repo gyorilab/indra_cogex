@@ -131,16 +131,21 @@ class NihReporterProcessor(Processor):
                     data=data,
                 )
                 self._core_project_applications[row.CORE_PROJECT_NUM].append(dict(row))
+
         # Publications
+        yielded_pubs = set()
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
-            # Drop duplicated PMIDs and iterate over rows
-            for row in df.drop_duplicates(subset=["PMID"]).itertuples():
-                yield Node(
-                    db_ns="PUBMED",
-                    db_id=str(row.PMID),
-                    labels=["Publication"],
-                )
+            # We're only interested in the PMIDs so iterate over unique values
+            for pmid in df["PMID"].unique():
+                if pmid in yielded_pubs:
+                    yield Node(
+                        db_ns="PUBMED",
+                        db_id=str(pmid),
+                        labels=["Publication"],
+                    )
+                    yielded_pubs.add(pmid)
+
         # Clinical trials
         for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
@@ -150,19 +155,22 @@ class NihReporterProcessor(Processor):
                     db_id=row["ClinicalTrials.gov ID"],
                     labels=["ClinicalTrial"],
                 )
+
         # Patents
+        patent_ids = set()
         for _, patent_file in self.data_files.get("patent").items():
             df = pandas.read_csv(patent_file)
             # Drop duplicated IDs and iterate over rows
             for _, row in df.drop_duplicates(subset=["PATENT_ID"]).iterrows():
                 pat_id = row["PATENT_ID"].strip()
-                if pat_id:
+                if pat_id and pat_id not in patent_ids:
                     yield Node(
                         db_ns="GOOGLE.PATENT",
                         db_id="US%s" % row["PATENT_ID"],
                         data={"name": row["PATENT_TITLE"]},
                         labels=["Patent"],
                     )
+                    patent_ids.add(pat_id)
 
     def get_relations(self) -> Iterable[Relation]:
         # Project publications
