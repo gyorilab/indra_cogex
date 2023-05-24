@@ -11,7 +11,7 @@ from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
 import pyobo
 import pyobo.api.utils
-from pyobo.struct import has_part
+from pyobo.struct import has_participant
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
@@ -88,7 +88,7 @@ class WikipathwaysProcessor(PyoboProcessor):
 
     name = "wikipathways"
     prefix = "wikipathways"
-    relation = has_part
+    relation = has_participant
     relation_label = "haspart"
     importable = True
 
@@ -98,6 +98,6 @@ class ReactomeProcessor(PyoboProcessor):
 
     name = "reactome"
     prefix = "reactome"
-    relation = has_part
+    relation = has_participant
     relation_label = "haspart"
     importable = True
