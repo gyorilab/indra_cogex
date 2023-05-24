@@ -167,7 +167,7 @@ class NihReporterProcessor(Processor):
                     yield Node(
                         db_ns="GOOGLE.PATENT",
                         db_id="US%s" % row["PATENT_ID"],
-                        data={"name": row["PATENT_TITLE"]},
+                        data={"name": newline_escape(row["PATENT_TITLE"])},
                         labels=["Patent"],
                     )
                     patent_ids.add(pat_id)
