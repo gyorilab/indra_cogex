@@ -167,7 +167,7 @@ class NihReporterProcessor(Processor):
                     yield Node(
                         db_ns="GOOGLE.PATENT",
                         db_id="US%s" % row["PATENT_ID"],
-                        data={"name": newline_escape(row["PATENT_TITLE"])},
+                        data={"name": clean_text(row["PATENT_TITLE"])},
                         labels=["Patent"],
                     )
                     patent_ids.add(pat_id)
@@ -257,6 +257,17 @@ def download_files(
                 name=fname_prefixes[subset] + str(timestamp) + ".csv",
                 force=force,
             )
+
+
+def clean_text(text: Any) -> Any:
+    """Escape newlines, carriage returns and single quotes from text"""
+    if isinstance(text, str):
+        return \
+            text.replace("\n", "\\n") \
+                .replace("\r", "\\r") \
+                .replace("'", "\\'").strip()
+
+    return text
 
 
 def newline_escape(text: Any) -> Any:
