@@ -106,7 +106,7 @@ for module, func_name in module_functions:
             continue
         if param_name not in examples_dict:
             raise KeyError(
-                f"Missing example for parameter {param_name} in function {func_name}"
+                f"Missing example for parameter '{param_name}' in function '{func_name}'"
             )
 
     # Get the parameters name for the other parameter that is not 'client'
