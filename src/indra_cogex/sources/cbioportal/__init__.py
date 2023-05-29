@@ -149,7 +149,10 @@ class CcleDrugResponseProcessor(Processor):
                             drug_ns,
                             drug_id,
                             rel_type="sensitive_to",
-                            data={"IC50": row[cell_line], "source": "ccle"},
+                            data={
+                                "IC50:float": row[cell_line],
+                                "source": "ccle"
+                            },
                         )
 
     def get_drug_mappings(self):

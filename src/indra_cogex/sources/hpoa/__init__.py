@@ -108,15 +108,18 @@ def get_hpoa_df(version: Optional[str] = None) -> pd.DataFrame:
     df = pd.read_csv(
         url,
         sep="\t",
-        skiprows=5,
-        usecols=[0, 3, 4, 5],
-        names=["disease", "phenotype", "reference", "evidence"],
+        header=4,
+        #        "disease", "phenotype", "reference", "evidence"
+        usecols=["database_id", "hpo_id", "reference", "evidence"],
     )
     df.drop_duplicates(inplace=True)
     return process_hpoa_df(df)
 
 
-def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
+def process_hpoa_df(
+    df: pd.DataFrame,
+    disease_col: str = "database_id"
+) -> pd.DataFrame:
     """Process the HPOA dataframe, in place."""
     # 1. Get several mappings not currently available in INDRA's bioontology
     omim_to_mondo = pyobo.get_filtered_xrefs("mondo", "omim", flip=True)
@@ -127,7 +130,7 @@ def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
     # Prepare disease mappings from CURIE (either OMIM, Orphanet,
     # or DECIPHER) to DOID and MONDO
     disease_standards = {}
-    for disease in df.disease:
+    for disease in df[disease_col]:
         prefix, lui = bioregistry.parse_curie(disease)
         db_xrefs = {
             prefix: lui,
@@ -159,19 +162,18 @@ def process_hpoa_df(df: pd.DataFrame) -> pd.DataFrame:
         df["disease_prefix"],
         df["disease_id"],
         df["disease_name"],
-    ) = zip(*df["disease"].map(lambda s: disease_standards.get(s, (None, None, None))))
-    del df["disease"]
+    ) = zip(*df[disease_col].map(lambda s: disease_standards.get(s, (None, None, None))))
+    del df[disease_col]
     # Remove unmappable entries (e.g., DECIPHER entries)
     df = df[df.disease_prefix.notna()]
 
-    df = process_phenotypes(df)
-    return df
+    return process_phenotypes(df)
 
 
-def process_phenotypes(df: pd.DataFrame, column: str = "phenotype") -> pd.DataFrame:
+def process_phenotypes(df: pd.DataFrame, column: str = "hpo_id") -> pd.DataFrame:
     """Process the phenotype-gene dataframe, in place."""
     phenotype_standards = {}
-    for hp_id in df.phenotype.unique():
+    for hp_id in df[column].unique():
         new_name, new_db_xrefs = standardize_name_db_refs({"HP": hp_id})
         standard_db, standard_id = get_grounding(new_db_xrefs)
         if not new_name:
@@ -214,14 +216,11 @@ class HpPhenotypeGeneProcessor(Processor):
             yield Node.standardized(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
     def get_relations(self):  # noqa:D102
-        for (phenotype_prefix, phenotype_id, hgnc_id,), evidences in self.df.groupby(
+        for (phenotype_prefix, phenotype_id, hgnc_id,), sub_df in self.df.groupby(
             ["phenotype_prefix", "phenotype_id", "hgnc_id"]
-        )["source"]:
-            evidence = ",".join(sorted(set(evidences)))
-            # Possible properties could be e.g., evidence codes
-            data = {"evidence_codes:string": evidence, "source": self.name}
-            if self.version:
-                data["version"] = self.version
+        ):
+            # Possible other properties could be e.g., evidence codes
+            data = {"version": self.version} if self.version else None
             yield Relation(
                 phenotype_prefix,
                 phenotype_id,
@@ -252,9 +251,6 @@ def get_phenotype_gene_df(version: Optional[str] = None) -> pd.DataFrame:
     df = pd.read_csv(
         url,
         sep="\t",
-        skiprows=2,
-        names=["phenotype", "ncbigene", "source"],
-        usecols=[0, 2, 5],
         dtype=str,
     )
     df.drop_duplicates(inplace=True)
@@ -264,6 +260,6 @@ def get_phenotype_gene_df(version: Optional[str] = None) -> pd.DataFrame:
 def process_phenotype_gene(df) -> pd.DataFrame:
     """"""
     df = process_phenotypes(df)
-    df["hgnc_id"] = df["ncbigene"].map(hgnc_client.get_hgnc_from_entrez)
+    df["hgnc_id"] = df["ncbi_gene_id"].map(hgnc_client.get_hgnc_from_entrez)
     df = df[df.hgnc_id.notna()]
     return df

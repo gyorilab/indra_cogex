@@ -1,5 +1,10 @@
 """This module implements input for ClinicalTrials.gov data
 
+NOTE: ClinicalTrials.gov are working on a more modern API that is currently
+in Beta: https://beta.clinicaltrials.gov/data-about-studies/learn-about-api
+Once this API is released, we should switch to using it. The instructions for
+using the current/old API are below.
+
 To obtain the custom download for ingest, do the following
 
 1. Go to https://clinicaltrials.gov/api/gui/demo/simple_study_fields

@@ -112,12 +112,18 @@ class NihReporterProcessor(Processor):
             for _, row in df.iterrows():
                 if not pandas.isna(row["SUBPROJECT_ID"]):
                     continue
-                data = {
-                    pc: newline_escape(row[pc]) if not pandas.isna(row[pc]) else None
-                    for pc in project_columns
-                    # Not all columns are available in all years
-                    if pc in row
-                }
+                data = {}
+                for pc in project_columns:
+                    if pc in row:
+                        if "FY" == pc:
+                            pc_key = "FY:int"
+                        else:
+                            pc_key = pc
+
+                        if pandas.isna(row[pc]):
+                            data[pc_key] = None
+                        else:
+                            data[pc_key] = newline_escape(row[pc])
                 yield Node(
                     db_ns="NIHREPORTER.PROJECT",
                     db_id=row.APPLICATION_ID,
@@ -125,15 +131,21 @@ class NihReporterProcessor(Processor):
                     data=data,
                 )
                 self._core_project_applications[row.CORE_PROJECT_NUM].append(dict(row))
+
         # Publications
+        yielded_pubs = set()
         for year, publink_file in self.data_files.get("publink").items():
             df = _read_first_df(publink_file)
-            for row in df.itertuples():
-                yield Node(
-                    db_ns="PUBMED",
-                    db_id=str(row.PMID),
-                    labels=["Publication"],
-                )
+            # We're only interested in the PMIDs so iterate over unique values
+            for pmid in df["PMID"].unique():
+                if pmid in yielded_pubs:
+                    yield Node(
+                        db_ns="PUBMED",
+                        db_id=str(pmid),
+                        labels=["Publication"],
+                    )
+                    yielded_pubs.add(pmid)
+
         # Clinical trials
         for _, clinical_trial_file in self.data_files.get("clinical_trial").items():
             df = pandas.read_csv(clinical_trial_file)
@@ -143,16 +155,22 @@ class NihReporterProcessor(Processor):
                     db_id=row["ClinicalTrials.gov ID"],
                     labels=["ClinicalTrial"],
                 )
+
         # Patents
+        patent_ids = set()
         for _, patent_file in self.data_files.get("patent").items():
             df = pandas.read_csv(patent_file)
-            for _, row in df.iterrows():
-                yield Node(
-                    db_ns="GOOGLE.PATENT",
-                    db_id="US%s" % row["PATENT_ID"],
-                    data={"name": row["PATENT_TITLE"]},
-                    labels=["Patent"],
-                )
+            # Drop duplicated IDs and iterate over rows
+            for _, row in df.drop_duplicates(subset=["PATENT_ID"]).iterrows():
+                pat_id = row["PATENT_ID"].strip()
+                if pat_id and pat_id not in patent_ids:
+                    yield Node(
+                        db_ns="GOOGLE.PATENT",
+                        db_id="US%s" % row["PATENT_ID"],
+                        data={"name": clean_text(row["PATENT_TITLE"])},
+                        labels=["Patent"],
+                    )
+                    patent_ids.add(pat_id)
 
     def get_relations(self) -> Iterable[Relation]:
         # Project publications
@@ -239,6 +257,17 @@ def download_files(
                 name=fname_prefixes[subset] + str(timestamp) + ".csv",
                 force=force,
             )
+
+
+def clean_text(text: Any) -> Any:
+    """Escape newlines, carriage returns and single quotes from text"""
+    if isinstance(text, str):
+        return \
+            text.replace("\n", "\\n") \
+                .replace("\r", "\\r") \
+                .replace("'", "\\'").strip()
+
+    return text
 
 
 def newline_escape(text: Any) -> Any:
