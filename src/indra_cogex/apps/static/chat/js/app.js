@@ -121,7 +121,7 @@
             chatBody.find('#loginScreenForm input, #loginScreenForm button').attr('disabled', true)
 
             if ((name !== '' && name.length >= 3) && (email !== '' && email.length >= 5)) {
-                axios.post('/chat/new/guest', {name, email}).then(response => {
+                axios.post('/api_chat/new/guest', {name, email}).then(response => {
                     chat.name = name
                     chat.email = email
                     chat.myChannel = pusher.subscribe('private-' + response.data.email);
