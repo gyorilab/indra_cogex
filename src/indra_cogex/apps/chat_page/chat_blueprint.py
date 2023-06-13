@@ -74,6 +74,9 @@ def guestUser():
 
 @chat_blueprint.route("/pusher/auth", methods=["POST"])
 def pusher_authentication():
+    if pusher_app is None:
+        return json.dumps({"error": "Pusher app not configured."})
+
     auth = pusher_app.authenticate(
         channel=request.form["channel_name"], socket_id=request.form["socket_id"]
     )
