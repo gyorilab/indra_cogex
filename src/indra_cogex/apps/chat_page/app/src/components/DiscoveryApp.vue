@@ -220,7 +220,7 @@ export default {
           email: this.chat.email,
           text: this.text_input,
           createdAt: createdAt,
-          mode: "json"  // Possible modes are "json" or "plain"
+          mode: "json", // Possible modes are "json" or "plain"
         };
 
         // Send the message to the channel
