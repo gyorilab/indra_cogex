@@ -1,3 +1,8 @@
+:root {
+  --chat-height: 400px;
+  --chat-width: 600px;
+}
+
 .btn-secondary,
 .btn-secondary:hover,
 .btn-secondary:focus {
@@ -117,19 +122,31 @@
   }
 }
 
-.chatbubble .chat-title {
+.chatbubble {
+    position: fixed;
+    z-index: 5;
+    bottom: 0;
+    right: 30px;
+    transform: translateY(var(--chat-height));
+    transition: transform .3s ease-in-out;
+}
+.chatbubble.opened {
+    transform: translateY(0)
+}
+.chatbubble .unexpanded {
     display: block;
     /* Top bar color */
     background-color: #007bff;
     padding: 10px 15px 10px;
     position: relative;
     cursor: pointer;
-    width: 100%;
+    width: var(--chat-width);
     border-radius: 10px 10px 0 0;
+    color: #fff;
 }
 .chatbubble .expanded {
-    height: 100%;
-    width: 100%;
+    height: var(--chat-height);
+    width: var(--chat-width);
     background-color: #fff;
     text-align: left;
     padding: 10px;
@@ -144,13 +161,11 @@
     margin-top: 50px;
     text-align: center;
 }
-/* Messages list */
 .chatbubble .messages {
+    display: none;
     list-style: none;
-    bottom: 0;
     margin: 0 0 50px;
     padding: 0;
-    height: 70vh;
 }
 /* User chat bubble */
 .chatbubble .messages li {
@@ -176,10 +191,12 @@
     border-radius: 5px 5px 0 5px;
 }
 .chatbubble .chats .input {
+    position: absolute;
     bottom: 0;
     padding: 10px;
     left: 0;
     width: 100%;
+    background: #f0f0f0;
     display: none;
 }
 .chatbubble .chats .input .form-group {

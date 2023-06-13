@@ -18,6 +18,7 @@
 
     const chatPage   = $(document)
     const chatWindow = $('.chatbubble')
+    const chatHeader = chatWindow.find('.unexpanded')
     const chatBody   = chatWindow.find('.chat-window')
 
 
@@ -27,6 +28,16 @@
 
     let helpers = {
 
+    // ----------------------------------------------------
+    // Toggles the display of the chat window.
+    // ----------------------------------------------------
+
+        ToggleChatWindow: function () {
+            chatWindow.toggleClass('opened')
+            chatHeader.find('.title').text(
+                chatWindow.hasClass('opened') ? 'Minimize Chat Window' : 'Chat with INDRA CoGEx'
+            )
+        },
     // --------------------------------------------------------------------
     // Show the appropriate display screen. Login screen or Chat screen.
     // --------------------------------------------------------------------
@@ -59,14 +70,14 @@
         },
 
     // ----------------------------------------------------
-    // Prepend a message to the chat messages UI.
+    // Append a message to the chat messages UI.
     // ----------------------------------------------------
 
         NewChatMessage: function (message) {
             if (message !== undefined) {
                 const messageClass = message.sender !== chat.email ? 'support' : 'user'
 
-                chatBody.find('ul.messages').prepend(
+                chatBody.find('ul.messages').append(
                     `<li class="clearfix message ${messageClass}">
                         <div class="sender">${message.name}</div>
                         <div class="message">${message.text}</div>
