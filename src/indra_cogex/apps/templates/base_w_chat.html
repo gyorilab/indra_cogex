@@ -63,7 +63,7 @@
     <script src="https://js.pusher.com/4.0/pusher.min.js"></script>
     <script>
         const pusher = new Pusher('{{ pusher_app_key }}', {
-            authEndpoint: '{{ url_for('home.pusher_authentication') }}',
+            authEndpoint: '{{ url_for('chat_api.pusher_authentication') }}',
             cluster: 'mt1',
             encrypted: true
         });

@@ -15,6 +15,7 @@ from indra_cogex.apps.constants import (
     TEMPLATES_DIR,
     STATEMENT_CURATION_CACHE,
 )
+from indra_cogex.apps.chat_page import chat_blueprint
 from indra_cogex.apps.curator import curator_blueprint
 from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
@@ -36,6 +37,7 @@ app.register_blueprint(gene_blueprint)
 app.register_blueprint(metabolite_blueprint)
 app.register_blueprint(data_display_blueprint)
 app.register_blueprint(curator_blueprint)
+app.register_blueprint(chat_blueprint)
 api.init_app(app)
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()

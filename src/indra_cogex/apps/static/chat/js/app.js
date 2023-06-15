@@ -132,7 +132,7 @@
             chatBody.find('#loginScreenForm input, #loginScreenForm button').attr('disabled', true)
 
             if ((name !== '' && name.length >= 3) && (email !== '' && email.length >= 5)) {
-                axios.post('/new/guest', {name, email}).then(response => {
+                axios.post('/api_chat/new/guest', {name, email}).then(response => {
                     chat.name = name
                     chat.email = email
                     chat.myChannel = pusher.subscribe('private-' + response.data.email);
@@ -144,7 +144,7 @@
 
             evt.preventDefault()
         }
-    }
+    } // End of helpers object.
 
     // ------------------------------------------------------------------
     // Listen for a new message event from the admin
@@ -160,7 +160,7 @@
     // ----------------------------------------------------
 
     chatPage.ready(helpers.ShowAppropriateChatDisplay)
-    chatHeader.on('click', helpers.ToggleChatWindow)
+    chatHeader.on('click', helpers.ToggleChatWindow) // Toggle chat window
     chatBody.find('#loginScreenForm').on('submit', helpers.LogIntoChatSession)
     chatBody.find('#messageSupport').on('submit', helpers.SendMessageToSupport)
 }())

@@ -1,10 +1,9 @@
-import json
 from functools import lru_cache
 from typing import Counter, Tuple
 
-from flask import Blueprint, current_app, render_template, request
+from flask import Blueprint, current_app, render_template
 
-from indra_cogex.apps.constants import edge_labels, pusher_key, pusher_app
+from indra_cogex.apps.constants import edge_labels, pusher_key
 from indra_cogex.apps.proxies import client
 
 from ...client.queries import get_edge_counter, get_node_counter
@@ -55,29 +54,3 @@ def home():
         blueprints=current_app.blueprints,
         pusher_app_key=pusher_key,
     )
-
-
-@home_blueprint.route("/new/guest", methods=["POST"])
-def guestUser():
-    if pusher_app is None:
-        return json.dumps({})
-
-    data = request.json
-
-    pusher_app.trigger(
-        u"general-channel",
-        u"new-guest-details",
-        {"name": data["name"], "email": data["email"]},
-    )
-
-    return json.dumps(data)
-
-
-@home_blueprint.route("/pusher/auth", methods=["POST"])
-def pusher_authentication():
-    if pusher_app is None:
-        return json.dumps({})
-    auth = pusher_app.authenticate(
-        channel=request.form["channel_name"], socket_id=request.form["socket_id"]
-    )
-    return json.dumps(auth)
