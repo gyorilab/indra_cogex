@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Set corresponding endpoint in indra_cogex/apps/chat_page/app/src/components/DiscoveryApp.vue
 # The prefix could interfere with the endpoint set in CloudFront/S3 (and in vue.config.js)
-chat_blueprint = flask.Blueprint("chat api", __name__, url_prefix="/api_chat")
+chat_blueprint = flask.Blueprint("chat_api", __name__, url_prefix="/api_chat")
 
 __all__ = [
     "chat_blueprint",
@@ -74,6 +74,9 @@ def guestUser():
 
 @chat_blueprint.route("/pusher/auth", methods=["POST"])
 def pusher_authentication():
+    if pusher_app is None:
+        return json.dumps({"error": "Pusher app not configured."})
+
     auth = pusher_app.authenticate(
         channel=request.form["channel_name"], socket_id=request.form["socket_id"]
     )
