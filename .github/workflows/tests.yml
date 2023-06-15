@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install "tox<4.0.0"
-          BIOONTOLOGY_VERSION=1.29
+          BIOONTOLOGY_VERSION=1.30
           echo "bio ontology version: ${BIOONTOLOGY_VERSION}"
           mkdir -p $HOME/.indra/bio_ontology/$BIOONTOLOGY_VERSION
           wget -nv https://bigmech.s3.amazonaws.com/travis/bio_ontology/$BIOONTOLOGY_VERSION/mock_ontology.pkl -O $HOME/.indra/bio_ontology/$BIOONTOLOGY_VERSION/bio_ontology.pkl
