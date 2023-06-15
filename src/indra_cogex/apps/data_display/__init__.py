@@ -184,6 +184,9 @@ def get_evidence(stmt_hash):
         #     and the part that goes through the evidences should be
         #     refactored out
 
+        # Ensure stmt_hash is an int
+        stmt_hash = int(stmt_hash)
+
         # Check if user is authenticated to allow medscan evidence
         user, roles = resolve_auth(dict(request.args))
 
@@ -211,7 +214,7 @@ def get_evidence(stmt_hash):
             client=client,
         )
 
-        # Get the statement and then extend the
+        # Get the statement and then extend the evidence
         stmt_iter = [
             Statement._from_json(json.loads(r.data["stmt_json"])) for r in relations
         ]
@@ -228,7 +231,7 @@ def get_evidence(stmt_hash):
 
         # Get the formatted evidence rows
         stmt_rows = format_stmts(
-            stmts=stmt_iter, evidence_counts=ev_counts, curations=curations
+            stmts=[stmt], evidence_counts=ev_counts, curations=curations
         )
 
         # Return the evidence json for the statement
