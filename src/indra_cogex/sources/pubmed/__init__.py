@@ -39,7 +39,7 @@ class PubmedProcessor(Processor):
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.journal_info_path = resources.join(name="pmid_issn.tsv.gz")
+        self.journal_info_path = resources.join(name="pmid_issn.csv.gz")
         self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
@@ -86,7 +86,9 @@ class PubmedProcessor(Processor):
         # Ensure cached files exist
         # Todo: Add force option to download files?
         process_mesh_xml_to_csv(
-            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+            mesh_pmid_path=self.mesh_pmid_path,
+            pmid_year_path=self.pmid_year_path,
+            journal_info_path=self.journal_info_path,
         )
 
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
