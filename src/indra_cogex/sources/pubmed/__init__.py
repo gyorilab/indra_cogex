@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
-from indra.literature.pubmed_client import _get_annotations
+from indra.literature.pubmed_client import _get_annotations, _get_journal_info
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 from indra_cogex.sources.indra_db.raw_export import text_refs_fname
@@ -34,17 +34,21 @@ pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
 class PubmedProcessor(Processor):
     name = "pubmed"
-    node_types = ["Publication"]
+    node_types = ["Publication", "Journal"]
 
     def __init__(self):
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
+        self.journal_info_path = resources.join(name="pmid_issn.tsv.gz")
         self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
         pmid_node_type = "Publication"
+        journal_node_type = "Journal"
         process_mesh_xml_to_csv(
-            mesh_pmid_path=self.mesh_pmid_path, pmid_year_path=self.pmid_year_path
+            mesh_pmid_path=self.mesh_pmid_path,
+            pmid_year_path=self.pmid_year_path,
+            journal_info_path=self.journal_info_path,
         )
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
         with gzip.open(self.pmid_year_path, "rt") as fh:
@@ -200,11 +204,23 @@ def extract_info_from_medline_xml(
             logger.warning(f"Could not find year for PMID {pmid}")
 
         mesh_annotations = _get_annotations(medline_citation)
-        yield pmid, min_year, mesh_annotations["mesh_annotations"]
+        journal_info = _get_journal_info(medline_citation,
+                                         get_issns_from_nlm=False)
+        yield (
+            pmid,
+            min_year,
+            mesh_annotations["mesh_annotations"],
+            journal_info
+        )
 
 
-def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False):
-    """Process the pubmed xml and dump to a CSV file
+def process_mesh_xml_to_csv(
+    mesh_pmid_path: Path,
+    pmid_year_path: Path,
+    journal_info_path: Path,
+    force: bool = False
+):
+    """Process the pubmed xml and dump to different CSV files
 
     Dump to CSV file with the columns: mesh_id,is_concept,major_topic,pmid
 
@@ -212,6 +228,10 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
     ----------
     mesh_pmid_path :
         Path to the mesh pmid file
+    pmid_year_path :
+        Path to the pmid year file
+    journal_info_path :
+        Path to the journal info file
     force :
         If True, re-run the download even if the file already exists.
     """
@@ -228,25 +248,52 @@ def process_mesh_xml_to_csv(mesh_pmid_path, pmid_year_path, force: bool = False)
 
     # Loop the stowed xml files
     logger.info("Processing PubMed XML files")
-    with gzip.open(mesh_pmid_path, "wt") as fh, gzip.open(
+    with gzip.open(mesh_pmid_path, "wt") as fh_mesh, gzip.open(
         pmid_year_path, "wt"
-    ) as fh_year:
-        writer = csv.writer(fh, delimiter=",")
-        writer.writerow(["mesh_id", "major_topic", "pmid"])
+    ) as fh_year, gzip.open(journal_info_path, "wt") as fh_journal:
+        # Get the CSV writers
+        writer_mesh = csv.writer(fh_mesh, delimiter=",")
         writer_year = csv.writer(fh_year, delimiter=",")
+        writer_journal = csv.writer(fh_journal, delimiter=",")
+
+        # Write the headers
+        writer_mesh.writerow(["mesh_id", "major_topic", "pmid"])
+        # Why no file header for the year file?
+        writer_journal.writerow(
+            ["pmid", "issn", "issue", "issue_volume", "issue_year",
+             "journal_title", "journal_abbr", "journal_nlm_id"]
+        )
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
-            for pmid, year, mesh_annotations in extract_info_from_medline_xml(
-                xml_path.as_posix()
-            ):
+            for (
+                    pmid, year, mesh_annotations, journal_info
+            ) in extract_info_from_medline_xml(xml_path.as_posix()):
                 # Skip if year could not be found
                 if not year:
                     continue
 
+                # Write one row per mesh annotation
                 for annot in mesh_annotations:
-                    writer.writerow(
+                    writer_mesh.writerow(
                         (annot["mesh"], 1 if annot["major_topic"] else 0, pmid)
                     )
+
+                # One row per pmid-year pair
                 writer_year.writerow([pmid, year])
+
+                # One row per issn-pmid connection
+                for issn in journal_info["issn_list"]:
+                    writer_journal.writerow(
+                        [
+                            pmid,
+                            issn,
+                            journal_info["issue"],
+                            journal_info["issue_volume"],
+                            journal_info["issue_year"],
+                            journal_info["journal_title"],
+                            journal_info["journal_abbrev"],
+                            journal_info["journal_nlm_id"],
+                        ]
+                    )
 
 
 def download_medline_pubmed_xml_resource(
