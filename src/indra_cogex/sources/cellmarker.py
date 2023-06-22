@@ -209,7 +209,10 @@ def ground_cancer_types(df: pd.DataFrame):
 
 
 def _join(collection):
-    return "|".join(item for item in collection if item and pd.notna(item))
+    # joins data for Neo4j ingestion. In Neo4j 4.4 the separator is `;`.
+    # See `https://neo4j.com/docs/operations-manual/4.4/tools/
+    # neo4j-admin/neo4j-admin-import/#import-tool-header-format-properties`
+    return ";".join(item for item in collection if item and pd.notna(item))
 
 
 if __name__ == "__main__":
