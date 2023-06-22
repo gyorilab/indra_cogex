@@ -51,13 +51,16 @@ class PubmedProcessor(Processor):
         self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
-        pmid_node_type = "Publication"
-        journal_node_type = "Journal"
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
             pmid_year_path=self.pmid_year_path,
+            pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
         )
+        yield from self._yield_publication_nodes()
+        yield from self._yield_journal_nodes()
+
+    def _yield_publication_nodes(self) -> Iterable[Node]:
         logger.info("Loading PMID year info from %s" % self.pmid_year_path)
         with gzip.open(self.pmid_year_path, "rt") as fh:
             pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
@@ -88,7 +91,45 @@ class PubmedProcessor(Processor):
                     "manuscript_id": get_val(manuscript_id),
                     "year:int": year,
                 }
-                yield Node("PUBMED", pmid, labels=[pmid_node_type], data=data)
+                yield Node(
+                    "PUBMED",
+                    pmid,
+                    labels=[self.publ_node_type],
+                    data=data,
+                )
+
+    def _yield_journal_nodes(self) -> Iterable[Node]:
+        # Load the journal info
+        logger.info("Loading journal info from %s" % self.journal_info_path)
+        with gzip.open(self.journal_info_path, "rt") as fh:
+            reader = csv.reader(fh, delimiter="\t")
+            next(reader)  # skip header
+            for (
+                    nlm_id,
+                    journal_name,
+                    journal_abbrev,
+                    issn,
+                    issn_l,
+                    p_issn,
+                    e_issn,
+                    other
+            ) in reader:
+                assert isinstance(other, list)
+                data = {
+                    "title": journal_name,
+                    "abbr_title": journal_abbrev,
+                    "issn_l": issn_l,
+                    "p_issn": p_issn,
+                    "e_issn": e_issn,
+                    "nlm_id:int": nlm_id,
+                    "alternate_issn:string[]": ";".join(other),
+                }
+                yield Node(
+                    "ISSN",
+                    issn,
+                    labels=[self.journal_node_type],
+                    data=data,
+                )
 
     def get_relations(self):
         # Ensure cached files exist
@@ -96,9 +137,14 @@ class PubmedProcessor(Processor):
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
             pmid_year_path=self.pmid_year_path,
+            pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
         )
 
+        yield from self._yield_mesh_pmid_relations()
+        yield from self._yield_pmid_issn_relations()
+
+    def _yield_mesh_pmid_relations(self):
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
@@ -125,6 +171,20 @@ class PubmedProcessor(Processor):
                         )
                     )
                 yield relations_batch
+
+    def _yield_pmid_issn_relations(self):
+        with gzip.open(self.pmid_issn_nlm_path, "rt") as fh:
+            reader = csv.reader(fh)
+            next(reader)
+            for pmid, issn, journal_nlm_id in reader:
+                yield Relation(
+                    "PUBMED",
+                    pmid,
+                    "ISSN",
+                    issn,
+                    "published_in",
+                    {"nlm_id:int": journal_nlm_id},
+                )
 
     def _dump_edges(self) -> Path:
         # This overrides the default implementation in Processor because
