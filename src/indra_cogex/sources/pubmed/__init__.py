@@ -202,7 +202,7 @@ class PubmedProcessor(Processor):
         return edges_path
 
 
-def get_url_paths(url: str) -> Generator:
+def get_url_paths(url: str) -> Generator[str, None, None]:
     """Get the paths to all XML files on the PubMed FTP server."""
     logger.info("Getting URL paths from %s" % url)
 
