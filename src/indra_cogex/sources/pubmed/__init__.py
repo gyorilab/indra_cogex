@@ -35,11 +35,19 @@ pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 class PubmedProcessor(Processor):
     name = "pubmed"
     node_types = ["Publication", "Journal"]
+    publ_node_type = "Publication"
+    journal_node_type = "Journal"
 
     def __init__(self):
+        # Maps MeSH terms to PMIDs
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
+        # Maps PMIDs to years
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
-        self.journal_info_path = resources.join(name="pmid_issn.csv.gz")
+        # Maps PMIDs to ISSN
+        self.pmid_issn_nlm_path = resources.join(name="pmid_issn.csv.gz")
+        # Identifies journals
+        self.journal_info_path = resources.join(name="journal_info.tsv.gz")
+        # Maps PMIDs to other text reference IDs
         self.text_refs_path = text_refs_fname
 
     def get_nodes(self):
