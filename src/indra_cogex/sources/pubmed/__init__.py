@@ -275,7 +275,7 @@ def extract_info_from_medline_xml(
 
         mesh_annotations = _get_annotations(medline_citation)
         journal_info = get_issn_info(medline_citation,
-                                     get_issns_from_nlm=False)
+                                     get_issns_from_nlm="missing")
         yield (
             pmid,
             min_year,
