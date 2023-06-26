@@ -28,6 +28,7 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
+issn_nlm_map_path = resources.join(name="issn_nlm_map.csv.gz")
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
@@ -56,6 +57,7 @@ class PubmedProcessor(Processor):
             pmid_year_path=self.pmid_year_path,
             pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
+            issn_nlm_map_path=issn_nlm_map_path,
         )
         yield from self._yield_publication_nodes()
         yield from self._yield_journal_nodes()
@@ -139,6 +141,7 @@ class PubmedProcessor(Processor):
             pmid_year_path=self.pmid_year_path,
             pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
+            issn_nlm_map_path=issn_nlm_map_path,
         )
 
         yield from self._yield_mesh_pmid_relations()
