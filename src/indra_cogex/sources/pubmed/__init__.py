@@ -288,6 +288,7 @@ def process_mesh_xml_to_csv(
     pmid_year_path: Path,
     pmid_issn_nlm_path: Path,
     journal_info_path: Path,  # For Journal Node creation
+    issn_nlm_map_path: Path,  # For mapping ISSN to NLM (many-to-one mapping)
     force: bool = False
 ):
     """Process the pubmed xml and dump to different CSV files
@@ -304,6 +305,9 @@ def process_mesh_xml_to_csv(
         Path to the pmid journal file
     journal_info_path :
         Path to the journal info file, used to create the Journal Nodes
+    issn_nlm_map_path :
+        Path to the issn nlm map file, used downstream to map issn to nlm
+        when connecting to the Journal Nodes to Publiser Nodes
     force :
         If True, re-run the download even if the file already exists.
     """
@@ -326,13 +330,15 @@ def process_mesh_xml_to_csv(
     with gzip.open(mesh_pmid_path, "wt") as fh_mesh, \
             gzip.open(pmid_year_path, "wt") as fh_year, \
             gzip.open(pmid_issn_nlm_path, "wt") as fh_journal, \
-            gzip.open(journal_info_path, "wt") as fh_journal_info:
+            gzip.open(journal_info_path, "wt") as fh_journal_info, \
+            gzip.open(issn_nlm_map_path, "wt") as fh_issn_nlm_map:
 
         # Get the CSV writers
         writer_mesh = csv.writer(fh_mesh, delimiter=",")
         writer_year = csv.writer(fh_year, delimiter=",")
         writer_journal = csv.writer(fh_journal, delimiter=",")
         writer_journal_info = csv.writer(fh_journal_info, delimiter="\t")
+        writer_issn_nlm_map = csv.writer(fh_issn_nlm_map, delimiter=",")
 
         # Write the headers
         writer_mesh.writerow(["mesh_id", "major_topic", "pmid"])
@@ -344,8 +350,10 @@ def process_mesh_xml_to_csv(
             ["journal_nlm_id", "journal_name", "journal_abbrev",
              "issn", "issn_l", "p_issn", "e_issn", "other"]
         )
+        writer_issn_nlm_map.writerow(["issn", "nlm_id"])
         used_nlm_ids = set()
         yielded_pmid_nlm_links = set()
+        yielded_issn_nlm_links = set()
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
             for (
                     pmid, year, mesh_annotations, journal_info
@@ -374,6 +382,18 @@ def process_mesh_xml_to_csv(
                 if pmid_nlm_link not in yielded_pmid_nlm_links:
                     writer_journal.writerow(pmid_nlm_link)
                     yielded_pmid_nlm_links.add(pmid_nlm_link)
+
+                # One row per issn-nlm_id connection
+                for issn_val in issn_dict.items():
+                    if not isinstance(issn_val, list):
+                        issn_list = [issn_val]
+                    else:
+                        issn_list = issn_val
+                    for issn in issn_list:
+                        issn_nlm_link = (issn, nlm_id)
+                        if issn_nlm_link not in yielded_issn_nlm_links:
+                            writer_issn_nlm_map.writerow(issn_nlm_link)
+                            yielded_issn_nlm_links.add(issn_nlm_link)
 
                 # One row per journal, i.e. nlm id
                 if nlm_id not in used_nlm_ids:
