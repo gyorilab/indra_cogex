@@ -125,8 +125,8 @@ class PubmedProcessor(Processor):
                     "alternate_issn:string[]": ";".join(other),
                 }
                 yield Node(
-                    "ISSN",
-                    issn,
+                    "NLM",
+                    nlm_id,
                     labels=[self.journal_node_type],
                     data=data,
                 )
@@ -142,7 +142,7 @@ class PubmedProcessor(Processor):
         )
 
         yield from self._yield_mesh_pmid_relations()
-        yield from self._yield_pmid_issn_relations()
+        yield from self._yield_pmid_journal_relations()
 
     def _yield_mesh_pmid_relations(self):
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
@@ -172,18 +172,17 @@ class PubmedProcessor(Processor):
                     )
                 yield relations_batch
 
-    def _yield_pmid_issn_relations(self):
+    def _yield_pmid_journal_relations(self):
         with gzip.open(self.pmid_issn_nlm_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)
-            for pmid, issn, journal_nlm_id in reader:
+            for pmid, journal_nlm_id in reader:
                 yield Relation(
                     "PUBMED",
                     pmid,
-                    "ISSN",
-                    issn,
+                    "NLM",
+                    journal_nlm_id,
                     "published_in",
-                    {"nlm_id:int": journal_nlm_id},
                 )
 
     def _dump_edges(self) -> Path:
@@ -339,13 +338,14 @@ def process_mesh_xml_to_csv(
         writer_mesh.writerow(["mesh_id", "major_topic", "pmid"])
         # Why no file header for the year file?
         writer_journal.writerow(
-            ["pmid", "issn", "journal_nlm_id"]
+            ["pmid", "journal_nlm_id"]
         )
         writer_journal_info.writerow(
             ["journal_nlm_id", "journal_name", "journal_abbrev",
              "issn", "issn_l", "p_issn", "e_issn", "other"]
         )
         used_nlm_ids = set()
+        yielded_pmid_nlm_links = set()
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
             for (
                     pmid, year, mesh_annotations, journal_info
@@ -367,24 +367,15 @@ def process_mesh_xml_to_csv(
                 # One row per pmid-year pair
                 writer_year.writerow([pmid, year])
 
-                # One row per issn-pmid connection
+                # One row per nlm_id-pmid connection
                 issn_dict = journal_info["issn_dict"]
                 nlm_id = journal_info["journal_nlm_id"]
-                for issn_type in ["issn", "issn_l", "p_issn", "e_issn"]:
-                    if issn_type in issn_dict:
-                        issn = issn_dict[issn_type]
-                        break
-                else:
-                    issn = None
-                    logger.warning(f"Could not find issn for PMID {pmid} "
-                                   f"with nlm id {nlm_id}")
-                    # Todo: Should we skip this pmid-journal connection?
+                pmid_nlm_link = (pmid, nlm_id)
+                if pmid_nlm_link not in yielded_pmid_nlm_links:
+                    writer_journal.writerow(pmid_nlm_link)
+                    yielded_pmid_nlm_links.add(pmid_nlm_link)
 
-                writer_journal.writerow(
-                    [pmid, issn, nlm_id]
-                )
-
-                # One row per journal
+                # One row per journal, i.e. nlm id
                 if nlm_id not in used_nlm_ids:
                     writer_journal_info.writerow(
                         [
