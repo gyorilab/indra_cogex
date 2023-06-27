@@ -138,7 +138,21 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     publisher_isni=publisher_isni
                 )
 
-    def dump_csv(self):
+    def process_data(self, force: bool = False):
+        """Dump data to CSV
+
+        Parameters
+        ----------
+        force: bool
+            If True, force the dump even if the files already exist
+        """
+        if self.publisher_data_path.exists() and \
+                self.journal_data_path.exists() and \
+                self.pub_jour_relations_data_path.exists() and \
+                not force:
+            logger.info("Files already exist, skipping dump.")
+            return
+
         with gzip.open(self.publisher_data_path, 'wt') as publisher_fh, \
                 gzip.open(self.journal_data_path, 'wt') as journal_fh, \
                 gzip.open(self.pub_jour_relations_data_path, 'wt') as \
