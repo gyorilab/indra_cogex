@@ -14,7 +14,7 @@ from indra_cogex.sources import Processor
 from indra_cogex.sources.pubmed import issn_nlm_map_path
 
 
-__all__ = ["JournalPublisherProcessor"]
+__all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
 
 
 logger = logging.getLogger(__name__)
