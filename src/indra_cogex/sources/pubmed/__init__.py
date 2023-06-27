@@ -35,9 +35,9 @@ pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
 class PubmedProcessor(Processor):
     name = "pubmed"
-    node_types = ["Publication", "Journal"]
-    publ_node_type = "Publication"
+    publication_node_type = "Publication"
     journal_node_type = "Journal"
+    node_types = [publication_node_type, journal_node_type]
 
     def __init__(self):
         # Maps MeSH terms to PMIDs
@@ -96,7 +96,7 @@ class PubmedProcessor(Processor):
                 yield Node(
                     "PUBMED",
                     pmid,
-                    labels=[self.publ_node_type],
+                    labels=[self.publication_node_type],
                     data=data,
                 )
 
