@@ -1,5 +1,6 @@
 import csv
 import gzip
+import json
 import logging
 import os
 import re
@@ -116,7 +117,7 @@ class PubmedProcessor(Processor):
                     e_issn,
                     other
             ) in reader:
-                assert isinstance(other, list)
+                other = json.loads(other)
                 data = {
                     "title": journal_name,
                     "abbr_title": journal_abbrev,
@@ -404,7 +405,7 @@ def process_mesh_xml_to_csv(
                             issn_dict.get("issn_l"),
                             issn_dict.get("p_issn"),
                             issn_dict.get("e_issn"),
-                            issn_dict.get("other")
+                            json.dumps(issn_dict.get("other", []))
                         ]
                     )
                     used_nlm_ids.add(journal_info["journal_nlm_id"])
