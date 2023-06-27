@@ -43,14 +43,14 @@ class WikiDataProcessor(Processor):
 
     def get_nodes(self) -> Iterable[Node]:
         raise NotImplementedError(
-            f"get_nodes not implemented in {self.__class__.__name__} "
-            f"processor. Implement in a subclass."
+            f"get_nodes not implemented in {self.__class__.__name__}. "
+            f"Implement in a subclass."
         )
 
     def get_relations(self) -> Iterable[Relation]:
         raise NotImplementedError(
-            f"get_relations not implemented in {self.__class__.__name__} "
-            f"processor. Implement in a subclass."
+            f"get_relations not implemented in {self.__class__.__name__}. "
+            f"Implement in a subclass."
         )
 
     def run_sparql_query(self, sparql: str) -> List[Mapping[str, Any]]:
