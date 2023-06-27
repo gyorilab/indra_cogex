@@ -28,6 +28,7 @@ resources = pystow.module("indra", "cogex", "pubmed")
 
 # Settings for downloading content from the PubMed FTP server
 raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
+# For mapping ISSN to NLM (many-to-one mapping)
 issn_nlm_map_path = resources.join(name="issn_nlm_map.csv.gz")
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
@@ -57,7 +58,6 @@ class PubmedProcessor(Processor):
             pmid_year_path=self.pmid_year_path,
             pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
-            issn_nlm_map_path=issn_nlm_map_path,
         )
         yield from self._yield_publication_nodes()
         yield from self._yield_journal_nodes()
@@ -141,7 +141,6 @@ class PubmedProcessor(Processor):
             pmid_year_path=self.pmid_year_path,
             pmid_issn_nlm_path=self.pmid_issn_nlm_path,
             journal_info_path=self.journal_info_path,
-            issn_nlm_map_path=issn_nlm_map_path,
         )
 
         yield from self._yield_mesh_pmid_relations()
@@ -291,7 +290,6 @@ def process_mesh_xml_to_csv(
     pmid_year_path: Path,
     pmid_issn_nlm_path: Path,
     journal_info_path: Path,  # For Journal Node creation
-    issn_nlm_map_path: Path,  # For mapping ISSN to NLM (many-to-one mapping)
     force: bool = False
 ):
     """Process the pubmed xml and dump to different CSV files
@@ -308,9 +306,6 @@ def process_mesh_xml_to_csv(
         Path to the pmid journal file
     journal_info_path :
         Path to the journal info file, used to create the Journal Nodes
-    issn_nlm_map_path :
-        Path to the issn nlm map file, used downstream to map issn to nlm
-        when connecting to the Journal Nodes to Publiser Nodes
     force :
         If True, re-run the download even if the file already exists.
     """
