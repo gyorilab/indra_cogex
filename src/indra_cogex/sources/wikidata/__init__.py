@@ -204,6 +204,9 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     ])
 
     def get_nodes(self) -> Iterable[Node]:
+        """Get nodes from the data"""
+        self.process_data()
+
         # Get journal and publisher nodes
         yield from self._get_journal_nodes()
         yield from self._get_publisher_nodes()
@@ -248,15 +251,18 @@ class JournalPublisherProcessor(WikiDataProcessor):
                 )
 
     def get_relations(self) -> Iterable[Relation]:
+        """Get relations from the data"""
+        self.process_data()
+
         # Get journal-publisher relations
         with gzip.open(self.pub_jour_relations_data_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter='\t')
             for nlm_id, publisher_isni in reader:
                 yield Relation(
-                    "NLM",
-                    nlm_id,
-                    self.publisher_node_type,
-                    publisher_isni,
-                    "published_by",
+                    source_ns="NLM",
+                    source_id=nlm_id,
+                    target_ns=self.publisher_node_type,
+                    target_id=publisher_isni,
+                    rel_type="published_by",
                     data={},
                 )
