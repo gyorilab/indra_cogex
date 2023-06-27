@@ -385,7 +385,7 @@ def process_mesh_xml_to_csv(
                     yielded_pmid_nlm_links.add(pmid_nlm_link)
 
                 # One row per issn-nlm_id connection
-                for issn_val in issn_dict.items():
+                for issn_type, issn_val in issn_dict.items():
                     if not isinstance(issn_val, list):
                         issn_list = [issn_val]
                     else:
