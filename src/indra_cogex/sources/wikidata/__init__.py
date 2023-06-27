@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 resources = pystow.module("indra_cogex", "sources", "wikidata")
 
 
-JournalPublisher = namedtuple(
-    "JournalPublisher", [
+JournalPublisherTuple = namedtuple(
+    "JournalPublisherTuple", [
         "journal_wd_id",
         "journal_name",
         "journal_issn_list",
@@ -127,7 +127,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
             nlm_id = self.issn_nlm_map.get(journal_issn_l)
             # Skip if we don't have an NLM ID or an ISNI ID for the relation
             if nlm_id and publisher_isni:
-                yield JournalPublisher(
+                yield JournalPublisherTuple(
                     journal_wd_id=journal_wd_id,
                     journal_name=journal_name,
                     journal_issn_list=journal_issn_list,
