@@ -317,7 +317,9 @@ def process_mesh_xml_to_csv(
     if not force and mesh_pmid_path.exists() and pmid_year_path.exists() and \
             pmid_issn_nlm_path.exists() and journal_info_path.exists():
         logger.info(
-            f"{mesh_pmid_path.name} and {pmid_year_path.name} already exist"
+            f"{mesh_pmid_path.name}, {pmid_year_path.name}, "
+            f"{pmid_issn_nlm_path.name} and {journal_info_path.name} "
+            f"already exist, skipping download"
         )
         return
 
