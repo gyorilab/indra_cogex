@@ -14,6 +14,9 @@ from indra_cogex.sources import Processor
 from indra_cogex.sources.pubmed import issn_nlm_map_path
 
 
+__all__ = ["JournalPublisherProcessor"]
+
+
 logger = logging.getLogger(__name__)
 
 
