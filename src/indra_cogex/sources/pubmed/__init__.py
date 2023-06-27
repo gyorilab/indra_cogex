@@ -401,7 +401,7 @@ def process_mesh_xml_to_csv(
                     writer_journal_info.writerow(
                         [
                             nlm_id,
-                            journal_info["journal_name"],
+                            journal_info["journal_title"],
                             journal_info["journal_abbrev"],
                             issn_dict.get("issn"),
                             issn_dict.get("issn_l"),
