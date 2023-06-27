@@ -39,7 +39,7 @@ JournalPublisherTuple = namedtuple(
 
 class WikiDataProcessor(Processor):
     """Base class for Wikidata processors"""
-
+    name = "wikidata_base"
     sparql_query = NotImplemented
     WIKIDATA_ENDPOINT = \
         "https://query.wikidata.org/bigdata/namespace/wdq/sparql"
