@@ -103,7 +103,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
             name="pub_jour_relations_data.tsv.gz")
         self.issn_nlm_map = self._load_issn_nlm_map()
 
-    def _load_issn_nlm_map(self):
+    @staticmethod
+    def _load_issn_nlm_map():
         with gzip.open(issn_nlm_map_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter=',')
             issn_nlm_map = {issn: nlm_id for issn, nlm_id in reader}
