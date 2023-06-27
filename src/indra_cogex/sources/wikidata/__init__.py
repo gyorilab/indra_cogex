@@ -1,5 +1,6 @@
 import csv
 import gzip
+import json
 import logging
 from collections import namedtuple
 from textwrap import dedent
@@ -202,7 +203,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     journal_writer.writerow([
                         journal_publisher.journal_wd_id,
                         journal_publisher.journal_name,
-                        journal_publisher.journal_issn_list,
+                        json.dumps(journal_publisher.journal_issn_list or []),
                         journal_publisher.journal_issn_l,
                         journal_publisher.nlm_id,
                     ])
@@ -226,7 +227,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     journal_issn_l,
                     nlm_id
             ) in reader:
-                assert isinstance(issn_list, list)
+                issn_list = json.loads(issn_list)
                 yield Node(
                     "NLM",
                     nlm_id,
