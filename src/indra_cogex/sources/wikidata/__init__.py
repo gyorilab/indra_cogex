@@ -176,13 +176,15 @@ class JournalPublisherProcessor(WikiDataProcessor):
             used_isni = set()
             used_nlm = set()
             nlm_isni_relations = set()
+            skipped = 0
             for journal_publisher in self.iter_data():
                 # Skip if no nlm_id or publisher_isni
-                if not journal_publisher.publisher_isni or \
-                        not journal_publisher.nlm_id:
-                    continue
                 nlm_id = journal_publisher.nlm_id
                 isni = journal_publisher.publisher_isni
+
+                if not isni or nlm_id:
+                    skipped += 1
+                    continue
 
                 # Save relations
                 # One relations file for journal-publisher relations
@@ -222,6 +224,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     f"{self.journal_data_path}")
         logger.info(f"Dumped {len(nlm_isni_relations)} relations to "
                     f"{self.pub_jour_relations_data_path}")
+        logger.info(f"Skipped {skipped} relations due to missing NLM ID or "
+                    f"ISNI")
 
     def get_nodes(self) -> Iterable[Node]:
         """Get nodes from the data"""
