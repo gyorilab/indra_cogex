@@ -47,7 +47,7 @@ class PubmedProcessor(Processor):
         # Maps PMIDs to years
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
         # Maps PMIDs to ISSN
-        self.pmid_nlm_path = resources.join(name="pmid_lmn.csv.gz")
+        self.pmid_nlm_path = resources.join(name="pmid_nlm.csv.gz")
         # Identifies journals
         self.journal_info_path = resources.join(name="journal_info.tsv.gz")
         # Maps PMIDs to other text reference IDs
