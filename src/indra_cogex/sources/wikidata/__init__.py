@@ -131,7 +131,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
             else:
                 journal_issn_list = []
             journal_issn_l = record.get("issn_l", {}).get("value")
-            publisher_isni = record.get("value", {}).get("isni")
+            publisher_isni = record.get("isni", {}).get("value")
             publisher_wd_id = record["publisher"]["value"][
                               len("http://www.wikidata.org/entity/"):
                               ]
