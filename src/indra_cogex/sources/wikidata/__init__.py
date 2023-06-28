@@ -108,8 +108,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
     def _load_issn_nlm_map():
         with gzip.open(issn_nlm_map_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter=',')
-            issn_nlm_map = {issn: nlm_id for issn, nlm_id in
-                            tqdm.tqdm(reader, desc="Loading ISSN NLM map")}
+            logger.info("Loading ISSN NLM map")
+            issn_nlm_map = {issn: nlm_id for issn, nlm_id in reader}
 
         if not any(issn_nlm_map.values()):
             raise ValueError("ISSN NLM map is empty. Please check the "
