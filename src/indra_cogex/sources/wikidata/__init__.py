@@ -214,6 +214,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                         journal_publisher.journal_issn_l,
                         journal_publisher.nlm_id,
                     ])
+                    used_nlm.add(journal_publisher.nlm_id)
 
     def get_nodes(self) -> Iterable[Node]:
         """Get nodes from the data"""
