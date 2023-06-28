@@ -102,19 +102,21 @@ class JournalPublisherProcessor(WikiDataProcessor):
         self.journal_data_path = resources.join(name="journal_data.tsv.gz")
         self.pub_jour_relations_data_path = resources.join(
             name="pub_jour_relations_data.tsv.gz")
-        self.issn_nlm_map = self._load_issn_nlm_map()
+        self.issn_nlm_map = None
 
     @staticmethod
     def _load_issn_nlm_map():
         with gzip.open(issn_nlm_map_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter=',')
-            issn_nlm_map = {issn: nlm_id for issn, nlm_id in reader}
+            issn_nlm_map = {issn: nlm_id for issn, nlm_id in
+                            tqdm.tqdm(reader, desc="Loading ISSN NLM map")}
         return issn_nlm_map
 
     def iter_data(self):
         """Load data from Wikidata"""
+        self.issn_nlm_map = self._load_issn_nlm_map()
         records = self.run_sparql_query(self.sparql_query)
-        for record in tqdm.tqdm(records, desc="Processing Publisher wikidata"):
+        for record in tqdm.tqdm(records, desc="Processing publisher wikidata"):
             journal_wd_id = record["journal"]["value"][
                             len("http://www.wikidata.org/entity/"):]
             journal_name = record["journalLabel"]["value"]
