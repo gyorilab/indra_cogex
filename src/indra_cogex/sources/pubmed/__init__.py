@@ -47,7 +47,7 @@ class PubmedProcessor(Processor):
         # Maps PMIDs to years
         self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
         # Maps PMIDs to ISSN
-        self.pmid_issn_nlm_path = resources.join(name="pmid_issn.csv.gz")
+        self.pmid_nlm_path = resources.join(name="pmid_lmn.csv.gz")
         # Identifies journals
         self.journal_info_path = resources.join(name="journal_info.tsv.gz")
         # Maps PMIDs to other text reference IDs
@@ -57,7 +57,7 @@ class PubmedProcessor(Processor):
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
             pmid_year_path=self.pmid_year_path,
-            pmid_issn_nlm_path=self.pmid_issn_nlm_path,
+            pmid_nlm_path=self.pmid_nlm_path,
             journal_info_path=self.journal_info_path,
         )
         yield from self._yield_publication_nodes()
@@ -140,7 +140,7 @@ class PubmedProcessor(Processor):
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
             pmid_year_path=self.pmid_year_path,
-            pmid_issn_nlm_path=self.pmid_issn_nlm_path,
+            pmid_nlm_path=self.pmid_nlm_path,
             journal_info_path=self.journal_info_path,
         )
 
@@ -176,7 +176,7 @@ class PubmedProcessor(Processor):
                 yield relations_batch
 
     def _yield_pmid_journal_relations(self):
-        with gzip.open(self.pmid_issn_nlm_path, "rt") as fh:
+        with gzip.open(self.pmid_nlm_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)
             for pmid, journal_nlm_id in reader:
@@ -289,7 +289,7 @@ def extract_info_from_medline_xml(
 def process_mesh_xml_to_csv(
     mesh_pmid_path: Path,
     pmid_year_path: Path,
-    pmid_issn_nlm_path: Path,
+    pmid_nlm_path: Path,
     journal_info_path: Path,  # For Journal Node creation
     force: bool = False
 ):
@@ -303,7 +303,7 @@ def process_mesh_xml_to_csv(
         Path to the mesh pmid file
     pmid_year_path :
         Path to the pmid year file
-    pmid_issn_nlm_path :
+    pmid_nlm_path :
         Path to the pmid journal file
     journal_info_path :
         Path to the journal info file, used to create the Journal Nodes
@@ -315,10 +315,10 @@ def process_mesh_xml_to_csv(
     #  cumbersome.
 
     if not force and mesh_pmid_path.exists() and pmid_year_path.exists() and \
-            pmid_issn_nlm_path.exists() and journal_info_path.exists():
+            pmid_nlm_path.exists() and journal_info_path.exists():
         logger.info(
             f"{mesh_pmid_path.name}, {pmid_year_path.name}, "
-            f"{pmid_issn_nlm_path.name} and {journal_info_path.name} "
+            f"{pmid_nlm_path.name} and {journal_info_path.name} "
             f"already exist, skipping download"
         )
         return
@@ -330,7 +330,7 @@ def process_mesh_xml_to_csv(
     logger.info("Processing PubMed XML files")
     with gzip.open(mesh_pmid_path, "wt") as fh_mesh, \
             gzip.open(pmid_year_path, "wt") as fh_year, \
-            gzip.open(pmid_issn_nlm_path, "wt") as fh_journal, \
+            gzip.open(pmid_nlm_path, "wt") as fh_journal, \
             gzip.open(journal_info_path, "wt") as fh_journal_info, \
             gzip.open(issn_nlm_map_path, "wt") as fh_issn_nlm_map:
 
