@@ -6,7 +6,6 @@ from collections import namedtuple
 from textwrap import dedent
 from typing import List, Mapping, Any, Iterable
 
-import pystow
 import requests
 import tqdm
 
@@ -19,9 +18,6 @@ __all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
 
 
 logger = logging.getLogger(__name__)
-
-
-resources = pystow.module("indra", "cogex", "wikidata")
 
 
 JournalPublisherTuple = namedtuple(
@@ -40,10 +36,14 @@ JournalPublisherTuple = namedtuple(
 
 class WikiDataProcessor(Processor):
     """Base class for Wikidata processors"""
-    name = "wikidata_base"
+    name = "wikidata"
     sparql_query = NotImplemented
     WIKIDATA_ENDPOINT = \
         "https://query.wikidata.org/bigdata/namespace/wdq/sparql"
+
+    def __init_subclass__(cls, **kwargs):
+        # Modify the module path to include the name of this processor
+        cls.module = cls.module.module(cls.name)
 
     def get_nodes(self) -> Iterable[Node]:
         raise NotImplementedError(
@@ -98,9 +98,9 @@ class JournalPublisherProcessor(WikiDataProcessor):
     """)
 
     def __init__(self):
-        self.publisher_data_path = resources.join(name="publisher_data.tsv.gz")
-        self.journal_data_path = resources.join(name="journal_data.tsv.gz")
-        self.pub_jour_relations_data_path = resources.join(
+        self.publisher_data_path = self.module.join(name="publisher_data.tsv.gz")
+        self.journal_data_path = self.module.join(name="journal_data.tsv.gz")
+        self.pub_jour_relations_data_path = self.module.join(
             name="pub_jour_relations_data.tsv.gz")
         self.issn_nlm_map = None
 
