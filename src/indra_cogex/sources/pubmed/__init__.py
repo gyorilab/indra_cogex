@@ -117,7 +117,8 @@ class PubmedProcessor(Processor):
                     e_issn,
                     other
             ) in reader:
-                other = json.loads(other)
+                other = json.loads(other) or []
+                assert isinstance(other, list)
                 data = {
                     "title": journal_name,
                     "abbr_title": journal_abbrev,
