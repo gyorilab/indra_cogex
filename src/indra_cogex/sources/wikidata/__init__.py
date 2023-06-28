@@ -216,6 +216,13 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     ])
                     used_nlm.add(journal_publisher.nlm_id)
 
+        logger.info(f"Dumped {len(used_isni)} publishers to "
+                    f"{self.publisher_data_path}")
+        logger.info(f"Dumped {len(used_nlm)} journals to "
+                    f"{self.journal_data_path}")
+        logger.info(f"Dumped {len(nlm_isni_relations)} relations to "
+                    f"{self.pub_jour_relations_data_path}")
+
     def get_nodes(self) -> Iterable[Node]:
         """Get nodes from the data"""
         self.process_data()
