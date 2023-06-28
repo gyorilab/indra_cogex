@@ -21,7 +21,7 @@ __all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
 logger = logging.getLogger(__name__)
 
 
-resources = pystow.module("indra_cogex", "sources", "wikidata")
+resources = pystow.module("indra", "cogex", "wikidata")
 
 
 JournalPublisherTuple = namedtuple(
