@@ -200,6 +200,7 @@ class PubmedProcessor(Processor):
                             "published_in",
                         )
                     )
+                yield relations_batch
 
     def _dump_edges(self) -> Path:
         # This overrides the default implementation in Processor because
