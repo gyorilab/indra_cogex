@@ -125,7 +125,6 @@ class PubmedProcessor(Processor):
                     "issn_l": issn_l,
                     "p_issn": p_issn,
                     "e_issn": e_issn,
-                    "nlm_id": nlm_id,
                     "alternate_issn:string[]": ";".join(other),
                 }
                 yield Node(
