@@ -45,6 +45,15 @@ class WikiDataProcessor(Processor):
         # Modify the module path to include the name of this processor
         cls.module = cls.module.module(cls.name)
 
+        # Now update paths for the node and relation data
+        cls.directory = cls.module.base
+        # These are nodes directly in the neo4j encoding
+        cls.nodes_path = cls.module.join(name="nodes.tsv.gz")
+        # These are nodes in the original INDRA-oriented representation
+        # needed for assembly
+        cls.nodes_indra_path = cls.module.join(name="nodes.pkl")
+        cls.edges_path = cls.module.join(name="edges.tsv.gz")
+
     def get_nodes(self) -> Iterable[Node]:
         raise NotImplementedError(
             f"get_nodes not implemented in {self.__class__.__name__}. "
