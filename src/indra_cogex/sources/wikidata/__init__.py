@@ -188,7 +188,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                 nlm_id = journal_publisher.nlm_id
                 isni = journal_publisher.publisher_isni
 
-                if not isni or nlm_id:
+                if not isni or not nlm_id:
                     skipped += 1
                     continue
 
