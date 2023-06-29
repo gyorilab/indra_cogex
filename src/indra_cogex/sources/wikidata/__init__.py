@@ -136,7 +136,13 @@ class JournalPublisherProcessor(WikiDataProcessor):
                               len("http://www.wikidata.org/entity/"):
                               ]
             publisher_name = record["publisherLabel"]["value"]
-            nlm_id = self.issn_nlm_map.get(journal_issn_l)
+
+            nlm_id = None
+            for issn in [journal_issn_l] + journal_issn_list:
+                if issn in self.issn_nlm_map:
+                    nlm_id = self.issn_nlm_map[issn]
+                    break
+
             # Skip if we don't have an NLM ID or an ISNI ID for the relation
             if nlm_id and publisher_isni:
                 yield JournalPublisherTuple(
