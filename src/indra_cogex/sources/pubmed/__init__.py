@@ -144,8 +144,9 @@ class PubmedProcessor(Processor):
             pmid_nlm_path=self.pmid_nlm_path,
             journal_info_path=self.journal_info_path,
         )
-
+        logger.info("Generating mesh-pmid relations")
         yield from self._yield_mesh_pmid_relations()
+        logger.info("Generating pmid-journal relations")
         yield from self._yield_pmid_journal_relations()
 
     def _yield_mesh_pmid_relations(self):
@@ -154,7 +155,7 @@ class PubmedProcessor(Processor):
             next(reader)  # skip header
             # NOTE tested with 100000 batch size but given that total is ~290M
             # and each line is lightweight, trying with larger batch here
-            batch_size = 10000000
+            batch_size = 10_000_000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
             ):
@@ -167,7 +168,7 @@ class PubmedProcessor(Processor):
                             "MESH",
                             mesh_id,
                             "annotated_with",
-                            {
+                            data={
                                 "is_major_topic:boolean": "true"
                                 if major_topic == "1"
                                 else "false"
