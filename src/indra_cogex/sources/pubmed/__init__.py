@@ -177,17 +177,28 @@ class PubmedProcessor(Processor):
                 yield relations_batch
 
     def _yield_pmid_journal_relations(self):
+        # Yield batches of relations
         with gzip.open(self.pmid_nlm_path, "rt") as fh:
             reader = csv.reader(fh)
+            # Skip header
             next(reader)
-            for pmid, journal_nlm_id in reader:
-                yield Relation(
-                    "PUBMED",
-                    pmid,
-                    "NLM",
-                    journal_nlm_id,
-                    "published_in",
-                )
+            # The file has more than 35000000 lines - a batch size of 1M is
+            # reasonable
+            batch_size = 1_000_000
+            for batch in batch_iter(
+                    reader, batch_size=batch_size, return_func=list
+            ):
+                relations_batch = []
+                for pmid, journal_nlm_id in batch:
+                    relations_batch.append(
+                        Relation(
+                            "PUBMED",
+                            pmid,
+                            "NLM",
+                            journal_nlm_id,
+                            "published_in",
+                        )
+                    )
 
     def _dump_edges(self) -> Path:
         # This overrides the default implementation in Processor because
