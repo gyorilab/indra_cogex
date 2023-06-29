@@ -291,7 +291,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                 yield Relation(
                     source_ns="NLM",
                     source_id=nlm_id,
-                    target_ns=self.publisher_node_type,
+                    target_ns="ISNI",
                     target_id=publisher_isni,
                     rel_type="published_by",
                     data={},
