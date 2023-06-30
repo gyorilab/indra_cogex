@@ -227,10 +227,9 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     citescore_row = self.citescore_df.loc[journal_name]
                 except KeyError:
                     # Set all values to None
-                    citescore_row = pd.Series(
-                        index=self.citescore_df.columns,
-                        dtype=object
-                    )
+                    citescore_row = {
+                        col: None for col in self.citescore_df.columns
+                    }
                     missing_citescore_data += 1
 
                 yield JournalPublisherTuple(
