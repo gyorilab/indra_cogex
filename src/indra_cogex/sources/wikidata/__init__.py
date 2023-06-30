@@ -23,11 +23,23 @@ logger = logging.getLogger(__name__)
 
 JournalPublisherTuple = namedtuple(
     "JournalPublisherTuple", [
+        # Journal info
         "journal_wd_id",
         "journal_name",
         "journal_issn_list",
         "journal_issn_l",
         "nlm_id",
+        # Journal metrics
+        "citescore",
+        "category_rank",
+        "percentile",
+        "category",
+        "citations_2019_22",
+        "documents_2019_22",
+        "percent_cited_2019_22",
+        "snip",
+        "sjr",
+        # Publisher info
         "publisher_wd_id",
         "publisher_name",
         "publisher_isni",
@@ -185,6 +197,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
 
         records = self.run_sparql_query(self.sparql_query)
         for record in tqdm.tqdm(records, desc="Processing publisher wikidata"):
+            # Wikidata
             journal_wd_id = record["journal"]["value"][
                             len("http://www.wikidata.org/entity/"):]
             journal_name = record["journalLabel"]["value"]
@@ -208,12 +221,24 @@ class JournalPublisherProcessor(WikiDataProcessor):
 
             # Skip if we don't have an NLM ID or an ISNI ID for the relation
             if nlm_id and publisher_isni:
+                # CiteScore
+                citescore_row = self.citescore_df.loc[journal_name]
+
                 yield JournalPublisherTuple(
                     journal_wd_id=journal_wd_id,
                     journal_name=journal_name,
                     journal_issn_list=journal_issn_list,
                     journal_issn_l=journal_issn_l,
                     nlm_id=nlm_id,
+                    citescore=citescore_row["CiteScore"],
+                    category_rank=citescore_row["Rank"],
+                    percentile=citescore_row["Percentile"],
+                    category=citescore_row["Category"],
+                    citations_2019_22=citescore_row["2019-22 Citations"],
+                    documents_2019_22=citescore_row["2019-22 Documents"],
+                    percent_cited_2019_22=citescore_row["% Cited"],
+                    snip=citescore_row["SNIP"],
+                    sjr=citescore_row["SJR"],
                     publisher_wd_id=publisher_wd_id,
                     publisher_name=publisher_name,
                     publisher_isni=publisher_isni
@@ -276,7 +301,10 @@ class JournalPublisherProcessor(WikiDataProcessor):
 
                 # Save journals
                 # One row per Journal:
-                # journal_wd_id, journal_name, issn_list, journal_issn_l, nlm_id
+                # journal_wd_id, journal_name, issn_list, journal_issn_l,
+                # nlm_id, citescore, category_rank, percentile, category,
+                # citations_2019_22, documents_2019_22, percent_cited_2019_22,
+                # snip, sjr
                 if journal_publisher.nlm_id not in used_nlm:
                     journal_writer.writerow([
                         journal_publisher.journal_wd_id,
@@ -284,6 +312,15 @@ class JournalPublisherProcessor(WikiDataProcessor):
                         json.dumps(journal_publisher.journal_issn_list or []),
                         journal_publisher.journal_issn_l,
                         journal_publisher.nlm_id,
+                        journal_publisher.citescore,
+                        journal_publisher.category_rank,
+                        journal_publisher.percentile,
+                        journal_publisher.category,
+                        journal_publisher.citations_2019_22,
+                        journal_publisher.documents_2019_22,
+                        journal_publisher.percent_cited_2019_22,
+                        journal_publisher.snip,
+                        journal_publisher.sjr
                     ])
                     used_nlm.add(journal_publisher.nlm_id)
 
@@ -307,13 +344,25 @@ class JournalPublisherProcessor(WikiDataProcessor):
     def _get_journal_nodes(self) -> Iterable[Node]:
         with gzip.open(self.journal_data_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter='\t')
-            # journal_wd_id, journal_name, issn_list, journal_issn_l, nlm_id
+            # journal_wd_id, journal_name, issn_list, journal_issn_l, nlm_id,
+            # citescore, category_rank, percentile, category,
+            # citations_2019_22, documents_2019_22, percent_cited_2019_22,
+            # snip, sjr
             for (
                     journal_wd_id,
                     journal_name,
                     issn_list,
                     journal_issn_l,
-                    nlm_id
+                    nlm_id,
+                    citescore,
+                    category_rank,
+                    percentile,
+                    category,
+                    citations_2019_22,
+                    documents_2019_22,
+                    percent_cited_2019_22,
+                    snip,
+                    sjr
             ) in reader:
                 issn_list = json.loads(issn_list)
                 yield Node(
@@ -325,6 +374,15 @@ class JournalPublisherProcessor(WikiDataProcessor):
                         "issn_l": journal_issn_l,
                         "issn_list:string[]": ";".join(issn_list),
                         "wikidata_id": journal_wd_id,
+                        "citescore:float": citescore,
+                        "category_rank:int": category_rank,
+                        "percentile:float": percentile,
+                        "category": category,
+                        "citations_2019_22:int": citations_2019_22,
+                        "documents_2019_22:int": documents_2019_22,
+                        "percent_cited_2019_22:float": percent_cited_2019_22,
+                        "snip:float": snip,
+                        "sjr:float": sjr,
                     },
                 )
 
