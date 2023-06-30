@@ -270,7 +270,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                         "name": journal_name,
                         "issn_l": journal_issn_l,
                         "issn_list:string[]": ";".join(issn_list),
-                        "wd_id": "WD:" + journal_wd_id,
+                        "wikidata_id": journal_wd_id,
                     },
                 )
 
@@ -286,7 +286,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     labels=[self.publisher_node_type],
                     data={
                         "name": publisher_name,
-                        "wd_id": "WD:" + publisher_wd_id,
+                        "wikidata_id": publisher_wd_id,
                     },
                 )
 
