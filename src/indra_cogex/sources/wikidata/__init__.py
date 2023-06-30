@@ -281,7 +281,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
                 publisher_wd_id, publisher_name, publisher_isni = row
                 yield Node(
                     "ISNI",
-                    publisher_isni,
+                    # Strip the whitespace inside the ISNI
+                    publisher_isni.replace(" ", ""),
                     labels=[self.publisher_node_type],
                     data={
                         "name": publisher_name,
