@@ -390,6 +390,15 @@ def process_mesh_xml_to_csv(
                 writer_year.writerow([pmid, year])
 
                 # One row per nlm_id-pmid connection
+                # issn_dict structure:
+                # {
+                #    "issn": "1234-5678",
+                #    "issn_l": "1234-5678",
+                #    "issn_type": "electronic"|"print"|"other",
+                #    "alternate_issns": [
+                #        ("linking"|"electronic"|"print"|"other", "1234-5678"),
+                #        ...
+                #    ],
                 issn_dict = journal_info["issn_dict"]
                 nlm_id = journal_info["journal_nlm_id"]
                 pmid_nlm_link = (pmid, nlm_id)
@@ -397,30 +406,60 @@ def process_mesh_xml_to_csv(
                     writer_journal.writerow(pmid_nlm_link)
                     yielded_pmid_nlm_links.add(pmid_nlm_link)
 
+                # Get all issns
+                issn_set = {issn_dict["issn"], issn_dict.get("issn_l")}
+                if issn_dict.get("alternate_issns"):
+                    issn_set |= {
+                        issn for _, issn in issn_dict["alternate_issns"]
+                    }
+
+                # Remove None
+                issn_set -= {None}
+
                 # One row per issn-nlm_id connection
-                for issn_type, issn_val in issn_dict.items():
-                    if not isinstance(issn_val, list):
-                        issn_list = [issn_val]
-                    else:
-                        issn_list = issn_val
-                    for issn in issn_list:
-                        issn_nlm_link = (issn, nlm_id)
-                        if issn_nlm_link not in yielded_issn_nlm_links:
-                            writer_issn_nlm_map.writerow(issn_nlm_link)
-                            yielded_issn_nlm_links.add(issn_nlm_link)
+                for issn in issn_set:
+                    issn_nlm_link = (issn, nlm_id)
+                    if issn_nlm_link not in yielded_issn_nlm_links:
+                        writer_issn_nlm_map.writerow(issn_nlm_link)
+                        yielded_issn_nlm_links.add(issn_nlm_link)
 
                 # One row per journal, i.e. nlm id
                 if nlm_id not in used_nlm_ids:
+                    issn_type = issn_dict.get("issn_type", "other")
+                    issn = issn_dict["issn"]
+                    issn_l = issn_dict.get("issn_l")
+                    if issn_type == "electronic":
+                        e_issn = issn
+                        p_issn = None
+                    elif issn_type == "print":
+                        e_issn = None
+                        p_issn = issn
+                    else:
+                        e_issn = None
+                        p_issn = None
+
+                    if issn_dict.get("alternate_issns"):
+                        other_issns = set()
+                        for issn_type, issn_val in issn_dict["alternate_issns"]:
+                            if issn_type == "electronic" and not e_issn:
+                                e_issn = issn_val
+                            elif issn_type == "print" and not p_issn:
+                                p_issn = issn_val
+                            elif issn_type not in ("electronic", "print"):
+                                other_issns.add(issn_val)
+                        other_issns -= {issn, issn_l, None}
+                    else:
+                        other_issns = set()
                     writer_journal_info.writerow(
                         [
                             nlm_id,
                             journal_info["journal_title"],
                             journal_info["journal_abbrev"],
-                            issn_dict.get("issn"),
-                            issn_dict.get("issn_l"),
-                            issn_dict.get("p_issn"),
-                            issn_dict.get("e_issn"),
-                            json.dumps(issn_dict.get("other", []))
+                            issn,
+                            issn_l,
+                            p_issn,
+                            e_issn,
+                            json.dumps(list(other_issns))
                         ]
                     )
                     used_nlm_ids.add(journal_info["journal_nlm_id"])
