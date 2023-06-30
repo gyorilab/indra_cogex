@@ -222,7 +222,14 @@ class JournalPublisherProcessor(WikiDataProcessor):
             # Skip if we don't have an NLM ID or an ISNI ID for the relation
             if nlm_id and publisher_isni:
                 # CiteScore
-                citescore_row = self.citescore_df.loc[journal_name]
+                try:
+                    citescore_row = self.citescore_df.loc[journal_name]
+                except KeyError:
+                    # Set all values to None
+                    citescore_row = pd.Series(
+                        index=self.citescore_df.columns,
+                        dtype=object
+                    )
 
                 yield JournalPublisherTuple(
                     journal_wd_id=journal_wd_id,
