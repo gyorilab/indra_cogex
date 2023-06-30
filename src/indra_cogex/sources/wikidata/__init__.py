@@ -147,7 +147,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
             return
 
         # Columns are:
-        #   Source title: Journal name [str] <- maps to wikidata journal
+        #   Source title: Journal name [str] <- maps to wikidata journal name
         #   CiteScore: 2019-22 CiteScore [float]
         #   Highest percentile: One string with three lines
         #       1. Percentile 0-99.0 % [float]
@@ -158,7 +158,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
         #   % Cited: ? [float]
         #   SNIP: ? [float]
         #   SJR: ? [float]
-        #   Publisher: Publisher name [str] <- maps to wikidata publisher
+        #   Publisher: Publisher name [str] <- maps to wikidata publisher name
 
         # Load file (there is only one sheet)
         cs_df = pd.read_excel(
@@ -185,8 +185,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
         cs_df = cs_df.drop(columns=["Highest percentile"])
 
         # Drop missing journal names; make the journal name the index
-        cs_df = cs_df.dropna(subset=["journalLabel"])
-        cs_df = cs_df.set_index("journalLabel")
+        cs_df = cs_df.dropna(subset=["Source title"])
+        cs_df = cs_df.set_index("Source title")
 
         self.citescore_df = cs_df
 
