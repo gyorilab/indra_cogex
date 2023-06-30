@@ -196,6 +196,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
         self._load_citescore_map()
 
         records = self.run_sparql_query(self.sparql_query)
+        missing_citescore_data = 0
         for record in tqdm.tqdm(records, desc="Processing publisher wikidata"):
             # Wikidata
             journal_wd_id = record["journal"]["value"][
@@ -230,6 +231,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                         index=self.citescore_df.columns,
                         dtype=object
                     )
+                    missing_citescore_data += 1
 
                 yield JournalPublisherTuple(
                     journal_wd_id=journal_wd_id,
@@ -250,6 +252,9 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     publisher_name=publisher_name,
                     publisher_isni=publisher_isni
                 )
+        logger.info(
+            f"Missing CiteScore data for {missing_citescore_data} journals"
+        )
 
     def process_data(self, force: bool = False):
         """Dump data to CSV
