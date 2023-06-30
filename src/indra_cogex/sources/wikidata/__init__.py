@@ -6,6 +6,7 @@ from collections import namedtuple
 from textwrap import dedent
 from typing import List, Mapping, Any, Iterable
 
+import pandas as pd
 import requests
 import tqdm
 
@@ -111,7 +112,10 @@ class JournalPublisherProcessor(WikiDataProcessor):
         self.journal_data_path = self.module.join(name="journal_data.tsv.gz")
         self.pub_jour_relations_data_path = self.module.join(
             name="pub_jour_relations_data.tsv.gz")
+        self.scopus_citescore_path = self.module.join(
+            name="scopus_citescore.xlsx")
         self.issn_nlm_map = None
+        self.citescore_df = None
 
     @staticmethod
     def _load_issn_nlm_map():
@@ -126,9 +130,73 @@ class JournalPublisherProcessor(WikiDataProcessor):
                              "PubmedProcessor.")
         return issn_nlm_map
 
+    def _load_citescore_map(self):
+        if self.citescore_df is not None:
+            return
+
+        # Columns are:
+        #   Source title: Journal name [str] <- maps to wikidata journal
+        #   CiteScore: 2019-22 CiteScore [float]
+        #   Highest percentile: One string with three lines
+        #       1. Percentile 0-99.0 % [float]
+        #       2. Rank in Category (e.g. "2/80") [str]
+        #       3. Category (e.g. "General Medicine")
+        #   2019-22 Citations: Number of citations in 2019-22 [int]
+        #   2019-22 Documents: ? [int]
+        #   % Cited: ? [float]
+        #   SNIP: ? [float]
+        #   SJR: ? [float]
+        #   Publisher: Publisher name [str] <- maps to wikidata publisher
+
+        # Load file (there is only one sheet)
+        cs_df = pd.read_excel(
+            self.scopus_citescore_path, engine="openpyxl", sheet_name=0
+        ).dropna(subset=["Source title"])
+        # Set column types (if other than string)
+        cs_df["CiteScore"] = cs_df["CiteScore"].astype(float)
+        cs_df["2019-22 Citations"] = cs_df["2019-22 Citations"].astype(int)
+        cs_df["2019-22 Documents"] = cs_df["2019-22 Documents"].astype(int)
+        cs_df["% Cited"] = cs_df["% Cited"].astype(float)
+        cs_df["SNIP"] = cs_df["SNIP"].astype(float)
+        cs_df["SJR"] = cs_df["SJR"].astype(float)
+
+        # Split the percentile column into three columns
+        cs_df[["Percentile", "Rank", "Category"]] = (
+            cs_df["Highest percentile"].str.split("\n", expand=True)
+        )
+        cs_df["Percentile"] = \
+            cs_df["Percentile"].str.replace("%", "").astype(float)
+        # For rank, just keep the rank number (e.g. 2/80 -> 2) to allow sorting
+        cs_df["Rank"] = cs_df["Rank"].str.split("/").str[0].astype(int)
+
+        # Drop the original column
+        cs_df = cs_df.drop(columns=["Highest percentile"])
+
+        # Rename columns to match the wikidata names
+        cs_df = cs_df.rename(columns={
+            "Source title": "journalLabel",
+            "Percentile": "CiteScore Percentile",
+            "Rank": "CiteScore Rank",
+            "Category": "CiteScore Category",
+            "2019-22 Citations": "Citations",
+            "2019-22 Documents": "Documents",
+            "% Cited": "Cited %",
+            "SNIP": "SNIP",
+            "SJR": "SJR",
+            "Publisher": "publisherLabel"
+        })
+
+        # Drop missing journal names; make the journal name the index
+        cs_df = cs_df.dropna(subset=["journalLabel"])
+        cs_df = cs_df.set_index("journalLabel")
+
+        self.citescore_df = cs_df
+
     def iter_data(self):
         """Load data from Wikidata"""
         self.issn_nlm_map = self._load_issn_nlm_map()
+        self._load_citescore_map()
+
         records = self.run_sparql_query(self.sparql_query)
         for record in tqdm.tqdm(records, desc="Processing publisher wikidata"):
             journal_wd_id = record["journal"]["value"][
