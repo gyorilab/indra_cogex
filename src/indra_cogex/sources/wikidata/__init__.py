@@ -172,20 +172,6 @@ class JournalPublisherProcessor(WikiDataProcessor):
         # Drop the original column
         cs_df = cs_df.drop(columns=["Highest percentile"])
 
-        # Rename columns to match the wikidata names
-        cs_df = cs_df.rename(columns={
-            "Source title": "journalLabel",
-            "Percentile": "CiteScore Percentile",
-            "Rank": "CiteScore Rank",
-            "Category": "CiteScore Category",
-            "2019-22 Citations": "Citations",
-            "2019-22 Documents": "Documents",
-            "% Cited": "Cited %",
-            "SNIP": "SNIP",
-            "SJR": "SJR",
-            "Publisher": "publisherLabel"
-        })
-
         # Drop missing journal names; make the journal name the index
         cs_df = cs_df.dropna(subset=["journalLabel"])
         cs_df = cs_df.set_index("journalLabel")
