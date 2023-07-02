@@ -6,7 +6,7 @@ import os
 import re
 from hashlib import md5
 from itertools import chain
-from typing import Tuple, Generator, Mapping, Iterable
+from typing import Tuple, Mapping, Iterable, List
 
 import pystow
 import textwrap
@@ -53,7 +53,7 @@ class PubmedProcessor(Processor):
         # Maps PMIDs to other text reference IDs
         self.text_refs_path = text_refs_fname
 
-    def get_nodes(self):
+    def get_nodes(self) -> Iterable[Node]:
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
             pmid_year_path=self.pmid_year_path,
@@ -134,7 +134,7 @@ class PubmedProcessor(Processor):
                     data=data,
                 )
 
-    def get_relations(self):
+    def get_relations(self) -> Iterable[List[Relation]]:
         # Ensure cached files exist
         # Todo: Add force option to download files?
         process_mesh_xml_to_csv(
@@ -148,7 +148,7 @@ class PubmedProcessor(Processor):
         logger.info("Generating pmid-journal relations")
         yield from self._yield_pmid_journal_relations()
 
-    def _yield_mesh_pmid_relations(self):
+    def _yield_mesh_pmid_relations(self) -> Iterable[List[Relation]]:
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
@@ -176,7 +176,7 @@ class PubmedProcessor(Processor):
                     )
                 yield relations_batch
 
-    def _yield_pmid_journal_relations(self):
+    def _yield_pmid_journal_relations(self) -> Iterable[List[Relation]]:
         # Yield batches of relations
         with gzip.open(self.pmid_nlm_path, "rt") as fh:
             reader = csv.reader(fh)
@@ -217,7 +217,7 @@ class PubmedProcessor(Processor):
         return edges_path
 
 
-def get_url_paths(url: str) -> Generator[str, None, None]:
+def get_url_paths(url: str) -> Iterable[str]:
     """Get the paths to all XML files on the PubMed FTP server."""
     logger.info("Getting URL paths from %s" % url)
 
@@ -263,7 +263,7 @@ def ensure_text_refs(fname):
 
 def extract_info_from_medline_xml(
     xml_path: str,
-) -> Generator[Tuple[str, int, Mapping], None, None]:
+) -> Iterable[Tuple[str, int, Mapping]]:
     """Extract info from medline xml file.
 
     Parameters
@@ -515,7 +515,7 @@ def download_medline_pubmed_xml_resource(
 
 def xml_path_generator(
     bar: bool = True, description: str = "Looping xml paths"
-) -> Generator[Tuple[str, Path, str], None, None]:
+) -> Iterable[Tuple[str, Path, str]]:
     """Returns a generator of (xml_file, xml_path, base_url) tuples.
 
     Parameters
