@@ -1,3 +1,23 @@
+"""
+This module contains processors for Wikidata sources.
+
+- WikiDataProcessor: Base class for Wikidata processors
+- Journal Publisher Processor: Processor for journal and publisher data
+
+Other data:
+- issn nlm ID map: Get this file from scopus.com -> sources -> select
+'Journals' as source type -> click the down arrow/chevron next to
+'Export to Excel' and select 'Select all' -> click 'Export to Excel'. The
+page has a really strict timeout so if nothing happens, open the developer
+console and check for 429 errors. If you see them, you have to wait at least
+5 minutes before trying again.
+
+Fixme: scopus only allows 1000 journals to be exported at a time,
+ i.e. if the list of journals is longer than 1000, only the first 1000
+ journals will be exported. There is no paging mechanism to get the rest of
+ the journals beyond the first 1000.
+"""
+
 import csv
 import gzip
 import logging
