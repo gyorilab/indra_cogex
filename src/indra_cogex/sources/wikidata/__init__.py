@@ -1,6 +1,5 @@
 import csv
 import gzip
-import json
 import logging
 from collections import namedtuple
 from textwrap import dedent
@@ -329,7 +328,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     journal_writer.writerow([
                         journal_publisher.journal_wd_id,
                         journal_publisher.journal_name,
-                        json.dumps(journal_publisher.journal_issn_list or []),
+                        ";".join(journal_publisher.journal_issn_list or []),
                         journal_publisher.journal_issn_l,
                         journal_publisher.nlm_id,
                         journal_publisher.citescore,
@@ -371,7 +370,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
             for (
                     journal_wd_id,
                     journal_name,
-                    issn_list,
+                    issn_list_str,
                     journal_issn_l,
                     nlm_id,
                     citescore,
@@ -384,7 +383,6 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     snip,
                     sjr
             ) in reader:
-                issn_list = json.loads(issn_list)
                 yield Node(
                     "NLM",
                     nlm_id,
@@ -392,7 +390,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     data={
                         "name": journal_name,
                         "issn_l": journal_issn_l,
-                        "issn_list:string[]": ";".join(issn_list),
+                        "issn_list:string[]": issn_list_str,
                         "wikidata_id": journal_wd_id,
                         "citescore:float": citescore,
                         "category_rank:int": category_rank,
