@@ -89,15 +89,11 @@ def analysis_hgnc(
         stmts = pickle.loads(statements_pkl_path.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
-    exc = [
-
-    ]
-    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(
-        ["agA_name", "agB_name"]
-    )
+    exc = []
+    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
     for side in "AB":
         side_uniprot_ids = []
-        for side_ns, side_id in stmts_df[[f"ag{side}_ns", f'ag{side}_id']].values:
+        for side_ns, side_id in stmts_df[[f"ag{side}_ns", f"ag{side}_id"]].values:
             if side_ns == "HGNC":
                 uniprot_id = hgnc_id_to_up.get(str(side_id))
             else:
@@ -118,9 +114,7 @@ def analysis_hgnc(
         data_df.to_csv(processed_path, sep="\t", index=False)
         processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
         logger.info(f"Writing results to {processed_filtered_path}")
-        data_df[data_df["in_neighbors"]].to_csv(
-            processed_filtered_path, sep="\t", index=False
-        )
+        data_df[data_df["in_neighbors"]].to_csv(processed_filtered_path, sep="\t", index=False)
 
 
 def _read_df(path: Union[str, Path]) -> pd.DataFrame:
@@ -155,13 +149,9 @@ def main():
         "6877",
     ]
     client = Neo4jClient()
+    analysis_hgnc(data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client)
     analysis_hgnc(
-        data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client
-    )
-    analysis_hgnc(
-        target_hgnc_ids=get_query_from_tsv(
-            "vartika/protids.csv", column="UniProtID"
-        ),
+        target_hgnc_ids=get_query_from_tsv("vartika/protids.csv", column="UniProtID"),
         analysis_id="bertis",
         client=client,
     )
@@ -172,9 +162,7 @@ def main():
         client=client,
     )
     analysis_hgnc(
-        target_hgnc_ids=get_query_from_xlsx(
-            "vartika/CRC_silvia_1.xlsx", column="UniprotID"
-        ),
+        target_hgnc_ids=get_query_from_xlsx("vartika/CRC_silvia_1.xlsx", column="UniprotID"),
         analysis_id="surinova",
         client=client,
     )
