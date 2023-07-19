@@ -27,3 +27,10 @@ File: CRC_silvia_1.xlsx
             Biomarker development for epithelial ovarian cancer
 4        what’s the goal of the project you’re doing
             I am trying to generate realistic mass spec based quantitative proteomics data using generative models. I want a prior knowledge network to help in that .
+
+# Dataset 3 (protids.csv)
+
+1. what instrument was used to make it / what methodology was used: DIA
+2.  who made the data/what’s their affiliation: Bertis Inc.
+3.  what was the original goal of the data: I think their original goal is drug discovery and experimental design.
+4.  what’s the goal of the project you’re doing: I’m doing realistic synthetic data simulation to help in experimental design.

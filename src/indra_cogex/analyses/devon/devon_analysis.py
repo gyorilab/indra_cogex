@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Iterable, Optional, Set, Union
 
 import bioregistry
+import click
 import pandas as pd
 import pystow
 from indra.assemblers.indranet import IndraNetAssembler
 from protmapper import uniprot_client
+from protmapper.api import hgnc_id_to_up
 
 from indra_cogex.client import Neo4jClient, autoclient, subnetwork
 
@@ -48,9 +50,9 @@ def get_query_from_xlsx(fname, *, column: str) -> Set[str]:
 def _get_query_from_df(df: pd.DataFrame, column) -> Set[str]:
     df = df[df[column].notna()]
     lines = set(df[column])
-    if column == "hgnc":
+    if column.lower().replace("_", "").removesuffix("id") == "hgnc":
         return lines
-    elif column in {"uniprot", "UniprotID"}:
+    elif column.lower().replace("_", "").removesuffix("id") in {"uniprot", "uniprotkb"}:
         rv = {uniprot_client.get_hgnc_id(line) for line in lines}
         return {r for r in rv if r}
     else:
@@ -64,6 +66,7 @@ def analysis_hgnc(
     data_path: Optional[Path] = None,
     analysis_id: str,
     client: Optional[Neo4jClient] = None,
+    minimum_evidence_count: int = 8,
 ):
     logger.info("running analysis: %s", analysis_id)
     analysis_module = OUTPUT_MODULE.module(analysis_id)
@@ -79,18 +82,32 @@ def analysis_hgnc(
             pairs,
             client=client,
             node_prefix="hgnc",
-            minimum_evidence_count=8,
+            minimum_evidence_count=minimum_evidence_count,
         )
         statements_pkl_path.write_bytes(pickle.dumps(stmts))
     else:
         stmts = pickle.loads(statements_pkl_path.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
+    exc = [
+
+    ]
     stmts_df = assembler.make_df(keep_self_loops=False).sort_values(
         ["agA_name", "agB_name"]
     )
+    for side in "AB":
+        side_uniprot_ids = []
+        for side_ns, side_id in stmts_df[[f"ag{side}_ns", f'ag{side}_id']].values:
+            if side_ns == "HGNC":
+                uniprot_id = hgnc_id_to_up.get(str(side_id))
+            else:
+                uniprot_id = None
+            side_uniprot_ids.append(uniprot_id)
+        stmts_df[f"ag{side}_uniprot"] = side_uniprot_ids
+
     stmts_df = stmts_df[stmts_df["stmt_type"] != "Complex"]
     stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
+    logger.info(f"writing INDRANet to {statements_df_path}")
     stmts_df.to_csv(statements_df_path, sep="\t", index=False)
 
     if data_path is not None:
@@ -100,6 +117,7 @@ def analysis_hgnc(
         data_df["in_neighbors"] = data_df["hgnc"].map(neighbor_hgnc_ids.__contains__)
         data_df.to_csv(processed_path, sep="\t", index=False)
         processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
+        logger.info(f"Writing results to {processed_filtered_path}")
         data_df[data_df["in_neighbors"]].to_csv(
             processed_filtered_path, sep="\t", index=False
         )
@@ -117,6 +135,7 @@ def _read_df(path: Union[str, Path]) -> pd.DataFrame:
     return df
 
 
+@click.command()
 def main():
     #  RAS RAF MEK ERK
     query = [
@@ -139,6 +158,14 @@ def main():
     analysis_hgnc(
         data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client
     )
+    analysis_hgnc(
+        target_hgnc_ids=get_query_from_tsv(
+            "vartika/protids.csv", column="UniProtID"
+        ),
+        analysis_id="bertis",
+        client=client,
+    )
+    return
     analysis_hgnc(
         target_hgnc_ids=get_query_from_tsv("vartika/OV_ruth_1.csv", column="UniprotID"),
         analysis_id="huettenhain",
