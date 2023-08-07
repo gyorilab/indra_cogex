@@ -10,8 +10,8 @@ import click
 import pandas as pd
 import pystow
 from indra.assemblers.indranet import IndraNetAssembler
+from indra.databases.hgnc_client import get_uniprot_id
 from protmapper import uniprot_client
-from protmapper.api import hgnc_id_to_up
 
 from indra_cogex.client import Neo4jClient, autoclient, subnetwork
 
@@ -68,11 +68,28 @@ def analysis_hgnc(
     client: Optional[Neo4jClient] = None,
     minimum_evidence_count: int = 8,
 ):
+    """
+    This analysis takes a list of target genes and gets a subnetwork
+    of INDRA increase amount and decrease amount statements where
+    both the source and target are in the list. It uses a default
+    minimum evidence count of 8, which filters out the most obscure
+    and likely incorrect statements (e.g., due to technical reader errors).
+
+    .. todo::
+
+        - consider direct versus indirect interactions (i.e., is physical contact
+          involved). Should we remove these, or try and keep these "bypass" edges?
+        - consider cycles. Look at canonical-ness, e.g., use curated pathway databases
+          as a guide to figure out what the "forward" pathways are. This can be
+          thought of like an optimization problem - what is the smallest set of least
+          important edges to remove.
+        - small cycles where A->B and B->A.
+    """
     logger.info("running analysis: %s", analysis_id)
     analysis_module = OUTPUT_MODULE.module(analysis_id)
-    statements_pkl_path = analysis_module.join(name="statements.pkl")
-    statements_df_path = analysis_module.join(name="indranet.tsv")
-    processed_path = analysis_module.join(name="data.tsv")
+    statements_pkl_path = analysis_module.join(name=f"statements_{minimum_evidence_count:03}.pkl")
+    statements_df_path = analysis_module.join(name=f"indranet_{minimum_evidence_count:03}.tsv")
+    processed_path = analysis_module.join(name=f"data_{minimum_evidence_count:03}.tsv")
 
     target_hgnc_ids = set(target_hgnc_ids)
 
@@ -89,19 +106,18 @@ def analysis_hgnc(
         stmts = pickle.loads(statements_pkl_path.read_bytes())
 
     assembler = IndraNetAssembler(stmts)
-    exc = []
     stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
     for side in "AB":
         side_uniprot_ids = []
         for side_ns, side_id in stmts_df[[f"ag{side}_ns", f"ag{side}_id"]].values:
             if side_ns == "HGNC":
-                uniprot_id = hgnc_id_to_up.get(str(side_id))
+                uniprot_id = get_uniprot_id(side_id)
             else:
                 uniprot_id = None
             side_uniprot_ids.append(uniprot_id)
         stmts_df[f"ag{side}_uniprot"] = side_uniprot_ids
 
-    stmts_df = stmts_df[stmts_df["stmt_type"] != "Complex"]
+    stmts_df = stmts_df[stmts_df["stmt_type"].isin(["IncreaseAmount", "DecreaseAmount"])]
     stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
     logger.info(f"writing INDRANet to {statements_df_path}")
     stmts_df.to_csv(statements_df_path, sep="\t", index=False)
@@ -155,7 +171,6 @@ def main():
         analysis_id="bertis",
         client=client,
     )
-    return
     analysis_hgnc(
         target_hgnc_ids=get_query_from_tsv("vartika/OV_ruth_1.csv", column="UniprotID"),
         analysis_id="huettenhain",
@@ -166,30 +181,35 @@ def main():
         analysis_id="surinova",
         client=client,
     )
-    analysis_hgnc(
-        data_path=PATH,
-        target_hgnc_ids=get_query("devon/Exploratory_query.csv"),
-        analysis_id="exploratory",
-        client=client,
-    )
-    analysis_hgnc(
-        data_path=PATH,
-        target_hgnc_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
-        analysis_id="slavov",
-        client=client,
-    )
-    analysis_hgnc(
-        data_path=PATH,
-        target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
-        analysis_id="mapk_downstream",
-        client=client,
-    )
-    analysis_hgnc(
-        data_path=PATH,
-        target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
-        analysis_id="mapk_downstream",
-        client=client,
-    )
+    for minimum_evidence_count in [8, 50, 100, 150]:
+        analysis_hgnc(
+            data_path=PATH,
+            target_hgnc_ids=get_query("devon/Exploratory_query.csv"),
+            analysis_id="exploratory",
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+        )
+        analysis_hgnc(
+            data_path=PATH,
+            target_hgnc_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
+            analysis_id="slavov",
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+        )
+        analysis_hgnc(
+            data_path=PATH,
+            target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
+            analysis_id="mapk_downstream",
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+        )
+        analysis_hgnc(
+            data_path=PATH,
+            target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
+            analysis_id="mapk_downstream",
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+        )
 
 
 if __name__ == "__main__":
