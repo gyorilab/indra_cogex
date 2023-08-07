@@ -1,19 +1,20 @@
 """Run Vitek lab analysis - get PKN based on mass spec results."""
 
+import json
 import logging
-import pickle
 from pathlib import Path
+from textwrap import dedent
 from typing import Iterable, Optional, Set, Union
 
 import bioregistry
 import click
 import pandas as pd
 import pystow
-from indra.assemblers.indranet import IndraNetAssembler
-from indra.databases.hgnc_client import get_uniprot_id
+from indra.databases.hgnc_client import get_hgnc_name, get_uniprot_id
 from protmapper import uniprot_client
 
-from indra_cogex.client import Neo4jClient, autoclient, subnetwork
+from indra_cogex.client import Neo4jClient, autoclient
+from indra_cogex.client.utils import minimum_evidence_helper
 
 logger = logging.getLogger(__name__)
 HERE = Path(__file__).parent.resolve()
@@ -21,17 +22,21 @@ PATH = HERE.joinpath("devon/example_data.csv")
 OUTPUT_MODULE = pystow.module("indra", "cogex", "analysis", "devon")
 
 
-def get_query(fname: str) -> Set[str]:
-    """Get the query HGNC identifier set from one of the files in this directory by name."""
+def get_query_from_file(fname: str) -> Set[str]:
+    """Get the query UniProt set from one of the files in this directory by name."""
     prefix, *lines = HERE.joinpath(fname).read_text().splitlines()
     lines = {line.strip() for line in lines if line.strip()}
     norm_prefix = bioregistry.normalize_prefix(prefix)
     if norm_prefix is None:
         raise ValueError(f"invalid prefix: {prefix}")
     if norm_prefix == "hgnc":
-        return lines
+        return {
+            uniprot_id.strip()
+            for hgnc_id in lines
+            for uniprot_id in get_uniprot_id(hgnc_id).split(",")
+        }
     elif norm_prefix == "uniprot":
-        return {uniprot_client.get_hgnc_id(line) for line in lines}
+        return lines
     else:
         raise ValueError(f"unhandled prefix: {norm_prefix}")
 
@@ -51,17 +56,20 @@ def _get_query_from_df(df: pd.DataFrame, column) -> Set[str]:
     df = df[df[column].notna()]
     lines = set(df[column])
     if column.lower().replace("_", "").removesuffix("id") == "hgnc":
-        return lines
+        return {
+            uniprot_id.strip()
+            for hgnc_id in lines
+            for uniprot_id in get_uniprot_id(hgnc_id).split(",")
+        }
     elif column.lower().replace("_", "").removesuffix("id") in {"uniprot", "uniprotkb"}:
-        rv = {uniprot_client.get_hgnc_id(line) for line in lines}
-        return {r for r in rv if r}
+        return lines
     else:
         raise ValueError(f"unhandled column: {column}")
 
 
 @autoclient()
-def analysis_hgnc(
-    target_hgnc_ids: Iterable[str],
+def analysis_uniprot(
+    uniprot_ids: Iterable[str],
     *,
     data_path: Optional[Path] = None,
     analysis_id: str,
@@ -69,7 +77,7 @@ def analysis_hgnc(
     minimum_evidence_count: int = 8,
 ):
     """
-    This analysis takes a list of target genes and gets a subnetwork
+    This analysis takes a list of target proteins and gets a subnetwork
     of INDRA increase amount and decrease amount statements where
     both the source and target are in the list. It uses a default
     minimum evidence count of 8, which filters out the most obscure
@@ -87,48 +95,83 @@ def analysis_hgnc(
     """
     logger.info("running analysis: %s", analysis_id)
     analysis_module = OUTPUT_MODULE.module(analysis_id)
-    statements_pkl_path = analysis_module.join(name=f"statements_{minimum_evidence_count:03}.pkl")
-    statements_df_path = analysis_module.join(name=f"indranet_{minimum_evidence_count:03}.tsv")
-    processed_path = analysis_module.join(name=f"data_{minimum_evidence_count:03}.tsv")
+    edges_path = analysis_module.join(name=f"{minimum_evidence_count:03}_edges.tsv")
+    data_annotated_path = analysis_module.join(name=f"{minimum_evidence_count:03}_data.tsv")
 
-    target_hgnc_ids = set(target_hgnc_ids)
+    uniprot_ids = set(uniprot_ids)
+    hgnc_ids = {uniprot_client.get_hgnc_id(uniprot_id) for uniprot_id in uniprot_ids}
 
-    if not statements_pkl_path.is_file():
-        pairs = [("hgnc", gene_id) for gene_id in target_hgnc_ids]
-        stmts = subnetwork.get_neighbor_network_statements(
-            pairs,
-            client=client,
-            node_prefix="hgnc",
-            minimum_evidence_count=minimum_evidence_count,
+    hgnc_curies = [f"hgnc:{gene_id}" for gene_id in hgnc_ids if gene_id]
+    query = dedent(
+        f"""\
+            MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+            WHERE 
+                n1.id IN {hgnc_curies!r}
+                AND n2.id IN {hgnc_curies!r}
+                AND n1.id <> n2.id
+                AND r.stmt_type IN ['IncreaseAmount', 'DecreaseAmount']
+                {minimum_evidence_helper(minimum_evidence_count)}
+            RETURN p
+        """
+    )
+    rows = []
+    columns = [
+        "source_hgnc_id",
+        "source_hgnc_symbol",
+        "source_uniprot_id",
+        "relation",
+        "target_hgnc_id",
+        "target_hgnc_symbol",
+        "target_uniprot_id",
+        "stmt_hash",
+        "evidence_count",
+        "source_counts",
+    ]
+
+    def _process_uniprot(hgnc_id: str) -> Optional[str]:
+        uniprot_id = get_uniprot_id(hgnc_id)
+        if "," not in uniprot_id:
+            return uniprot_id
+        for uu in uniprot_id.split(","):
+            if uu in uniprot_ids:
+                return uu
+        return None
+
+    for relation in client.query_relations(query):
+        source_uniprot = _process_uniprot(relation.source_id)
+        target_uniprot = _process_uniprot(relation.target_id)
+        if not source_uniprot or not target_uniprot:
+            continue
+
+        rows.append(
+            (
+                relation.source_id,
+                get_hgnc_name(relation.source_id),
+                source_uniprot,
+                relation.data["stmt_type"],
+                relation.target_id,
+                get_hgnc_name(relation.target_id),
+                target_uniprot,
+                relation.data["stmt_hash"],
+                sum(json.loads(relation.data["source_counts"]).values()),
+                relation.data["source_counts"],
+            )
         )
-        statements_pkl_path.write_bytes(pickle.dumps(stmts))
-    else:
-        stmts = pickle.loads(statements_pkl_path.read_bytes())
 
-    assembler = IndraNetAssembler(stmts)
-    stmts_df = assembler.make_df(keep_self_loops=False).sort_values(["agA_name", "agB_name"])
-    for side in "AB":
-        side_uniprot_ids = []
-        for side_ns, side_id in stmts_df[[f"ag{side}_ns", f"ag{side}_id"]].values:
-            if side_ns == "HGNC":
-                uniprot_id = get_uniprot_id(side_id)
-            else:
-                uniprot_id = None
-            side_uniprot_ids.append(uniprot_id)
-        stmts_df[f"ag{side}_uniprot"] = side_uniprot_ids
-
-    stmts_df = stmts_df[stmts_df["stmt_type"].isin(["IncreaseAmount", "DecreaseAmount"])]
-    stmts_df.drop_duplicates(subset=["stmt_hash"], inplace=True)
-    logger.info(f"writing INDRANet to {statements_df_path}")
-    stmts_df.to_csv(statements_df_path, sep="\t", index=False)
+    df = pd.DataFrame(rows, columns=columns)
+    df.drop_duplicates(subset=["stmt_hash"], inplace=True)
+    logger.info(f"writing INDRANet to {edges_path}")
+    df.to_csv(edges_path, sep="\t", index=False)
 
     if data_path is not None:
         data_df = _read_df(data_path)
         # measured = set(df["hgnc"])
-        neighbor_hgnc_ids = set(stmts_df["agA_id"]).union(stmts_df["agB_id"])
+        neighbor_hgnc_ids = set(df["source_hgnc_id"]).union(df["target_hgnc_id"])
         data_df["in_neighbors"] = data_df["hgnc"].map(neighbor_hgnc_ids.__contains__)
-        data_df.to_csv(processed_path, sep="\t", index=False)
-        processed_filtered_path = analysis_module.join(name="data_filtered.tsv")
+        data_df.to_csv(data_annotated_path, sep="\t", index=False)
+        processed_filtered_path = analysis_module.join(
+            name=f"{minimum_evidence_count:03}_data_filtered.tsv"
+        )
         logger.info(f"Writing results to {processed_filtered_path}")
         data_df[data_df["in_neighbors"]].to_csv(processed_filtered_path, sep="\t", index=False)
 
@@ -164,48 +207,42 @@ def main():
         "6871",
         "6877",
     ]
+    query = {get_uniprot_id(hgnc_id) for hgnc_id in query}
     client = Neo4jClient()
-    analysis_hgnc(data_path=PATH, target_hgnc_ids=query, analysis_id="simple", client=client)
-    analysis_hgnc(
-        target_hgnc_ids=get_query_from_tsv("vartika/protids.csv", column="UniProtID"),
+    analysis_uniprot(data_path=PATH, uniprot_ids=query, analysis_id="simple", client=client)
+    analysis_uniprot(
+        uniprot_ids=get_query_from_tsv("vartika/protids.csv", column="UniProtID"),
         analysis_id="bertis",
         client=client,
     )
-    analysis_hgnc(
-        target_hgnc_ids=get_query_from_tsv("vartika/OV_ruth_1.csv", column="UniprotID"),
+    analysis_uniprot(
+        uniprot_ids=get_query_from_tsv("vartika/OV_ruth_1.csv", column="UniprotID"),
         analysis_id="huettenhain",
         client=client,
     )
-    analysis_hgnc(
-        target_hgnc_ids=get_query_from_xlsx("vartika/CRC_silvia_1.xlsx", column="UniprotID"),
+    analysis_uniprot(
+        uniprot_ids=get_query_from_xlsx("vartika/CRC_silvia_1.xlsx", column="UniprotID"),
         analysis_id="surinova",
         client=client,
     )
     for minimum_evidence_count in [8, 50, 100, 150]:
-        analysis_hgnc(
+        analysis_uniprot(
             data_path=PATH,
-            target_hgnc_ids=get_query("devon/Exploratory_query.csv"),
+            uniprot_ids=get_query_from_file("devon/Exploratory_query.csv"),
             analysis_id="exploratory",
             client=client,
             minimum_evidence_count=minimum_evidence_count,
         )
-        analysis_hgnc(
+        analysis_uniprot(
             data_path=PATH,
-            target_hgnc_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
+            uniprot_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
             analysis_id="slavov",
             client=client,
             minimum_evidence_count=minimum_evidence_count,
         )
-        analysis_hgnc(
+        analysis_uniprot(
             data_path=PATH,
-            target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
-            analysis_id="mapk_downstream",
-            client=client,
-            minimum_evidence_count=minimum_evidence_count,
-        )
-        analysis_hgnc(
-            data_path=PATH,
-            target_hgnc_ids=get_query("devon/MAPK_downstream.csv"),
+            uniprot_ids=get_query_from_file("devon/MAPK_downstream.csv"),
             analysis_id="mapk_downstream",
             client=client,
             minimum_evidence_count=minimum_evidence_count,
