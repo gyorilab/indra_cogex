@@ -135,34 +135,6 @@ def analysis_uniprot(
         click.echo(f"Failed to get HGNC ID for UniProts: {sorted(failed)}")
 
     hgnc_curies = [f"hgnc:{gene_id}" for gene_id in hgnc_ids]
-
-    density_query = dedent(
-        f"""\
-            MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-            WHERE 
-                n1.id IN {hgnc_curies!r}
-                AND n2.id STARTS WITH 'hgnc'
-                AND n1.id <> n2.id
-                AND r.stmt_type IN ['IncreaseAmount', 'DecreaseAmount']
-                {minimum_evidence_helper(minimum_evidence_count)}
-            RETURN n1.id, count(distinct n2.id)
-        """
-    )
-    density = []
-    for curie, count in sorted(client.query_tx(density_query), key=itemgetter(1), reverse=True):
-        hgnc_id = curie.removeprefix("hgnc:")
-
-        density.append(
-            (
-                hgnc_id,
-                get_hgnc_name(hgnc_id),
-                _get_uniprot_from_hgnc(hgnc_id),
-                count,
-            )
-        )
-    columns = ["hgnc_id", "hgnc_symbol", "uniprot_id", "unique_hgnc_neighbors"]
-    pd.DataFrame(density, columns=columns).to_csv(density_path, sep="\t", index=False)
-
     query = dedent(
         f"""\
             MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
@@ -227,6 +199,49 @@ def analysis_uniprot(
         data_df.to_csv(data_annotated_path, sep="\t", index=False)
         logger.info(f"Writing results to {data_annotated_filtered_path}")
         data_df[data_df["in_neighbors"]].to_csv(data_annotated_filtered_path, sep="\t", index=False)
+
+    _df = (
+        df[["source_hgnc_id", "target_hgnc_id"]].drop_duplicates().groupby("source_hgnc_id").count()
+    )["target_hgnc_id"].reset_index()
+    print(_df)
+
+    # get query counts
+    x = dict(_df.values)
+
+    density_query = dedent(
+        f"""\
+            MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+            WHERE 
+                n1.id IN {hgnc_curies!r}
+                AND n2.id STARTS WITH 'hgnc'
+                AND n1.id <> n2.id
+                AND r.stmt_type IN ['IncreaseAmount', 'DecreaseAmount']
+                {minimum_evidence_helper(minimum_evidence_count)}
+            RETURN n1.id, count(distinct n2.id)
+        """
+    )
+    density = []
+    for curie, count in sorted(client.query_tx(density_query), key=itemgetter(1), reverse=True):
+        hgnc_id = curie.removeprefix("hgnc:")
+        density.append(
+            (
+                hgnc_id,
+                get_hgnc_name(hgnc_id),
+                _get_uniprot_from_hgnc(hgnc_id),
+                count,
+                x[hgnc_id] if hgnc_id in x else 0,
+                round(100 * x[hgnc_id] / count, 2) if hgnc_id in x else 0.0,
+            )
+        )
+    columns = [
+        "hgnc_id",
+        "hgnc_symbol",
+        "uniprot_id",
+        "all_successors",
+        "query_successors",
+        "query_successor_density",
+    ]
+    pd.DataFrame(density, columns=columns).to_csv(density_path, sep="\t", index=False)
 
 
 def _read_df(path: Union[str, Path]) -> pd.DataFrame:
