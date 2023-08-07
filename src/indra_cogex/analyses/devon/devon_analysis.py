@@ -2,6 +2,7 @@
 
 import json
 import logging
+from operator import itemgetter
 from pathlib import Path
 from textwrap import dedent
 from typing import Iterable, Optional, Set, Union
@@ -74,7 +75,7 @@ def analysis_uniprot(
     data_path: Optional[Path] = None,
     analysis_id: str,
     client: Optional[Neo4jClient] = None,
-    minimum_evidence_count: int = 8,
+    minimum_evidence_count: Optional[int] = None,
 ):
     """
     This analysis takes a list of target proteins and gets a subnetwork
@@ -95,13 +96,73 @@ def analysis_uniprot(
     """
     logger.info("running analysis: %s", analysis_id)
     analysis_module = OUTPUT_MODULE.module(analysis_id)
-    edges_path = analysis_module.join(name=f"{minimum_evidence_count:03}_edges.tsv")
-    data_annotated_path = analysis_module.join(name=f"{minimum_evidence_count:03}_data.tsv")
+
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 8
+        edges_path = analysis_module.join(name="edges.tsv")
+        data_annotated_path = analysis_module.join(name="data.tsv")
+        data_annotated_filtered_path = analysis_module.join(name="data_filtered.tsv")
+        density_path = analysis_module.join(name="density.tsv")
+    else:
+        edges_path = analysis_module.join(name=f"{minimum_evidence_count:03}_edges.tsv")
+        data_annotated_path = analysis_module.join(name=f"{minimum_evidence_count:03}_data.tsv")
+        data_annotated_filtered_path = analysis_module.join(
+            name=f"{minimum_evidence_count:03}_data_filtered.tsv"
+        )
+        density_path = analysis_module.join(name=f"{minimum_evidence_count:03}_density.tsv")
 
     uniprot_ids = set(uniprot_ids)
-    hgnc_ids = {uniprot_client.get_hgnc_id(uniprot_id) for uniprot_id in uniprot_ids}
+    click.echo(f"Querying {len(uniprot_ids):,} UniProt identifiers")
 
-    hgnc_curies = [f"hgnc:{gene_id}" for gene_id in hgnc_ids if gene_id]
+    def _get_uniprot_from_hgnc(hgnc_id: str) -> Optional[str]:
+        uniprot_id = get_uniprot_id(hgnc_id)
+        if "," not in uniprot_id:
+            return uniprot_id
+        for uu in uniprot_id.split(","):
+            if uu in uniprot_ids:
+                return uu
+        return None
+
+    hgnc_ids = set()
+    failed = set()
+    for uniprot_id in uniprot_ids:
+        hgnc_id = uniprot_client.get_hgnc_id(uniprot_id)
+        if hgnc_id:
+            hgnc_ids.add(hgnc_id)
+        else:
+            failed.add(uniprot_id)
+    if failed:
+        click.echo(f"Failed to get HGNC ID for UniProts: {sorted(failed)}")
+
+    hgnc_curies = [f"hgnc:{gene_id}" for gene_id in hgnc_ids]
+
+    density_query = dedent(
+        f"""\
+            MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+            WHERE 
+                n1.id IN {hgnc_curies!r}
+                AND n2.id STARTS WITH 'hgnc'
+                AND n1.id <> n2.id
+                AND r.stmt_type IN ['IncreaseAmount', 'DecreaseAmount']
+                {minimum_evidence_helper(minimum_evidence_count)}
+            RETURN n1.id, count(distinct n2.id)
+        """
+    )
+    density = []
+    for curie, count in sorted(client.query_tx(density_query), key=itemgetter(1), reverse=True):
+        hgnc_id = curie.removeprefix("hgnc:")
+
+        density.append(
+            (
+                hgnc_id,
+                get_hgnc_name(hgnc_id),
+                _get_uniprot_from_hgnc(hgnc_id),
+                count,
+            )
+        )
+    columns = ["hgnc_id", "hgnc_symbol", "uniprot_id", "unique_hgnc_neighbors"]
+    pd.DataFrame(density, columns=columns).to_csv(density_path, sep="\t", index=False)
+
     query = dedent(
         f"""\
             MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
@@ -114,7 +175,7 @@ def analysis_uniprot(
             RETURN p
         """
     )
-    rows = []
+
     columns = [
         "source_hgnc_id",
         "source_hgnc_symbol",
@@ -128,21 +189,14 @@ def analysis_uniprot(
         "source_counts",
     ]
 
-    def _process_uniprot(hgnc_id: str) -> Optional[str]:
-        uniprot_id = get_uniprot_id(hgnc_id)
-        if "," not in uniprot_id:
-            return uniprot_id
-        for uu in uniprot_id.split(","):
-            if uu in uniprot_ids:
-                return uu
-        return None
-
+    rows = []
+    skipped = 0
     for relation in client.query_relations(query):
-        source_uniprot = _process_uniprot(relation.source_id)
-        target_uniprot = _process_uniprot(relation.target_id)
+        source_uniprot = _get_uniprot_from_hgnc(relation.source_id)
+        target_uniprot = _get_uniprot_from_hgnc(relation.target_id)
         if not source_uniprot or not target_uniprot:
+            skipped += 1
             continue
-
         rows.append(
             (
                 relation.source_id,
@@ -158,9 +212,11 @@ def analysis_uniprot(
             )
         )
 
+    click.echo(f"Skipped {skipped:,} rows due to problematic UniProt->HGNC->UniProt round trip")
+
     df = pd.DataFrame(rows, columns=columns)
     df.drop_duplicates(subset=["stmt_hash"], inplace=True)
-    logger.info(f"writing INDRANet to {edges_path}")
+    click.echo(f"writing edges to {edges_path}")
     df.to_csv(edges_path, sep="\t", index=False)
 
     if data_path is not None:
@@ -169,11 +225,8 @@ def analysis_uniprot(
         neighbor_hgnc_ids = set(df["source_hgnc_id"]).union(df["target_hgnc_id"])
         data_df["in_neighbors"] = data_df["hgnc"].map(neighbor_hgnc_ids.__contains__)
         data_df.to_csv(data_annotated_path, sep="\t", index=False)
-        processed_filtered_path = analysis_module.join(
-            name=f"{minimum_evidence_count:03}_data_filtered.tsv"
-        )
-        logger.info(f"Writing results to {processed_filtered_path}")
-        data_df[data_df["in_neighbors"]].to_csv(processed_filtered_path, sep="\t", index=False)
+        logger.info(f"Writing results to {data_annotated_filtered_path}")
+        data_df[data_df["in_neighbors"]].to_csv(data_annotated_filtered_path, sep="\t", index=False)
 
 
 def _read_df(path: Union[str, Path]) -> pd.DataFrame:
@@ -225,28 +278,27 @@ def main():
         analysis_id="surinova",
         client=client,
     )
-    for minimum_evidence_count in [8, 50, 100, 150]:
+    for minimum_evidence_count in [1, 8, 50, 100, 150]:
         analysis_uniprot(
             data_path=PATH,
-            uniprot_ids=get_query_from_file("devon/Exploratory_query.csv"),
-            analysis_id="exploratory",
-            client=client,
-            minimum_evidence_count=minimum_evidence_count,
-        )
-        analysis_uniprot(
-            data_path=PATH,
-            uniprot_ids=get_query_from_tsv("devon/gene_list.csv", column="uniprot"),
+            uniprot_ids=get_query_from_tsv("devon/slavov.csv", column="uniprot"),
             analysis_id="slavov",
             client=client,
             minimum_evidence_count=minimum_evidence_count,
         )
-        analysis_uniprot(
-            data_path=PATH,
-            uniprot_ids=get_query_from_file("devon/MAPK_downstream.csv"),
-            analysis_id="mapk_downstream",
-            client=client,
-            minimum_evidence_count=minimum_evidence_count,
-        )
+    # Devon said the following two are just permutations of the Slavov data
+    analysis_uniprot(
+        data_path=PATH,
+        uniprot_ids=get_query_from_file("devon/Exploratory_query.csv"),
+        analysis_id="exploratory",
+        client=client,
+    )
+    analysis_uniprot(
+        data_path=PATH,
+        uniprot_ids=get_query_from_file("devon/MAPK_downstream.csv"),
+        analysis_id="mapk_downstream",
+        client=client,
+    )
 
 
 if __name__ == "__main__":
