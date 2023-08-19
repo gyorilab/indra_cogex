@@ -4,7 +4,8 @@ Tests functionalities related to the CoGEx web service serving INDRA Discovery
 import json
 
 from indra.statements import Evidence, Agent, Activation
-from indra_cogex.apps.utils import unicode_escape, _stmt_to_row
+from indra_cogex.apps.utils import _stmt_to_row
+from indra_cogex.util import unicode_escape
 
 
 def test_unicode_double_escape():
