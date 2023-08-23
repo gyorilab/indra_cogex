@@ -36,7 +36,7 @@ def iterate_conflicts(
 ) -> Iterable[Tuple[int, int, bool]]:
     """Iterate hashes of statements and their resolution status."""
     if curations is None:
-        curations = curation_cache.get_curations()
+        curations = curation_cache.get_curation_cache()
     stmt_hash_to_counter = _group_curations(curations)
     query = f"""\
         MATCH (:BioEntity)-[r:indra_rel]->(:BioEntity)

@@ -58,8 +58,8 @@ def _get_text(stmt: Statement) -> Optional[str]:
 
 
 def _get_curated_statement_hashes() -> Set[int]:
-    stmt_jsons = curation_cache.get_curations()
-    return {curation["pa_hash"] for curation in stmt_jsons}
+    curation_list = curation_cache.get_curation_cache()
+    return {curation["pa_hash"] for curation in curation_list}
 
 
 def get_prioritized_stmt_hashes(stmts: Iterable[Statement]) -> List[int]:
