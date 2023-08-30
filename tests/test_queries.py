@@ -83,12 +83,12 @@ def test_is_go_term_for_gene():
 @pytest.mark.nonpublic
 def test_get_trials_for_drug():
     client = _get_client()
-    drug = ("CHEBI", "CHEBI:27690")
+    drug = ("MESH", "C000489")
     trials = get_trials_for_drug(drug, client=client)
     assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
-    assert ("CLINICALTRIALS", "NCT02703220") in {t.grounding() for t in trials}
+    assert ("CLINICALTRIALS", "NCT00000674") in {t.grounding() for t in trials}
 
 
 @pytest.mark.nonpublic

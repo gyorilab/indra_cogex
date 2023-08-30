@@ -106,7 +106,7 @@ def _enrich_render_statements(
     curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> Response:
     if curations is None:
-        curations = curation_cache.get_curations()
+        curations = curation_cache.get_curation_cache()
     stmts = remove_curated_statements(stmts, curations=curations)
     stmts = stmts[: proxies.limit]
 
@@ -186,7 +186,7 @@ def _curate_mesh_helper(
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
-        curations = curation_cache.get_curations()
+        curations = curation_cache.get_curation_cache()
         logger.debug(f"Got {len(curations)} curations")
 
     logger.info(f"Getting statements for mesh:{term}")
@@ -274,7 +274,7 @@ def _render_evidence_counts(
     filter_curated: bool = True,
     description: Optional[str] = None,
 ) -> Response:
-    curations = curation_cache.get_curations()
+    curations = curation_cache.get_curation_cache()
     logger.debug(f"loaded {len(curations):,} curations")
     evidence_counts = {
         stmt_hash: sum(source_counts.values())
@@ -570,7 +570,7 @@ def _curate_paper(
         (prefix, identifier), return_evidence_counts=True
     )
     if curations is None:
-        curations = curation_cache.get_curations()
+        curations = curation_cache.get_curation_cache()
     if filter_curated:
         stmts = remove_curated_evidences(stmts, curations=curations)
     return render_statements(
