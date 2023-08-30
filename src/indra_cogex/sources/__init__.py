@@ -23,6 +23,7 @@ from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
+from .wikidata import JournalPublisherProcessor, WikiDataProcessor
 
 __all__ = [
     "processor_resolver",
@@ -46,6 +47,8 @@ __all__ = [
     "NihReporterProcessor",
     "InterproProcessor",
     "CellMarkerProcessor",
+    "JournalPublisherProcessor",
 ]
 
-processor_resolver = Resolver.from_subclasses(Processor)
+processor_resolver = Resolver.from_subclasses(Processor,
+                                              skip=[WikiDataProcessor])
