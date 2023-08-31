@@ -53,12 +53,12 @@ def clean_stmt_json_str(stmt_json_str: str) -> str:
 
 
 def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
-    """Removes extra escapes in a stmt json string if necessary
+    """Removes extra escapes in a statement json string if necessary
 
     Parameters
     ----------
     stmt_json_str :
-        A json string to load
+        A statement json string to load
 
     Returns
     -------
