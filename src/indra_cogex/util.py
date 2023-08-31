@@ -36,6 +36,18 @@ class UnicodeEscapeError(Exception):
 
 
 def clean_stmt_json_str(stmt_json_str: str) -> str:
+    """Cleans up a stmt json string by removing double escapes
+
+    Parameters
+    ----------
+    stmt_json_str :
+        A json string to clean up
+
+    Returns
+    -------
+    :
+        The cleaned json string
+    """
     escaped_str = stmt_json_str.replace("\\\\", "\\")
     return escaped_str
 
