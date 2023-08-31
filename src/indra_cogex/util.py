@@ -93,6 +93,8 @@ def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
     # matches hash is unknown, but is at least not related to the issue of
     # doubly escaped characters which this function is meant to address.
     # All other combinations of T, F and error have not been observed.
+    if not stmt_json_str:
+        raise ValueError("Empty json string")
 
     # First load
     try:
