@@ -111,8 +111,9 @@ def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
         raise UnicodeEscapeError("Could not load json string")
 
     # If the escaped string load failed, return the unescaped json
-    if esc_stmt_json is None:
+    if esc_stmt_json is None and unesc_stmt_json is not None:
         return unesc_stmt_json
 
     # Otherwise, return the escaped json
+    assert esc_stmt_json is not None
     return esc_stmt_json
