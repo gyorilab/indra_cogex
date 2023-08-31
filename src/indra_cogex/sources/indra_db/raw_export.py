@@ -11,8 +11,9 @@ import pickle
 import pystow
 from adeft.download import get_available_models
 from indra.util import batch_iter
-from indra.statements import stmts_from_json
+from indra.statements import stmts_from_json, stmt_from_json
 from indra.tools import assemble_corpus as ac
+from indra_cogex.util import load_stmt_json_str
 
 base_folder = pystow.module("indra", "db")
 reading_text_content_fname = base_folder.join(name="reading_text_content_meta.tsv.gz")
@@ -322,7 +323,7 @@ if __name__ == "__main__":
                         text_ref_id = reading_id_to_text_ref_id.get(int(reading_id))
                         if text_ref_id:
                             refs = text_refs.get(text_ref_id)
-                    stmt_json = load_statement_json(stmt_json_raw)
+                    stmt_json = load_stmt_json_str(stmt_json_raw)
                     if refs:
                         stmt_json["evidence"][0]["text_refs"] = refs
                         if refs.get("PMID"):
@@ -366,7 +367,7 @@ if __name__ == "__main__":
             for sh, stmt_json_str in tqdm.tqdm(
                 reader, total=60405451, desc="Gathering grounded and unique statements"
             ):
-                stmt = stmts_from_json([load_statement_json(stmt_json_str)])[0]
+                stmt = stmt_from_json(load_stmt_json_str(stmt_json_str))
                 if len(stmt.real_agent_list()) < 2:
                     continue
                 if all(
