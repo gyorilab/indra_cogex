@@ -1,4 +1,6 @@
 import codecs
+import json
+from typing import Any, Dict
 
 
 def unicode_escape(s: str, attempt: int = 1, max_attempts: int = 5) -> str:
@@ -31,3 +33,74 @@ def unicode_escape(s: str, attempt: int = 1, max_attempts: int = 5) -> str:
 
 class UnicodeEscapeError(Exception):
     pass
+
+
+def clean_stmt_json_str(stmt_json_str: str) -> str:
+    escaped_str = stmt_json_str.replace("\\\\", "\\")
+    return escaped_str
+
+
+def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
+    """Removes extra escapes in a stmt json string if necessary
+
+    Parameters
+    ----------
+    stmt_json_str :
+        A json string to load
+
+    Returns
+    -------
+    :
+        The loaded json object
+    """
+    # The logic in this function comes from looking at two aspects of
+    # de-serializing the raw statement json string dumped from the principal
+    # database:
+    # 1. Can the loaded statement reproduce the original matches hash of the
+    #    raw statement json with stmt.get_hash(refresh=True) after being
+    #    initialized via `indra.statements.io.stmt_from_json`?
+    # 2. Does json.loads error?
+    # Denoting a matching hash as T or F for matching or not, and an error
+    # as 'error' the following table is observed:
+    #
+    # | json.loads       | cleanup + json.loads | pick                 |
+    # | > stmt_from_json | > stmt_from_json     |                      |
+    # |------------------|----------------------|----------------------|
+    # | T                | T                    | cleanup + json.loads |
+    # | F                | T                    | cleanup + json.loads |
+    # | error            | T                    | cleanup + json.loads |
+    # | T                | error                | json.loads           |
+    #
+    # This means the json string has to be loaded twice, once without
+    # cleanup and once with cleanup, to check both conditions before
+    # returning the correct json object.
+    #
+    # NOTE: F | F is also possible, and has happened in a few cases (<100 out
+    # of >75 M raw statements). On inspection, none of these had any escaped
+    # characters in the json string, so the reason for the mismatch with the
+    # matches hash is unknown, but is at least not related to the issue of
+    # doubly escaped characters which this function is meant to address.
+    # All other combinations of T, F and error have not been observed.
+
+    # First load
+    try:
+        unesc_stmt_json = json.loads(stmt_json_str)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        unesc_stmt_json = None
+
+    # Second load
+    try:
+        escaped_str = clean_stmt_json_str(stmt_json_str)
+        esc_stmt_json = json.loads(escaped_str)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        esc_stmt_json = None
+
+    if unesc_stmt_json is None and esc_stmt_json is None:
+        raise UnicodeEscapeError("Could not load json string")
+
+    # If the escaped string load failed, return the unescaped json
+    if esc_stmt_json is None:
+        return unesc_stmt_json
+
+    # Otherwise, return the escaped json
+    return esc_stmt_json
