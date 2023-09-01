@@ -52,13 +52,18 @@ def clean_stmt_json_str(stmt_json_str: str) -> str:
     return escaped_str
 
 
-def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
+def load_stmt_json_str(
+    stmt_json_str: str,
+    remove_evidence: bool = False
+) -> Dict[str, Any]:
     """Removes extra escapes in a statement json string if necessary
 
     Parameters
     ----------
     stmt_json_str :
-        A statement json string to load
+        A statement json string to load.
+    remove_evidence :
+        If True, remove the evidence from the statement json. Default: False.
 
     Returns
     -------
@@ -114,8 +119,12 @@ def load_stmt_json_str(stmt_json_str: str) -> Dict[str, Any]:
 
     # If the escaped string load failed, return the unescaped json
     if esc_stmt_json is None and unesc_stmt_json is not None:
-        return unesc_stmt_json
+        stmt_json = unesc_stmt_json
+    else:
+        # Otherwise, return the escaped json
+        assert esc_stmt_json is not None
+        stmt_json = esc_stmt_json
 
-    # Otherwise, return the escaped json
-    assert esc_stmt_json is not None
-    return esc_stmt_json
+    if remove_evidence:
+        stmt_json["evidence"] = []
+    return stmt_json
