@@ -27,6 +27,7 @@ from indra_cogex.sources.indra_db.raw_export import (
     unique_stmts_fname,
     source_counts_fname,
 )
+from indra_cogex.util import load_stmt_json_str
 
 StmtList = List[Statement]
 
@@ -86,7 +87,7 @@ def get_refinement_graph() -> nx.DiGraph:
                     try:
                         _, sjs = next(reader1)
                         stmt = stmt_from_json(
-                            load_statement_json(sjs, remove_evidence=True)
+                            load_stmt_json_str(sjs, remove_evidence=True)
                         )
                         stmts1.append(stmt)
                     except StopIteration:
@@ -118,7 +119,8 @@ def get_refinement_graph() -> nx.DiGraph:
                         for _, sjs in batch:
                             try:
                                 stmt = stmt_from_json(
-                                    load_statement_json(sjs, remove_evidence=True)
+                                    load_stmt_json_str(sjs,
+                                                       remove_evidence=True)
                                 )
                                 stmts2.append(stmt)
                             except StopIteration:
@@ -256,7 +258,7 @@ def sample_unique_stmts(
         reader = csv.reader(f, delimiter="\t")
         for index, (sh, sjs) in enumerate(reader):
             if index in indices:
-                stmts.append((int(sh), stmt_from_json(load_statement_json(sjs))))
+                stmts.append((int(sh), stmt_from_json(load_stmt_json_str(sjs))))
                 t.update()
                 if len(stmts) == num:
                     break
@@ -353,7 +355,7 @@ def belief_calc(
                 try:
                     stmt_hash_string, statement_json_string = next(reader)
                     statement = stmt_from_json(
-                        load_statement_json(
+                        load_stmt_json_str(
                             statement_json_string, remove_evidence=True
                         )
                     )
