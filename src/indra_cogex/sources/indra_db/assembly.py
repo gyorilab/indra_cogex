@@ -195,15 +195,6 @@ def load_statement_json(
     )
 
 
-def get_stmts(db, limit, offset):
-    cur = db.execute("select * from processed limit %s offset %s" % (limit, offset))
-    stmts = [
-        stmt_from_json(load_statement_json(sjs, remove_evidence=True))
-        for _, sjs in tqdm.tqdm(cur.fetchall(), total=limit, desc="Loading statements")
-    ]
-    return stmts
-
-
 def get_related(stmts: StmtList) -> Set[Tuple[int, int]]:
     stmts_by_type = defaultdict(list)
     for stmt in stmts:
@@ -230,34 +221,6 @@ def get_related_split(stmts1: StmtList, stmts2: StmtList) -> Set[Tuple[int, int]
             stmts_this_type1 + stmts_this_type2, split_idx=len(stmts_this_type1) - 1
         )
     return refinements
-
-
-def sqlite_approach():
-    """
-    Assembly notes:
-
-    Step 1: Create a SQLITE DB
-
-    sqlite3 -batch statements.db "create table processed (hash integer, stmt text);"
-    zcat < unique_statements.tsv.gz | sqlite3 -cmd ".mode tabs" -batch statements.db ".import '|cat -' processed"
-    sqlite3 -batch statements.db "create index processed_idx on processed (hash);"
-    """
-    db = sqlite3.connect(base_folder.join(name="statements.db"))
-
-    cur = db.execute("select count(1) from processed")
-    num_rows = cur.fetchone()[0]
-
-    offset0 = 0
-    num_batches = math.ceil(num_rows / batch_size)
-    refinements = set()
-    for i in tqdm.tqdm(range(num_batches)):
-        offset1 = i * batch_size
-        stmts1 = get_stmts(db, batch_size, offset1)
-        refinements |= get_related(stmts1)
-        for j in tqdm.tqdm(range(i + 1, num_batches)):
-            offset2 = j * batch_size
-            stmts2 = get_stmts(db, batch_size, offset2)
-            refinements |= get_related_split(stmts1, stmts2)
 
 
 def sample_unique_stmts(
