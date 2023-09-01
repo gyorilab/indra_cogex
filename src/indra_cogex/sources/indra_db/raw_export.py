@@ -31,24 +31,6 @@ source_counts_fname = base_folder.join(name="source_counts.pkl")
 logger = logging.getLogger(__name__)
 
 
-class StatementJSONDecodeError(Exception):
-    pass
-
-
-def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5):
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        if attempt < max_attempts:
-            json_str = codecs.escape_decode(json_str)[0].decode()
-            return load_statement_json(
-                json_str, attempt=attempt + 1, max_attempts=max_attempts
-            )
-    raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
-    )
-
-
 def reader_prioritize(reader_contents):
     drop = set()
     # We first organize the contents by source/text type
