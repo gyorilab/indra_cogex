@@ -2,7 +2,6 @@ import csv
 import gzip
 import logging
 import math
-import json
 import pickle
 import itertools
 from pathlib import Path
@@ -11,9 +10,7 @@ from typing import List, Set, Tuple, Optional
 import networkx as nx
 import numpy as np
 import tqdm
-import codecs
 import pystow
-import sqlite3
 from collections import defaultdict, Counter
 
 from indra.belief import BeliefEngine
@@ -35,10 +32,6 @@ base_folder = pystow.module("indra", "db")
 refinements_fname = base_folder.join(name="refinements.tsv.gz")
 belief_scores_pkl_fname = base_folder.join(name="belief_scores.pkl")
 refinement_cycles_fname = base_folder.join(name="refinement_cycles.pkl")
-
-
-class StatementJSONDecodeError(Exception):
-    pass
 
 
 logger = logging.getLogger(__name__)
@@ -173,28 +166,6 @@ def get_refinement_graph() -> nx.DiGraph:
         cycles_found = True
 
     return ref_graph
-
-
-def load_statement_json(
-    json_str: str,
-    attempt: int = 1,
-    max_attempts: int = 5,
-    remove_evidence: bool = False,
-):
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        if attempt < max_attempts:
-            json_str = codecs.escape_decode(json_str)[0].decode()
-            sj = load_statement_json(
-                json_str, attempt=attempt + 1, max_attempts=max_attempts
-            )
-            if remove_evidence:
-                sj["evidence"] = []
-            return sj
-    raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
-    )
 
 
 def get_related(stmts: StmtList) -> Set[Tuple[int, int]]:
