@@ -2,7 +2,6 @@
 
 """Processor for the INDRA database."""
 
-import codecs
 import csv
 import gzip
 import json
@@ -15,7 +14,6 @@ from itertools import permutations
 from pathlib import Path
 from typing import Iterable, Optional, Tuple, Union
 
-from indra.databases.identifiers import ensure_prefix_if_needed
 from indra.statements import (
     Agent,
     default_ns_order,
