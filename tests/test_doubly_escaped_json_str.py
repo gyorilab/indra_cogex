@@ -7,7 +7,7 @@ from indra.tools import assemble_corpus as ac
 from indra_cogex.util import load_stmt_json_str
 
 
-def test_doubly_escaped_unicode():
+def test_escaped_unicode():
     """Test that doubly escaped unicode is handled correctly."""
     source_hash = 8921534277374933489
     sjs = (
