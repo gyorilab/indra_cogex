@@ -107,27 +107,16 @@ def load_stmt_json_str(
 
     # Cleaned load
     try:
-        unesc_stmt_json = json.loads(stmt_json_str)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        unesc_stmt_json = None
-
-    # Second load
-    try:
         escaped_str = clean_stmt_json_str(stmt_json_str)
-        esc_stmt_json = json.loads(escaped_str)
+        stmt_json = json.loads(escaped_str)
     except (json.JSONDecodeError, UnicodeDecodeError):
-        esc_stmt_json = None
-
-    if unesc_stmt_json is None and esc_stmt_json is None:
-        raise UnicodeEscapeError("Could not load json string")
-
-    # If the escaped string load failed, return the unescaped json
-    if esc_stmt_json is None and unesc_stmt_json is not None:
-        stmt_json = unesc_stmt_json
-    else:
-        # Otherwise, return the escaped json
-        assert esc_stmt_json is not None
-        stmt_json = esc_stmt_json
+        # Uncleaned load
+        try:
+            stmt_json = json.loads(stmt_json_str)
+        except Exception as err:
+            raise UnicodeEscapeError(
+                f"Could not load statement json string:{err}"
+            ) from err
 
     if remove_evidence:
         stmt_json["evidence"] = []
