@@ -80,13 +80,13 @@ def load_stmt_json_str(
     # Denoting a matching hash as T or F for matching or not, and an error
     # as 'error' the following table is observed:
     #
-    # | json.loads       | cleanup + json.loads | pick                 |
-    # | > stmt_from_json | > stmt_from_json     |                      |
-    # |------------------|----------------------|----------------------|
-    # | T                | T                    | cleanup + json.loads |
-    # | F                | T                    | cleanup + json.loads |
-    # | error            | T                    | cleanup + json.loads |
-    # | T                | error                | json.loads           |
+    # | # | json.loads       | cleanup + json.loads | pick                 |
+    # |   | > stmt_from_json | > stmt_from_json     |                      |
+    # |   |------------------|----------------------|----------------------|
+    # | 1 | T                | T                    | cleanup + json.loads |
+    # | 2 | F                | T                    | cleanup + json.loads |
+    # | 3 | error            | T                    | cleanup + json.loads |
+    # | 4 | T                | error                | json.loads           |
     #
     # This means the json string has to be loaded twice, once without
     # cleanup and once with cleanup, to check both conditions before
@@ -101,7 +101,11 @@ def load_stmt_json_str(
     if not stmt_json_str:
         raise ValueError("Empty json string")
 
-    # First load
+    # Try clean load first. If there is no error (this is the vast majority
+    # of cases), return the cleaned json (case 1, 2 and 3 above). Otherwise,
+    # return the uncleaned json (case 4 above).
+
+    # Cleaned load
     try:
         unesc_stmt_json = json.loads(stmt_json_str)
     except (json.JSONDecodeError, UnicodeDecodeError):
