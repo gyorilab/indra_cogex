@@ -82,7 +82,7 @@ def load_stmt_json_str(
     #
     # | # | json.loads       | cleanup + json.loads | pick                 |
     # |   | > stmt_from_json | > stmt_from_json     |                      |
-    # |   |------------------|----------------------|----------------------|
+    # |---|------------------|----------------------|----------------------|
     # | 1 | T                | T                    | cleanup + json.loads |
     # | 2 | F                | T                    | cleanup + json.loads |
     # | 3 | error            | T                    | cleanup + json.loads |
@@ -101,7 +101,7 @@ def load_stmt_json_str(
     if not stmt_json_str:
         raise ValueError("Empty json string")
 
-    # Try clean load first. If there is no error (this is the vast majority
+    # Try clean+load first. If there is no error (this is the vast majority
     # of cases), return the cleaned json (case 1, 2 and 3 above). Otherwise,
     # return the uncleaned json (case 4 above).
 
