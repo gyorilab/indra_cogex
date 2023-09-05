@@ -2,7 +2,6 @@ import csv
 import gzip
 import logging
 import math
-import json
 import pickle
 import itertools
 from pathlib import Path
@@ -11,9 +10,7 @@ from typing import List, Set, Tuple, Optional
 import networkx as nx
 import numpy as np
 import tqdm
-import codecs
 import pystow
-import sqlite3
 from collections import defaultdict, Counter
 
 from indra.belief import BeliefEngine
@@ -27,6 +24,7 @@ from indra_cogex.sources.indra_db.raw_export import (
     unique_stmts_fname,
     source_counts_fname,
 )
+from indra_cogex.util import load_stmt_json_str
 
 StmtList = List[Statement]
 
@@ -34,10 +32,6 @@ base_folder = pystow.module("indra", "db")
 refinements_fname = base_folder.join(name="refinements.tsv.gz")
 belief_scores_pkl_fname = base_folder.join(name="belief_scores.pkl")
 refinement_cycles_fname = base_folder.join(name="refinement_cycles.pkl")
-
-
-class StatementJSONDecodeError(Exception):
-    pass
 
 
 logger = logging.getLogger(__name__)
@@ -86,7 +80,7 @@ def get_refinement_graph() -> nx.DiGraph:
                     try:
                         _, sjs = next(reader1)
                         stmt = stmt_from_json(
-                            load_statement_json(sjs, remove_evidence=True)
+                            load_stmt_json_str(sjs, remove_evidence=True)
                         )
                         stmts1.append(stmt)
                     except StopIteration:
@@ -118,7 +112,8 @@ def get_refinement_graph() -> nx.DiGraph:
                         for _, sjs in batch:
                             try:
                                 stmt = stmt_from_json(
-                                    load_statement_json(sjs, remove_evidence=True)
+                                    load_stmt_json_str(sjs,
+                                                       remove_evidence=True)
                                 )
                                 stmts2.append(stmt)
                             except StopIteration:
@@ -173,37 +168,6 @@ def get_refinement_graph() -> nx.DiGraph:
     return ref_graph
 
 
-def load_statement_json(
-    json_str: str,
-    attempt: int = 1,
-    max_attempts: int = 5,
-    remove_evidence: bool = False,
-):
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        if attempt < max_attempts:
-            json_str = codecs.escape_decode(json_str)[0].decode()
-            sj = load_statement_json(
-                json_str, attempt=attempt + 1, max_attempts=max_attempts
-            )
-            if remove_evidence:
-                sj["evidence"] = []
-            return sj
-    raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
-    )
-
-
-def get_stmts(db, limit, offset):
-    cur = db.execute("select * from processed limit %s offset %s" % (limit, offset))
-    stmts = [
-        stmt_from_json(load_statement_json(sjs, remove_evidence=True))
-        for _, sjs in tqdm.tqdm(cur.fetchall(), total=limit, desc="Loading statements")
-    ]
-    return stmts
-
-
 def get_related(stmts: StmtList) -> Set[Tuple[int, int]]:
     stmts_by_type = defaultdict(list)
     for stmt in stmts:
@@ -230,34 +194,6 @@ def get_related_split(stmts1: StmtList, stmts2: StmtList) -> Set[Tuple[int, int]
             stmts_this_type1 + stmts_this_type2, split_idx=len(stmts_this_type1) - 1
         )
     return refinements
-
-
-def sqlite_approach():
-    """
-    Assembly notes:
-
-    Step 1: Create a SQLITE DB
-
-    sqlite3 -batch statements.db "create table processed (hash integer, stmt text);"
-    zcat < unique_statements.tsv.gz | sqlite3 -cmd ".mode tabs" -batch statements.db ".import '|cat -' processed"
-    sqlite3 -batch statements.db "create index processed_idx on processed (hash);"
-    """
-    db = sqlite3.connect(base_folder.join(name="statements.db"))
-
-    cur = db.execute("select count(1) from processed")
-    num_rows = cur.fetchone()[0]
-
-    offset0 = 0
-    num_batches = math.ceil(num_rows / batch_size)
-    refinements = set()
-    for i in tqdm.tqdm(range(num_batches)):
-        offset1 = i * batch_size
-        stmts1 = get_stmts(db, batch_size, offset1)
-        refinements |= get_related(stmts1)
-        for j in tqdm.tqdm(range(i + 1, num_batches)):
-            offset2 = j * batch_size
-            stmts2 = get_stmts(db, batch_size, offset2)
-            refinements |= get_related_split(stmts1, stmts2)
 
 
 def sample_unique_stmts(
@@ -293,7 +229,7 @@ def sample_unique_stmts(
         reader = csv.reader(f, delimiter="\t")
         for index, (sh, sjs) in enumerate(reader):
             if index in indices:
-                stmts.append((int(sh), stmt_from_json(load_statement_json(sjs))))
+                stmts.append((int(sh), stmt_from_json(load_stmt_json_str(sjs))))
                 t.update()
                 if len(stmts) == num:
                     break
@@ -390,7 +326,7 @@ def belief_calc(
                 try:
                     stmt_hash_string, statement_json_string = next(reader)
                     statement = stmt_from_json(
-                        load_statement_json(
+                        load_stmt_json_str(
                             statement_json_string, remove_evidence=True
                         )
                     )

@@ -1,4 +1,3 @@
-import codecs
 import json
 import numpy
 import logging
@@ -21,6 +20,7 @@ from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra_cogex.util import unicode_escape, UnicodeEscapeError
 from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 from indra_cogex.apps.curation_cache.curation_cache import Curations
 from indra_cogex.apps.proxies import curation_cache
@@ -125,38 +125,6 @@ def render_statements(
         sources_dict=sources_dict,
         **kwargs,
     )
-
-
-class UnicodeEscapeError(Exception):
-    pass
-
-
-def unicode_escape(s: str, attempt: int = 1, max_attempts: int = 5) -> str:
-    """Remove extra escapes from unicode characters in a string
-
-    Parameters
-    ----------
-    s :
-        A string to remove extra escapes in unicode characters from
-    attempt :
-        The current attempt number.
-    max_attempts :
-        The maximum number of attempts to remove extra escapes.
-
-    Returns
-    -------
-    :
-        The string with extra escapes removed.
-    """
-    escaped = codecs.escape_decode(s)[0].decode()
-    # No more escaping needed
-    if escaped.count('\\\\u') == 0:
-        return bytes(escaped, "utf-8").decode("unicode_escape")
-    # Too many attempts, return the input
-    if attempt >= max_attempts:
-        raise UnicodeEscapeError(f"Could not remove extra escapes from {s}")
-    # Try again
-    return unicode_escape(escaped, attempt + 1, max_attempts)
 
 
 def format_stmts(
