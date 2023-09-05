@@ -107,8 +107,8 @@ def load_stmt_json_str(
 
     # Cleaned load
     try:
-        escaped_str = clean_stmt_json_str(stmt_json_str)
-        stmt_json = json.loads(escaped_str)
+        cleaned_str = clean_stmt_json_str(stmt_json_str)
+        stmt_json = json.loads(cleaned_str)
     except (json.JSONDecodeError, UnicodeDecodeError):
         # Uncleaned load
         try:
