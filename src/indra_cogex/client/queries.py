@@ -36,6 +36,7 @@ __all__ = [
     "isa_or_partof",
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
+    "get_mesh_ids_for_pmids",
     "get_evidences_for_mesh",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
@@ -709,6 +710,37 @@ def get_mesh_ids_for_pmid(
         source_type="Publication",
         target_type="BioEntity",
     )
+
+
+@autoclient()
+def get_mesh_ids_for_pmids(
+    pmids: List[str], *, client: Neo4jClient
+) -> Mapping[str, List[str]]:
+    """Return the MESH terms for the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmids :
+        The PubMed IDs to query.
+
+    Returns
+    -------
+    :
+        A dictionary from PubMed ID to MeSH IDs
+    """
+    pmid_terms = [("PUBMED", pubmed_id) for pubmed_id in pmids]
+    res = client.get_target_relations_for_sources(
+        sources=pmid_terms,
+        relation="annotated_with",
+        source_type="Publication",
+        target_type="BioEntity",
+    )
+    return {
+        pubmed: [r.target_id for r in relations]
+        for (_, pubmed), relations in res.items()
+    }
 
 
 @autoclient()
