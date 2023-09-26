@@ -1,49 +1,69 @@
 import requests
-import pandas as pd
 from bs4 import BeautifulSoup
 import json
 from tqdm import tqdm
 import biomappings
+import pyobo
+from ratelimit import rate_limited
 
 BASE = "https://go.drugbank.com"
 
 
 def main():
     mappings = biomappings.load_mappings_subset("vo", "drugbank")
+    drugbank_ids = sorted(mappings.values())
+    _get_and_dump(drugbank_ids)
+
+
+def get_all():
+    # This is the ideal situation, but right now has some rate limiting issues
+    drugbank_ids = pyobo.get_ids("drugbank")
+    _get_and_dump(drugbank_ids)
+
+
+def _get_and_dump(drugbank_ids):
     trials_info = {
         db: get_trials_from_api(db)
-        for db in tqdm(list(mappings.values()), unit="drugbank")
+        for db in tqdm(sorted(drugbank_ids), unit="drugbank")
     }
-    with open("test.json", "w") as file:
+    with open("drugbank_trials.json", "w") as file:
         json.dump(trials_info, file, indent=2)
-    # df = pd.DataFrame(r)
-    # df.to_csv("test.tsv", sep="\t", index=False)
 
 
 def get_trials_from_api(drugbank_id: str):
     start = 0
     length = 50
-    url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?start={start}&length={length}"
-    tqdm.write(f"Requesting {url}")
-    res = requests.get(url)
+    res = get_aggregate(drugbank_id, start, length)
     try:
         res_json = res.json()
     except requests.exceptions.JSONDecodeError as e:
-        tqdm.write(f"failed on {drugbank_id}\n\n{e}")
-        return []
+        tqdm.write(f"[{res.status_code}] failed on {drugbank_id}\n\n{e}")
+        return None
 
     rv = res_json["data"]
 
     while res_json["recordsTotal"] > start + length:
         start += length
-        url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?start={start}&length={length}"
-        tqdm.write(f"Requesting {url}")
-        res = requests.get(url)
-        res_json = res.json()
+        res = get_aggregate(drugbank_id, start, length)
+        try:
+            res_json = res.json()
+        except requests.exceptions.JSONDecodeError:
+            tqdm.write(
+                f"[{res.status_code}] failed on {drugbank_id} - {start=}, {length}"
+            )
+            return None
         rv.extend(res_json["data"])
 
     rv = [_process_row(*row) for row in rv]
     return rv
+
+
+@rate_limited
+def get_aggregate(drugbank_id: str, length: int, start: int) -> requests.Response:
+    url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?length={length}&start={start}"
+    tqdm.write(f"Requesting {url}")
+    res = requests.get(url)
+    return res
 
 
 def _process_row(phases, status, purpose, conditions_raw, count_raw):
