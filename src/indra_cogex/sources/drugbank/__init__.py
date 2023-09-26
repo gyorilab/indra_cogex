@@ -1,0 +1,80 @@
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+import json
+from tqdm import tqdm
+import biomappings
+
+BASE = "https://go.drugbank.com"
+
+
+def main():
+    mappings = biomappings.load_mappings_subset("vo", "drugbank")
+    trials_info = {
+        db: get_trials_from_api(db)
+        for db in tqdm(list(mappings.values()), unit="drugbank")
+    }
+    with open("test.json", "w") as file:
+        json.dump(trials_info, file, indent=2)
+    # df = pd.DataFrame(r)
+    # df.to_csv("test.tsv", sep="\t", index=False)
+
+
+def get_trials_from_api(drugbank_id: str):
+    start = 0
+    length = 50
+    url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?start={start}&length={length}"
+    tqdm.write(f"Requesting {url}")
+    res = requests.get(url)
+    try:
+        res_json = res.json()
+    except requests.exceptions.JSONDecodeError as e:
+        tqdm.write(f"failed on {drugbank_id}\n\n{e}")
+        return []
+
+    rv = res_json["data"]
+
+    while res_json["recordsTotal"] > start + length:
+        start += length
+        url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?start={start}&length={length}"
+        tqdm.write(f"Requesting {url}")
+        res = requests.get(url)
+        res_json = res.json()
+        rv.extend(res_json["data"])
+
+    rv = [_process_row(*row) for row in rv]
+    return rv
+
+
+def _process_row(phases, status, purpose, conditions_raw, count_raw):
+    condition_soup = BeautifulSoup(conditions_raw, features="html.parser")
+    conditions = [
+        {
+            "name": link.text,
+            "identifier": link.attrs["href"].removeprefix("/indications/"),
+            # "link": BASE + link.attrs["href"],
+        }
+        for link in condition_soup.find_all("a")
+    ]
+
+    count_soup = BeautifulSoup(count_raw, features="html.parser")
+    count_link = count_soup.find("a")
+
+    if phases == "<span class='not-available'>Not Available</span>":
+        phases = []
+    else:
+        phases = [x.strip() for x in phases.split(",")]
+    if purpose == "<span class='not-available'>Not Available</span>":
+        purpose = None
+    return dict(
+        max_phase=phases and max(phases),
+        status=status,
+        purpose=purpose,
+        conditions=conditions,
+        count=count_link.text,
+        count_link=BASE + count_link.attrs["href"],
+    )
+
+
+if __name__ == "__main__":
+    main()
