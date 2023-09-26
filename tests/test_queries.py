@@ -269,6 +269,17 @@ def test_get_mesh_ids_for_pmid():
 
 
 @pytest.mark.nonpublic
+def test_get_mesh_ids_for_pmids():
+    """Make a query over multiple pmids"""
+    client = _get_client()
+    pmids = ["27890007", "27890006"]
+    mesh_ids = get_mesh_ids_for_pmids(pmids, client=client)
+    assert isinstance(mesh_ids, dict)
+    assert all(pmid in mesh_ids for pmid in pmids)
+    assert "D000544" in mesh_ids["27890007"]
+
+
+@pytest.mark.nonpublic
 def test_get_evidence_obj_for_mesh_id():
     client = _get_client()
     mesh_id = ("MESH", "D015002")
