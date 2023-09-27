@@ -5,32 +5,36 @@ from tqdm import tqdm
 import biomappings
 import pyobo
 from ratelimit import rate_limited
+import pystow
 
 BASE = "https://go.drugbank.com"
-
+VERSION = "5.1.10" # todo use bioversions/drugbank_downloader
 
 def main():
     mappings = biomappings.load_mappings_subset("vo", "drugbank")
     drugbank_ids = sorted(mappings.values())
-    _get_and_dump(drugbank_ids)
+    _get_and_dump(drugbank_ids, version=VERSION)
 
 
 def get_all():
     # This is the ideal situation, but right now has some rate limiting issues
     drugbank_ids = pyobo.get_ids("drugbank")
-    _get_and_dump(drugbank_ids)
+    _get_and_dump(drugbank_ids, version=VERSION)
 
 
-def _get_and_dump(drugbank_ids):
+def _get_and_dump(drugbank_ids, *, version: str):
     trials_info = {
-        db: get_trials_from_api(db)
+        db: get_trials_from_api(db, version=version)
         for db in tqdm(sorted(drugbank_ids), unit="drugbank")
     }
     with open("drugbank_trials.json", "w") as file:
         json.dump(trials_info, file, indent=2)
 
 
-def get_trials_from_api(drugbank_id: str):
+def get_trials_from_api(drugbank_id: str, *, version: str):
+    cache = pystow.join("drugbank", version, "trials", name=f"{drugbank_id}.json")
+    if cache.is_file():
+        return json.loads(cache.read_text())
     start = 0
     length = 50
     res = get_aggregate(drugbank_id, start, length)
@@ -55,10 +59,12 @@ def get_trials_from_api(drugbank_id: str):
         rv.extend(res_json["data"])
 
     rv = [_process_row(*row) for row in rv]
+
+    cache.write_text(json.dumps(rv, indent=2, ensure_ascii=False, sort_keys=True))
     return rv
 
 
-@rate_limited
+@rate_limited(calls=15, period=900, raise_on_limit=True)  # 15 calls every 15 minutes
 def get_aggregate(drugbank_id: str, length: int, start: int) -> requests.Response:
     url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?length={length}&start={start}"
     tqdm.write(f"Requesting {url}")
@@ -87,6 +93,7 @@ def _process_row(phases, status, purpose, conditions_raw, count_raw):
     if purpose == "<span class='not-available'>Not Available</span>":
         purpose = None
     return dict(
+        phases=phases,
         max_phase=phases and max(phases),
         status=status,
         purpose=purpose,
@@ -97,4 +104,4 @@ def _process_row(phases, status, purpose, conditions_raw, count_raw):
 
 
 if __name__ == "__main__":
-    main()
+    get_all()
