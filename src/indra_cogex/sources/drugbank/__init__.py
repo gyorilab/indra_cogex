@@ -1,14 +1,20 @@
+from pathlib import Path
+
 import requests
 from bs4 import BeautifulSoup
 import json
+import time
 from tqdm import tqdm
 import biomappings
 import pyobo
-from ratelimit import rate_limited
 import pystow
+import click
+import gzip
 
 BASE = "https://go.drugbank.com"
-VERSION = "5.1.10" # todo use bioversions/drugbank_downloader
+VERSION = "5.1.10"  # todo use bioversions/drugbank_downloader
+HERE = Path(__file__).parent.resolve()
+
 
 def main():
     mappings = biomappings.load_mappings_subset("vo", "drugbank")
@@ -19,25 +25,43 @@ def main():
 def get_all():
     # This is the ideal situation, but right now has some rate limiting issues
     drugbank_ids = pyobo.get_ids("drugbank")
+    click.echo(f"got {len(drugbank_ids):,} drugbank ids")
     _get_and_dump(drugbank_ids, version=VERSION)
 
 
 def _get_and_dump(drugbank_ids, *, version: str):
-    trials_info = {
-        db: get_trials_from_api(db, version=version)
-        for db in tqdm(sorted(drugbank_ids), unit="drugbank")
-    }
-    with open("drugbank_trials.json", "w") as file:
+    trials_info = {}
+    conditions = {}
+    for drugbank_id in tqdm(
+        sorted(drugbank_ids),
+        unit="drug",
+        unit_scale=True,
+        desc="Getting DrugBank trials",
+    ):
+        trials_info[drugbank_id] = data = get_trials_from_api(
+            drugbank_id, version=version
+        )
+        for trial in data:
+            for condition in trial["conditions"]:
+                conditions[condition["identifier"]] = condition["name"]
+
+    with gzip.open(HERE.joinpath("drugbank_trials.json.gz"), "wt") as file:
         json.dump(trials_info, file, indent=2)
+
+    with HERE.joinpath("drugbank_trials_sample.json").open("w") as file:
+        json.dump({"DB01536": trials_info["DB01536"]}, file, indent=2)
+
+    with HERE.joinpath("conditions.json").open("w") as file:
+        json.dump(conditions, file, indent=2, sort_keys=True)
 
 
 def get_trials_from_api(drugbank_id: str, *, version: str):
-    cache = pystow.join("drugbank", version, "trials", name=f"{drugbank_id}.json")
-    if cache.is_file():
-        return json.loads(cache.read_text())
+    cache_path = pystow.join("drugbank", version, "trials", name=f"{drugbank_id}.json")
+    if cache_path.is_file():
+        return json.loads(cache_path.read_text())
     start = 0
     length = 50
-    res = get_aggregate(drugbank_id, start, length)
+    res = get_aggregate(drugbank_id, start=start, length=length)
     try:
         res_json = res.json()
     except requests.exceptions.JSONDecodeError as e:
@@ -48,7 +72,7 @@ def get_trials_from_api(drugbank_id: str, *, version: str):
 
     while res_json["recordsTotal"] > start + length:
         start += length
-        res = get_aggregate(drugbank_id, start, length)
+        res = get_aggregate(drugbank_id, start=start, length=length)
         try:
             res_json = res.json()
         except requests.exceptions.JSONDecodeError:
@@ -60,12 +84,12 @@ def get_trials_from_api(drugbank_id: str, *, version: str):
 
     rv = [_process_row(*row) for row in rv]
 
-    cache.write_text(json.dumps(rv, indent=2, ensure_ascii=False, sort_keys=True))
+    cache_path.write_text(json.dumps(rv, indent=2, ensure_ascii=False, sort_keys=True))
     return rv
 
 
-@rate_limited(calls=15, period=900, raise_on_limit=True)  # 15 calls every 15 minutes
-def get_aggregate(drugbank_id: str, length: int, start: int) -> requests.Response:
+def get_aggregate(drugbank_id: str, *, length: int, start: int) -> requests.Response:
+    time.sleep(0.5)
     url = f"{BASE}/drugs/{drugbank_id}/clinical_trials/aggregate.json?length={length}&start={start}"
     tqdm.write(f"Requesting {url}")
     res = requests.get(url)

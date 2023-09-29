@@ -1,0 +1,28 @@
+{
+  "DB01536": [
+    {
+      "conditions": [
+        {
+          "identifier": "DBCOND0034238",
+          "name": "Estrogen Receptor and/or Progesterone Receptor Positive"
+        },
+        {
+          "identifier": "DBCOND0034239",
+          "name": "HER2/Neu Negative"
+        },
+        {
+          "identifier": "DBCOND0092437",
+          "name": "Stage IV Breast Cancer AJCC v6 and v7"
+        }
+      ],
+      "count": "1",
+      "count_link": "https://go.drugbank.com/drugs/DB01536/clinical_trials?conditions=DBCOND0034238%2CDBCOND0034239%2CDBCOND0092437&phase=2&purpose=treatment&status=active_not_recruiting",
+      "max_phase": "2",
+      "phases": [
+        "2"
+      ],
+      "purpose": "Treatment",
+      "status": "Active Not Recruiting"
+    }
+  ]
+}
