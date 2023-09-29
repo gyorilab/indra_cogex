@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 
 import requests
@@ -10,6 +11,7 @@ import pyobo
 import pystow
 import click
 import gzip
+import pandas as pd
 
 BASE = "https://go.drugbank.com"
 VERSION = "5.1.10"  # todo use bioversions/drugbank_downloader
@@ -32,6 +34,7 @@ def get_all():
 def _get_and_dump(drugbank_ids, *, version: str):
     trials_info = {}
     conditions = {}
+    condition_frequency = Counter()
     for drugbank_id in tqdm(
         sorted(drugbank_ids),
         unit="drug",
@@ -44,6 +47,7 @@ def _get_and_dump(drugbank_ids, *, version: str):
         for trial in data:
             for condition in trial["conditions"]:
                 conditions[condition["identifier"]] = condition["name"]
+                condition_frequency[condition["identifier"]] += 1
 
     with gzip.open(HERE.joinpath("drugbank_trials.json.gz"), "wt") as file:
         json.dump(trials_info, file, indent=2)
@@ -51,8 +55,9 @@ def _get_and_dump(drugbank_ids, *, version: str):
     with HERE.joinpath("drugbank_trials_sample.json").open("w") as file:
         json.dump({"DB01536": trials_info["DB01536"]}, file, indent=2)
 
-    with HERE.joinpath("conditions.json").open("w") as file:
-        json.dump(conditions, file, indent=2, sort_keys=True)
+    rows = sorted((i, name, condition_frequency[i]) for i, name in conditions.items())
+    df = pd.DataFrame(rows, columns=["drugbank.condition", "name", "frequency"])
+    df.to_csv(HERE.joinpath("conditions.tsv"), sep="\t", index=False)
 
 
 def get_trials_from_api(drugbank_id: str, *, version: str):
