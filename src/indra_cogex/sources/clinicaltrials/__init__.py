@@ -1,36 +1,4 @@
-"""This module implements input for ClinicalTrials.gov data
-
-NOTE: ClinicalTrials.gov are working on a more modern API that is currently
-in Beta: https://beta.clinicaltrials.gov/data-about-studies/learn-about-api
-Once this API is released, we should switch to using it. The instructions for
-using the current/old API are below.
-
-To obtain the custom download for ingest, do the following
-
-1. Go to https://clinicaltrials.gov/api/gui/demo/simple_study_fields
-
-2. Enter the following in the form:
-
-expr=
-fields=NCTId,BriefTitle,Condition,ConditionMeshTerm,ConditionMeshId,InterventionName,InterventionType,InterventionMeshTerm,InterventionMeshId
-min_rnk=1
-max_rnk=500000  # or any number larger than the current number of studies
-fmt=csv
-
-3. Send Request
-
-4. Enter the captcha characters into the text box and then press enter
-(make sure to use the enter key and not press any buttons).
-
-5. The website will display "please wait… " for a couple of minutes, finally,
-the Save to file button will be active.
-
-6. Click the Save to file button to download the response as a txt file.
-
-7. Rename the txt file to clinical_trials.csv and then compress it as
-gzip clinical_trials.csv to get clinical_trials.csv.gz, then place
-this file into <pystow home>/indra/cogex/clinicaltrials/
-"""
+"""This module implements input for ClinicalTrials.gov data."""
 
 import logging
 from collections import Counter
@@ -39,12 +7,12 @@ from typing import Union
 
 import gilda
 import pandas as pd
-import pystow
 import tqdm
 
 from indra.databases import mesh_client
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.clinicaltrials.download import ensure_clinical_trials
 
 
 logger = logging.getLogger(__name__)
@@ -55,19 +23,11 @@ class ClinicaltrialsProcessor(Processor):
     node_types = ["BioEntity", "ClinicalTrial"]
 
     def __init__(self, path: Union[str, Path, None] = None):
-        default_path = pystow.join(
-            "indra",
-            "cogex",
-            "clinicaltrials",
-            name="clinical_trials.csv.gz",
-        )
+        if path is not None:
+            self.df = pd.read_csv(path, sep=",", skiprows=10)
+        else:
+            self.df = ensure_clinical_trials()
 
-        if not path:
-            path = default_path
-        elif isinstance(path, str):
-            path = Path(path)
-
-        self.df = pd.read_csv(path, sep=",", skiprows=10)
         self.has_trial_cond_ns = []
         self.has_trial_cond_id = []
         self.has_trial_nct = []
