@@ -85,6 +85,8 @@ def download(
     """Download the ClinicalTrials.gov dataframe.
 
     If fields is None, will default to :data:`FIELDS`.
+
+    Download takes about 10 minutes and is shown with a progress bar.
     """
     if page_size > 1_000:
         page_size = 1_000
@@ -121,6 +123,9 @@ def download(
     first_page_df = pd.read_csv(io.StringIO(res.text), skiprows=skiprows)
 
     dfs = [first_page_df]
+
+    # start on page "1" because we already did page 0 above. Note that we're zero-indexed,
+    # so "1" is actually is the second page
     for page in trange(1, pages, unit="page", desc="Downloading ClinicalTrials.gov"):
         min_rnk = page_size * page + 1
         max_rnk = page_size * (page + 1)
