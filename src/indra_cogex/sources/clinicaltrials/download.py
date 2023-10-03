@@ -53,7 +53,10 @@ CLINICAL_TRIALS_PATH = pystow.join(
     "clinicaltrials",
     name="clinical_trials.tsv",
 )
-FIELDS = [
+
+#: The fields that are used by default. A full list can be found
+#: here: https://classic.clinicaltrials.gov/api/info/study_fields_list
+DEFAULT_FIELDS = [
     "NCTId",
     "BriefTitle",
     "Condition",
@@ -97,7 +100,7 @@ def download(
     if page_size > 1_000:
         page_size = 1_000
     if fields is None:
-        fields = FIELDS
+        fields = DEFAULT_FIELDS
     base_params = {
         "expr": "",
         "min_rnk": 1,
