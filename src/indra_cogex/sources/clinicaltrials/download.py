@@ -64,10 +64,16 @@ FIELDS = [
     "InterventionMeshTerm",
     "InterventionMeshId",
     "StudyType",
+    "OverallStatus",
+    "Phase",
+    "WhyStopped",
+    "SecondaryIdType",
+    "SecondaryId",
+    "ReferencePMID",  # these are tagged as relevant by the author, but not necessarily about the trial
 ]
 
 
-def ensure_clinical_trials(refresh: bool = False) -> pd.DataFrame:
+def ensure_clinical_trials(*, refresh: bool = False) -> pd.DataFrame:
     """Download and parse the ClinicalTrials.gov dataframe.
 
     If refresh is set to true, it will overwrite the existing file.
@@ -136,3 +142,7 @@ def download(
         dfs.append(page_df)
 
     return pd.concat(dfs)
+
+
+if __name__ == "__main__":
+    ensure_clinical_trials(refresh=True)
