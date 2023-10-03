@@ -55,7 +55,16 @@ class ClinicaltrialsProcessor(Processor):
         return None
 
     def get_nodes(self):
-        for index, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
+        nctid_to_data = {}
+        for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
+            nctid_to_data[row["NCTId"]] = {
+                "study_type": row["StudyType"],  # observational, interventional
+                "design_allocation": row["DesignAllocation"],  # randomized, Non-Randomized
+                "status": row["OverallStatus"],  # Completed, Active, Recruiting
+                "phase": row["Phase"],
+                "why_stopped": row["WhyStopped"],
+            }
+
             found_disease_gilda = False
             for condition in str(row["Condition"]).split("|"):
                 cond_term = self.ground_condition(condition)
@@ -110,7 +119,12 @@ class ClinicaltrialsProcessor(Processor):
                     yield Node(db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"])
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
-            yield Node(db_ns="CLINICALTRIALS", db_id=nctid, labels=["ClinicalTrial"])
+            yield Node(
+                db_ns="CLINICALTRIALS",
+                db_id=nctid,
+                labels=["ClinicalTrial"],
+                data=nctid_to_data[nctid],
+            )
 
         logger.info('Problematic MeSH IDs: %s' % str(
             Counter(self.problematic_mesh_ids).most_common()))
