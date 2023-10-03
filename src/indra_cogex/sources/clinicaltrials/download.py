@@ -67,6 +67,7 @@ DEFAULT_FIELDS = [
     "InterventionMeshTerm",
     "InterventionMeshId",
     "StudyType",
+    "DesignAllocation",
     "OverallStatus",
     "Phase",
     "WhyStopped",
