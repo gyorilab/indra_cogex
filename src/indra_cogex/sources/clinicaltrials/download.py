@@ -44,7 +44,8 @@ import io
 
 __all__ = [
     "CLINICAL_TRIALS_PATH",
-    "ensure_clinical_trials",
+    "ensure_clinical_trials_df",
+    "get_clinical_trials_df",
 ]
 
 CLINICAL_TRIALS_PATH = pystow.join(
@@ -77,19 +78,20 @@ DEFAULT_FIELDS = [
 ]
 
 
-def ensure_clinical_trials(*, refresh: bool = False) -> pd.DataFrame:
-    """Download and parse the ClinicalTrials.gov dataframe.
+def ensure_clinical_trials_df(*, refresh: bool = False) -> pd.DataFrame:
+    """Download and parse the ClinicalTrials.gov dataframe or load
+    it, if it's already available.
 
     If refresh is set to true, it will overwrite the existing file.
     """
     if CLINICAL_TRIALS_PATH.is_file() and not refresh:
         return pd.read_csv(CLINICAL_TRIALS_PATH, sep="\t")
-    df = download()
+    df = get_clinical_trials_df()
     df.to_csv(CLINICAL_TRIALS_PATH, sep="\t", index=False)
     return df
 
 
-def download(
+def get_clinical_trials_df(
     page_size: int = 1_000, fields: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Download the ClinicalTrials.gov dataframe.
@@ -149,4 +151,4 @@ def download(
 
 
 if __name__ == "__main__":
-    ensure_clinical_trials(refresh=True)
+    ensure_clinical_trials_df(refresh=True)

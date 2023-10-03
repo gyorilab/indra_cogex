@@ -12,7 +12,7 @@ import tqdm
 from indra.databases import mesh_client
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
-from indra_cogex.sources.clinicaltrials.download import ensure_clinical_trials
+from indra_cogex.sources.clinicaltrials.download import ensure_clinical_trials_df
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class ClinicaltrialsProcessor(Processor):
         if path is not None:
             self.df = pd.read_csv(path, sep=",", skiprows=10)
         else:
-            self.df = ensure_clinical_trials()
+            self.df = ensure_clinical_trials_df()
 
         self.has_trial_cond_ns = []
         self.has_trial_cond_id = []
