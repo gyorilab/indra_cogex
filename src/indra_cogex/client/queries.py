@@ -951,14 +951,14 @@ def get_stmts_for_paper(
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, parameter=parameter)
-    return _run(client=client, result=result, **kwargs)
+    return _stmts_from_results(client=client, result=result, **kwargs)
 
 
 @autoclient()
 def get_stmts_for_pubmeds(
     pubmeds: List[Union[str, int]], *, client: Neo4jClient, **kwargs
 ) -> List[Statement]:
-    """Return the statements with evidence from the given PubMed ID.
+    """Return the statements with evidence from the given PubMed IDs.
 
     Parameters
     ----------
@@ -988,10 +988,10 @@ def get_stmts_for_pubmeds(
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query)
-    return _run(client=client, result=result, **kwargs)
+    return _stmts_from_results(client=client, result=result, **kwargs)
 
 
-def _run(client, result, **kwargs) -> List[Statement]:
+def _stmts_from_results(client, result, **kwargs) -> List[Statement]:
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
