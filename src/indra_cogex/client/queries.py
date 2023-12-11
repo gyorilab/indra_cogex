@@ -1119,7 +1119,7 @@ def get_stmts_for_stmt_hashes(
     """
     logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
-    stmts = indra_stmts_from_relations(rels)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
     if evidence_limit == 1:
         rv = stmts
