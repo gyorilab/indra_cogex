@@ -476,11 +476,5 @@ def indra_stmts_from_relations(rels: Iterable[Relation],
     stmts = stmts_from_json(stmts_json)
     if deduplicate:
         # We do it this way to not change the order of the statements
-        seen_hashes = set()
-        unique_stmts = []
-        for stmt in stmts:
-            if stmt.get_hash() not in seen_hashes:
-                seen_hashes.add(stmt.get_hash())
-                unique_stmts.append(stmt)
-        stmts = unique_stmts
+        stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
     return stmts
