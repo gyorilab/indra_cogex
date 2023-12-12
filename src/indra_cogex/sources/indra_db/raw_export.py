@@ -203,6 +203,13 @@ if __name__ == "__main__":
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # This checks that a connection to the prinicipal db is needed for the
+    # preassembly step as fallback when the indra_db_lite is missing content
+    from indra_db import get_db
+    db = get_db("primary")
+    if db is None:
+        raise ValueError("Could not connect to the principal db")
+
     # This checks if there are any adeft models available. They are needed to
     if len(get_available_models()) == 0:
         raise ValueError(
