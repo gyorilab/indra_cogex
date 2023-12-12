@@ -474,6 +474,10 @@ def indra_stmts_from_relations(rels: Iterable[Relation],
     """
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
+    # Beliefs are not set correctly in the JSON so we fix them here
+    beliefs = [rel.data["belief"] for rel in rels]
+    for stmt, belief in zip(stmts, beliefs):
+        stmt.belief = belief
     if deduplicate:
         # We do it this way to not change the order of the statements
         stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
