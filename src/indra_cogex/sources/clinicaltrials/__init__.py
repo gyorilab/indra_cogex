@@ -27,6 +27,7 @@ class ClinicaltrialsProcessor(Processor):
             self.df = pd.read_csv(path, sep=",", skiprows=10)
         else:
             self.df = ensure_clinical_trials_df()
+        process_df(self.df)
 
         self.has_trial_cond_ns = []
         self.has_trial_cond_id = []
@@ -57,14 +58,14 @@ class ClinicaltrialsProcessor(Processor):
     def get_nodes(self):
         nctid_to_data = {}
         for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
-            # randomized, Non-Randomized
-            randomized = "true" if row["DesignAllocation"] == "Randomized" else "false"
             nctid_to_data[row["NCTId"]] = {
                 "study_type": row["StudyType"],  # observational, interventional
-                "randomized:boolean": randomized,
+                "randomized:boolean": row["randomized"],
                 "status": row["OverallStatus"],  # Completed, Active, Recruiting
-                "phase:int": _get_phase(row["Phase"]),
+                "phase:int": row["Phase"],
                 "why_stopped": row["WhyStopped"],
+                "start_year:int": row["start_year"],
+                "start_year_anticipated:boolean": row["start_year_anticipated"],
             }
 
             found_disease_gilda = False
@@ -191,3 +192,32 @@ def _get_phase(phase_string: str) -> int:
     if pd.notna(phase_string) and phase_string[-1].isdigit():
         return int(phase_string[-1])
     return -1
+
+
+def process_df(df: pd.DataFrame):
+    """Clean up values in DataFrame"""
+    # Create start year column from StartDate
+    df["start_year"] = (
+        df["StartDate"]
+        .map(lambda s: None if pd.isna(s) else int(s[-4:]))
+        .astype("Int64")
+    )
+
+    # randomized, Non-Randomized
+    df["randomized"] = df["DesignAllocation"].map(
+        lambda s: "true" if pd.notna(s) and s == "Randomized" else "false"
+    )
+
+    # Indicate if the start_year is anticipated or not
+    df["start_year_anticipated"] = df["StartDateType"].map(
+        lambda s: "true" if pd.notna(s) and s == "Anticipated" else "false"
+    )
+
+    # Map the phase info for trial to integer (-1 for unknown)
+    df["Phase"] = df["Phase"].apply(_get_phase)
+
+    # Create a Neo4j compatible list of references
+    df["ReferencePMID"] = df["ReferencePMID"].map(
+        lambda s: ";".join(f"PUBMED:{pubmed_id}" for pubmed_id in s.split("|")),
+        na_action="ignore",
+    )
