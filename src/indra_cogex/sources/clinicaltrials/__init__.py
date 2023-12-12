@@ -63,7 +63,7 @@ class ClinicaltrialsProcessor(Processor):
                 "study_type": row["StudyType"],  # observational, interventional
                 "randomized:boolean": randomized,
                 "status": row["OverallStatus"],  # Completed, Active, Recruiting
-                "phase": row["Phase"],
+                "phase:int": _get_phase(row["Phase"]),
                 "why_stopped": row["WhyStopped"],
             }
 
@@ -185,3 +185,9 @@ def get_correct_mesh_id(mesh_id, mesh_term=None):
                 if k == 'MESH':
                     return v
     return None
+
+
+def _get_phase(phase_string: str) -> int:
+    if pd.notna(phase_string) and phase_string[-1].isdigit():
+        return int(phase_string[-1])
+    return -1
