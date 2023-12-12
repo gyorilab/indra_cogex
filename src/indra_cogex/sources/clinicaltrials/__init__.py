@@ -59,11 +59,11 @@ class ClinicaltrialsProcessor(Processor):
         nctid_to_data = {}
         for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
             nctid_to_data[row["NCTId"]] = {
-                "study_type": row["StudyType"],  # observational, interventional
+                "study_type": or_na(row["StudyType"]),  # observational, interventional
                 "randomized:boolean": row["randomized"],
-                "status": row["OverallStatus"],  # Completed, Active, Recruiting
+                "status": or_na(row["OverallStatus"]),  # Completed, Active, Recruiting
                 "phase:int": row["Phase"],
-                "why_stopped": row["WhyStopped"],
+                "why_stopped": or_na(row["WhyStopped"]),
                 "start_year:int": row["start_year"],
                 "start_year_anticipated:boolean": row["start_year_anticipated"],
             }
@@ -221,3 +221,8 @@ def process_df(df: pd.DataFrame):
         lambda s: ";".join(f"PUBMED:{pubmed_id}" for pubmed_id in s.split("|")),
         na_action="ignore",
     )
+
+
+def or_na(x):
+    """Return None if x is NaN, otherwise return x"""
+    return None if pd.isna(x) else x
