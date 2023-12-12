@@ -80,8 +80,10 @@ class ClinicaltrialsProcessor(Processor):
                     )
                     found_disease_gilda = True
             if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
-                for mesh_id, mesh_term in zip(row["ConditionMeshId"].split("|"),
-                                              row["ConditionMeshTerm"].split("|")):
+                for mesh_id, mesh_term in zip(
+                    row["ConditionMeshId"].split("|"),
+                    row["ConditionMeshTerm"].split("|"),
+                ):
                     correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
                         self.problematic_mesh_ids.append((mesh_id, mesh_term))
@@ -89,7 +91,9 @@ class ClinicaltrialsProcessor(Processor):
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append("MESH")
                     self.has_trial_cond_id.append(correct_mesh_id)
-                    yield Node(db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"])
+                    yield Node(
+                        db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"]
+                    )
 
             # We first try grounding the names with Gilda, if any match, we
             # use it, if there are no matches, we go by provided MeSH ID
@@ -110,8 +114,10 @@ class ClinicaltrialsProcessor(Processor):
                         found_drug_gilda = True
             # If there is no Gilda much but there are some MeSH IDs given
             if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
-                for mesh_id, mesh_term in zip(row["InterventionMeshId"].split("|"),
-                                              row["InterventionMeshTerm"].split("|")):
+                for mesh_id, mesh_term in zip(
+                    row["InterventionMeshId"].split("|"),
+                    row["InterventionMeshTerm"].split("|"),
+                ):
                     correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
                         self.problematic_mesh_ids.append((mesh_id, mesh_term))
@@ -119,7 +125,9 @@ class ClinicaltrialsProcessor(Processor):
                     self.tested_in_int_ns.append("MESH")
                     self.tested_in_int_id.append(correct_mesh_id)
                     self.tested_in_nct.append(row["NCTId"])
-                    yield Node(db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"])
+                    yield Node(
+                        db_ns="MESH", db_id=correct_mesh_id, labels=["BioEntity"]
+                    )
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
             yield Node(
@@ -129,8 +137,10 @@ class ClinicaltrialsProcessor(Processor):
                 data=nctid_to_data[nctid],
             )
 
-        logger.info('Problematic MeSH IDs: %s' % str(
-            Counter(self.problematic_mesh_ids).most_common()))
+        logger.info(
+            "Problematic MeSH IDs: %s"
+            % str(Counter(self.problematic_mesh_ids).most_common())
+        )
 
     def get_relations(self):
         added = set()
@@ -180,10 +190,10 @@ def get_correct_mesh_id(mesh_id, mesh_term=None):
     # ID lookup - done here as grounding just to not have to assume
     # perfect / up to date naming conventions in the source data.
     if mesh_term:
-        matches = gilda.ground(mesh_term, namespaces=['MESH'])
+        matches = gilda.ground(mesh_term, namespaces=["MESH"])
         if len(matches) == 1:
             for k, v in matches[0].get_groundings():
-                if k == 'MESH':
+                if k == "MESH":
                     return v
     return None
 
