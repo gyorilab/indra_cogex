@@ -74,6 +74,8 @@ DEFAULT_FIELDS = [
     "WhyStopped",
     "SecondaryIdType",
     "SecondaryId",
+    "StartDate",  # Month [day], year: "November 1, 2023", "May 1984" or NaN
+    "StartDateType",  # "Actual" or "Anticipated" (or NaN)
     "ReferencePMID",  # these are tagged as relevant by the author, but not necessarily about the trial
 ]
 
