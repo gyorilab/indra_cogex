@@ -41,7 +41,7 @@ __all__ = [
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
     "get_stmts_for_paper",
-    "get_stmts_for_pubmeds",
+    "get_stmts_for_pmids",
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
@@ -951,20 +951,20 @@ def get_stmts_for_paper(
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, parameter=parameter)
-    return _run(client=client, result=result, **kwargs)
+    return _stmts_from_results(client=client, result=result, **kwargs)
 
 
 @autoclient()
-def get_stmts_for_pubmeds(
-    pubmeds: List[Union[str, int]], *, client: Neo4jClient, **kwargs
+def get_stmts_for_pmids(
+    pmids: List[Union[str, int]], *, client: Neo4jClient, **kwargs
 ) -> List[Statement]:
-    """Return the statements with evidence from the given PubMed ID.
+    """Return the statements with evidence from the given PubMed IDs.
 
     Parameters
     ----------
     client :
         The Neo4j client.
-    pubmeds :
+    pmids :
         The PMIDs to query
 
     Returns
@@ -976,22 +976,22 @@ def get_stmts_for_pubmeds(
     -------
     .. code-block::
 
-        from indra_cogex.client.queries import get_stmts_for_pubmeds
+        from indra_cogex.client.queries import get_stmts_for_pmids
 
-        pubmeds = [20861832, 19503834]
-        stmts = get_stmts_for_pubmeds(pubmeds)
+        pmids = [20861832, 19503834]
+        stmts = get_stmts_for_pmids(pmids)
     """
-    pubmeds = sorted(f"pubmed:{pubmed}" for pubmed in pubmeds)
+    pmids = sorted(f"pubmed:{pmid}" for pmid in pmids)
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(p:Publication)
-        WHERE p.id IN {repr(pubmeds)}
+        WHERE p.id IN {repr(pmids)}
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query)
-    return _run(client=client, result=result, **kwargs)
+    return _stmts_from_results(client=client, result=result, **kwargs)
 
 
-def _run(client, result, **kwargs) -> List[Statement]:
+def _stmts_from_results(client, result, **kwargs) -> List[Statement]:
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
@@ -1119,7 +1119,7 @@ def get_stmts_for_stmt_hashes(
     """
     logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
-    stmts = indra_stmts_from_relations(rels)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
     if evidence_limit == 1:
         rv = stmts

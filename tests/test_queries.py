@@ -324,11 +324,11 @@ def test_get_stmts_for_pmid():
 
 
 @pytest.mark.nonpublic
-def test_get_stmts_for_pmid():
+def test_get_stmts_for_pmids():
     # Two queries: first evidences, then the statements
     client = _get_client()
-    pubmeds = ["14898026"]
-    stmts = get_stmts_for_pubmeds(pubmeds, client=client)
+    pmids = ["14898026"]
+    stmts = get_stmts_for_pmids(pmids, client=client)
     assert stmts
     assert isinstance(stmts[0], Statement)
 

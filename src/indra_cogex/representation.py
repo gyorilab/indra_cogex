@@ -451,7 +451,8 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
     )
 
 
-def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
+def indra_stmts_from_relations(rels: Iterable[Relation],
+                               deduplicate: bool = True) -> List[Statement]:
     """Convert a list of relations to INDRA Statements.
 
     Any relations that aren't representing an INDRA Statement are skipped.
@@ -460,6 +461,11 @@ def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     ----------
     rels :
         A list of Relations.
+    deduplicate :
+        If True, only unique statements are returned. In some cases
+        e.g., for Complexes, there are multiple relations for one statement
+        and this option can be used to return only one of these redundant
+        statements. Default: True
 
     Returns
     -------
@@ -468,4 +474,11 @@ def indra_stmts_from_relations(rels: Iterable[Relation]) -> List[Statement]:
     """
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
+    # Beliefs are not set correctly in the JSON so we fix them here
+    beliefs = [rel.data["belief"] for rel in rels]
+    for stmt, belief in zip(stmts, beliefs):
+        stmt.belief = belief
+    if deduplicate:
+        # We do it this way to not change the order of the statements
+        stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
     return stmts
