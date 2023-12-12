@@ -203,12 +203,23 @@ if __name__ == "__main__":
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # Check that the location is valid
+    if not os.path.isfile(os.environ["INDRA_DB_LITE_LOCATION"]):
+        raise FileNotFoundError(
+            f"INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']} "
+            f"does not point to a valid file"
+        )
+    logger.info(
+        f"Found INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']}"
+    )
+
     # This checks that a connection to the prinicipal db is needed for the
     # preassembly step as fallback when the indra_db_lite is missing content
     from indra_db import get_db
     db = get_db("primary")
     if db is None:
         raise ValueError("Could not connect to the principal db")
+    logger.info("Principal db is available")
 
     # This checks if there are any adeft models available. They are needed to
     if len(get_available_models()) == 0:
