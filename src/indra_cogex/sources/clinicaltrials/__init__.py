@@ -57,9 +57,11 @@ class ClinicaltrialsProcessor(Processor):
     def get_nodes(self):
         nctid_to_data = {}
         for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
+            # randomized, Non-Randomized
+            randomized = "true" if row["DesignAllocation"] == "Randomized" else "false"
             nctid_to_data[row["NCTId"]] = {
                 "study_type": row["StudyType"],  # observational, interventional
-                "design_allocation": row["DesignAllocation"],  # randomized, Non-Randomized
+                "randomized:boolean": randomized,
                 "status": row["OverallStatus"],  # Completed, Active, Recruiting
                 "phase": row["Phase"],
                 "why_stopped": row["WhyStopped"],
