@@ -11,7 +11,7 @@ import pystow
 from indra.databases import hgnc_client
 
 from indra_cogex.representation import Node, Relation
-from indra_cogex.sources import Processor
+from indra_cogex.sources.processor import Processor
 from indra_cogex.sources.utils import UmlsMapper
 
 __all__ = [
