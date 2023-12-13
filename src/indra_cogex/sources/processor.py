@@ -196,7 +196,6 @@ class Processor(ABC):
 
     def _dump_edges(self) -> Path:
         sample_path = self.module.join(name="edges_sample.tsv")
-        logger.info(f"Dumping into {self.edges_path}...")
         rels = self.get_relations()
         return self._dump_edges_to_path(rels, self.edges_path, sample_path)
 
