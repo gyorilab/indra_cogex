@@ -52,4 +52,6 @@ __all__ = [
     "DisgenetProcessor",
 ]
 
-processor_resolver = Resolver.from_subclasses(Processor, skip=[WikiDataProcessor])
+processor_resolver: Resolver[Processor] = Resolver.from_subclasses(
+    Processor, skip=[WikiDataProcessor]
+)
