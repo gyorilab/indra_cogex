@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""This script gets DisGeNet, converts to BEL, exports in a few formats."""
+"""Process DisGeNet, a resource for gene-disease and variant-disease associations."""
 
 import logging
 import pickle
