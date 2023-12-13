@@ -31,6 +31,9 @@ non-causal contextual relations including properties, ontology, and data.
 | [NIH reporter](https://reporter.nih.gov)                            | has_publication                     | The NIH Reporter Project represented by the source has an associated publication represented by the target.                    |
 | [NIH reporter](https://reporter.nih.gov)                            | has_clinical_trial                  | The NIH Reporter Project represented by the source has an associated clinical trial represented by the target.                 |
 | [NIH reporter](https://reporter.nih.gov)                            | has_patent                          | The NIH Reporter Project represented by the source has an associated patent represented by the target.                         |
+| [DisGeNet](https://www.disgenet.org/)                               | gene_disease_association            | Literature curated associations between genes and diseases                                                                     |
+| [DisGeNet](https://www.disgenet.org/)                               | variant_disease_association         | Literature curated associations between variants (e.g., identified by dbSNP) and diseases                                      |
+| [DisGeNet](https://www.disgenet.org/)                               | variant_gene_association            | Literature curated associations between genes and variants (e.g., from dbSNP)                                                  |
 
 ## Installation
 

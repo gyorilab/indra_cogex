@@ -13,6 +13,7 @@ from .cbioportal import (
 from .cellmarker import CellMarkerProcessor
 from .chembl import ChemblIndicationsProcessor
 from .clinicaltrials import ClinicaltrialsProcessor
+from .disgenet import DisgenetProcessor
 from .goa import GoaProcessor
 from .hpoa import HpDiseasePhenotypeProcessor, HpPhenotypeGeneProcessor
 from .indra_db import DbProcessor, EvidenceProcessor
@@ -48,7 +49,9 @@ __all__ = [
     "InterproProcessor",
     "CellMarkerProcessor",
     "JournalPublisherProcessor",
+    "DisgenetProcessor",
 ]
 
-processor_resolver = Resolver.from_subclasses(Processor,
-                                              skip=[WikiDataProcessor])
+processor_resolver: Resolver[Processor] = Resolver.from_subclasses(
+    Processor, skip=[WikiDataProcessor]
+)
