@@ -5,18 +5,21 @@ variant-phenotype associations."""
 
 import pandas as pd
 import pystow
-from indra_cogex.representation import Node, Relation
-from indra_cogex.sources import Processor
+import logging
 import gilda
 import re
 
-GWAS_URL = "https://www.ebi.ac.uk/gwas/api/search/downloads/full"
-SUBMODULE = pystow.module("indra", "cogex", "gwas")
-
+from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.processor import Processor
 
 __all__ = [
     "GWASProcessor",
 ]
+
+logger = logging.getLogger(__name__)
+
+SUBMODULE = pystow.module("indra", "cogex", "gwas")
+GWAS_URL = "https://www.ebi.ac.uk/gwas/api/search/downloads/full"
 
 
 class GWASProcessor(Processor):
@@ -87,31 +90,19 @@ def load_data(
     url: str,
     force: bool = False,
 ) -> pd.DataFrame:
-    df_ = SUBMODULE.ensure_csv(url=url, name="associations.tsv", force=force)
-    df_ = ground_phenotype_descriptions(df_)
-    return df_
+    df = SUBMODULE.ensure_csv(url=url, name="associations.tsv", force=force)
+    df = map_phenotypes(df)
+    return df
 
 
-def ground_phenotype_descriptions(df: pd.DataFrame):
-    scored_match_iterator = df["DISEASE/TRAIT"].map(
-        lambda disease_trait: gilda.ground(disease_trait)
-    )
+def map_phenotypes(df: pd.DataFrame) -> pd.DataFrame:
+    (
+        df["phenotype_prefix"],
+        df["phenotype_id"],
+        df["phenotype_name"],
+    ) = zip(*df["DISEASE/TRAIT"].map(extract_phenotype_info))
 
-    phenotype_prefix_list = []
-    phenotype_id_list = []
-    phenotype_name_list = []
-
-    for scored_match_list in scored_match_iterator:
-        phenotype_prefix_list.append(
-            extract_prefix_from_matched_term(scored_match_list)
-        )
-        phenotype_id_list.append(extract_id_from_matched_term(scored_match_list))
-        phenotype_name_list.append(extract_normalized_name(scored_match_list))
-
-    df["phenotype_prefix"] = phenotype_prefix_list
-    df["phenotype_id"] = phenotype_id_list
-    df["phenotype_name"] = phenotype_name_list
-
+    # Filter out phenotypes that can't be grounded with gilda
     df = df[df["phenotype_prefix"].notna()]
 
     # Filter out all snp ids that don't begin with "rs"
@@ -120,22 +111,13 @@ def ground_phenotype_descriptions(df: pd.DataFrame):
     return df
 
 
-def extract_prefix_from_matched_term(scored_match_list):
+def extract_phenotype_info(phenotype: str):
+    scored_match_list = gilda.ground(phenotype)
     if scored_match_list:
-        return scored_match_list[0].term.db
+        return (
+            scored_match_list[0].term.db,
+            scored_match_list[0].term.id,
+            scored_match_list[0].term.norm_text,
+        )
     else:
-        return None
-
-
-def extract_id_from_matched_term(scored_match_list):
-    if scored_match_list:
-        return scored_match_list[0].term.id
-    else:
-        return None
-
-
-def extract_normalized_name(scored_match_list):
-    if scored_match_list:
-        return scored_match_list[0].term.norm_text
-    else:
-        return None
+        return None, None, None
