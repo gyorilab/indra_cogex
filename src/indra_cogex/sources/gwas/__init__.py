@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+"""Process GWAS, a curated collection of human genome-wide association studies to extract
+variant-phenotype associations."""
+
 import pandas as pd
 import pystow
 from indra_cogex.representation import Node, Relation
@@ -15,6 +20,8 @@ __all__ = [
 
 
 class GWASProcessor(Processor):
+    """Processor for the GWAS database."""
+
     name = "gwas"
     node_types = ["BioEntity"]
     relation = "variant_phenotype_association"
@@ -107,7 +114,7 @@ def ground_phenotype_descriptions(df: pd.DataFrame):
 
     df = df[df["phenotype_prefix"].notna()]
 
-    # Filter out all snp ids that don't being with "rs"
+    # Filter out all snp ids that don't begin with "rs"
     df = df[df["SNPS"].map(lambda snp_id: bool(re.match("^rs\d+$", snp_id)))]
 
     return df
