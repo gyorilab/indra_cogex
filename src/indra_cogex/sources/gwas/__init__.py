@@ -3,6 +3,7 @@ import pystow
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources import Processor
 import gilda
+import re
 
 GWAS_URL = "https://www.ebi.ac.uk/gwas/api/search/downloads/full"
 SUBMODULE = pystow.module("indra", "cogex", "gwas")
@@ -40,17 +41,38 @@ class GWASProcessor(Processor):
             )
 
     def get_relations(self):
-        columns = ["SNPS", "phenotype_prefix", "phenotype_id", "phenotype_name"]
+        columns = [
+            "SNPS",
+            "phenotype_prefix",
+            "phenotype_id",
+            "phenotype_name",
+            "PUBMEDID",
+            "CONTEXT",
+            "INTERGENIC",
+            "P-VALUE",
+        ]
 
-        for snp_id, phenotype_prefix, phenotype_id, phenotype_name in (
+        for (
+            snp_id,
+            phenotype_prefix,
+            phenotype_id,
+            phenotype_name,
+            pmid,
+            context,
+            intergenic,
+            p_value,
+        ) in (
             self.df[columns].drop_duplicates().values
         ):
+            data = {
+                "gwas_pmid:int": pmid,
+                "gwas_context": context,
+                "gwas_intergenic": bool(intergenic),
+                "gwas_p_value:float": p_value,
+            }
+
             yield Relation(
-                "DBSNP",
-                snp_id,
-                phenotype_prefix,
-                phenotype_id,
-                self.relation
+                "DBSNP", snp_id, phenotype_prefix, phenotype_id, self.relation, data
             )
 
 
@@ -63,8 +85,8 @@ def load_data(
     return df_
 
 
-def ground_phenotype_descriptions(df_: pd.DataFrame):
-    scored_match_iterator = df_["DISEASE/TRAIT"].map(
+def ground_phenotype_descriptions(df: pd.DataFrame):
+    scored_match_iterator = df["DISEASE/TRAIT"].map(
         lambda disease_trait: gilda.ground(disease_trait)
     )
 
@@ -79,12 +101,16 @@ def ground_phenotype_descriptions(df_: pd.DataFrame):
         phenotype_id_list.append(extract_id_from_matched_term(scored_match_list))
         phenotype_name_list.append(extract_normalized_name(scored_match_list))
 
-    df_["phenotype_prefix"] = phenotype_prefix_list
-    df_["phenotype_id"] = phenotype_id_list
-    df_["phenotype_name"] = phenotype_name_list
+    df["phenotype_prefix"] = phenotype_prefix_list
+    df["phenotype_id"] = phenotype_id_list
+    df["phenotype_name"] = phenotype_name_list
 
-    df_ = df_[df_["phenotype_prefix"].notna()]
-    return df_
+    df = df[df["phenotype_prefix"].notna()]
+
+    # Filter out all snp ids that don't being with "rs"
+    df = df[df["SNPS"].map(lambda snp_id: bool(re.match("^rs\d+$", snp_id)))]
+
+    return df
 
 
 def extract_prefix_from_matched_term(scored_match_list):
@@ -106,5 +132,3 @@ def extract_normalized_name(scored_match_list):
         return scored_match_list[0].term.norm_text
     else:
         return None
-
-
