@@ -25,6 +25,7 @@ from .processor import Processor
 from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
 from .wikidata import JournalPublisherProcessor, WikiDataProcessor
+from .gwas import GWASProcessor
 
 __all__ = [
     "processor_resolver",
@@ -50,6 +51,7 @@ __all__ = [
     "CellMarkerProcessor",
     "JournalPublisherProcessor",
     "DisgenetProcessor",
+    "GWASProcessor"
 ]
 
 processor_resolver: Resolver[Processor] = Resolver.from_subclasses(
