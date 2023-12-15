@@ -21,3 +21,4 @@ INDRA CoGEx Sources
    pathways
    pubmed
    sider
+   disgenet

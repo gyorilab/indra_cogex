@@ -83,12 +83,12 @@ def test_is_go_term_for_gene():
 @pytest.mark.nonpublic
 def test_get_trials_for_drug():
     client = _get_client()
-    drug = ("CHEBI", "CHEBI:27690")
+    drug = ("MESH", "C000489")
     trials = get_trials_for_drug(drug, client=client)
     assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
-    assert ("CLINICALTRIALS", "NCT02703220") in {t.grounding() for t in trials}
+    assert ("CLINICALTRIALS", "NCT00000674") in {t.grounding() for t in trials}
 
 
 @pytest.mark.nonpublic
@@ -269,6 +269,17 @@ def test_get_mesh_ids_for_pmid():
 
 
 @pytest.mark.nonpublic
+def test_get_mesh_ids_for_pmids():
+    """Make a query over multiple pmids"""
+    client = _get_client()
+    pmids = ["27890007", "27890006"]
+    mesh_ids = get_mesh_ids_for_pmids(pmids, client=client)
+    assert isinstance(mesh_ids, dict)
+    assert all(pmid in mesh_ids for pmid in pmids)
+    assert "D000544" in mesh_ids["27890007"]
+
+
+@pytest.mark.nonpublic
 def test_get_evidence_obj_for_mesh_id():
     client = _get_client()
     mesh_id = ("MESH", "D015002")
@@ -308,6 +319,16 @@ def test_get_stmts_for_pmid():
     client = _get_client()
     term = ("PUBMED", "14898026")
     stmts = get_stmts_for_paper(term, client=client)
+    assert stmts
+    assert isinstance(stmts[0], Statement)
+
+
+@pytest.mark.nonpublic
+def test_get_stmts_for_pmids():
+    # Two queries: first evidences, then the statements
+    client = _get_client()
+    pmids = ["14898026"]
+    stmts = get_stmts_for_pmids(pmids, client=client)
     assert stmts
     assert isinstance(stmts[0], Statement)
 

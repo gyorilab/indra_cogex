@@ -30,6 +30,8 @@ edge_labels = {
     "has_publication": "Project Publications",
     "has_clinical_trial": "Project Trials",
     "has_patent": "Project Patents",
+    "has_marker": "Cell Markers",
+    "has_domain": "Protein Domains",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {

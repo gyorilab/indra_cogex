@@ -2,7 +2,6 @@
 
 """Processor for the INDRA database."""
 
-import codecs
 import csv
 import gzip
 import json
@@ -15,7 +14,6 @@ from itertools import permutations
 from pathlib import Path
 from typing import Iterable, Optional, Tuple, Union
 
-from indra.databases.identifiers import ensure_prefix_if_needed
 from indra.statements import (
     Agent,
     default_ns_order,
@@ -37,6 +35,7 @@ from indra_cogex.sources.indra_db.raw_export import (
     processed_stmts_fname,
     stmts_from_json,
 )
+from indra_cogex.util import load_stmt_json_str
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +85,7 @@ class DbProcessor(Processor):
                 batch_iter(reader, batch_size=batch_size, return_func=list),
                 desc="Getting BioEntity nodes",
             ):
-                sj_list = [load_statement_json(sjs) for _, sjs in batch]
+                sj_list = [load_stmt_json_str(sjs) for _, sjs in batch]
                 stmts = stmts_from_json(sj_list)
                 for stmt in stmts:
                     for agent in stmt.real_agent_list():
@@ -125,7 +124,7 @@ class DbProcessor(Processor):
                         f"statement hash {stmt_hash}. Are the source files updated?"
                     )
                     continue
-                stmt_json = load_statement_json(stmt_json_str)
+                stmt_json = load_stmt_json_str(stmt_json_str)
                 if stmt_json["evidence"][0]["source_api"] == "medscan":
                     stmt_json["evidence"] = []
                 data = {
@@ -237,11 +236,7 @@ class EvidenceProcessor(Processor):
                     stmt_hash = int(stmt_hash_str)
                     if stmt_hash not in included_hashes:
                         continue
-                    try:
-                        stmt_json = load_statement_json(stmt_json_str)
-                    except StatementJSONDecodeError as e:
-                        logger.warning(e)
-                        continue
+                    stmt_json = load_stmt_json_str(stmt_json_str)
 
                     # Loop all evidences
                     # NOTE: there should be a single evidence for each
@@ -367,10 +362,6 @@ class EvidenceProcessor(Processor):
             )
 
 
-class StatementJSONDecodeError(Exception):
-    pass
-
-
 def get_ag_ns_id(ag: Agent) -> Tuple[str, str]:
     """Return a namespace, identifier tuple for a given agent.
 
@@ -388,20 +379,6 @@ def get_ag_ns_id(ag: Agent) -> Tuple[str, str]:
         if ns in ag.db_refs:
             return ns, ag.db_refs[ns]
     return None, None
-
-
-def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) -> json:
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        if attempt < max_attempts:
-            json_str = codecs.escape_decode(json_str)[0].decode()
-            return load_statement_json(
-                json_str, attempt=attempt + 1, max_attempts=max_attempts
-            )
-    raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
-    )
 
 
 def load_text_refs_for_reading_dict(fname: str):

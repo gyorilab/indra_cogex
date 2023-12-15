@@ -11,8 +11,9 @@ import pickle
 import pystow
 from adeft.download import get_available_models
 from indra.util import batch_iter
-from indra.statements import stmts_from_json
+from indra.statements import stmts_from_json, stmt_from_json
 from indra.tools import assemble_corpus as ac
+from indra_cogex.util import load_stmt_json_str
 
 base_folder = pystow.module("indra", "db")
 reading_text_content_fname = base_folder.join(name="reading_text_content_meta.tsv.gz")
@@ -28,24 +29,6 @@ source_counts_fname = base_folder.join(name="source_counts.pkl")
 
 
 logger = logging.getLogger(__name__)
-
-
-class StatementJSONDecodeError(Exception):
-    pass
-
-
-def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5):
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        if attempt < max_attempts:
-            json_str = codecs.escape_decode(json_str)[0].decode()
-            return load_statement_json(
-                json_str, attempt=attempt + 1, max_attempts=max_attempts
-            )
-    raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
-    )
 
 
 def reader_prioritize(reader_contents):
@@ -114,6 +97,7 @@ def load_text_refs_by_trid(fname: str):
     text_refs = {}
     for line in tqdm.tqdm(
         gzip.open(fname, "rt", encoding="utf-8"),
+        total=36223169,
         desc="Processing text refs into a lookup dictionary",
     ):
         ids = line.strip().split("\t")
@@ -203,6 +187,8 @@ if __name__ == "__main__":
     Time estimate: ~2.5 mins
     """
 
+    # This checks for the initial files dumped directly from the principal
+    # database and raises an error if they are not found
     needed_files = [reading_text_content_fname, text_refs_fname, raw_stmts_fname]
     if any(not f.exists() for f in needed_files):
         missing = [f.as_posix() for f in needed_files if not f.exists()]
@@ -211,18 +197,26 @@ if __name__ == "__main__":
             f"{', '.join(missing)} missing, please run the dump commands above to get them."
         )
 
+    # This checks if the INDRA DB Lite location is set. It is needed to
+    # significantly speed up the process of getting text refs in the
+    # assembly process
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # This checks if there are any adeft models available. They are needed to
     if len(get_available_models()) == 0:
         raise ValueError(
-            "No adeft models detected, run 'python -m adeft.download' to download models"
+            "No adeft models detected, run 'python -m adeft.download' to "
+            "download models"
         )
+    logger.info(f"Found {len(get_available_models())} adeft models")
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
     # reader version used to produce it.
     if not drop_readings_fname.exists() or not reading_to_text_ref_map.exists():
+        logger.info("Running statement distillation")
+        logger.info("Loading reading and text content into dataframe")
         df = pandas.read_csv(
             reading_text_content_fname,
             header=None,
@@ -242,8 +236,10 @@ if __name__ == "__main__":
         trid = df["text_ref_id"].iloc[0]
         contents = defaultdict(list)
 
-        # This takes around 1.5 hours
-        for row in tqdm.tqdm(df.itertuples(), total=len(df)):
+        # This takes around ~10 min
+        for row in tqdm.tqdm(df.itertuples(),
+                             total=len(df),
+                             desc="Distilling statements"):
             if row.text_ref_id != trid:
                 for reader, reader_contents in contents.items():
                     if len(reader_contents) < 2:
@@ -265,11 +261,13 @@ if __name__ == "__main__":
             trid = row.text_ref_id
 
         with open(drop_readings_fname, "wb") as fh:
+            logger.info(f"Dumping {drop_readings_fname.as_posix()}")
             pickle.dump(drop_readings, fh)
 
         # Dump mapping of reading_id to text_ref_id
         reading_id_to_text_ref_id = dict(zip(df.reading_id, df.text_ref_id))
         with reading_to_text_ref_map.open("wb") as fh:
+            logger.info(f"Dumping {reading_to_text_ref_map.as_posix()}")
             pickle.dump(reading_id_to_text_ref_id, fh)
 
     else:
@@ -293,7 +291,7 @@ if __name__ == "__main__":
         ) as fh_out:
             reader = csv.reader(fh, delimiter="\t")
             writer = csv.writer(fh_out, delimiter="\t")
-            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7185):
+            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7581):
                 stmts_jsons = []
                 for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                     # NOTE: We might want to propagate the raw_stmt_id for
@@ -307,7 +305,7 @@ if __name__ == "__main__":
                         text_ref_id = reading_id_to_text_ref_id.get(int(reading_id))
                         if text_ref_id:
                             refs = text_refs.get(text_ref_id)
-                    stmt_json = load_statement_json(stmt_json_raw)
+                    stmt_json = load_stmt_json_str(stmt_json_raw)
                     if refs:
                         stmt_json["evidence"][0]["text_refs"] = refs
                         if refs.get("PMID"):
@@ -351,7 +349,7 @@ if __name__ == "__main__":
             for sh, stmt_json_str in tqdm.tqdm(
                 reader, total=60405451, desc="Gathering grounded and unique statements"
             ):
-                stmt = stmts_from_json([load_statement_json(stmt_json_str)])[0]
+                stmt = stmt_from_json(load_stmt_json_str(stmt_json_str))
                 if len(stmt.real_agent_list()) < 2:
                     continue
                 if all(

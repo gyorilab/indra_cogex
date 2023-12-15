@@ -43,7 +43,9 @@ examples_dict = {
     "term": ["MESH", "D007855"],
     "parent": ["MESH", "D007855"],
     "mesh_term": ["MESH", "D015002"],
-    "pmid_term": ["PUBMED", "27890007"],
+    "pmid_term": ["PUBMED", "34634383"],
+    "paper_term": ["PUBMED", "34634383"],
+    "pubmeds": ["20861832", "19503834"],
     "include_child_terms": True,
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": "12198579805553967",
@@ -104,7 +106,7 @@ for module, func_name in module_functions:
             continue
         if param_name not in examples_dict:
             raise KeyError(
-                f"Missing example for parameter {param_name} in function {func_name}"
+                f"Missing example for parameter '{param_name}' in function '{func_name}'"
             )
 
     # Get the parameters name for the other parameter that is not 'client'

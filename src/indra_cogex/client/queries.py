@@ -36,10 +36,12 @@ __all__ = [
     "isa_or_partof",
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
+    "get_mesh_ids_for_pmids",
     "get_evidences_for_mesh",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
     "get_stmts_for_paper",
+    "get_stmts_for_pmids",
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
@@ -711,6 +713,37 @@ def get_mesh_ids_for_pmid(
 
 
 @autoclient()
+def get_mesh_ids_for_pmids(
+    pmids: List[str], *, client: Neo4jClient
+) -> Mapping[str, List[str]]:
+    """Return the MESH terms for the given PubMed ID.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmids :
+        The PubMed IDs to query.
+
+    Returns
+    -------
+    :
+        A dictionary from PubMed ID to MeSH IDs
+    """
+    pmid_terms = [("PUBMED", pubmed_id) for pubmed_id in pmids]
+    res = client.get_target_relations_for_sources(
+        sources=pmid_terms,
+        relation="annotated_with",
+        source_type="Publication",
+        target_type="BioEntity",
+    )
+    return {
+        pubmed: [r.target_id for r in relations]
+        for (_, pubmed), relations in res.items()
+    }
+
+
+@autoclient()
 def get_evidences_for_mesh(
     mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
 ) -> Dict[int, List[Evidence]]:
@@ -870,7 +903,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+    paper_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -878,7 +911,7 @@ def get_stmts_for_paper(
     ----------
     client :
         The Neo4j client.
-    term :
+    paper_term :
         The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
 
     Returns
@@ -894,30 +927,71 @@ def get_stmts_for_paper(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
 
-    if term[0].lower() in {"pmid", "pubmed"}:
-        parameter = norm_id(*term)
+    if paper_term[0].lower() in {"pmid", "pubmed"}:
+        parameter = norm_id(*paper_term)
         publication_props = "{id: $parameter}"
 
-    elif term[0].lower() == "doi":
-        parameter = term[1]
+    elif paper_term[0].lower() == "doi":
+        parameter = paper_term[1]
         publication_props = "{doi: $parameter}"
 
-    elif term[0].lower() in {"pmc", "pmcid"}:
-        parameter = term[1]
+    elif paper_term[0].lower() in {"pmc", "pmcid"}:
+        parameter = paper_term[1]
         publication_props = "{pmcid: $parameter}"
 
-    elif term[0].lower() == "trid":
-        parameter = term[1]
+    elif paper_term[0].lower() == "trid":
+        parameter = paper_term[1]
         publication_props = "{trid: $parameter}"
 
     else:
-        raise ValueError(f"Invalid prefix for publication lookup: {term[0]}")
+        raise ValueError(f"Invalid prefix for publication lookup: {paper_term[0]}")
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, parameter=parameter)
+    return _stmts_from_results(client=client, result=result, **kwargs)
+
+
+@autoclient()
+def get_stmts_for_pmids(
+    pmids: List[Union[str, int]], *, client: Neo4jClient, **kwargs
+) -> List[Statement]:
+    """Return the statements with evidence from the given PubMed IDs.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    pmids :
+        The PMIDs to query
+
+    Returns
+    -------
+    :
+        The statements for the given PubMed identifiers.
+
+    Example
+    -------
+    .. code-block::
+
+        from indra_cogex.client.queries import get_stmts_for_pmids
+
+        pmids = [20861832, 19503834]
+        stmts = get_stmts_for_pmids(pmids)
+    """
+    pmids = sorted(f"pubmed:{pmid}" for pmid in pmids)
+    hash_query = f"""\
+        MATCH (e:Evidence)-[:has_citation]->(p:Publication)
+        WHERE p.id IN {repr(pmids)}
+        RETURN e.stmt_hash, e.evidence
+    """
+    result = client.query_tx(hash_query)
+    return _stmts_from_results(client=client, result=result, **kwargs)
+
+
+def _stmts_from_results(client, result, **kwargs) -> List[Statement]:
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
@@ -1045,7 +1119,7 @@ def get_stmts_for_stmt_hashes(
     """
     logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
-    stmts = indra_stmts_from_relations(rels)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
     if evidence_limit == 1:
         rv = stmts

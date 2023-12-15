@@ -14,6 +14,11 @@ import click
     help="Build all indexes",
 )
 @click.option(
+    "--index-nodes",
+    is_flag=True,
+    help="Index all nodes on the id property.",
+)
+@click.option(
     "--index-evidence-nodes",
     is_flag=True,
     help="Index the Evidence nodes on the stmt_hash property.",
@@ -31,6 +36,7 @@ import click
 )
 def main(
     all_: bool = False,
+    index_nodes: bool = False,
     index_evidence_nodes: bool = False,
     index_indra_relations: bool = False,
     exist_ok: bool = False,
@@ -39,6 +45,11 @@ def main(
 ):
     """Build indexes on the database."""
     client = _get_client(url, auth)
+    if all_ or index_nodes:
+        from . import index_nodes_on_id
+
+        click.secho("Indexing all nodes on the id property.", fg="green")
+        index_nodes_on_id(client, exist_ok=exist_ok)
     if all_ or index_evidence_nodes:
         from . import index_evidence_on_stmt_hash
 

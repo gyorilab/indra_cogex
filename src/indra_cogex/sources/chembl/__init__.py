@@ -91,7 +91,7 @@ class ChemblIndicationsProcessor(Processor):
                 "has_indication",
                 {
                     "source": self.name,
-                    "max_phase:int": max_phase,
+                    "max_phase:float": max_phase,
                     "version": self.version,
                 },
             )
