@@ -123,7 +123,7 @@ def get_clinical_trials_df(
     res = requests.get(url, params=base_params)
     for line in res.text.splitlines()[:skiprows]:
         if line.startswith(beginning):
-            total = int(line.removeprefix(beginning).strip('"'))
+            total = int(line[len(beginning):].strip('"'))
             break
     else:
         raise ValueError("could not parse total trials")
