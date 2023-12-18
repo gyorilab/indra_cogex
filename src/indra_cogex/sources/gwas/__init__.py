@@ -102,7 +102,9 @@ def map_phenotypes(df: pd.DataFrame) -> pd.DataFrame:
         df["phenotype_name"],
     ) = zip(*df["DISEASE/TRAIT"].map(extract_phenotype_info))
 
-
+    # filter out phenotypes that cannot be grounded
+    df = df[df["phenotype_prefix"].notna()]
+    
     # Filter out all snp ids that don't begin with "rs"
     # Around 10,000 entries contain snp ids in the "chr" (chromosome position) format
     # TODO: Convert snp ids beginning with "chr" to "rs" format
