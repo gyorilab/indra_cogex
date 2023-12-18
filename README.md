@@ -34,7 +34,7 @@ non-causal contextual relations including properties, ontology, and data.
 | [DisGeNet](https://www.disgenet.org/)                               | gene_disease_association            | Literature curated associations between genes and diseases                                                                     |
 | [DisGeNet](https://www.disgenet.org/)                               | variant_disease_association         | Literature curated associations between variants (e.g., identified by dbSNP) and diseases                                      |
 | [DisGeNet](https://www.disgenet.org/)                               | variant_gene_association            | Literature curated associations between genes and variants (e.g., from dbSNP)                                                  |
-| [GWAS](https://www.ebi.ac.uk/gwas/home)                                   | variant_phenotype_association       | Literature curated collection of all human genome-wide association studies. Phenotype and variant associations (e.g., from dbSNP) are extracted.
+| [GWAS](https://www.ebi.ac.uk/gwas/home)                                   | variant_phenotype_association       | Large literature curated collection of human genome-wide association studies. Phenotype and variant associations (e.g., from dbSNP) are extracted.
 ## Installation
 
 Install the `indra_cogex` package with:

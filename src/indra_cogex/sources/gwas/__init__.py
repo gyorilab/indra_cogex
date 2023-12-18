@@ -2,12 +2,12 @@
 
 """Process GWAS, a curated collection of human genome-wide association studies to extract
 variant-phenotype associations."""
-
-import pandas as pd
-import pystow
 import logging
-import gilda
 import re
+
+import gilda
+import pystow
+import pandas as pd
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
@@ -102,10 +102,10 @@ def map_phenotypes(df: pd.DataFrame) -> pd.DataFrame:
         df["phenotype_name"],
     ) = zip(*df["DISEASE/TRAIT"].map(extract_phenotype_info))
 
-    # Filter out phenotypes that can't be grounded with gilda
-    df = df[df["phenotype_prefix"].notna()]
 
     # Filter out all snp ids that don't begin with "rs"
+    # Around 10,000 entries contain snp ids in the "chr" (chromosome position) format
+    # TODO: Convert snp ids beginning with "chr" to "rs" format
     df = df[df["SNPS"].map(lambda snp_id: bool(re.match("^rs\d+$", snp_id)))]
 
     return df
