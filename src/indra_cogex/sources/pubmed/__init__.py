@@ -66,7 +66,8 @@ class PubmedProcessor(Processor):
     def _yield_publication_nodes(self) -> Iterable[Node]:
         logger.info("Loading PMID year info from %s" % self.pmid_year_types_path)
         with gzip.open(self.pmid_year_types_path, "rt") as fh:
-            pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
+            pmid_years_pubtypes = {pmid: (year, json.loads(types))
+                                   for pmid, year, types in csv.reader(fh)}
         logger.info("Loaded PMID year info from %s" % self.pmid_year_types_path)
 
         def get_val(val):
@@ -84,7 +85,7 @@ class PubmedProcessor(Processor):
             for trid, pmid, pmcid, doi, pii, url, manuscript_id in reader:
                 if not get_val(pmid):
                     continue
-                year = pmid_years.get(pmid, None)
+                year, pubtypes = pmid_years_pubtypes.get(pmid, (None, []))
                 data = {
                     "trid": get_val(trid),
                     "pmcid": get_val(pmcid),
@@ -93,6 +94,7 @@ class PubmedProcessor(Processor):
                     "url": get_val(url),
                     "manuscript_id": get_val(manuscript_id),
                     "year:int": year,
+                    "publication_type:string[]": ";".join(pubtypes),
                 }
                 yield Node(
                     "PUBMED",
