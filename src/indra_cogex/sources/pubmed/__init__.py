@@ -6,7 +6,7 @@ import os
 import re
 from hashlib import md5
 from itertools import chain
-from typing import Tuple, Mapping, Iterable, List
+from typing import Tuple, Mapping, Iterable, List, Set
 
 import pystow
 import textwrap
@@ -45,7 +45,7 @@ class PubmedProcessor(Processor):
         # Maps MeSH terms to PMIDs
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
         # Maps PMIDs to years
-        self.pmid_year_path = resources.join(name="pmid_years.csv.gz")
+        self.pmid_year_types_path = resources.join(name="pmid_years_types.csv.gz")
         # Maps PMIDs to ISSN
         self.pmid_nlm_path = resources.join(name="pmid_nlm.csv.gz")
         # Identifies journals
@@ -56,7 +56,7 @@ class PubmedProcessor(Processor):
     def get_nodes(self) -> Iterable[Node]:
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
-            pmid_year_path=self.pmid_year_path,
+            pmid_year_types_path=self.pmid_year_types_path,
             pmid_nlm_path=self.pmid_nlm_path,
             journal_info_path=self.journal_info_path,
         )
@@ -64,10 +64,10 @@ class PubmedProcessor(Processor):
         yield from self._yield_journal_nodes()
 
     def _yield_publication_nodes(self) -> Iterable[Node]:
-        logger.info("Loading PMID year info from %s" % self.pmid_year_path)
-        with gzip.open(self.pmid_year_path, "rt") as fh:
+        logger.info("Loading PMID year info from %s" % self.pmid_year_types_path)
+        with gzip.open(self.pmid_year_types_path, "rt") as fh:
             pmid_years = {pmid: year for pmid, year in csv.reader(fh)}
-        logger.info("Loaded PMID year info from %s" % self.pmid_year_path)
+        logger.info("Loaded PMID year info from %s" % self.pmid_year_types_path)
 
         def get_val(val):
             # postgres exports \N for missing values
@@ -139,7 +139,7 @@ class PubmedProcessor(Processor):
         # Todo: Add force option to download files?
         process_mesh_xml_to_csv(
             mesh_pmid_path=self.mesh_pmid_path,
-            pmid_year_path=self.pmid_year_path,
+            pmid_year_types_path=self.pmid_year_types_path,
             pmid_nlm_path=self.pmid_nlm_path,
             journal_info_path=self.journal_info_path,
         )
@@ -310,7 +310,7 @@ def extract_info_from_medline_xml(
 
 def process_mesh_xml_to_csv(
     mesh_pmid_path: Path,
-    pmid_year_path: Path,
+    pmid_year_types_path: Path,
     pmid_nlm_path: Path,
     journal_info_path: Path,  # For Journal Node creation
     force: bool = False
@@ -323,8 +323,8 @@ def process_mesh_xml_to_csv(
     ----------
     mesh_pmid_path :
         Path to the mesh pmid file
-    pmid_year_path :
-        Path to the pmid year file
+    pmid_year_types_path :
+        Path to the pmid, year, publication types file
     pmid_nlm_path :
         Path to the pmid journal file
     journal_info_path :
@@ -336,10 +336,10 @@ def process_mesh_xml_to_csv(
     #  raw_xml.ensure(url=xml_gz_url) though this makes the md5 check
     #  cumbersome.
 
-    if not force and mesh_pmid_path.exists() and pmid_year_path.exists() and \
+    if not force and mesh_pmid_path.exists() and pmid_year_types_path.exists() and \
             pmid_nlm_path.exists() and journal_info_path.exists():
         logger.info(
-            f"{mesh_pmid_path.name}, {pmid_year_path.name}, "
+            f"{mesh_pmid_path.name}, {pmid_year_types_path.name}, "
             f"{pmid_nlm_path.name} and {journal_info_path.name} "
             f"already exist, skipping download"
         )
@@ -351,14 +351,14 @@ def process_mesh_xml_to_csv(
     # Loop the stowed xml files
     logger.info("Processing PubMed XML files")
     with gzip.open(mesh_pmid_path, "wt") as fh_mesh, \
-            gzip.open(pmid_year_path, "wt") as fh_year, \
+            gzip.open(pmid_year_types_path, "wt") as fh_year_types, \
             gzip.open(pmid_nlm_path, "wt") as fh_journal, \
             gzip.open(journal_info_path, "wt") as fh_journal_info, \
             gzip.open(issn_nlm_map_path, "wt") as fh_issn_nlm_map:
 
         # Get the CSV writers
         writer_mesh = csv.writer(fh_mesh, delimiter=",")
-        writer_year = csv.writer(fh_year, delimiter=",")
+        writer_year_types = csv.writer(fh_year_types, delimiter=",")
         writer_journal = csv.writer(fh_journal, delimiter=",")
         writer_journal_info = csv.writer(fh_journal_info, delimiter="\t")
         writer_issn_nlm_map = csv.writer(fh_issn_nlm_map, delimiter=",")
@@ -395,8 +395,10 @@ def process_mesh_xml_to_csv(
                         ]
                     )
 
-                # One row per pmid-year pair
-                writer_year.writerow([pmid, year])
+                # One row per pmid,year,publication type
+                writer_year_types.writerow(
+                    [pmid, year, json.dumps(sorted(publication_types))]
+                )
 
                 # One row per nlm_id-pmid connection
                 # issn_dict structure:
