@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
-from indra.literature.pubmed_client import _get_annotations, get_issn_info
+from indra.literature import pubmed_client
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 from indra_cogex.sources.indra_db.raw_export import text_refs_fname
@@ -263,7 +263,7 @@ def ensure_text_refs(fname):
 
 def extract_info_from_medline_xml(
     xml_path: str,
-) -> Iterable[Tuple[str, int, Mapping]]:
+) -> Iterable[Tuple[str, int, Mapping, Mapping, Set[str]]]:
     """Extract info from medline xml file.
 
     Parameters
@@ -274,7 +274,13 @@ def extract_info_from_medline_xml(
     Yields
     ------
     :
-        Tuple of (PMID, year, MeSH annotations).
+        Tuple of (
+            PMID,
+            year,
+            MeSH annotations,
+            journal info,
+            publication type tags
+        )
     """
     tree = etree.parse(xml_path)
 
@@ -288,14 +294,17 @@ def extract_info_from_medline_xml(
         if min_year is None:
             logger.warning(f"Could not find year for PMID {pmid}")
 
-        mesh_annotations = _get_annotations(medline_citation)
-        journal_info = get_issn_info(medline_citation,
-                                     get_issns_from_nlm="missing")
+        mesh_annotations = pubmed_client._get_annotations(medline_citation)
+        journal_info = pubmed_client.get_issn_info(
+            medline_citation, get_issns_from_nlm="missing"
+        )
+        pub_tags = pubmed_client.get_publication_types(article)
         yield (
             pmid,
             min_year,
             mesh_annotations["mesh_annotations"],
-            journal_info
+            journal_info,
+            pub_tags
         )
 
 
@@ -370,7 +379,7 @@ def process_mesh_xml_to_csv(
         yielded_issn_nlm_links = set()
         for _, xml_path, _ in xml_path_generator(description="XML to CSV"):
             for (
-                    pmid, year, mesh_annotations, journal_info
+                    pmid, year, mesh_annotations, journal_info, publication_types
             ) in extract_info_from_medline_xml(xml_path.as_posix()):
                 # Skip if year could not be found
                 if not year:
