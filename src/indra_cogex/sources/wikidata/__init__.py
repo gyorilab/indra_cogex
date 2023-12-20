@@ -155,7 +155,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
         pmp = PubmedProcessor()
         process_mesh_xml_to_csv(
             mesh_pmid_path=pmp.mesh_pmid_path,
-            pmid_year_path=pmp.pmid_year_path,
+            pmid_year_types_path=pmp.pmid_year_types_path,
             pmid_nlm_path=pmp.pmid_nlm_path,
             journal_info_path=pmp.journal_info_path,
         )
