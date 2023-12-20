@@ -22,3 +22,5 @@ INDRA CoGEx Sources
    pubmed
    sider
    disgenet
+   gwas
+
