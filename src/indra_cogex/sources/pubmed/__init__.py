@@ -44,8 +44,8 @@ class PubmedProcessor(Processor):
     def __init__(self):
         # Maps MeSH terms to PMIDs
         self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
-        # Maps PMIDs to years
-        self.pmid_year_types_path = resources.join(name="pmid_years_types.csv.gz")
+        # Maps PMIDs to years and publication types
+        self.pmid_year_types_path = resources.join(name="pmid_years_types.tsv.gz")
         # Maps PMIDs to ISSN
         self.pmid_nlm_path = resources.join(name="pmid_nlm.csv.gz")
         # Identifies journals
@@ -66,8 +66,10 @@ class PubmedProcessor(Processor):
     def _yield_publication_nodes(self) -> Iterable[Node]:
         logger.info("Loading PMID year info from %s" % self.pmid_year_types_path)
         with gzip.open(self.pmid_year_types_path, "rt") as fh:
-            pmid_years_pubtypes = {pmid: (year, json.loads(types))
-                                   for pmid, year, types in csv.reader(fh)}
+            pmid_years_pubtypes = {
+                pmid: (year, json.loads(types))
+                for pmid, year, types in csv.reader(fh, delimiter="\t")
+            }
         logger.info("Loaded PMID year info from %s" % self.pmid_year_types_path)
 
         def get_val(val):
@@ -361,7 +363,7 @@ def process_mesh_xml_to_csv(
 
         # Get the CSV writers
         writer_mesh = csv.writer(fh_mesh, delimiter=",")
-        writer_year_types = csv.writer(fh_year_types, delimiter=",")
+        writer_year_types = csv.writer(fh_year_types, delimiter="\t")
         writer_journal = csv.writer(fh_journal, delimiter=",")
         writer_journal_info = csv.writer(fh_journal_info, delimiter="\t")
         writer_issn_nlm_map = csv.writer(fh_issn_nlm_map, delimiter=",")
