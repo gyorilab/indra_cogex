@@ -423,7 +423,7 @@ def process_mesh_xml_to_csv(
                     yielded_pmid_nlm_links.add(pmid_nlm_link)
 
                 # Get all issns
-                issn_set = {issn_dict["issn"], issn_dict.get("issn_l")}
+                issn_set = {issn_dict.get("issn"), issn_dict.get("issn_l")}
                 if issn_dict.get("alternate_issns"):
                     issn_set |= {
                         issn for _, issn in issn_dict["alternate_issns"]
@@ -442,7 +442,7 @@ def process_mesh_xml_to_csv(
                 # One row per journal, i.e. nlm id
                 if nlm_id not in used_nlm_ids:
                     issn_type = issn_dict.get("issn_type", "other")
-                    issn = issn_dict["issn"]
+                    issn = issn_dict.get("issn")
                     issn_l = issn_dict.get("issn_l")
                     if issn_type == "electronic":
                         e_issn = issn
