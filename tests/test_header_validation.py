@@ -134,6 +134,15 @@ class GoodArrayTypeProcessor(MockProcessor):
         return f"[{';'.join(str(k) for k in range(m))}]"
 
 
+class BadDataValueProcessor(MockProcessor):
+    data_type = "boolean"
+    col_name = "colname"
+
+    @staticmethod
+    def data_value(n: int):
+        return True
+
+
 def test_data_type_validator_bad():
     with TemporaryDirectory() as temp_dir:
         directory = Path(temp_dir)
@@ -218,3 +227,26 @@ def test_array_data_type_validator_good():
             mp.dump()
         except Exception as e:
             assert False, f"Unexpected exception: {repr(e)}"
+
+
+def test_data_value_validator_bad():
+    with TemporaryDirectory() as temp_dir:
+        directory = Path(temp_dir)
+
+        processor_dir = directory / "output"
+        processor_dir.mkdir()
+
+        # override the __init_subclass__ with the directory for this test
+        BadDataValueProcessor.directory = directory
+        BadDataValueProcessor.nodes_path = directory / "nodes.tsv.gz"
+        BadDataValueProcessor.nodes_indra_path = directory / "nodes.pkl"
+        BadDataValueProcessor.edges_path = directory / "edges.tsv.gz"
+
+        mp = BadDataValueProcessor()
+        try:
+            mp.dump()
+        except Exception as e:
+            assert isinstance(e, DataTypeError)
+            assert "True" in str(e)
+        else:
+            assert False, "Expected exception"
