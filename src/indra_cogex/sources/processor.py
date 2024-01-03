@@ -21,7 +21,11 @@ from indra.statements.validate import assert_valid_db_refs, assert_valid_evidenc
 from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
-from indra_cogex.sources.processor_util import data_validator, DataTypeError
+from indra_cogex.sources.processor_util import (
+    data_validator,
+    DataTypeError,
+    UnknownTypeError,
+)
 
 __all__ = [
     "Processor",
@@ -181,7 +185,11 @@ class Processor(ABC):
         # instantiation and this needs to be avoided in the node assembly
         # proces)
         logger.info(f"Dumping into {nodes_path}...")
-        nodes = list(validate_nodes(nodes))
+        try:
+            nodes = list(validate_nodes(nodes))
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"Bad node data type in node data values for {self.name}")
+            raise e
         metadata = sorted(set(key for node in nodes for key in node.data))
         try:
             validate_headers(metadata)
@@ -223,7 +231,11 @@ class Processor(ABC):
 
     def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {edges_path}...")
-        rels = validate_relations(rels)
+        try:
+            rels = validate_relations(rels)
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"Bad edge data type in edge data values for {self.name}")
+            raise e
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
         )
@@ -294,8 +306,9 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
         try:
             assert_valid_node(node.db_ns, node.db_id, node.data, check_data)
             yield node
-        except DataTypeError as e:
+        except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {node} - {e}")
+            logger.error("Bad node data type(s) detected")
             raise e
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
@@ -309,6 +322,10 @@ def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
             assert_valid_node(rel.source_ns, rel.source_id, rel.data, check_data)
             assert_valid_node(rel.target_ns, rel.target_id)
             yield rel
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("Bad relation data type(s) detected")
+            raise e
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
             continue
