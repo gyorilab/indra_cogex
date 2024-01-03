@@ -1,5 +1,5 @@
-# See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/
-# especially sections 4, 5 and 6
+# See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/#import-tool-header-format-properties
+# for available data types.
 from typing import Literal, Any
 
 NEO4J_DATA_TYPES = (
