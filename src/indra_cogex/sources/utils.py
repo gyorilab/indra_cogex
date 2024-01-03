@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Any
 
 import pyobo
 from biomappings import load_mappings
@@ -91,13 +92,14 @@ class UmlsMapper:
         return db_ns, db_id, name
 
 
-def get_bool(condition: bool) -> str:
-    """Return a Neo4j compatible string representation of a boolean.
+def get_bool(condition: Any) -> str:
+    """Return a Neo4j compatible string depending on the condition.
 
     Parameters
     ----------
     condition :
-        The boolean to convert to a string.
+        The boolean or boolean-like value to evaluate. If the value is
+        truthy, the string "true" is returned. Otherwise, the string "false"
 
     Returns
     -------
