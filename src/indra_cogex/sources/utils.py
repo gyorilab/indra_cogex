@@ -9,6 +9,7 @@ from indra_cogex.representation import Node, standardize
 
 __all__ = [
     "UmlsMapper",
+    "get_bool",
 ]
 
 
@@ -88,3 +89,20 @@ class UmlsMapper:
         if db_ns is None:
             db_ns, db_id = prefix, identifier
         return db_ns, db_id, name
+
+
+def get_bool(condition: bool) -> str:
+    """Return a Neo4j compatible string representation of a boolean.
+
+    Parameters
+    ----------
+    condition :
+        The boolean to convert to a string.
+
+    Returns
+    -------
+    :
+        The string representation of the boolean compatible with Neo4j tsv
+        import format.
+    """
+    return "true" if condition else "false"
