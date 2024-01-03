@@ -35,6 +35,7 @@ from indra_cogex.sources.indra_db.raw_export import (
     processed_stmts_fname,
     stmts_from_json,
 )
+from indra_cogex.sources.utils import get_bool
 from indra_cogex.util import load_stmt_json_str
 
 logger = logging.getLogger(__name__)
@@ -134,18 +135,10 @@ class DbProcessor(Processor):
                     "stmt_type:string": stmt_json["type"],
                     "belief:float": belief,
                     "stmt_json:string": json.dumps(stmt_json),
-                    "has_database_evidence:boolean": (
-                        "true" if set(source_count) & db_sources else "false"
-                    ),
-                    "has_reader_evidence:boolean": (
-                        "true" if set(source_count) & reader_sources else "false"
-                    ),
-                    "medscan_only:boolean": (
-                        "true" if set(source_count) == {"medscan"} else "false"
-                    ),
-                    "sparser_only:boolean": (
-                        "true" if set(source_count) == {"sparser"} else "false"
-                    ),
+                    "has_database_evidence:boolean": get_bool(set(source_count) & db_sources),
+                    "has_reader_evidence:boolean": get_bool(set(source_count) & reader_sources),
+                    "medscan_only:boolean": get_bool(set(source_count) == {"medscan"}),
+                    "sparser_only:boolean": get_bool(set(source_count) == {"sparser"}),
                 }
 
                 # Get the agents from the statement

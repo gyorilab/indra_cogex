@@ -18,6 +18,7 @@ from lxml import etree
 from tqdm.std import tqdm
 from indra.util import batch_iter
 from indra.literature import pubmed_client
+from indra_cogex.sources.utils import get_bool
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 from indra_cogex.sources.indra_db.raw_export import text_refs_fname
@@ -97,7 +98,7 @@ class PubmedProcessor(Processor):
                     "manuscript_id": get_val(manuscript_id),
                     "year:int": year,
                     "publication_type:string[]": ";".join(pubtypes),
-                    "retracted:boolean": "Retracted Publication" in pubtypes,
+                    "retracted:boolean": get_bool("Retracted Publication" in pubtypes)
                 }
                 yield Node(
                     "PUBMED",
@@ -173,9 +174,7 @@ class PubmedProcessor(Processor):
                             mesh_id,
                             "annotated_with",
                             data={
-                                "is_major_topic:boolean": "true"
-                                if major_topic == "1"
-                                else "false"
+                                "is_major_topic:boolean": get_bool(major_topic == "1")
                             },
                         )
                     )

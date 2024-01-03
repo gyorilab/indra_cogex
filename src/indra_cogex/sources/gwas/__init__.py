@@ -9,6 +9,7 @@ import gilda
 import pystow
 import pandas as pd
 
+from indra_cogex.sources.utils import get_bool
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
@@ -77,7 +78,7 @@ class GWASProcessor(Processor):
             data = {
                 "gwas_pmid:int": pmid,
                 "gwas_context": context,
-                "gwas_intergenic": bool(intergenic),
+                "gwas_intergenic:boolean": get_bool(intergenic),
                 "gwas_p_value:float": p_value,
             }
 
