@@ -22,6 +22,7 @@ from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
 from indra_cogex.sources.processor_util import (
+    NEO4J_DATA_TYPES,
     data_validator,
     DataTypeError,
     UnknownTypeError,
@@ -38,35 +39,6 @@ logger = logging.getLogger(__name__)
 # Find neo4j conf and comment out this line: dbms.directories.import=import
 # /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf for me
 # data stored in /usr/local/var/neo4j/data/databases
-
-
-# See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/
-# especially sections 4, 5 and 6
-NEO4J_DATA_TYPES = (
-    "int",
-    "long",
-    "float",
-    "double",
-    "boolean",
-    "byte",
-    "short",
-    "char",
-    "string",
-    "point",
-    "date",
-    "localtime",
-    "time",
-    "localdatetime",
-    "datetime",
-    "duration",
-    # Used in node files
-    "ID",
-    "LABEL",
-    # Used in relationship files
-    "START_ID",
-    "END_ID",
-    "TYPE",
-)
 
 
 class Processor(ABC):
