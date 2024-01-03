@@ -5,6 +5,7 @@ from typing import Any
 from indra_cogex.sources import Processor
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import validate_headers
+from indra_cogex.sources.processor_util import data_validator, DataTypeError
 
 
 def test_validator():
@@ -27,6 +28,34 @@ def test_validator():
         assert isinstance(e, TypeError)
         assert "badintarr" in str(e)
         assert "integer[]" in str(e)
+
+
+def test_data_validator():
+    data_validator("int", 1)
+    data_validator("long", 1)
+    data_validator("float", 1.0)
+    data_validator("double", 1.0)
+    data_validator("boolean", "true")
+    data_validator("boolean", "false")
+    data_validator("byte", b"1")
+    data_validator("byte", 1)
+    data_validator("short", 1)
+    data_validator("char", "1")
+    data_validator("string", "1")
+    # data_validator("point", "1")  # Not implemented yet
+
+    try:
+        data_validator("int", "1")
+    except Exception as e:
+        assert isinstance(e, DataTypeError)
+        assert "int" in str(e)
+        assert "1" in str(e)
+
+    try:
+        data_validator("notatype", "1")
+    except Exception as e:
+        assert isinstance(e, TypeError)
+        assert "notatype" in str(e)
 
 
 class MockProcessor(Processor, object):
