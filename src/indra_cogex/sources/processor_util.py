@@ -80,39 +80,56 @@ def data_validator(data_type: str, value: Any):
     """
     if data_type == "int":
         if not isinstance(value, int):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be int")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be int"
+            )
     elif data_type == "long":
         if not isinstance(value, int):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be int")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be int"
+            )
     elif data_type == "float":
         if not isinstance(value, float):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be float")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be float"
+            )
     elif data_type == "double":
         if not isinstance(value, float):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be float")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be float"
+            )
     elif data_type == "boolean":
         if not isinstance(value, str) or value not in ("true", "false"):
             raise DataTypeError(
-                f"Expected {value} of type {data_type} to be 'true' or 'false'"
+                f"Expected {value} of Neo4j type {data_type} to be literal "
+                f"'true' or 'false'"
             )
     elif data_type == "byte":
         if not isinstance(value, (bytes, int)):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be bytes or int")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be bytes or int"
+            )
     elif data_type == "short":
         if not isinstance(value, int):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be int")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be int"
+            )
     elif data_type == "char":
         if not isinstance(value, str):
-            raise DataTypeError(f"Expected {value} of type {data_type} to be str")
+            raise DataTypeError(
+                f"Expected {value} of Neo4j type {data_type} to be str"
+            )
     elif data_type == "string":
         if isinstance(value, (int, float)):
             value = str(value)
         if not isinstance(value, str):
             raise DataTypeError(
-                f"Expected {value} of type {data_type} to be str, int or float"
+                f"Expected {value} of Neo4j type {data_type} to be str, int or float"
             )
     elif data_type == "point":
-        raise NotImplementedError("point data type validation is not implemented")
+        raise NotImplementedError(
+            "Neo4j point data type validation is not implemented"
+        )
     # Todo: make stricter validation for dates and times:
     # https://neo4j.com/docs/cypher-manual/4.4/syntax/temporal/#cypher-temporal-instants
     elif data_type in [
@@ -125,12 +142,12 @@ def data_validator(data_type: str, value: Any):
     ]:
         if not isinstance(value, (str, int)):
             raise DataTypeError(
-                f"Expected {value} of type {data_type} to be str or int"
+                f"Expected {value} of Neo4j type {data_type} to be str or int"
             )
     elif data_type in ["ID", "LABEL", "START_ID", "END_ID", "TYPE"]:
         if not isinstance(value, (str, int)):
             raise DataTypeError(
-                f"Expected {value} of type {data_type} to be str or int"
+                f"Expected {value} of Neo4j type {data_type} to be str or int"
             )
     else:
-        raise UnknownTypeError(f"Unknown data type {data_type}")
+        raise UnknownTypeError(f"Unknown data Neo4j type {data_type}")
