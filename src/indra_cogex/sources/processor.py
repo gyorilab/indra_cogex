@@ -21,6 +21,7 @@ from indra.statements.validate import assert_valid_db_refs, assert_valid_evidenc
 from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
+from indra_cogex.sources.processor_util import data_validator, DataTypeError
 
 __all__ = [
     "Processor",
@@ -261,7 +262,10 @@ class Processor(ABC):
 
 
 def assert_valid_node(
-    db_ns: str, db_id: str, data: Optional[Mapping[str, Any]] = None
+    db_ns: str,
+    db_id: str,
+    data: Optional[Mapping[str, Any]] = None,
+    check_data: bool = False,
 ) -> None:
     if db_ns == "indra_evidence":
         if data and data.get("evidence:string"):
@@ -270,12 +274,29 @@ def assert_valid_node(
     else:
         assert_valid_db_refs({db_ns: db_id})
 
+    if data and check_data:
+        for key, value in data.items():
+            if key == "evidence":
+                continue
+            if ":" in key:
+                dtype = key.split(":")[1]
+                if dtype.endswith("[]"):
+                    dtype = dtype[:-2]
+                data_validator(dtype, value)
+            else:
+                # If no data type is specified, string is assumed by Neo4j
+                data_validator("string", value)
+
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
+        check_data = idx < 10
         try:
-            assert_valid_node(node.db_ns, node.db_id, node.data)
+            assert_valid_node(node.db_ns, node.db_id, node.data, check_data)
             yield node
+        except DataTypeError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            raise e
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
             continue
@@ -284,7 +305,8 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
     for idx, rel in enumerate(relations):
         try:
-            assert_valid_node(rel.source_ns, rel.source_id)
+            check_data = idx < 10
+            assert_valid_node(rel.source_ns, rel.source_id, rel.data, check_data)
             assert_valid_node(rel.target_ns, rel.target_id)
             yield rel
         except Exception as e:
