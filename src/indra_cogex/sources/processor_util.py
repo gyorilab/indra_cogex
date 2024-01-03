@@ -75,7 +75,7 @@ def data_validator(data_type: str, value: Any):
     ------
     DataTypeError
         If the data type does not match the value.
-    TypeError
+    UnknownTypeError
         If the data type is not recognized.
     """
     if data_type == "int" or data_type == "long" or data_type == "short":
