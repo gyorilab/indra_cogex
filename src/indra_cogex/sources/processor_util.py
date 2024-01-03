@@ -54,6 +54,10 @@ DataTypes = Literal[
 
 
 class DataTypeError(TypeError):
+    """Raised when a data value is not of the expected type"""
+
+
+class UnknownTypeError(TypeError):
     """Raised when a data type is not recognized."""
 
 
@@ -129,4 +133,4 @@ def data_validator(data_type: str, value: Any):
                 f"Expected {value} of type {data_type} to be str or int"
             )
     else:
-        raise TypeError(f"Unknown data type {data_type}")
+        raise UnknownTypeError(f"Unknown data type {data_type}")
