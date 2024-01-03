@@ -294,10 +294,10 @@ def assert_valid_node(
                 dtype = key.split(":")[1]
                 if dtype.endswith("[]"):
                     dtype = dtype[:-2]
-                data_validator(dtype, value)
             else:
                 # If no data type is specified, string is assumed by Neo4j
-                data_validator("string", value)
+                dtype = "string"
+            data_validator(dtype, value)
 
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
