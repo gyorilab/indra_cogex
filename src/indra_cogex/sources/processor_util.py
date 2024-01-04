@@ -1,4 +1,6 @@
 # See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/#import-tool-header-format-properties
+# and
+# https://neo4j.com/docs/api/python-driver/current/api.html#data-types
 # for available data types.
 from typing import Literal, Any
 
