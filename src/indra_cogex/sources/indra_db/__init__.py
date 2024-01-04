@@ -14,6 +14,7 @@ from itertools import permutations
 from pathlib import Path
 from typing import Iterable, Optional, Tuple, Union
 
+from indra.literature.pubmed_client import is_retracted
 from indra.statements import (
     Agent,
     default_ns_order,
@@ -210,6 +211,19 @@ class EvidenceProcessor(Processor):
             for row in reader:
                 included_hashes.add(int(row[hash_idx]))
 
+        # Create pubmed source files if they don't exist
+        if not pmid_year_types_path.exists():
+            from indra_cogex.sources.pubmed import process_mesh_xml_to_csv
+            process_mesh_xml_to_csv()
+
+        # Load pmid -> year, pubtypes mapping (assumes pubmed source files
+        # exist)
+        with gzip.open(pmid_year_types_path, "rt") as fh:
+            pmid_years_pubtypes = {
+                pmid: (year, json.loads(types))
+                for pmid, year, types in csv.reader(fh, delimiter="\t")
+            }
+
         # Loop the grounded statements and get the evidence w text refs
         logger.info("Looping statements from statements file")
         with gzip.open(self.stmt_fname.as_posix(), "rt") as fh:
@@ -240,8 +254,11 @@ class EvidenceProcessor(Processor):
                         tr = evidence.get("text_refs", {})
                         pmid = tr.get("PMID") or evidence.get("pmid")
 
-                        # Skip if no PMID or we already yielded this PMID
+                        # Only yield Pubmed nodes if we have PMID and it
+                        # hasn't already been used
                         if pmid is not None and pmid not in yielded_pmid:
+                            year, pubtypes = pmid_years_pubtypes.get(pmid, (None, []))
+                            pubtypes_str = ";".join(pubtypes) or None
                             # If there are text refs, use them
                             if tr.get("PMID"):
                                 pubmed_node = Node(
@@ -255,6 +272,11 @@ class EvidenceProcessor(Processor):
                                         "pii": tr.get("PII"),
                                         "url": tr.get("URL"),
                                         "manuscript_id": tr.get("MANUSCRIPT_ID"),
+                                        "year:int": year,
+                                        "publication_type:string[]": pubtypes_str,
+                                        "retracted:boolean": get_bool(
+                                            is_retracted(pmid)
+                                        )
                                     },
                                 )
                             # Otherwise, just make a node with the evidence PMID
@@ -263,6 +285,13 @@ class EvidenceProcessor(Processor):
                                     db_ns="PUBMED",
                                     db_id=pmid,
                                     labels=["Publication"],
+                                    data={
+                                        "year:int": year,
+                                        "publication_type:string[]": pubtypes_str,
+                                        "retracted:boolean": get_bool(
+                                            is_retracted(pmid)
+                                        )
+                                    },
                                 )
 
                             # Add Publication node to batch if it was created
@@ -291,6 +320,10 @@ class EvidenceProcessor(Processor):
                                 db_id=str(yield_index),
                                 labels=["Evidence"],
                                 data={
+                                    # Check retractions if there is a PMID
+                                    "retracted:boolean": get_bool(
+                                        is_retracted(pmid) if pmid else False
+                                    ),
                                     "evidence:string": json.dumps(evidence),
                                     "stmt_hash:int": stmt_hash,
                                     "source_api:string": evidence["source_api"],
