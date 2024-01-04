@@ -68,12 +68,19 @@ class MockProcessor(Processor, object):
     name = "mock_processor"
     node_types = ["mock_node"]
     data_type: str = NotImplemented
+    rel_data_type: str = NotImplemented
     col_name: str = NotImplemented
+    rel_col_name: str = NotImplemented
     num_nodes: int = 3
 
     @staticmethod
     def data_value(n: int) -> Any:
         """Return a data value for the given node."""
+        raise NotImplementedError
+
+    @staticmethod
+    def rel_data_value(n: int) -> Any:
+        """Return a data value for the given relation."""
         raise NotImplementedError
 
     def get_nodes(self):
@@ -90,19 +97,27 @@ class MockProcessor(Processor, object):
         """Return a sequence of relations for testing."""
         num = self.num_nodes
         for n in range(num):
+            if self.rel_col_name is not None:
+                data = {
+                    f"{self.rel_col_name}:{self.rel_data_type}": self.rel_data_value(n)
+                }
+            else:
+                data = None
             yield Relation(
                 source_ns="PUBMED",
                 source_id=str(n % num),
                 target_ns="PUBMED",
                 target_id=str(n + 1 % num),
                 rel_type="mock_relation",
-                data={"an_int:int": n, f"raises_exception:{self.data_type}": n ** 2},
+                data=data,
             )
 
 
 class BadTypeProcessor(MockProcessor):
     data_type = "bad_type"
     col_name = "colname"
+    rel_data_type = None
+    rel_col_name = None
 
     @staticmethod
     def data_value(n: int) -> int:
@@ -112,6 +127,8 @@ class BadTypeProcessor(MockProcessor):
 class GoodTypeProcessor(MockProcessor):
     data_type = "int"
     col_name = "colname"
+    rel_data_type = None
+    rel_col_name = None
 
     @staticmethod
     def data_value(n: int) -> int:
@@ -121,30 +138,85 @@ class GoodTypeProcessor(MockProcessor):
 class BadArrayTypeProcessor(MockProcessor):
     data_type = "bad_type[]"
     col_name = "array_colname"
+    rel_data_type = None
+    rel_col_name = None
 
     @staticmethod
     def data_value(n: int) -> str:
         m = int((n + 1) ** 2)
-        return f"[{';'.join(str(k) for k in range(m))}]"
+        return f"{';'.join(str(k) for k in range(m))}"
 
 
 class GoodArrayTypeProcessor(MockProcessor):
     data_type = "int[]"
     col_name = "array_colname"
+    rel_data_type = None
+    rel_col_name = None
 
     @staticmethod
     def data_value(n: int) -> str:
         m = int((n + 1) ** 2)
-        return f"[{';'.join(str(k) for k in range(m))}]"
+        return f"{';'.join(str(k) for k in range(m))}"
 
 
 class BadDataValueProcessor(MockProcessor):
     data_type = "boolean"
     col_name = "colname"
+    rel_data_type = "int"
+    rel_col_name = "rel_colname"
 
     @staticmethod
     def data_value(n: int):
         return True
+
+    @staticmethod
+    def rel_data_value(n: int):
+        return True
+
+
+class GoodDataValueProcessor(MockProcessor):
+    data_type = "boolean"
+    col_name = "colname"
+    rel_data_type = "int"
+    rel_col_name = "rel_colname"
+
+    @staticmethod
+    def data_value(n: int) -> str:
+        return "true"
+
+    @staticmethod
+    def rel_data_value(n: int) -> int:
+        return n
+
+
+class BadArrayDataValueProcessor(MockProcessor):
+    data_type = "int[]"
+    col_name = "colname"
+    rel_data_type = "float[]"
+    rel_col_name = "rel_colname"
+
+    @staticmethod
+    def data_value(n: int) -> str:
+        return ";".join(["notanint", "notanint"])
+
+    @staticmethod
+    def rel_data_value(n: int) -> str:
+        return ";".join(["notaboolean", "true"])
+
+
+class GoodArrayDataValueProcessor(MockProcessor):
+    data_type = "int[]"
+    col_name = "colname"
+    rel_data_type = "float[]"
+    rel_col_name = "rel_colname"
+
+    @staticmethod
+    def data_value(n: int) -> str:
+        return f"{n};{n + 1}"
+
+    @staticmethod
+    def rel_data_value(n: int) -> str:
+        return f"{n + 0.1};{n + 1.1}"
 
 
 def test_data_type_validator_bad():
@@ -254,3 +326,66 @@ def test_data_value_validator_bad():
             assert "True" in str(e)
         else:
             assert False, "Expected exception"
+
+
+def test_data_value_validator_good():
+    with TemporaryDirectory() as temp_dir:
+        directory = Path(temp_dir)
+
+        processor_dir = directory / "output"
+        processor_dir.mkdir()
+
+        # override the __init_subclass__ with the directory for this test
+        GoodDataValueProcessor.directory = directory
+        GoodDataValueProcessor.nodes_path = directory / "nodes.tsv.gz"
+        GoodDataValueProcessor.nodes_indra_path = directory / "nodes.pkl"
+        GoodDataValueProcessor.edges_path = directory / "edges.tsv.gz"
+
+        mp = GoodDataValueProcessor()
+        _ = mp.dump()
+
+
+def test_array_data_value_validator_bad():
+    with TemporaryDirectory() as temp_dir:
+        directory = Path(temp_dir)
+
+        processor_dir = directory / "output"
+        processor_dir.mkdir()
+
+        # override the __init_subclass__ with the directory for this test
+        BadArrayDataValueProcessor.directory = directory
+        BadArrayDataValueProcessor.nodes_path = directory / "nodes.tsv.gz"
+        BadArrayDataValueProcessor.nodes_indra_path = directory / "nodes.pkl"
+        BadArrayDataValueProcessor.edges_path = directory / "edges.tsv.gz"
+
+        mp = BadArrayDataValueProcessor()
+        try:
+            mp.dump()
+        except Exception as e:
+            assert isinstance(e, DataTypeError), f"Unexpected exception: {repr(e)}"
+            assert any(
+                s in str(e) for s in ["notanint", "notaboolean", "true"]
+            ), (f"Excpected exception to contain 'notanint', 'notaboolean', "
+                f"or 'true', but got {repr(e)}")
+        else:
+            assert False, "Expected exception of type DataTypeError"
+
+
+def test_array_data_value_validator_good():
+    with TemporaryDirectory() as temp_dir:
+        directory = Path(temp_dir)
+
+        processor_dir = directory / "output"
+        processor_dir.mkdir()
+
+        # override the __init_subclass__ with the directory for this test
+        GoodArrayDataValueProcessor.directory = directory
+        GoodArrayDataValueProcessor.nodes_path = directory / "nodes.tsv.gz"
+        GoodArrayDataValueProcessor.nodes_indra_path = directory / "nodes.pkl"
+        GoodArrayDataValueProcessor.edges_path = directory / "edges.tsv.gz"
+
+        mp = GoodArrayDataValueProcessor()
+        try:
+            mp.dump()
+        except Exception as e:
+            assert False, f"Unexpected exception: {repr(e)}"
