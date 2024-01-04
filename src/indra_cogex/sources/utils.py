@@ -93,13 +93,15 @@ class UmlsMapper:
 
 
 def get_bool(condition: Any) -> str:
-    """Return a Neo4j compatible string depending on the condition.
+    """Return a Neo4j compatible string representation of a boolean.
+
+    If the condition is truthy, the string "true" is returned. Otherwise,
+    the string "false"
 
     Parameters
     ----------
     condition :
-        The boolean or boolean-like value to evaluate. If the value is
-        truthy, the string "true" is returned. Otherwise, the string "false"
+        The boolean or boolean-like condition or value to evaluate.
 
     Returns
     -------
