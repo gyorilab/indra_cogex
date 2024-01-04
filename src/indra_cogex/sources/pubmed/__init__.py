@@ -49,10 +49,10 @@ class PubmedProcessor(Processor):
 
     def get_nodes(self) -> Iterable[Node]:
         process_mesh_xml_to_csv(
-            mesh_pmid_path=self.mesh_pmid_path,
-            pmid_year_types_path=self.pmid_year_types_path,
-            pmid_nlm_path=self.pmid_nlm_path,
-            journal_info_path=self.journal_info_path,
+            mesh_pmid_fpath=self.mesh_pmid_path,
+            pmid_year_types_fpath=self.pmid_year_types_path,
+            pmid_nlm_fpath=self.pmid_nlm_path,
+            journal_info_fpath=self.journal_info_path,
         )
         yield from self._yield_publication_nodes()
         yield from self._yield_journal_nodes()
@@ -137,10 +137,10 @@ class PubmedProcessor(Processor):
         # Ensure cached files exist
         # Todo: Add force option to download files?
         process_mesh_xml_to_csv(
-            mesh_pmid_path=self.mesh_pmid_path,
-            pmid_year_types_path=self.pmid_year_types_path,
-            pmid_nlm_path=self.pmid_nlm_path,
-            journal_info_path=self.journal_info_path,
+            mesh_pmid_fpath=self.mesh_pmid_path,
+            pmid_year_types_fpath=self.pmid_year_types_path,
+            pmid_nlm_fpath=self.pmid_nlm_path,
+            journal_info_fpath=self.journal_info_path,
         )
         logger.info("Generating mesh-pmid relations")
         yield from self._yield_mesh_pmid_relations()
@@ -306,10 +306,10 @@ def extract_info_from_medline_xml(
 
 
 def process_mesh_xml_to_csv(
-    mesh_pmid_path: Path,
-    pmid_year_types_path: Path,
-    pmid_nlm_path: Path,
-    journal_info_path: Path,  # For Journal Node creation
+    mesh_pmid_fpath: Path = mesh_pmid_path,
+    pmid_year_types_fpath: Path = pmid_year_types_path,
+    pmid_nlm_fpath: Path = pmid_nlm_path,
+    journal_info_fpath: Path = journal_info_path,  # For Journal Node creation
     force: bool = False
 ):
     """Process the pubmed xml and dump to different CSV files
@@ -318,13 +318,13 @@ def process_mesh_xml_to_csv(
 
     Parameters
     ----------
-    mesh_pmid_path :
+    mesh_pmid_fpath :
         Path to the mesh pmid file
-    pmid_year_types_path :
+    pmid_year_types_fpath :
         Path to the pmid, year, publication types file
-    pmid_nlm_path :
+    pmid_nlm_fpath :
         Path to the pmid journal file
-    journal_info_path :
+    journal_info_fpath :
         Path to the journal info file, used to create the Journal Nodes
     force :
         If True, re-run the download even if the file already exists.
@@ -333,11 +333,11 @@ def process_mesh_xml_to_csv(
     #  raw_xml.ensure(url=xml_gz_url) though this makes the md5 check
     #  cumbersome.
 
-    if not force and mesh_pmid_path.exists() and pmid_year_types_path.exists() and \
-            pmid_nlm_path.exists() and journal_info_path.exists():
+    if not force and mesh_pmid_fpath.exists() and pmid_year_types_fpath.exists() and \
+            pmid_nlm_fpath.exists() and journal_info_fpath.exists():
         logger.info(
-            f"{mesh_pmid_path.name}, {pmid_year_types_path.name}, "
-            f"{pmid_nlm_path.name} and {journal_info_path.name} "
+            f"{mesh_pmid_fpath.name}, {pmid_year_types_fpath.name}, "
+            f"{pmid_nlm_fpath.name} and {journal_info_fpath.name} "
             f"already exist, skipping download"
         )
         return
@@ -347,10 +347,10 @@ def process_mesh_xml_to_csv(
 
     # Loop the stowed xml files
     logger.info("Processing PubMed XML files")
-    with gzip.open(mesh_pmid_path, "wt") as fh_mesh, \
-            gzip.open(pmid_year_types_path, "wt") as fh_year_types, \
-            gzip.open(pmid_nlm_path, "wt") as fh_journal, \
-            gzip.open(journal_info_path, "wt") as fh_journal_info, \
+    with gzip.open(mesh_pmid_fpath, "wt") as fh_mesh, \
+            gzip.open(pmid_year_types_fpath, "wt") as fh_year_types, \
+            gzip.open(pmid_nlm_fpath, "wt") as fh_journal, \
+            gzip.open(journal_info_fpath, "wt") as fh_journal_info, \
             gzip.open(issn_nlm_map_path, "wt") as fh_issn_nlm_map:
 
         # Get the CSV writers

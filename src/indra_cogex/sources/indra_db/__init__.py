@@ -35,6 +35,7 @@ from indra_cogex.sources.indra_db.locations import (
     unique_stmts_fname,
     source_counts_fname
 )
+from indra_cogex.sources.pubmed.locations import pmid_year_types_path
 from indra_cogex.sources.utils import get_bool
 from indra_cogex.util import load_stmt_json_str
 

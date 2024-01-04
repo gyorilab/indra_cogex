@@ -31,8 +31,8 @@ import tqdm
 
 from indra_cogex.representation import Relation, Node
 from indra_cogex.sources import Processor
-from indra_cogex.sources.pubmed import issn_nlm_map_path,\
-    process_mesh_xml_to_csv, PubmedProcessor
+from indra_cogex.sources.pubmed import issn_nlm_map_path, \
+    process_mesh_xml_to_csv
 
 
 __all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
@@ -152,13 +152,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
     @staticmethod
     def _load_issn_nlm_map():
         # First ensure the pre-processing has been done
-        pmp = PubmedProcessor()
-        process_mesh_xml_to_csv(
-            mesh_pmid_path=pmp.mesh_pmid_path,
-            pmid_year_types_path=pmp.pmid_year_types_path,
-            pmid_nlm_path=pmp.pmid_nlm_path,
-            journal_info_path=pmp.journal_info_path,
-        )
+        process_mesh_xml_to_csv()
         with gzip.open(issn_nlm_map_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter=',')
             logger.info("Loading ISSN NLM map")
