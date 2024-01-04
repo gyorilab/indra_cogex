@@ -90,7 +90,7 @@ class PubmedProcessor(Processor):
                     "url": get_val(url),
                     "manuscript_id": get_val(manuscript_id),
                     "year:int": year,
-                    "publication_type:string[]": ";".join(pubtypes),
+                    "publication_type:string[]": ";".join(pubtypes) or None,
                     "retracted:boolean": get_bool("Retracted Publication" in pubtypes)
                 }
                 yield Node(
