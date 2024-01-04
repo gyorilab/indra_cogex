@@ -260,7 +260,11 @@ def assert_valid_node(
 
     if data and check_data:
         for key, value in data.items():
+            # Skip None values
+            if value is None:
+                continue
             if key == "evidence":
+                # todo: why is this here?
                 continue
             if ":" in key:
                 dtype = key.split(":")[1]
@@ -272,6 +276,7 @@ def assert_valid_node(
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
     for idx, node in enumerate(nodes):
+        # Todo: loop data until non-empty data is found or just check all data?
         check_data = idx < 10
         try:
             assert_valid_node(node.db_ns, node.db_id, node.data, check_data)
@@ -288,6 +293,8 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
     for idx, rel in enumerate(relations):
         try:
+            # Todo: loop data until non-empty data is found or just check
+            #  all data?
             check_data = idx < 10
             assert_valid_node(rel.source_ns, rel.source_id, rel.data, check_data)
             assert_valid_node(rel.target_ns, rel.target_id)
