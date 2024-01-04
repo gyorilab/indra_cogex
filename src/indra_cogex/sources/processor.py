@@ -264,8 +264,6 @@ def assert_valid_node(
                 continue
             if ":" in key:
                 dtype = key.split(":")[1]
-                if dtype.endswith("[]"):
-                    dtype = dtype[:-2]
             else:
                 # If no data type is specified, string is assumed by Neo4j
                 dtype = "string"
