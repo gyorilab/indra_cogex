@@ -78,51 +78,90 @@ def data_validator(data_type: str, value: Any):
     UnknownTypeError
         If the data type is not recognized.
     """
+    value_list = value.split(";") if data_type.endswith("[]") else [value]
+    data_type = data_type.rstrip("[]")
     if data_type == "int" or data_type == "long" or data_type == "short":
-        if not isinstance(value, int):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type int, "
-                f"but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if isinstance(val, str):
+                # Try to convert to int
+                try:
+                    val = int(val)
+                except ValueError as e:
+                    raise DataTypeError(
+                        f"Data value '{val}' is of the wrong type to conform "
+                        f"with Neo4j type {data_type}. Expected a value of "
+                        f"type int, but got value of type str with value "
+                        f"'{val}' instead."
+                    ) from e
+            if not isinstance(val, int):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type int, "
+                    f"but got value of type {type(val)} instead."
+                )
     elif data_type == "float" or data_type == "double":
-        if not isinstance(value, float):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type float, "
-                f"but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if isinstance(val, str):
+                # Try to convert to float
+                try:
+                    val = float(val)
+                except ValueError as e:
+                    raise DataTypeError(
+                        f"Data value '{val}' is of the wrong type to conform "
+                        f"with Neo4j type {data_type}. Expected a value of "
+                        f"type float, but got value of type str with value "
+                        f"'{val}' instead."
+                    ) from e
+            if not isinstance(val, float):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type float, "
+                    f"but got value of type {type(val)} instead."
+                )
     elif data_type == "boolean":
-        if not isinstance(value, str) or value not in ("true", "false"):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type str "
-                f"with literal value 'true' or 'false', but got value of "
-                f"type {type(value)} with value {value} instead."
-            )
+        for val in value_list:
+            if not isinstance(val, str) or val not in ("true", "false"):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type str "
+                    f"with literal value 'true' or 'false', but got value of "
+                    f"type {type(val)} with value '{val}' instead."
+                )
     elif data_type == "byte":
-        if not isinstance(value, (bytes, int)):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type bytes "
-                f"or int, but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if not isinstance(val, (bytes, int)):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type bytes "
+                    f"or int, but got value of type {type(val)} instead."
+                )
     elif data_type == "char":
-        if not isinstance(value, str):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type str, "
-                f"but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if not isinstance(val, str):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type str, "
+                    f"but got value of type {type(val)} instead."
+                )
     elif data_type == "string":
-        if isinstance(value, (int, float)):
-            value = str(value)
-        if not isinstance(value, str):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type str, "
-                f"int or float, but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            # Catch string representations of numbers
+            if isinstance(val, (int, float)):
+                try:
+                    val = str(val)
+                except ValueError as e:
+                    raise DataTypeError(
+                        f"Data value '{val}' is of the wrong type to conform "
+                        f"with Neo4j type {data_type}. Expected a value of "
+                        f"type str, int or float, but got value of type "
+                        f"{type(val)} instead."
+                    ) from e
+            if not isinstance(val, str):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type str, "
+                    f"int or float, but got value of type {type(val)} instead."
+                )
     elif data_type == "point":
         raise NotImplementedError(
             "Neo4j point data type validation is not implemented"
@@ -137,18 +176,20 @@ def data_validator(data_type: str, value: Any):
         "datetime",
         "duration",
     ]:
-        if not isinstance(value, (str, int)):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type str "
-                f"or int, but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if not isinstance(val, (str, int)):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type str "
+                    f"or int, but got value of type {type(val)} instead."
+                )
     elif data_type in ["ID", "LABEL", "START_ID", "END_ID", "TYPE"]:
-        if not isinstance(value, (str, int)):
-            raise DataTypeError(
-                f"Data value {value} is of the wrong type to conform with "
-                f"Neo4j type {data_type}. Expected a value of type str "
-                f"or int, but got value of type {type(value)} instead."
-            )
+        for val in value_list:
+            if not isinstance(val, (str, int)):
+                raise DataTypeError(
+                    f"Data value '{val}' is of the wrong type to conform with "
+                    f"Neo4j type {data_type}. Expected a value of type str "
+                    f"or int, but got value of type {type(val)} instead."
+                )
     else:
         raise UnknownTypeError(f"Unknown data Neo4j type {data_type}")
