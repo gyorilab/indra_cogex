@@ -124,12 +124,16 @@ class DbProcessor(Processor):
                 # Get pmid
                 pmid = evidence.get("text_refs", {}).get("PMID") or \
                     evidence.get("pmid")
-                # NOTE: The second part of the condition catches both cases
-                # where the pmid has not been seen and where it has been
-                # seen and set to False. This ensures that if there is a
-                # retraction, we don't overwrite it with False.
-                if pmid is not None and not has_retracted_pmid.get(stmt_hash):
-                    has_retracted_pmid[stmt_hash] = is_retracted(pmid)
+                # If we have a pmid, check if it is retracted.
+                # If this is the first time we see this statement hash,
+                # set the has_retracted_pmid flag to the retraction status,
+                # otherwise, only change it if the pmid is retracted.
+                if pmid is not None:
+                    if stmt_hash not in has_retracted_pmid:
+                        has_retracted_pmid[stmt_hash] = is_retracted(pmid)
+                    else:
+                        # Run OR on the current value and the new value
+                        has_retracted_pmid[stmt_hash] |= is_retracted(pmid)
 
         hashes_yielded = set()
         with gzip.open(self.stmts_fname, "rt") as fh:
