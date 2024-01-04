@@ -5,7 +5,11 @@ from typing import Any
 from indra_cogex.sources import Processor
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import validate_headers
-from indra_cogex.sources.processor_util import data_validator, DataTypeError
+from indra_cogex.sources.processor_util import (
+    data_validator,
+    DataTypeError,
+    UnknownTypeError
+)
 
 
 def test_validator():
@@ -203,8 +207,8 @@ def test_array_data_type_validator_bad():
         try:
             mp.dump()
         except Exception as e:
-            assert isinstance(e, TypeError)
-            assert "bad_type[]" in str(e)
+            assert isinstance(e, UnknownTypeError)
+            assert "bad_type" in str(e)
         else:
             assert False, "Expected exception"
 
