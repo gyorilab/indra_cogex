@@ -110,12 +110,35 @@ class DbProcessor(Processor):
         logger.info("Loading belief scores per hash")
         with self.belief_scores_fname.open("rb") as f:
             belief_scores = pickle.load(f)
+        logger.info("Loading stmt hash - retraction boolean mapping")
+        has_retracted_pmid = {}
+        with gzip.open(self.stmts_fname, "rt") as fh:
+            reader = csv.reader(fh, delimiter="\t")
+            for sh_str, stmt_json_str in tqdm(
+                    reader, desc="Reading statements", unit_scale=True
+            ):
+                stmt_hash = int(sh_str)
+                stmt_json = load_stmt_json_str(stmt_json_str)
+                evidence = stmt_json["evidence"][0]
+
+                # Get pmid
+                pmid = evidence.get("text_refs", {}).get("PMID") or \
+                    evidence.get("pmid")
+                # NOTE: The second part of the condition catches both cases
+                # where the pmid has not been seen and where it has been
+                # seen and set to False. This ensures that if there is a
+                # retraction, we don't overwrite it with False.
+                if pmid is not None and not has_retracted_pmid.get(stmt_hash):
+                    has_retracted_pmid[stmt_hash] = is_retracted(pmid)
 
         hashes_yielded = set()
         with gzip.open(self.stmts_fname, "rt") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for sh_str, stmt_json_str in tqdm(reader, desc="Reading statements"):
                 stmt_hash = int(sh_str)
+                if stmt_hash in hashes_yielded:
+                    continue
+
                 try:
                     source_count = source_counts[stmt_hash]
                     belief = belief_scores[stmt_hash]
@@ -130,6 +153,10 @@ class DbProcessor(Processor):
                 stmt_json = load_stmt_json_str(stmt_json_str)
                 if stmt_json["evidence"][0]["source_api"] == "medscan":
                     stmt_json["evidence"] = []
+
+                # Set belief in the statement json
+                stmt_json["belief"] = belief
+
                 data = {
                     "stmt_hash:int": stmt_hash,
                     "source_counts:string": json.dumps(source_count),
@@ -137,6 +164,9 @@ class DbProcessor(Processor):
                     "stmt_type:string": stmt_json["type"],
                     "belief:float": belief,
                     "stmt_json:string": json.dumps(stmt_json),
+                    "has_retracted_evidence:boolean": get_bool(
+                        has_retracted_pmid.get(stmt_hash)
+                    ),
                     "has_database_evidence:boolean": get_bool(set(source_count) & db_sources),
                     "has_reader_evidence:boolean": get_bool(set(source_count) & reader_sources),
                     "medscan_only:boolean": get_bool(set(source_count) == {"medscan"}),
