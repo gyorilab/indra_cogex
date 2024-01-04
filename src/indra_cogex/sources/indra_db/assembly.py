@@ -10,7 +10,6 @@ from typing import List, Set, Tuple, Optional
 import networkx as nx
 import numpy as np
 import tqdm
-import pystow
 from collections import defaultdict, Counter
 
 from indra.belief import BeliefEngine
@@ -20,19 +19,16 @@ from indra.statements import Statement, Evidence
 from indra.statements.io import stmt_from_json
 from indra.preassembler import Preassembler
 
-from indra_cogex.sources.indra_db.raw_export import (
+from indra_cogex.sources.indra_db.locations import (
     unique_stmts_fname,
     source_counts_fname,
+    belief_scores_pkl_fname,
+    refinements_fname,
+    refinement_cycles_fname,
 )
 from indra_cogex.util import load_stmt_json_str
 
 StmtList = List[Statement]
-
-base_folder = pystow.module("indra", "db")
-refinements_fname = base_folder.join(name="refinements.tsv.gz")
-belief_scores_pkl_fname = base_folder.join(name="belief_scores.pkl")
-refinement_cycles_fname = base_folder.join(name="refinement_cycles.pkl")
-
 
 logger = logging.getLogger(__name__)
 

@@ -8,25 +8,12 @@ import tqdm
 import codecs
 import pandas
 import pickle
-import pystow
 from adeft.download import get_available_models
 from indra.util import batch_iter
 from indra.statements import stmts_from_json, stmt_from_json
 from indra.tools import assemble_corpus as ac
+from indra_cogex.sources.indra_db.locations import *
 from indra_cogex.util import load_stmt_json_str
-
-base_folder = pystow.module("indra", "db")
-reading_text_content_fname = base_folder.join(name="reading_text_content_meta.tsv.gz")
-text_refs_fname = base_folder.join(name="text_refs_principal.tsv.gz")
-raw_stmts_fname = base_folder.join(name="raw_statements.tsv.gz")
-drop_readings_fname = base_folder.join(name="drop_readings.pkl")
-reading_to_text_ref_map = base_folder.join(name="reading_to_text_ref_map.pkl")
-
-processed_stmts_fname = base_folder.join(name="processed_statements.tsv.gz")
-grounded_stmts_fname = base_folder.join(name="grounded_statements.tsv.gz")
-unique_stmts_fname = base_folder.join(name="unique_statements.tsv.gz")
-source_counts_fname = base_folder.join(name="source_counts.pkl")
-
 
 logger = logging.getLogger(__name__)
 

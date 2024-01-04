@@ -8,7 +8,6 @@ from hashlib import md5
 from itertools import chain
 from typing import Tuple, Mapping, Iterable, List, Set
 
-import pystow
 import textwrap
 from pathlib import Path
 
@@ -21,17 +20,11 @@ from indra.literature import pubmed_client
 from indra_cogex.sources.utils import get_bool
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
-from indra_cogex.sources.indra_db.raw_export import text_refs_fname
-
+from indra_cogex.sources.pubmed.locations import *
+from indra_cogex.sources.indra_db.locations import text_refs_fname
 
 logger = logging.getLogger(__name__)
 
-resources = pystow.module("indra", "cogex", "pubmed")
-
-# Settings for downloading content from the PubMed FTP server
-raw_xml = pystow.module("indra", "cogex", "pubmed", "raw_xml")
-# For mapping ISSN to NLM (many-to-one mapping)
-issn_nlm_map_path = resources.join(name="issn_nlm_map.csv.gz")
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
 
@@ -44,13 +37,13 @@ class PubmedProcessor(Processor):
 
     def __init__(self):
         # Maps MeSH terms to PMIDs
-        self.mesh_pmid_path = resources.join(name="mesh_pmids.csv.gz")
+        self.mesh_pmid_path = mesh_pmid_path
         # Maps PMIDs to years and publication types
-        self.pmid_year_types_path = resources.join(name="pmid_years_types.tsv.gz")
+        self.pmid_year_types_path = pmid_year_types_path
         # Maps PMIDs to ISSN
-        self.pmid_nlm_path = resources.join(name="pmid_nlm.csv.gz")
+        self.pmid_nlm_path = pmid_nlm_path
         # Identifies journals
-        self.journal_info_path = resources.join(name="journal_info.tsv.gz")
+        self.journal_info_path = journal_info_path
         # Maps PMIDs to other text reference IDs
         self.text_refs_path = text_refs_fname
 

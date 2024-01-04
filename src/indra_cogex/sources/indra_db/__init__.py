@@ -28,12 +28,12 @@ from tqdm import tqdm
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
-from indra_cogex.sources.indra_db.assembly import belief_scores_pkl_fname
-from indra_cogex.sources.indra_db.raw_export import (
-    source_counts_fname,
-    unique_stmts_fname,
+from indra_cogex.sources.indra_db.raw_export import stmts_from_json
+from indra_cogex.sources.indra_db.locations import (
+    belief_scores_pkl_fname,
     processed_stmts_fname,
-    stmts_from_json,
+    unique_stmts_fname,
+    source_counts_fname
 )
 from indra_cogex.sources.utils import get_bool
 from indra_cogex.util import load_stmt_json_str
