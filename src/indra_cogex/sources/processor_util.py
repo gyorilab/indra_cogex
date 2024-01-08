@@ -194,4 +194,6 @@ def data_validator(data_type: str, value: Any):
                     f"or int, but got value of type {type(val)} instead."
                 )
     else:
-        raise UnknownTypeError(f"Unknown data Neo4j type {data_type}")
+        raise UnknownTypeError(
+            f"{data_type} is not recognized as a Neo4j data type."
+        )
