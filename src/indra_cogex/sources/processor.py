@@ -10,7 +10,16 @@ import pickle
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
-from typing import ClassVar, Iterable, List, Tuple, Optional, Mapping, Any
+from typing import (
+    ClassVar,
+    Iterable,
+    List,
+    Tuple,
+    Optional,
+    Mapping,
+    Any,
+    Dict
+)
 
 import click
 import pystow
@@ -157,16 +166,21 @@ class Processor(ABC):
         # instantiation and this needs to be avoided in the node assembly
         # proces)
         logger.info(f"Dumping into {nodes_path}...")
-        try:
-            nodes = list(validate_nodes(nodes))
-        except (UnknownTypeError, DataTypeError) as e:
-            logger.error(f"Bad node data type in node data values for {self.name}")
-            raise e
         metadata = sorted(set(key for node in nodes for key in node.data))
+        header = "id:ID", ":LABEL", *metadata
+
+        # Validate the headers
         try:
-            validate_headers(metadata)
+            validate_headers(header)
         except TypeError as e:
             logger.error(f"Bad node data type in header for {processor_name}")
+            raise e
+
+        # Validate the nodes
+        try:
+            nodes = list(validate_nodes(nodes, header))
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"Bad node data type in node data values for {self.name}")
             raise e
 
         node_rows = (
@@ -178,7 +192,6 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Node serialization", unit_scale=True)
         )
 
-        header = "id:ID", ":LABEL", *metadata
         with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
@@ -250,7 +263,7 @@ def assert_valid_node(
     db_id: str,
     data: Optional[Mapping[str, Any]] = None,
     check_data: bool = False,
-) -> None:
+) -> Optional[Dict[str, bool]]:
     if db_ns == "indra_evidence":
         if data and data.get("evidence:string"):
             ev = Evidence._from_json(json.loads(data["evidence"]))
@@ -258,13 +271,12 @@ def assert_valid_node(
     else:
         assert_valid_db_refs({db_ns: db_id})
 
-    if data and check_data:
+    if check_data and data:
+        checked_keys = {}
         for key, value in data.items():
-            # Skip None values
+            # Skip None values, mark as not checked
             if value is None:
-                continue
-            if key == "evidence":
-                # todo: why is this here?
+                checked_keys[key] = False
                 continue
             if ":" in key:
                 dtype = key.split(":")[1]
@@ -273,13 +285,25 @@ def assert_valid_node(
                 dtype = "string"
             data_validator(dtype, value)
 
+            checked_keys[key] = True
+
+        return checked_keys
 
 def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
+
+def validate_nodes(
+    nodes: Iterable[Node],
+    header: Iterable[str]
+) -> Iterable[Node]:
+    checked_headers = {key: False for key in header}
     for idx, node in enumerate(nodes):
-        # Todo: loop data until non-empty data is found or just check all data?
-        check_data = idx < 10
+        check_data = not all(checked_headers.values())
         try:
-            assert_valid_node(node.db_ns, node.db_id, node.data, check_data)
+            checked_fields = assert_valid_node(
+                node.db_ns, node.db_id, node.data, check_data
+            )
+            if checked_fields:
+                checked_headers.update(checked_fields)
             yield node
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {node} - {e}")
@@ -291,13 +315,20 @@ def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 
 
 def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
+def validate_relations(
+    relations: Iterable[Relation],
+    header: Iterable[str],
+) -> Iterable[Relation]:
+    checked_headers = {key: False for key in header}
     for idx, rel in enumerate(relations):
         try:
-            # Todo: loop data until non-empty data is found or just check
-            #  all data?
-            check_data = idx < 10
-            assert_valid_node(rel.source_ns, rel.source_id, rel.data, check_data)
+            check_data = not all(checked_headers.values())
+            checked_fields = assert_valid_node(
+                rel.source_ns, rel.source_id, rel.data, check_data
+            )
             assert_valid_node(rel.target_ns, rel.target_id)
+            if checked_fields:
+                checked_headers.update(checked_fields)
             yield rel
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {rel} - {e}")
