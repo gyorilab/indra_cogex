@@ -216,20 +216,25 @@ class Processor(ABC):
 
     def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {edges_path}...")
+
+        metadata = sorted(set(key for rel in rels for key in rel.data))
+        header = ":START_ID", ":END_ID", ":TYPE", *metadata
+
         try:
-            rels = validate_relations(rels)
+            validate_headers(header)
+        except TypeError as e:
+            logger.error(f"Bad edge data type in header for {self.name}")
+            raise e
+
+        try:
+            rels = validate_relations(rels, metadata)
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad edge data type in edge data values for {self.name}")
             raise e
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
         )
-        metadata = sorted(set(key for rel in rels for key in rel.data))
-        try:
-            validate_headers(metadata)
-        except TypeError as e:
-            logger.error(f"Bad edge data type in header for {self.name}")
-            raise e
+
         edge_rows = (
             (
                 norm_id(rel.source_ns, rel.source_id),
@@ -242,7 +247,7 @@ class Processor(ABC):
 
         with gzip.open(self.edges_path, mode=write_mode) as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
-            header = ":START_ID", ":END_ID", ":TYPE", *metadata
+
             # Only add header when writing to a new file
             if write_mode == "wt":
                 edge_writer.writerow(header)
