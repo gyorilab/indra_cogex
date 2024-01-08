@@ -243,7 +243,7 @@ def assert_valid_node(
     db_ns: str, db_id: str, data: Optional[Mapping[str, Any]] = None
 ) -> None:
     if db_ns == "indra_evidence":
-        if data and data.get("evidence"):
+        if data and data.get("evidence:string"):
             ev = Evidence._from_json(json.loads(data["evidence"]))
             assert_valid_evidence(ev)
     else:
