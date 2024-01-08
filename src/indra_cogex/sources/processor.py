@@ -289,12 +289,32 @@ def assert_valid_node(
 
         return checked_keys
 
-def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
 
 def validate_nodes(
     nodes: Iterable[Node],
     header: Iterable[str]
 ) -> Iterable[Node]:
+    """Validate the nodes before yielding them.
+
+    Parameters
+    ----------
+    nodes :
+        The nodes to validate.
+    header :
+        The header of the output Neo4j ingest file.
+
+    Yields
+    ------
+    Node
+        The validated node.
+
+    Raises
+    ------
+    UnknownTypeError
+        If a data type is not recognized.
+    DataTypeError
+        If a data type does not match the value set in the header.
+    """
     checked_headers = {key: False for key in header}
     for idx, node in enumerate(nodes):
         check_data = not all(checked_headers.values())
@@ -314,11 +334,31 @@ def validate_nodes(
             continue
 
 
-def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
 def validate_relations(
     relations: Iterable[Relation],
     header: Iterable[str],
 ) -> Iterable[Relation]:
+    """Validate the relations before yielding them.
+
+    Parameters
+    ----------
+    relations :
+        The relations to validate.
+    header :
+        The header of the output Neo4j ingest file.
+
+    Yields
+    -------
+    Relation
+        The validated relation.
+
+    Raises
+    ------
+    UnknownTypeError
+        If a data type is not recognized.
+    DataTypeError
+        If a data type does not match the value set in the header.
+    """
     checked_headers = {key: False for key in header}
     for idx, rel in enumerate(relations):
         try:
