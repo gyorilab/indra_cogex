@@ -69,16 +69,16 @@ def data_validator(data_type: str, value: Any):
     Parameters
     ----------
     data_type :
-        The data type to validate.
+        The Neo4j data type to validate against.
     value :
         The value to validate.
 
     Raises
     ------
     DataTypeError
-        If the data type does not match the value.
+        If the value does not validate against the Neo4j data type.
     UnknownTypeError
-        If the data type is not recognized.
+        If data_type is not recognized as a Neo4j data type.
     """
     value_list = value.split(";") if data_type.endswith("[]") else [value]
     data_type = data_type.rstrip("[]")
