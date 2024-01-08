@@ -178,7 +178,7 @@ class Processor(ABC):
 
         # Validate the nodes
         try:
-            nodes = list(validate_nodes(nodes, header))
+            nodes = list(validate_nodes(nodes, metadata))
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad node data type in node data values for {self.name}")
             raise e
