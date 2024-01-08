@@ -295,6 +295,11 @@ if __name__ == "__main__":
         logger.info("Preassembling statements and collecting source counts")
         text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
         source_counts = defaultdict(lambda: defaultdict(int))
+
+        # Warm up bio_ontology
+        from indra.ontology.bio import bio_ontology
+        bio_ontology.initialize()
+
         with gzip.open(raw_stmts_fname, "rt") as fh, gzip.open(
             processed_stmts_fname, "wt"
         ) as fh_out:
