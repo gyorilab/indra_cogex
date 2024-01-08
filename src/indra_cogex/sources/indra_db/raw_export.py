@@ -190,7 +190,7 @@ if __name__ == "__main__":
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
-    # Check that the location is valid
+    # Check that the INDRA DB Lite location is valid
     if not os.path.isfile(os.environ["INDRA_DB_LITE_LOCATION"]):
         raise FileNotFoundError(
             f"INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']} "
@@ -200,21 +200,25 @@ if __name__ == "__main__":
         f"Found INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']}"
     )
 
-    # This checks that a connection to the prinicipal db is needed for the
-    # preassembly step as fallback when the indra_db_lite is missing content
+    # This checks that a connection to the prinicipal db can be established.
+    # It is needed for the preassembly step as fallback when the
+    # indra_db_lite is missing content
     from indra_db import get_db
     db = get_db("primary")
     if db is None:
-        raise ValueError("Could not connect to the principal db")
+        raise ValueError("Could not connect to the principal db. Please set "
+                         "INDRADBPRIMARY to point to a valid db or add a db "
+                         "config to db_config.ini")
     logger.info("Principal db is available")
 
     # This checks if there are any adeft models available. They are needed to
-    if len(get_available_models()) == 0:
+    adeft_model_count = len(get_available_models())
+    if adeft_model_count == 0:
         raise ValueError(
             "No adeft models detected, run 'python -m adeft.download' to "
             "download models"
         )
-    logger.info(f"Found {len(get_available_models())} adeft models")
+    logger.info(f"Found {adeft_model_count} adeft models")
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
