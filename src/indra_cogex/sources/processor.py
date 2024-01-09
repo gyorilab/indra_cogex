@@ -328,7 +328,9 @@ def validate_nodes(
                 node.db_ns, node.db_id, node.data, check_data
             )
             if checked_fields:
-                checked_headers.update(checked_fields)
+                for key, checked in checked_fields:
+                    if checked:
+                        checked_headers[key] = True
             yield node
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {node} - {e}")
@@ -373,7 +375,9 @@ def validate_relations(
             )
             assert_valid_node(rel.target_ns, rel.target_id)
             if checked_fields:
-                checked_headers.update(checked_fields)
+                for key, checked in checked_fields:
+                    if checked:
+                        checked_headers[key] = True
             yield rel
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {rel} - {e}")
