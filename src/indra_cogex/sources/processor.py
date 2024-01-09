@@ -329,7 +329,7 @@ def validate_nodes(
                 node.db_ns, node.db_id, node.data, check_data
             )
             if checked_fields:
-                for key, checked in checked_fields:
+                for key, checked in checked_fields.items():
                     if checked:
                         checked_headers[key] = True
             yield node
@@ -376,7 +376,7 @@ def validate_relations(
             )
             assert_valid_node(rel.target_ns, rel.target_id)
             if checked_fields:
-                for key, checked in checked_fields:
+                for key, checked in checked_fields.items():
                     if checked:
                         checked_headers[key] = True
             yield rel
