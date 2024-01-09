@@ -279,7 +279,10 @@ def test_array_data_type_validator_bad():
         try:
             mp.dump()
         except Exception as e:
-            assert isinstance(e, UnknownTypeError)
+            # validate_headers is run before data_validator, so the error
+            # will be a TypeError from validate_headers instead of a
+            # DataTypeError from data_validator
+            assert isinstance(e, TypeError)
             assert "bad_type" in str(e)
         else:
             assert False, "Expected exception"
