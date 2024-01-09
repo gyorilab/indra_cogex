@@ -217,6 +217,7 @@ class Processor(ABC):
     def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {edges_path}...")
 
+        rels = list(rels)
         metadata = sorted(set(key for rel in rels for key in rel.data))
         header = ":START_ID", ":END_ID", ":TYPE", *metadata
 
