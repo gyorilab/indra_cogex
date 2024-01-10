@@ -64,6 +64,7 @@ def test_data_validator():
 
     try:
         data_validator("notatype", "1")
+        assert False, "Expected exception"
     except Exception as e:
         assert isinstance(e, UnknownTypeError)
         assert "notatype" in str(e)
