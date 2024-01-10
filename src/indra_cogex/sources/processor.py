@@ -272,7 +272,7 @@ def assert_valid_node(
 ) -> Optional[Dict[str, bool]]:
     if db_ns == "indra_evidence":
         if data and data.get("evidence:string"):
-            ev = Evidence._from_json(json.loads(data["evidence"]))
+            ev = Evidence._from_json(json.loads(data["evidence:string"]))
             assert_valid_evidence(ev)
     else:
         assert_valid_db_refs({db_ns: db_id})
