@@ -332,6 +332,11 @@ def validate_nodes(
                 for key, checked in checked_fields.items():
                     if checked:
                         checked_headers[key] = True
+
+            # Check if this was the iteration when all headers were checked
+            if check_data and all(checked_headers.values()):
+                logger.info(f"All node data keys checked at index {idx}. "
+                            f"Skipping the rest")
             yield node
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {node} - {e}")
@@ -379,6 +384,11 @@ def validate_relations(
                 for key, checked in checked_fields.items():
                     if checked:
                         checked_headers[key] = True
+
+            # Check if this was the iteration when all headers were checked
+            if check_data and all(checked_headers.values()):
+                logger.info(f"All relation data keys checked at index {idx}. "
+                            f"Skipping the rest")
             yield rel
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {rel} - {e}")
