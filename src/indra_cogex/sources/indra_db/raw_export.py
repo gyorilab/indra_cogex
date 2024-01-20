@@ -85,6 +85,7 @@ def load_text_refs_by_trid(fname: str):
     for line in tqdm.tqdm(
         gzip.open(fname, "rt", encoding="utf-8"),
         total=36223169,
+        unit_scale=True,
         desc="Processing text refs into a lookup dictionary",
     ):
         ids = line.strip().split("\t")
@@ -248,6 +249,7 @@ if __name__ == "__main__":
         # This takes around ~10 min
         for row in tqdm.tqdm(df.itertuples(),
                              total=len(df),
+                             unit_scale=True,
                              desc="Distilling statements"):
             if row.text_ref_id != trid:
                 for reader, reader_contents in contents.items():
@@ -292,7 +294,7 @@ if __name__ == "__main__":
     # STAGE 2: We now need to iterate over raw statements and do preassembly
     # Takes ~16 h
     if not processed_stmts_fname.exists() or not source_counts_fname.exists():
-        logger.info("Preassembling statements and collecting source counts")
+        logger.info("Processing statements and collecting source counts")
         text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
         source_counts = defaultdict(lambda: defaultdict(int))
 
@@ -305,7 +307,13 @@ if __name__ == "__main__":
         ) as fh_out:
             reader = csv.reader(fh, delimiter="\t")
             writer = csv.writer(fh_out, delimiter="\t")
-            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7581):
+            for lines in tqdm.tqdm(
+                batch_iter(reader, 10000),
+                total=7665,
+                unit_scale=True,
+                unit="batch",
+                desc="Processing statements"
+            ):
                 stmts_jsons = []
                 for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                     # NOTE: We might want to propagate the raw_stmt_id for
@@ -361,7 +369,11 @@ if __name__ == "__main__":
             writer_gr = csv.writer(fh_out_gr, delimiter="\t")
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
-                reader, total=60405451, desc="Gathering grounded and unique statements"
+                reader,
+                total=63928997,
+                desc="Gathering grounded and unique statements",
+                unit_scale=True,
+                unit="stmt"
             ):
                 stmt = stmt_from_json(load_stmt_json_str(stmt_json_str))
                 if len(stmt.real_agent_list()) < 2:
