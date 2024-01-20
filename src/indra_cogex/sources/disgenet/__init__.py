@@ -99,7 +99,7 @@ def _yield_gene_relations(df, name, relation):
     for hgnc_id, disease_prefix, disease_id, dsi, dpi, snps, score, papers in (
         df[columns].drop_duplicates().values
     ):
-        data = {"snps:int": snps, "source": name, "papers:int": papers}
+        data = {"snps:float": snps, "source": name, "papers:int": papers}
         if pd.notna(dsi):
             data["disgenet_dsi:float"] = dsi
         if pd.notna(dpi):
