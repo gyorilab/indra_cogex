@@ -175,8 +175,9 @@ def main(
         click.secho(f"Assembling {node_type}", fg="green")
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
-        name = Processor.name
-        Processor._dump_nodes_to_path_static(name, assembled_nodes, assembled_path)
+        Processor._dump_nodes_to_path_static(
+            "assembled nodes", assembled_nodes, assembled_path
+        )
 
     # The assembled paths are added to the list of nodes to import separately
     for node_type in to_assemble:
