@@ -158,13 +158,34 @@ class Processor(ABC):
         return paths_by_type, dict(nodes_by_type)
 
     def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None, write_mode="wt"):
+        return self._dump_nodes_to_path_static(
+            self.name,
+            nodes,
+            nodes_path,
+            sample_path=sample_path,
+            write_mode=write_mode,
+        )
+
+    @staticmethod
+    def _dump_nodes_to_path_static(
+        processor_name,
+        nodes,
+        nodes_path,
+        sample_path=None,
+        write_mode="wt"
+    ):
+        # This method is static so it can be used in the node assembly process
+        # when running `python -m indra_cogex.sources` without instantiating
+        # the processor used (some processors load their data on
+        # instantiation and this needs to be avoided in the node assembly
+        # proces)
         logger.info(f"Dumping into {nodes_path}...")
         nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
         try:
             validate_headers(metadata)
         except TypeError as e:
-            logger.error(f"Bad node data type in header for {self.name}")
+            logger.error(f"Bad node data type in header for {processor_name}")
             raise e
 
         node_rows = (
