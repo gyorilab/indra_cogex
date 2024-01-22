@@ -454,7 +454,11 @@ class JournalPublisherProcessor(WikiDataProcessor):
 
 
 def _get_val(val):
-    if pd.isna(val):
+    if (
+        pd.isna(val) or
+        isinstance(val, str) and not val.strip() or
+        isinstance(val, str) and val == "nan"
+    ):
         return None
     else:
         return val
