@@ -402,19 +402,20 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     nlm_id,
                     labels=[self.journal_node_type],
                     data={
-                        "name": journal_name,
-                        "issn_l": journal_issn_l,
-                        "issn_list:string[]": issn_list_str,
-                        "wikidata_id": journal_wd_id,
-                        "citescore:float": citescore,
-                        "category_rank:int": category_rank,
-                        "percentile:float": percentile,
-                        "category": category,
-                        "citations_2019_22:int": citations_2019_22,
-                        "documents_2019_22:int": documents_2019_22,
-                        "percent_cited_2019_22:float": percent_cited_2019_22,
-                        "snip:float": snip,
-                        "sjr:float": sjr,
+                        "name": _get_val(journal_name),
+                        "issn_l": _get_val(journal_issn_l),
+                        "issn_list:string[]": _get_val(issn_list_str),
+                        "wikidata_id": _get_val(journal_wd_id),
+                        "citescore:float": _get_val(citescore),
+                        "category_rank:int": _get_val(category_rank),
+                        "percentile:float": _get_val(percentile),
+                        "category": _get_val(category),
+                        "citations_2019_22:int": _get_val(citations_2019_22),
+                        "documents_2019_22:int": _get_val(documents_2019_22),
+                        "percent_cited_2019_22:float": _get_val(
+                            percent_cited_2019_22),
+                        "snip:float": _get_val(snip),
+                        "sjr:float": _get_val(sjr),
                     },
                 )
 
@@ -429,8 +430,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     publisher_isni.replace(" ", ""),
                     labels=[self.publisher_node_type],
                     data={
-                        "name": publisher_name,
-                        "wikidata_id": publisher_wd_id,
+                        "name": _get_val(publisher_name),
+                        "wikidata_id": _get_val(publisher_wd_id),
                     },
                 )
 
@@ -450,3 +451,10 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     rel_type="published_by",
                     data={},
                 )
+
+
+def _get_val(val):
+    if pd.isna(val):
+        return None
+    else:
+        return val
