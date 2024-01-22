@@ -28,6 +28,8 @@ def index_nodes_on_id(client: Neo4jClient, exist_ok: bool = False):
             "ClinicalTrial",
             "Patent",
             "ResearchProject",
+            "Journal",
+            "Publisher",
         ]
     ):
         client.create_single_property_node_index(
