@@ -180,7 +180,7 @@ class Processor(ABC):
         try:
             nodes = list(validate_nodes(nodes, metadata))
         except (UnknownTypeError, DataTypeError) as e:
-            logger.error(f"Bad node data type in node data values for {self.name}")
+            logger.error(f"Bad node data type in node data values for {processor_name}")
             raise e
 
         node_rows = (
