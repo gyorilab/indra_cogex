@@ -50,7 +50,7 @@ class OntologyProcessor(Processor):
             data = copy.copy(data)
             edge_type = data.pop("type")
             yield Relation(
-                source_ns, source_id, target_ns, target_id, edge_type, _get_data(data)
+                source_ns, source_id, target_ns, target_id, edge_type, data
             )
 
 
@@ -61,17 +61,8 @@ def _get_data(data: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(value, bool):
             new_key = key + ":boolean"
             out[new_key] = get_bool(value)
-        elif isinstance(value, str):
-            out[key] = value
-        elif isinstance(value, int):
-            new_key = key + ":int"
-            out[new_key] = value
-        elif isinstance(value, float):
-            new_key = key + ":float"
-            out[new_key] = value
-        elif value is None:
-            out[key] = value
         else:
-            logger.warning("Unhandled type %s", type(value))
+            # TODO: handle other types - this has to make sure all other
+            #  sources that assemble BioEntity nodes use the same types
             out[key] = value
     return out
