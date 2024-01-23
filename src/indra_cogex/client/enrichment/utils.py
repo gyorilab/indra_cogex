@@ -279,7 +279,7 @@ def get_go(
     query = dedent(
         """\
         MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
-        WHERE NOT gene.obsolete = "True"
+        WHERE NOT gene.obsolete
         RETURN term.id, term.name, collect(gene.id) as gene_curies;
     """
     )
@@ -316,7 +316,7 @@ def get_wikipathways(
         """\
         MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
         WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete = "True"
+        AND NOT gene.obsolete
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
@@ -352,7 +352,7 @@ def get_reactome(
         """\
         MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
         WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete = "True"
+        AND NOT gene.obsolete
         RETURN pathway.id, pathway.name, collect(gene.id);
     """
     )
@@ -388,7 +388,7 @@ def get_phenotype_gene_sets(
         """\
         MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
         WHERE s.id STARTS WITH "hp" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete = "True"
+        AND NOT gene.obsolete
         RETURN s.id, s.name, collect(gene.id);
     """
     )
@@ -456,7 +456,7 @@ def get_entity_to_targets(
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
         WHERE
             gene.id STARTS WITH "hgnc"                  // Collecting human genes only
-            AND NOT gene.obsolete = "True"              // Skip obsolete
+            AND NOT gene.obsolete                       // Skip obsolete
             AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
             AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
         RETURN
@@ -514,7 +514,7 @@ def get_entity_to_regulators(
         MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
         WHERE
             gene.id STARTS WITH "hgnc"               // Collecting human genes only
-            AND NOT gene.obsolete = "True"           // Skip obsolete
+            AND NOT gene.obsolete                    // Skip obsolete
             AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
             AND NOT target.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
         RETURN
@@ -584,7 +584,7 @@ def _query(
         WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
             AND r.stmt_type in [{query_range}]          // Ignore complexes since they are non-directional
             AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-            AND NOT gene.obsolete = "True"              // Skip obsolete
+            AND NOT gene.obsolete                       // Skip obsolete
             {evidence_line}
             {belief_line}
         RETURN 

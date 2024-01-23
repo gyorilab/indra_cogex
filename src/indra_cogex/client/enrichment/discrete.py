@@ -96,7 +96,7 @@ def count_human_genes(*, client: Neo4jClient) -> int:
     query = """\
         MATCH (n:BioEntity)
         WHERE n.id STARTS WITH 'hgnc'
-        AND NOT n.obsolete = "True"
+        AND NOT n.obsolete
         RETURN count(n) as count
     """
     results = client.query_tx(query)
