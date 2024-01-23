@@ -69,6 +69,8 @@ def _get_data(data: Mapping[str, Any]) -> Mapping[str, Any]:
         elif isinstance(value, float):
             new_key = key + ":float"
             out[new_key] = value
+        elif value is None:
+            out[key] = value
         else:
             logger.warning("Unhandled type %s", type(value))
             out[key] = value
