@@ -64,7 +64,7 @@ class ClinicaltrialsProcessor(Processor):
                 "status": or_na(row["OverallStatus"]),  # Completed, Active, Recruiting
                 "phase:int": row["Phase"],
                 "why_stopped": or_na(row["WhyStopped"]),
-                "start_year:int": row["start_year"],
+                "start_year:int": or_na(row["start_year"]),
                 "start_year_anticipated:boolean": row["start_year_anticipated"],
             }
 
