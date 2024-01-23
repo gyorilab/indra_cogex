@@ -57,6 +57,7 @@ class ClinicaltrialsProcessor(Processor):
 
     def get_nodes(self):
         nctid_to_data = {}
+        yielded_nodes = set()
         for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
             nctid_to_data[row["NCTId"]] = {
                 "study_type": or_na(row["StudyType"]),  # observational, interventional
@@ -75,13 +76,15 @@ class ClinicaltrialsProcessor(Processor):
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append(cond_term.db)
                     self.has_trial_cond_id.append(cond_term.id)
-                    yield Node(
-                        db_ns=cond_term.db,
-                        db_id=cond_term.id,
-                        labels=["BioEntity"],
-                        data=dict(name=cond_term.entry_name),
-                    )
                     found_disease_gilda = True
+                    if (cond_term.db, cond_term.id) not in yielded_nodes:
+                        yield Node(
+                            db_ns=cond_term.db,
+                            db_id=cond_term.id,
+                            labels=["BioEntity"],
+                            data=dict(name=cond_term.entry_name),
+                        )
+                        yielded_nodes.add((cond_term.db, cond_term.id))
             if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
                 for mesh_id, mesh_term in zip(
                     row["ConditionMeshId"].split("|"),
@@ -95,12 +98,14 @@ class ClinicaltrialsProcessor(Processor):
                     self.has_trial_nct.append(row["NCTId"])
                     self.has_trial_cond_ns.append("MESH")
                     self.has_trial_cond_id.append(correct_mesh_id)
-                    yield Node(
-                        db_ns="MESH",
-                        db_id=correct_mesh_id,
-                        labels=["BioEntity"],
-                        data=dict(name=name)
-                    )
+                    if ("MESH", correct_mesh_id) not in yielded_nodes:
+                        yield Node(
+                            db_ns="MESH",
+                            db_id=correct_mesh_id,
+                            labels=["BioEntity"],
+                            data=dict(name=name)
+                        )
+                        yielded_nodes.add(("MESH", correct_mesh_id))
 
             # We first try grounding the names with Gilda, if any match, we
             # use it, if there are no matches, we go by provided MeSH ID
@@ -115,14 +120,16 @@ class ClinicaltrialsProcessor(Processor):
                         self.tested_in_int_ns.append(drug_term.db)
                         self.tested_in_int_id.append(drug_term.id)
                         self.tested_in_nct.append(row["NCTId"])
-                        yield Node(
-                            db_ns=drug_term.db,
-                            db_id=drug_term.id,
-                            labels=["BioEntity"],
-                            data=dict(name=drug_term.entry_name)
-                        )
-                        found_drug_gilda = True
-            # If there is no Gilda much but there are some MeSH IDs given
+                        if (drug_term.db, drug_term.id) not in yielded_nodes:
+                            yield Node(
+                                db_ns=drug_term.db,
+                                db_id=drug_term.id,
+                                labels=["BioEntity"],
+                                data=dict(name=drug_term.entry_name)
+                            )
+                            found_drug_gilda = True
+                            yielded_nodes.add((drug_term.db, drug_term.id))
+            # If there is no Gilda grounding but there are some MeSH IDs given
             if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
                 for mesh_id, mesh_term in zip(
                     row["InterventionMeshId"].split("|"),
@@ -136,20 +143,24 @@ class ClinicaltrialsProcessor(Processor):
                     self.tested_in_int_ns.append("MESH")
                     self.tested_in_int_id.append(correct_mesh_id)
                     self.tested_in_nct.append(row["NCTId"])
-                    yield Node(
-                        db_ns="MESH",
-                        db_id=correct_mesh_id,
-                        labels=["BioEntity"],
-                        data=dict(name=name)
-                    )
+                    if ("MESH", correct_mesh_id) not in yielded_nodes:
+                        yield Node(
+                            db_ns="MESH",
+                            db_id=correct_mesh_id,
+                            labels=["BioEntity"],
+                            data=dict(name=name)
+                        )
+                        yielded_nodes.add(("MESH", correct_mesh_id))
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
-            yield Node(
-                db_ns="CLINICALTRIALS",
-                db_id=nctid,
-                labels=["ClinicalTrial"],
-                data=nctid_to_data[nctid],
-            )
+            if ("CLINICALTRIALS", nctid) not in yielded_nodes:
+                yield Node(
+                    db_ns="CLINICALTRIALS",
+                    db_id=nctid,
+                    labels=["ClinicalTrial"],
+                    data=nctid_to_data[nctid],
+                )
+                yielded_nodes.add(("CLINICALTRIALS", nctid))
 
         logger.info(
             "Problematic MeSH IDs: %s"
