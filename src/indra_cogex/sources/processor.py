@@ -298,7 +298,8 @@ def assert_valid_node(
 
 def validate_nodes(
     nodes: Iterable[Node],
-    header: Iterable[str]
+    header: Iterable[str],
+    check_all_data: bool = True,
 ) -> Iterable[Node]:
     """Validate the nodes before yielding them.
 
@@ -308,6 +309,9 @@ def validate_nodes(
         The nodes to validate.
     header :
         The header of the output Neo4j ingest file.
+    check_all_data :
+        If True, check all data keys in the nodes. If False, stop checking
+        when all data keys have been checked.
 
     Yields
     ------
@@ -323,7 +327,7 @@ def validate_nodes(
     """
     checked_headers = {key: False for key in header}
     for idx, node in enumerate(nodes):
-        check_data = not all(checked_headers.values())
+        check_data = not all(checked_headers.values()) or check_all_data
         try:
             checked_fields = assert_valid_node(
                 node.db_ns, node.db_id, node.data, check_data
@@ -334,7 +338,7 @@ def validate_nodes(
                         checked_headers[key] = True
 
             # Check if this was the iteration when all headers were checked
-            if check_data and all(checked_headers.values()):
+            if check_data and all(checked_headers.values()) and not check_all_data:
                 logger.info(f"All node data keys checked at index {idx}. "
                             f"Skipping the rest")
             yield node
@@ -350,6 +354,7 @@ def validate_nodes(
 def validate_relations(
     relations: Iterable[Relation],
     header: Iterable[str],
+    check_all_data: bool = True,
 ) -> Iterable[Relation]:
     """Validate the relations before yielding them.
 
@@ -359,6 +364,9 @@ def validate_relations(
         The relations to validate.
     header :
         The header of the output Neo4j ingest file.
+    check_all_data :
+        If True, check all data keys in the relations. If False, stop checking
+        when all data keys have been checked.
 
     Yields
     -------
@@ -375,7 +383,7 @@ def validate_relations(
     checked_headers = {key: False for key in header}
     for idx, rel in enumerate(relations):
         try:
-            check_data = not all(checked_headers.values())
+            check_data = not all(checked_headers.values()) or check_all_data
             checked_fields = assert_valid_node(
                 rel.source_ns, rel.source_id, rel.data, check_data
             )
@@ -386,7 +394,7 @@ def validate_relations(
                         checked_headers[key] = True
 
             # Check if this was the iteration when all headers were checked
-            if check_data and all(checked_headers.values()):
+            if check_data and all(checked_headers.values()) and not check_all_data:
                 logger.info(f"All relation data keys checked at index {idx}. "
                             f"Skipping the rest")
             yield rel
