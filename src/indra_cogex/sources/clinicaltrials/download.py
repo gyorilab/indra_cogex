@@ -52,7 +52,7 @@ CLINICAL_TRIALS_PATH = pystow.join(
     "indra",
     "cogex",
     "clinicaltrials",
-    name="clinical_trials.tsv",
+    name="clinical_trials.tsv.gz",
 )
 
 #: The fields that are used by default. A full list can be found
@@ -89,7 +89,7 @@ def ensure_clinical_trials_df(*, refresh: bool = False) -> pd.DataFrame:
     if CLINICAL_TRIALS_PATH.is_file() and not refresh:
         return pd.read_csv(CLINICAL_TRIALS_PATH, sep="\t")
     df = get_clinical_trials_df()
-    df.to_csv(CLINICAL_TRIALS_PATH, sep="\t", index=False)
+    df.to_csv(CLINICAL_TRIALS_PATH, sep="\t", index=False, compression="gzip")
     return df
 
 
