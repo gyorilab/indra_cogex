@@ -41,7 +41,7 @@ class PyoboProcessor(Processor):
                 db_ns,
                 db_id,
                 labels=["BioEntity"],
-                data={"name": name, "version:int": version},
+                data={"name": name, "version": version},
             )
 
     def get_relations(self):  # noqa:D102
