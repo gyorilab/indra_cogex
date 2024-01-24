@@ -20,7 +20,6 @@ from flask import Response, render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
-from indra_cogex.util import unicode_escape, UnicodeEscapeError
 from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 from indra_cogex.apps.curation_cache.curation_cache import Curations
 from indra_cogex.apps.proxies import curation_cache
@@ -242,24 +241,10 @@ def _stmt_to_row(
         if not ev_array:
             return None
 
-    unicode_errors = 0
     for ev in ev_array:
         # Translate OrderedDict to dict
         org_json = ev["original_json"]
         ev["original_json"] = dict(org_json)
-
-        # Fix unicode escaping: the text will be JSON serialized, so we need to
-        # remove extra escapes or we will have strings like '\\\\\\\\u....'
-        # in the final data.
-        text = ev["text"]
-        if text:
-            try:
-                ev["text"] = unicode_escape(text)
-            except UnicodeEscapeError:
-                unicode_errors += 1
-
-    if unicode_errors:
-        logger.warning(f"{unicode_errors} unicode errors in {stmt.get_hash()}")
 
     english = _format_stmt_text(stmt)
     hash_int = stmt.get_hash()
