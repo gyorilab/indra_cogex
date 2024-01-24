@@ -7,7 +7,7 @@ from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.apps.proxies import curation_cache
 
 __all__ = [
-    "get_conflict_evidence_counts",
+    "get_conflict_source_counts",
     "unfinished",
     "Curation",
     "iterate_conflicts",
@@ -17,13 +17,13 @@ Curation = Mapping[str, Any]
 
 
 @autoclient()
-def get_conflict_evidence_counts(
+def get_conflict_source_counts(
     *, curations: List[Curation] = None, client: Neo4jClient
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get hashes of statements whose curations need resolving."""
     return {
-        stmt_hash: evidence_count
-        for stmt_hash, evidence_count, status in iterate_conflicts(
+        stmt_hash: source_counts
+        for stmt_hash, source_counts, status in iterate_conflicts(
             curations=curations, client=client
         )
         if status
@@ -33,7 +33,7 @@ def get_conflict_evidence_counts(
 @autoclient()
 def iterate_conflicts(
     *, curations: List[Curation] = None, client: Neo4jClient
-) -> Iterable[Tuple[int, int, bool]]:
+) -> Iterable[Tuple[int, Mapping[str, int], bool]]:
     """Iterate hashes of statements and their resolution status."""
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -42,13 +42,13 @@ def iterate_conflicts(
         MATCH (:BioEntity)-[r:indra_rel]->(:BioEntity)
         WHERE
             r.stmt_hash IN {sorted(stmt_hash_to_counter)!r}
-        RETURN r.stmt_hash, r.evidence_count
+        RETURN r.stmt_hash, r.source_counts
     """
-    for stmt_hash, evidence_count in client.query_tx(query):
-        yield stmt_hash, evidence_count, unfinished(
+    for stmt_hash, source_counts in client.query_dict_value_json(query).items():
+        yield stmt_hash, source_counts, unfinished(
             correct=stmt_hash_to_counter[stmt_hash][True],
             incorrect=stmt_hash_to_counter[stmt_hash][False],
-            evidences=evidence_count,
+            evidences=sum(source_counts.values()),
         )
 
 
