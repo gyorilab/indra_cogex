@@ -32,6 +32,12 @@ edge_labels = {
     "has_patent": "Project Patents",
     "has_marker": "Cell Markers",
     "has_domain": "Protein Domains",
+    "gene_disease_association": "Gene Disease Associations",
+    # Links Publications to Journals
+    "published_in": "Journal Associations",
+    "variant_disease_association": "Variant Disease Associations",
+    "variant_gene_association": "Variant Gene Associations",
+    "variant_phenotype_association": "Variant Phenotype Associations",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
