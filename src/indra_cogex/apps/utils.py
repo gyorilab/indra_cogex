@@ -268,7 +268,7 @@ def _stmt_to_row(
     else:
         sources = source_counts
 
-    # Remove medscan from the sources count and decrement the total count.
+    # Remove medscan from the sources count
     if remove_medscan and "medscan" in sources:
         del sources["medscan"]
 
