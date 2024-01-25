@@ -107,6 +107,8 @@ class NihReporterProcessor(Processor):
 
     def get_nodes(self) -> Iterable[Node]:
         # Projects
+        # Avoid duplicates by keeping track of project ids
+        projects = {}
         for year, project_file in self.data_files.get("project").items():
             df = _read_first_df(project_file)
             for _, row in df.iterrows():
@@ -124,13 +126,21 @@ class NihReporterProcessor(Processor):
                             data[pc_key] = None
                         else:
                             data[pc_key] = newline_escape(row[pc])
-                yield Node(
-                    db_ns="NIHREPORTER.PROJECT",
-                    db_id=row.APPLICATION_ID,
-                    labels=["ResearchProject"],
-                    data=data,
-                )
+                if row.APPLICATION_ID not in projects:
+                    projects[row.APPLICATION_ID] = data
+                else:
+                    projects[row.APPLICATION_ID].update(data)
                 self._core_project_applications[row.CORE_PROJECT_NUM].append(dict(row))
+
+        yield from (
+            Node(
+                db_ns="NIHREPORTER.PROJECT",
+                db_id=app_id,
+                data=data,
+                labels=["ResearchProject"],
+            )
+            for app_id, data in projects.items()
+        )
 
         # Publications
         yielded_pubs = set()
