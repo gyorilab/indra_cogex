@@ -235,7 +235,7 @@ def _read_first_df(zip_file_path):
             zip_ref.open(zip_ref.filelist[0], "r"),
             encoding="latin1",
             low_memory=False,
-            error_bad_lines=False,
+            on_bad_lines="skip",
         )
 
 
