@@ -447,7 +447,7 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
                 json_str, attempt=attempt + 1, max_attempts=max_attempts
             )
     raise StatementJSONDecodeError(
-        f"Could not decode statement JSON after " f"{attempt} attempts: {json_str}"
+        f"Could not decode statement JSON after {attempt} attempts: {json_str}"
     )
 
 
