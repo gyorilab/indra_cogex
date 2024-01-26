@@ -25,6 +25,7 @@ from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.queries_web import api
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client.enrichment.utils import build_caches
+from indra_cogex.apps.entity_app import entity_blueprint
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ app.register_blueprint(gene_blueprint)
 app.register_blueprint(metabolite_blueprint)
 app.register_blueprint(data_display_blueprint)
 app.register_blueprint(curator_blueprint)
+app.register_blueprint(entity_blueprint)
 app.register_blueprint(chat_blueprint)
 api.init_app(app)
 

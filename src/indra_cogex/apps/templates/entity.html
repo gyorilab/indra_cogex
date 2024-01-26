@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block container %}
+    <div class="card">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">
+                {{ node.name }} <span class="badge badge-light">{{ node.id }}</span>
+            </h4>
+        </div>
+        <div class="card-body">
+            {{ node }}
+        </div>
+        {% for key, records in results.items() %}
+            {% if records|length > 0 %}
+                <div class="card-body">
+                    <h5>{{ key }}</h5>
+                </div>
+                <ul class="list-group">
+                    {% for r, v in records %}
+                        <li class="list-group-item">
+                            {{ r }} - {{ v }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endblock %}

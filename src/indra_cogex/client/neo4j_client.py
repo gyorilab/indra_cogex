@@ -166,6 +166,12 @@ class Neo4jClient:
             values = [value[0] for value in values]
         return values
 
+    def get_node_by_curie(self, curie: str, type="BioEntity") -> Node:
+        """Get a node by its CURIE."""
+        query = f"MATCH (n:{type} {{id: '{curie}'}}) RETURN n"
+        res = self.query_tx(query)
+        return res[0][0]
+
     def query_nodes(self, query: str, **query_params) -> List[Node]:
         """Run a read-only query for nodes.
 
