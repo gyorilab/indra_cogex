@@ -3,7 +3,11 @@ from pathlib import Path
 from typing import Union
 from indra.util.statement_presentation import db_sources, reader_sources
 from indra.config import get_config
-from pusher import pusher
+
+try:
+    from pusher import pusher
+except ImportError:
+    pusher = None
 
 
 logger = logging.getLogger(__name__)
@@ -88,7 +92,7 @@ pusher_secret = get_config("CLARE_PUSHER_SECRET")
 pusher_cluster = get_config("CLARE_PUSHER_CLUSTER")
 
 # Pusher app
-if pusher_app_id and pusher_key and pusher_secret and pusher_cluster:
+if pusher is not None and pusher_app_id and pusher_key and pusher_secret and pusher_cluster:
     pusher_app = pusher.Pusher(
         app_id=pusher_app_id,
         key=pusher_key,
