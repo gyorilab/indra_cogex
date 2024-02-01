@@ -131,8 +131,11 @@ class Processor(ABC):
             unit="node",
         )
         # Map the nodes to their types
-        for node in nodes:
+        ix = 0
+        for ix, node in enumerate(nodes):
             nodes_by_type[node.labels[0]].append(node)
+        if ix == 0:
+            raise RuntimeError(f"No nodes were generated for {self.name}")
         # Get the paths for each type of node and dump the nodes
         for node_type in nodes_by_type:
             nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
@@ -218,6 +221,8 @@ class Processor(ABC):
         logger.info(f"Dumping into {edges_path}...")
 
         rels = list(rels)
+        if len(rels) == 0:
+            raise RuntimeError(f"No relations were generated for {self.name}")
         metadata = sorted(set(key for rel in rels for key in rel.data))
         header = ":START_ID", ":END_ID", ":TYPE", *metadata
 
