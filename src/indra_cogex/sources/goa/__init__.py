@@ -50,9 +50,9 @@ class GoaProcessor(Processor):
     def get_relations(self):  # noqa:D102
         rel_type = "associated_with"
         for (go_id, hgnc_id), ecs in self.df.groupby(["GO_ID", "HGNC_ID"])["EC"]:
-            all_ecs = ",".join(sorted(set(ecs)))
+            all_ecs = ";".join(sorted(set(ecs)))
             # Possible properties could be e.g., evidence codes
-            data = {"evidence_codes:string": all_ecs, "source": self.name}
+            data = {"evidence_codes:string[]": all_ecs, "source": self.name}
             yield Relation("HGNC", hgnc_id, "GO", go_id, rel_type, data)
 
 
