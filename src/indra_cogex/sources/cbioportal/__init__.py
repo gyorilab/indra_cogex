@@ -128,10 +128,13 @@ class CcleDrugResponseProcessor(Processor):
 
     def get_nodes(self):
         drugs = self.get_drug_mappings()
-        for db_ns, db_id in drugs.values():
+        for db_ns, db_id, name in drugs.values():
             if db_ns and db_id:
-                yield Node.standardized(
-                    db_ns=db_ns, db_id=db_id, labels=["BioEntity"]
+                yield Node(
+                    db_ns=db_ns,
+                    db_id=db_id,
+                    labels=["BioEntity"],
+                    data={"name": name}
                 )
 
         for cell_line in list(self.df.columns[5:]):
@@ -141,7 +144,7 @@ class CcleDrugResponseProcessor(Processor):
         cell_lines = self.df.columns[5:]
         for _, row in self.df.iterrows():
             drug = row["ENTITY_STABLE_ID"]
-            drug_ns, drug_id = self.drug_mappings.get(drug, (None, None))
+            drug_ns, drug_id, _ = self.drug_mappings.get(drug, (None, None, None))
             if drug_ns and drug_id:
                 for cell_line in cell_lines:
                     if not pd.isna(row[cell_line]) and row[cell_line] < 10:
@@ -175,18 +178,18 @@ class CcleDrugResponseProcessor(Processor):
                 if syns != "None":
                     to_ground += [syn.strip() for syn in syns.split(",")]
 
-            db_ns, db_id = self.ground_drug(to_ground)
-            self.drug_mappings[row["ENTITY_STABLE_ID"]] = (db_ns, db_id)
+            db_ns, db_id, name = self.ground_drug(to_ground)
+            self.drug_mappings[row["ENTITY_STABLE_ID"]] = (db_ns, db_id, name)
         return self.drug_mappings
 
     def ground_drug(self, names):
         for name in names:
             matches = gilda.ground(name)
             if matches:
-                db_ns, db_id = matches[0].term.db, matches[0].term.id
-                return db_ns, db_id
+                best_term = matches[0].term
+                return best_term.db, best_term.id, best_term.entry_name
         logger.info("Could not match %s" % str(names))
-        return None, None
+        return None, None, None
 
 
 def get_data():
