@@ -80,7 +80,6 @@ def data_validator(data_type: str, value: Any):
     UnknownTypeError
         If data_type is not recognized as a Neo4j data type.
     """
-    value_list = value.split(";") if data_type.endswith("[]") else [value]
     # None's are provided in the data dictionaries upon initial
     # node/relationship generation as a missing/null value. Once dumped,
     # the None's are converted to empty strings which is read in when nodes
@@ -89,6 +88,11 @@ def data_validator(data_type: str, value: Any):
     null_data = {None, ""}
     if value in null_data:
         return
+
+    if isinstance(value, str):
+        value_list = value.split(";") if data_type.endswith("[]") else [value]
+    else:
+        value_list = [value]
     data_type = data_type.rstrip("[]")
     if data_type == "int" or data_type == "long" or data_type == "short":
         for val in value_list:
