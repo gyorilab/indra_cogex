@@ -37,11 +37,8 @@ class OntologyProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         for node, data in self.ontology.nodes(data=True):
             db_ns, db_id = self.ontology.get_ns_id(node)
-            name = self.ontology.get_name(db_ns, db_id)
-            node_data = {"name": name}
             parsed_data = _get_data(data)
-            node_data.update(parsed_data)
-            yield Node(db_ns, db_id, ["BioEntity"], data=node_data)
+            yield Node(db_ns, db_id, ["BioEntity"], data=parsed_data)
 
     def get_relations(self):  # noqa:D102
         for source, target, data in self.ontology.edges(data=True):
