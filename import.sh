@@ -40,6 +40,17 @@ python -m indra_cogex.sources --process --assemble --run_import $COGEX_SUDO_ARG
 
 $NEO4J_PREFIX neo4j start
 
-# Wait for the server to start up and then build the indexes
-sleep 45
+# Get the port
+NEO4J_PORT=$(cat $NEO4J_CONFIG/neo4j.conf | grep "http.listen_address" | tr -d -c 0-9)
+
+# Wait for the server to start up
+echo "Waiting for database"
+until [ \
+  "$(curl -s -w '%{http_code}' -o /dev/null "http://localhost:$NEO4J_PORT")" \
+  -eq 200 ]
+do
+  sleep 5
+done
+
+# Build the indexes
 python -m indra_cogex.indexing --all --exist-ok
