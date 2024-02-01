@@ -81,6 +81,14 @@ def data_validator(data_type: str, value: Any):
         If data_type is not recognized as a Neo4j data type.
     """
     value_list = value.split(";") if data_type.endswith("[]") else [value]
+    # None's are provided in the data dictionaries upon initial
+    # node/relationship generation as a missing/null value. Once dumped,
+    # the None's are converted to empty strings which is read in when nodes
+    # are assembled. If we encounter a null value, there is no need to
+    # validate it.
+    null_data = {None, ""}
+    if value in null_data:
+        return
     data_type = data_type.rstrip("[]")
     if data_type == "int" or data_type == "long" or data_type == "short":
         for val in value_list:
