@@ -90,22 +90,22 @@ class ClinicaltrialsProcessor(Processor):
                     row["ConditionMeshId"].split("|"),
                     row["ConditionMeshTerm"].split("|"),
                 ):
-                    correct_mesh_id, name = get_correct_mesh_id(mesh_id,
-                                                                mesh_term)
+                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
                         self.problematic_mesh_ids.append((mesh_id, mesh_term))
                         continue
+                    stnd_node = Node.standardized(
+                        db_ns="MESH",
+                        db_id=correct_mesh_id,
+                        labels=["BioEntity"],
+                    )
+                    node_ns, node_id = stnd_node.db_ns, stnd_node.db_id
                     self.has_trial_nct.append(row["NCTId"])
-                    self.has_trial_cond_ns.append("MESH")
-                    self.has_trial_cond_id.append(correct_mesh_id)
-                    if ("MESH", correct_mesh_id) not in yielded_nodes:
-                        yield Node(
-                            db_ns="MESH",
-                            db_id=correct_mesh_id,
-                            labels=["BioEntity"],
-                            data=dict(name=name)
-                        )
-                        yielded_nodes.add(("MESH", correct_mesh_id))
+                    self.has_trial_cond_ns.append(node_ns)
+                    self.has_trial_cond_id.append(node_id)
+                    if (node_ns, node_id) not in yielded_nodes:
+                        yield stnd_node
+                        yielded_nodes.add((node_ns, node_id))
 
             # We first try grounding the names with Gilda, if any match, we
             # use it, if there are no matches, we go by provided MeSH ID
@@ -135,22 +135,22 @@ class ClinicaltrialsProcessor(Processor):
                     row["InterventionMeshId"].split("|"),
                     row["InterventionMeshTerm"].split("|"),
                 ):
-                    correct_mesh_id, name = get_correct_mesh_id(mesh_id,
-                                                                mesh_term)
+                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
                     if not correct_mesh_id:
                         self.problematic_mesh_ids.append((mesh_id, mesh_term))
                         continue
-                    self.tested_in_int_ns.append("MESH")
-                    self.tested_in_int_id.append(correct_mesh_id)
+                    stnd_node = Node.standardized(
+                        db_ns="MESH",
+                        db_id=correct_mesh_id,
+                        labels=["BioEntity"],
+                    )
+                    node_ns, node_id = stnd_node.db_ns, stnd_node.db_id
+                    self.tested_in_int_ns.append(node_ns)
+                    self.tested_in_int_id.append(node_id)
                     self.tested_in_nct.append(row["NCTId"])
-                    if ("MESH", correct_mesh_id) not in yielded_nodes:
-                        yield Node(
-                            db_ns="MESH",
-                            db_id=correct_mesh_id,
-                            labels=["BioEntity"],
-                            data=dict(name=name)
-                        )
-                        yielded_nodes.add(("MESH", correct_mesh_id))
+                    if (node_ns, node_id) not in yielded_nodes:
+                        yield stnd_node
+                        yielded_nodes.add((node_ns, node_id))
 
         for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
             if ("CLINICALTRIALS", nctid) not in yielded_nodes:
@@ -203,7 +203,7 @@ def get_correct_mesh_id(mesh_id, mesh_term=None):
     # to look up its name
     name = mesh_client.get_mesh_name(mesh_id, offline=True)
     if name:
-        return mesh_id, name
+        return mesh_id
     # A common issue is with zero padding, where 9 digits are used
     # instead of the correct 6, and we can remove the extra zeros
     # to get a valid ID
@@ -211,7 +211,7 @@ def get_correct_mesh_id(mesh_id, mesh_term=None):
         short_id = mesh_id[0] + mesh_id[4:]
         name = mesh_client.get_mesh_name(short_id, offline=True)
         if name:
-            return short_id, name
+            return short_id
     # Another pattern is one where the MeSH ID is simply invalid but the
     # corresponding MeSH term allows us to get a valid ID via reverse
     # ID lookup - done here as grounding just to not have to assume
@@ -219,11 +219,10 @@ def get_correct_mesh_id(mesh_id, mesh_term=None):
     if mesh_term:
         matches = gilda.ground(mesh_term, namespaces=["MESH"])
         if len(matches) == 1:
-            name = matches[0].term.entry_name
             for k, v in matches[0].get_groundings():
                 if k == "MESH":
-                    return v, name
-    return None, None
+                    return v
+    return None
 
 
 def _get_phase(phase_string: str) -> int:
