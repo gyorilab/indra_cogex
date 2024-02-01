@@ -43,13 +43,9 @@ class GoaProcessor(Processor):
 
     def get_nodes(self):  # noqa:D102
         for go_id in self.df["GO_ID"].unique():
-            yield Node.standardized(
-                db_ns="GO", db_id=go_id, labels=["BioEntity"]
-            )
+            yield Node(db_ns="GO", db_id=go_id, labels=["BioEntity"])
         for hgnc_id in self.df["HGNC_ID"].unique():
-            yield Node.standardized(
-                db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"]
-            )
+            yield Node(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
     def get_relations(self):  # noqa:D102
         rel_type = "associated_with"
