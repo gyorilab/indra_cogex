@@ -40,9 +40,7 @@ class CcleMutationsProcessor(Processor):
             hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
             if not hgnc_id:
                 continue
-            yield Node.standardized(
-                db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"]
-            )
+            yield Node(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
         for cell_line in sorted(set(self.df["Tumor_Sample_Barcode"])):
             yield Node(db_ns="CCLE", db_id=cell_line, labels=["BioEntity"])
@@ -88,9 +86,7 @@ class CcleCnaProcessor(Processor):
             hgnc_id = hgnc_client.get_hgnc_id(hgnc_symbol)
             if not hgnc_id:
                 continue
-            yield Node.standardized(
-                db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"]
-            )
+            yield Node(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
         for cell_line in sorted(set(self.df.columns.values[1:])):
             yield Node(db_ns="CCLE", db_id=cell_line, labels=["BioEntity"])
