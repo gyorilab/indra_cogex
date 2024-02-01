@@ -93,6 +93,9 @@ def data_validator(data_type: str, value: Any):
         value_list = value.split(";") if data_type.endswith("[]") else [value]
     else:
         value_list = [value]
+    value_list = [val for val in value_list if val not in null_data]
+    if not value_list:
+        return
     data_type = data_type.rstrip("[]")
     if data_type == "int" or data_type == "long" or data_type == "short":
         for val in value_list:
