@@ -447,7 +447,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     source_ns="NLM",
                     source_id=nlm_id,
                     target_ns="ISNI",
-                    target_id=publisher_isni,
+                    # Strip the whitespace inside the ISNI
+                    target_id=publisher_isni.replace(" ", ""),
                     rel_type="published_by",
                     data={},
                 )
