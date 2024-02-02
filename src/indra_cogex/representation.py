@@ -433,6 +433,10 @@ def node_query(
     return rv
 
 
+def get_nodes_str(nodes: Iterable[Tuple[str, str]]) -> str:
+    return ", ".join(["'%s'" % norm_id(*node) for node in nodes])
+
+
 class StatementJSONDecodeError(Exception):
     pass
 

@@ -14,11 +14,8 @@ from indra.databases.hgnc_client import hgnc_to_enzymes
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
-from indra_cogex.client.enrichment.utils import (
-    minimum_belief_helper,
-    minimum_evidence_helper,
-)
 from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.utils import minimum_belief_helper, minimum_evidence_helper
 
 __all__ = [
     "get_metabolomics_sets",

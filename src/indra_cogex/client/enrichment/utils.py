@@ -535,23 +535,6 @@ def get_entity_to_regulators(
         minimum_evidence_count=minimum_evidence_count,
     )
 
-
-def minimum_evidence_helper(
-    minimum_evidence_count: Optional[float] = None, name: str = "r"
-) -> str:
-    if minimum_evidence_count is None or minimum_evidence_count == 1:
-        return ""
-    return f"AND {name}.evidence_count >= {minimum_evidence_count}"
-
-
-def minimum_belief_helper(
-    minimum_belief: Optional[float] = None, name: str = "r"
-) -> str:
-    if minimum_belief is None or minimum_belief == 0.0:
-        return ""
-    return f"AND {name}.belief >= {minimum_belief}"
-
-
 # TODO should this include other statement types? is the mechanism linker applied before
 #  importing the database into CoGEx?
 
