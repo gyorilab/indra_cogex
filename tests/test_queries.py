@@ -84,7 +84,7 @@ def test_is_go_term_for_gene():
 @pytest.mark.nonpublic
 def test_get_trials_for_drug():
     client = _get_client()
-    drug = ("MESH", "C000489")
+    drug = ("CHEBI", "CHEBI:135866")
     trials = get_trials_for_drug(drug, client=client)
     assert trials
     assert isinstance(trials[0], Node)
