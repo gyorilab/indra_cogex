@@ -215,7 +215,9 @@ def get_genes_for_go_term(
             target_type="BioEntity",
         )
         for gene in genes:
-            gene_nodes[gene.grounding()] = gene
+            gene_grnd = gene.grounding()
+            if gene_grnd[0] == "HGNC":
+                gene_nodes[gene.grounding()] = gene
     return list(gene_nodes.values())
 
 
