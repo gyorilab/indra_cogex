@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Any
 
 import pyobo
 from biomappings import load_mappings
@@ -9,6 +10,7 @@ from indra_cogex.representation import Node, standardize
 
 __all__ = [
     "UmlsMapper",
+    "get_bool",
 ]
 
 
@@ -88,3 +90,23 @@ class UmlsMapper:
         if db_ns is None:
             db_ns, db_id = prefix, identifier
         return db_ns, db_id, name
+
+
+def get_bool(condition: Any) -> str:
+    """Return a Neo4j compatible string representation of a boolean.
+
+    If the condition is truthy, the string "true" is returned. Otherwise,
+    the string "false"
+
+    Parameters
+    ----------
+    condition :
+        The boolean or boolean-like condition or value to evaluate.
+
+    Returns
+    -------
+    :
+        The string representation of the boolean compatible with Neo4j tsv
+        import format.
+    """
+    return "true" if condition else "false"

@@ -5,6 +5,7 @@
 import json
 import os
 import pickle
+from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
 from typing import Iterable, Optional, TextIO, Type
@@ -83,7 +84,19 @@ def main(
     skip_failed_processors: bool,
 ):
     """Generate and import Neo4j nodes and edges tables."""
-    to_assemble = ["BioEntity", "Publication"]
+    # Check which nodes labels need to be assembled (i.e. have multiple
+    # processors)
+    node_labels_to_processor_name = defaultdict(list)
+    for processor_cls in _iter_resolvers():
+        for label in processor_cls.node_types:
+            node_labels_to_processor_name[label].append(processor_cls.name)
+
+    to_assemble = []
+    for label, processor_names in node_labels_to_processor_name.items():
+        if len(processor_names) > 1:
+            to_assemble.append(label)
+    click.secho(f"Node labels to assemble: {to_assemble}", fg="blue")
+
     # Paths to files with preprocessed nodes (e.g. assembled nodes or nodes that don't need to be assembled)
     nodes_paths_for_import = []
     config = {} if config is None else json.load(config)
@@ -175,7 +188,9 @@ def main(
         click.secho(f"Assembling {node_type}", fg="green")
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
-        Processor._dump_nodes_to_path(assembled_nodes, assembled_path)
+        Processor._dump_nodes_to_path_static(
+            "assembled nodes", assembled_nodes, assembled_path
+        )
 
     # The assembled paths are added to the list of nodes to import separately
     for node_type in to_assemble:

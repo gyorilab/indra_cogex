@@ -2,7 +2,7 @@
 
 """Run the landing page app with ``python -m indra_cogex.apps.home``."""
 
-from . import cli
+from indra_cogex.apps.home.cli import cli
 
 if __name__ == "__main__":
     cli()

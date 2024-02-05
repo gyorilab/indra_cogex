@@ -77,6 +77,25 @@ class Neo4jClient:
         if self.driver is not None:
             self.driver.close()
 
+    def ping(self) -> bool:
+        """Ping the neo4j instance.
+
+        Returns
+        -------
+        ping :
+            True if the ping was successful, otherwise False.
+        """
+        try:
+            res = self.query_tx("CALL db.ping()")
+            if res:
+                return res[0][0]
+            else:
+                logger.warning("`CALL db.ping()` returned no results")
+                return False
+        except Exception as err:
+            logger.warning("Could not ping neo4j: %s", err, exc_info=True)
+            return False
+
     def create_tx(
         self,
         query: str,

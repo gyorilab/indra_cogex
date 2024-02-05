@@ -31,8 +31,8 @@ import tqdm
 
 from indra_cogex.representation import Relation, Node
 from indra_cogex.sources import Processor
-from indra_cogex.sources.pubmed import issn_nlm_map_path,\
-    process_mesh_xml_to_csv, PubmedProcessor
+from indra_cogex.sources.pubmed import issn_nlm_map_path, \
+    process_mesh_xml_to_csv
 
 
 __all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
@@ -152,13 +152,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
     @staticmethod
     def _load_issn_nlm_map():
         # First ensure the pre-processing has been done
-        pmp = PubmedProcessor()
-        process_mesh_xml_to_csv(
-            mesh_pmid_path=pmp.mesh_pmid_path,
-            pmid_year_path=pmp.pmid_year_path,
-            pmid_nlm_path=pmp.pmid_nlm_path,
-            journal_info_path=pmp.journal_info_path,
-        )
+        process_mesh_xml_to_csv()
         with gzip.open(issn_nlm_map_path, 'rt') as fh:
             reader = csv.reader(fh, delimiter=',')
             logger.info("Loading ISSN NLM map")
@@ -408,19 +402,20 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     nlm_id,
                     labels=[self.journal_node_type],
                     data={
-                        "name": journal_name,
-                        "issn_l": journal_issn_l,
-                        "issn_list:string[]": issn_list_str,
-                        "wikidata_id": journal_wd_id,
-                        "citescore:float": citescore,
-                        "category_rank:int": category_rank,
-                        "percentile:float": percentile,
-                        "category": category,
-                        "citations_2019_22:int": citations_2019_22,
-                        "documents_2019_22:int": documents_2019_22,
-                        "percent_cited_2019_22:float": percent_cited_2019_22,
-                        "snip:float": snip,
-                        "sjr:float": sjr,
+                        "name": _get_val(journal_name),
+                        "issn_l": _get_val(journal_issn_l),
+                        "issn_list:string[]": _get_val(issn_list_str),
+                        "wikidata_id": _get_val(journal_wd_id),
+                        "citescore:float": _get_val(citescore),
+                        "category_rank:int": _get_val(category_rank),
+                        "percentile:float": _get_val(percentile),
+                        "category": _get_val(category),
+                        "citations_2019_22:int": _get_val(citations_2019_22),
+                        "documents_2019_22:int": _get_val(documents_2019_22),
+                        "percent_cited_2019_22:float": _get_val(
+                            percent_cited_2019_22),
+                        "snip:float": _get_val(snip),
+                        "sjr:float": _get_val(sjr),
                     },
                 )
 
@@ -435,8 +430,8 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     publisher_isni.replace(" ", ""),
                     labels=[self.publisher_node_type],
                     data={
-                        "name": publisher_name,
-                        "wikidata_id": publisher_wd_id,
+                        "name": _get_val(publisher_name),
+                        "wikidata_id": _get_val(publisher_wd_id),
                     },
                 )
 
@@ -452,7 +447,19 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     source_ns="NLM",
                     source_id=nlm_id,
                     target_ns="ISNI",
-                    target_id=publisher_isni,
+                    # Strip the whitespace inside the ISNI
+                    target_id=publisher_isni.replace(" ", ""),
                     rel_type="published_by",
                     data={},
                 )
+
+
+def _get_val(val):
+    if (
+        pd.isna(val) or
+        isinstance(val, str) and not val.strip() or
+        isinstance(val, str) and val == "nan"
+    ):
+        return None
+    else:
+        return val

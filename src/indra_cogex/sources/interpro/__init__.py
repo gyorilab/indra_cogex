@@ -87,9 +87,13 @@ class InterproProcessor(Processor):
                 for hgnc_id, _, _ in self.interpro_to_genes.get(interpro_id, set())
             )
         for go_id in sorted(unique_go):
-            yield Node("GO", go_id, ["BioEntity"])
+            yield Node(
+                db_ns="GO", db_id=go_id, labels=["BioEntity"]
+            )
         for hgnc_id in sorted(unique_hgnc, key=int):
-            yield Node("HGNC", hgnc_id, ["BioEntity"])
+            yield Node(
+                db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"],
+            )
 
     def get_relations(self):  # noqa:D102
         for interpro_id in sorted(self.interpro_ids):

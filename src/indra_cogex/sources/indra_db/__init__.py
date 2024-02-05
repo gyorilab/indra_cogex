@@ -14,6 +14,7 @@ from itertools import permutations
 from pathlib import Path
 from typing import Iterable, Optional, Tuple, Union
 
+from indra.literature.pubmed_client import is_retracted
 from indra.statements import (
     Agent,
     default_ns_order,
@@ -28,13 +29,15 @@ from tqdm import tqdm
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
-from indra_cogex.sources.indra_db.assembly import belief_scores_pkl_fname
-from indra_cogex.sources.indra_db.raw_export import (
-    source_counts_fname,
-    unique_stmts_fname,
+from indra_cogex.sources.indra_db.raw_export import stmts_from_json
+from indra_cogex.sources.indra_db.locations import (
+    belief_scores_pkl_fname,
     processed_stmts_fname,
-    stmts_from_json,
+    unique_stmts_fname,
+    source_counts_fname
 )
+from indra_cogex.sources.pubmed.locations import pmid_year_types_path
+from indra_cogex.sources.utils import get_bool
 from indra_cogex.util import load_stmt_json_str
 
 logger = logging.getLogger(__name__)
@@ -107,12 +110,39 @@ class DbProcessor(Processor):
         logger.info("Loading belief scores per hash")
         with self.belief_scores_fname.open("rb") as f:
             belief_scores = pickle.load(f)
+        logger.info("Loading stmt hash - retraction boolean mapping")
+        has_retracted_pmid = {}
+        with gzip.open(self.stmts_fname, "rt") as fh:
+            reader = csv.reader(fh, delimiter="\t")
+            for sh_str, stmt_json_str in tqdm(
+                    reader, desc="Reading statements", unit_scale=True
+            ):
+                stmt_hash = int(sh_str)
+                stmt_json = load_stmt_json_str(stmt_json_str)
+                evidence = stmt_json["evidence"][0]
+
+                # Get pmid
+                pmid = evidence.get("text_refs", {}).get("PMID") or \
+                    evidence.get("pmid")
+                # If we have a pmid, check if it is retracted.
+                # If this is the first time we see this statement hash,
+                # set the has_retracted_pmid flag to the retraction status,
+                # otherwise, only change it if the pmid is retracted.
+                if pmid is not None:
+                    if stmt_hash not in has_retracted_pmid:
+                        has_retracted_pmid[stmt_hash] = is_retracted(pmid)
+                    else:
+                        # Run OR on the current value and the new value
+                        has_retracted_pmid[stmt_hash] |= is_retracted(pmid)
 
         hashes_yielded = set()
         with gzip.open(self.stmts_fname, "rt") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for sh_str, stmt_json_str in tqdm(reader, desc="Reading statements"):
                 stmt_hash = int(sh_str)
+                if stmt_hash in hashes_yielded:
+                    continue
+
                 try:
                     source_count = source_counts[stmt_hash]
                     belief = belief_scores[stmt_hash]
@@ -127,6 +157,10 @@ class DbProcessor(Processor):
                 stmt_json = load_stmt_json_str(stmt_json_str)
                 if stmt_json["evidence"][0]["source_api"] == "medscan":
                     stmt_json["evidence"] = []
+
+                # Set belief in the statement json
+                stmt_json["belief"] = belief
+
                 data = {
                     "stmt_hash:int": stmt_hash,
                     "source_counts:string": json.dumps(source_count),
@@ -134,18 +168,13 @@ class DbProcessor(Processor):
                     "stmt_type:string": stmt_json["type"],
                     "belief:float": belief,
                     "stmt_json:string": json.dumps(stmt_json),
-                    "has_database_evidence:boolean": (
-                        "true" if set(source_count) & db_sources else "false"
+                    "has_retracted_evidence:boolean": get_bool(
+                        has_retracted_pmid.get(stmt_hash)
                     ),
-                    "has_reader_evidence:boolean": (
-                        "true" if set(source_count) & reader_sources else "false"
-                    ),
-                    "medscan_only:boolean": (
-                        "true" if set(source_count) == {"medscan"} else "false"
-                    ),
-                    "sparser_only:boolean": (
-                        "true" if set(source_count) == {"sparser"} else "false"
-                    ),
+                    "has_database_evidence:boolean": get_bool(set(source_count) & db_sources),
+                    "has_reader_evidence:boolean": get_bool(set(source_count) & reader_sources),
+                    "medscan_only:boolean": get_bool(set(source_count) == {"medscan"}),
+                    "sparser_only:boolean": get_bool(set(source_count) == {"sparser"}),
                 }
 
                 # Get the agents from the statement
@@ -216,6 +245,19 @@ class EvidenceProcessor(Processor):
             for row in reader:
                 included_hashes.add(int(row[hash_idx]))
 
+        # Create pubmed source files if they don't exist
+        if not pmid_year_types_path.exists():
+            from indra_cogex.sources.pubmed import process_mesh_xml_to_csv
+            process_mesh_xml_to_csv()
+
+        # Load pmid -> year, pubtypes mapping (assumes pubmed source files
+        # exist)
+        with gzip.open(pmid_year_types_path, "rt") as fh:
+            pmid_years_pubtypes = {
+                pmid: (year, json.loads(types))
+                for pmid, year, types in csv.reader(fh, delimiter="\t")
+            }
+
         # Loop the grounded statements and get the evidence w text refs
         logger.info("Looping statements from statements file")
         with gzip.open(self.stmt_fname.as_posix(), "rt") as fh:
@@ -246,8 +288,11 @@ class EvidenceProcessor(Processor):
                         tr = evidence.get("text_refs", {})
                         pmid = tr.get("PMID") or evidence.get("pmid")
 
-                        # Skip if no PMID or we already yielded this PMID
+                        # Only yield Pubmed nodes if we have PMID and it
+                        # hasn't already been used
                         if pmid is not None and pmid not in yielded_pmid:
+                            year, pubtypes = pmid_years_pubtypes.get(pmid, (None, []))
+                            pubtypes_str = ";".join(pubtypes) or None
                             # If there are text refs, use them
                             if tr.get("PMID"):
                                 pubmed_node = Node(
@@ -261,6 +306,11 @@ class EvidenceProcessor(Processor):
                                         "pii": tr.get("PII"),
                                         "url": tr.get("URL"),
                                         "manuscript_id": tr.get("MANUSCRIPT_ID"),
+                                        "year:int": year,
+                                        "publication_type:string[]": pubtypes_str,
+                                        "retracted:boolean": get_bool(
+                                            is_retracted(pmid)
+                                        )
                                     },
                                 )
                             # Otherwise, just make a node with the evidence PMID
@@ -269,6 +319,13 @@ class EvidenceProcessor(Processor):
                                     db_ns="PUBMED",
                                     db_id=pmid,
                                     labels=["Publication"],
+                                    data={
+                                        "year:int": year,
+                                        "publication_type:string[]": pubtypes_str,
+                                        "retracted:boolean": get_bool(
+                                            is_retracted(pmid)
+                                        )
+                                    },
                                 )
 
                             # Add Publication node to batch if it was created
@@ -297,6 +354,10 @@ class EvidenceProcessor(Processor):
                                 db_id=str(yield_index),
                                 labels=["Evidence"],
                                 data={
+                                    # Check retractions if there is a PMID
+                                    "retracted:boolean": get_bool(
+                                        is_retracted(pmid) if pmid else False
+                                    ),
                                     "evidence:string": json.dumps(evidence),
                                     "stmt_hash:int": stmt_hash,
                                     "source_api:string": evidence["source_api"],

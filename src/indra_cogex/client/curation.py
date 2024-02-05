@@ -34,14 +34,14 @@ __all__ = [
     "get_prioritized_stmt_hashes",
     "get_curation_df",
     "get_go_curation_hashes",
-    "get_ppi_evidence_counts",
-    "get_goa_evidence_counts",
+    "get_ppi_source_counts",
+    "get_goa_source_counts",
     "get_tf_statements",
     "get_kinase_statements",
     "get_phosphatase_statements",
     "get_conflicting_statements",
     "get_dub_statements",
-    "get_entity_evidence_counts",
+    "get_entity_source_counts",
     "get_mirna_statements",
     "get_disprot_statements",
 ]
@@ -164,7 +164,7 @@ def _limit_line(limit: Optional[int] = None) -> str:
 
 
 @autoclient()
-def get_ppi_evidence_counts(
+def get_ppi_source_counts(
     *,
     client: Neo4jClient,
     minimum_evidences: int = 20,
@@ -203,7 +203,7 @@ def get_ppi_evidence_counts(
 
 
 @autoclient()
-def get_goa_evidence_counts(
+def get_goa_source_counts(
     *,
     client: Neo4jClient,
     minimum_evidences: int = 10,
@@ -247,7 +247,7 @@ TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 @autoclient()
 def get_tf_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get transcription factor increase amount / decrease amount."""
     return _help(
         sources=TF_CURIES,
@@ -268,7 +268,7 @@ KINASE_STMT_TYPES = [
 @autoclient()
 def get_kinase_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get kinase statements."""
     return _help(
         sources=KINASE_CURIES,
@@ -285,7 +285,7 @@ PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
 @autoclient()
 def get_phosphatase_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get phosphatase statements."""
     return _help(
         sources=PHOSPHATASE_CURIES,
@@ -311,7 +311,7 @@ DUB_STMT_TYPES = [Deubiquitination]
 @autoclient()
 def get_dub_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get deubiquitinase statements."""
     return _help(
         sources=_get_dub_curies(),
@@ -336,7 +336,7 @@ MIRNA_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 @autoclient()
 def get_mirna_statements(
     *, client: Neo4jClient, limit: Optional[int] = None
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get miRNA statements."""
     return _help(
         sources=MIRNA_CURIES,
@@ -360,7 +360,7 @@ def get_disprot_statements(
     client: Neo4jClient,
     limit: Optional[int] = None,
     object_prefix: Optional[str] = None,
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     """Get statements about disordered proteins."""
     return _help(
         sources=DISPROT_CURIES,
@@ -409,24 +409,24 @@ def _help(
 
 
 @autoclient()
-def get_entity_evidence_counts(
+def get_entity_source_counts(
     prefix: str,
     identifier: str,
     *,
     client: Neo4jClient,
     limit: Optional[int] = None,
-) -> Mapping[int, int]:
+) -> Mapping[int, Mapping[str, int]]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
             a.id = "{prefix}:{identifier}"
             AND NOT r.has_database_evidence
             AND a.id <> b.id
-        RETURN r.stmt_hash, r.evidence_count
+        RETURN r.stmt_hash, r.source_counts
         ORDER BY r.evidence_count DESC
         {_limit_line(limit)}
     """
-    return client.query_dict(query)
+    return client.query_dict_value_json(query)
 
 
 @autoclient()

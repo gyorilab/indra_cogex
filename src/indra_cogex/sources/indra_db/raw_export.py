@@ -8,25 +8,12 @@ import tqdm
 import codecs
 import pandas
 import pickle
-import pystow
 from adeft.download import get_available_models
 from indra.util import batch_iter
 from indra.statements import stmts_from_json, stmt_from_json
 from indra.tools import assemble_corpus as ac
+from indra_cogex.sources.indra_db.locations import *
 from indra_cogex.util import load_stmt_json_str
-
-base_folder = pystow.module("indra", "db")
-reading_text_content_fname = base_folder.join(name="reading_text_content_meta.tsv.gz")
-text_refs_fname = base_folder.join(name="text_refs_principal.tsv.gz")
-raw_stmts_fname = base_folder.join(name="raw_statements.tsv.gz")
-drop_readings_fname = base_folder.join(name="drop_readings.pkl")
-reading_to_text_ref_map = base_folder.join(name="reading_to_text_ref_map.pkl")
-
-processed_stmts_fname = base_folder.join(name="processed_statements.tsv.gz")
-grounded_stmts_fname = base_folder.join(name="grounded_statements.tsv.gz")
-unique_stmts_fname = base_folder.join(name="unique_statements.tsv.gz")
-source_counts_fname = base_folder.join(name="source_counts.pkl")
-
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +85,7 @@ def load_text_refs_by_trid(fname: str):
     for line in tqdm.tqdm(
         gzip.open(fname, "rt", encoding="utf-8"),
         total=36223169,
+        unit_scale=True,
         desc="Processing text refs into a lookup dictionary",
     ):
         ids = line.strip().split("\t")
@@ -203,13 +191,35 @@ if __name__ == "__main__":
     if not os.environ.get("INDRA_DB_LITE_LOCATION"):
         raise ValueError("Environment variable 'INDRA_DB_LITE_LOCATION' not set")
 
+    # Check that the INDRA DB Lite location is valid
+    if not os.path.isfile(os.environ["INDRA_DB_LITE_LOCATION"]):
+        raise FileNotFoundError(
+            f"INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']} "
+            f"does not point to a valid file"
+        )
+    logger.info(
+        f"Found INDRA_DB_LITE_LOCATION={os.environ['INDRA_DB_LITE_LOCATION']}"
+    )
+
+    # This checks that a connection to the prinicipal db can be established.
+    # It is needed for the preassembly step as fallback when the
+    # indra_db_lite is missing content
+    from indra_db import get_db
+    db = get_db("primary")
+    if db is None:
+        raise ValueError("Could not connect to the principal db. Please set "
+                         "INDRADBPRIMARY to point to a valid db or add a db "
+                         "config to db_config.ini")
+    logger.info("Principal db is available")
+
     # This checks if there are any adeft models available. They are needed to
-    if len(get_available_models()) == 0:
+    adeft_model_count = len(get_available_models())
+    if adeft_model_count == 0:
         raise ValueError(
             "No adeft models detected, run 'python -m adeft.download' to "
             "download models"
         )
-    logger.info(f"Found {len(get_available_models())} adeft models")
+    logger.info(f"Found {adeft_model_count} adeft models")
 
     # STAGE 1: We need to run statement distillation to figure out which
     # raw statements we should ignore based on the text content and
@@ -239,6 +249,7 @@ if __name__ == "__main__":
         # This takes around ~10 min
         for row in tqdm.tqdm(df.itertuples(),
                              total=len(df),
+                             unit_scale=True,
                              desc="Distilling statements"):
             if row.text_ref_id != trid:
                 for reader, reader_contents in contents.items():
@@ -283,15 +294,26 @@ if __name__ == "__main__":
     # STAGE 2: We now need to iterate over raw statements and do preassembly
     # Takes ~16 h
     if not processed_stmts_fname.exists() or not source_counts_fname.exists():
-        logger.info("Preassembling statements and collecting source counts")
+        logger.info("Processing statements and collecting source counts")
         text_refs = load_text_refs_by_trid(text_refs_fname.as_posix())
         source_counts = defaultdict(lambda: defaultdict(int))
+
+        # Warm up bio_ontology
+        from indra.ontology.bio import bio_ontology
+        bio_ontology.initialize()
+
         with gzip.open(raw_stmts_fname, "rt") as fh, gzip.open(
             processed_stmts_fname, "wt"
         ) as fh_out:
             reader = csv.reader(fh, delimiter="\t")
             writer = csv.writer(fh_out, delimiter="\t")
-            for lines in tqdm.tqdm(batch_iter(reader, 10000), total=7581):
+            for lines in tqdm.tqdm(
+                batch_iter(reader, 10000),
+                total=7665,
+                unit_scale=True,
+                unit="batch",
+                desc="Processing statements"
+            ):
                 stmts_jsons = []
                 for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                     # NOTE: We might want to propagate the raw_stmt_id for
@@ -347,7 +369,11 @@ if __name__ == "__main__":
             writer_gr = csv.writer(fh_out_gr, delimiter="\t")
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
-                reader, total=60405451, desc="Gathering grounded and unique statements"
+                reader,
+                total=63928997,
+                desc="Gathering grounded and unique statements",
+                unit_scale=True,
+                unit="stmt"
             ):
                 stmt = stmt_from_json(load_stmt_json_str(stmt_json_str))
                 if len(stmt.real_agent_list()) < 2:

@@ -62,12 +62,13 @@ def test_get_go_terms_for_gene():
 def test_get_genes_for_go_term():
     # Single query
     client = _get_client()
+    # GO:0000978 -
+    # RNA polymerase II cis-regulatory region sequence-specific DNA binding
     go_term = ("GO", "GO:0000978")
     genes = get_genes_for_go_term(go_term, client=client)
     assert genes
-    node0 = genes[0]
-    assert isinstance(node0, Node)
-    assert node0.db_ns == "HGNC"
+    assert all(isinstance(node, Node) for node in genes)
+    assert all(node.db_ns == "HGNC" for node in genes)
     assert ("HGNC", "2697") in {g.grounding() for g in genes}
 
 
@@ -83,7 +84,7 @@ def test_is_go_term_for_gene():
 @pytest.mark.nonpublic
 def test_get_trials_for_drug():
     client = _get_client()
-    drug = ("MESH", "C000489")
+    drug = ("CHEBI", "CHEBI:135866")
     trials = get_trials_for_drug(drug, client=client)
     assert trials
     assert isinstance(trials[0], Node)

@@ -4,11 +4,12 @@
 
 import copy
 import logging
-from typing import Optional
+from typing import Optional, Any, Mapping
 
 from indra.ontology import IndraOntology
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
+from indra_cogex.sources.utils import get_bool
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,8 @@ class OntologyProcessor(Processor):
     def get_nodes(self):  # noqa:D102
         for node, data in self.ontology.nodes(data=True):
             db_ns, db_id = self.ontology.get_ns_id(node)
-            yield Node(db_ns, db_id, ["BioEntity"], data)
+            parsed_data = _get_data(data)
+            yield Node(db_ns, db_id, ["BioEntity"], data=parsed_data)
 
     def get_relations(self):  # noqa:D102
         for source, target, data in self.ontology.edges(data=True):
@@ -44,4 +46,20 @@ class OntologyProcessor(Processor):
             target_ns, target_id = self.ontology.get_ns_id(target)
             data = copy.copy(data)
             edge_type = data.pop("type")
-            yield Relation(source_ns, source_id, target_ns, target_id, edge_type, data)
+            yield Relation(
+                source_ns, source_id, target_ns, target_id, edge_type, data
+            )
+
+
+def _get_data(data: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Make sure the data has the proper keys for Neo4j headers."""
+    out = {}
+    for key, value in data.items():
+        if isinstance(value, bool):
+            new_key = key + ":boolean"
+            out[new_key] = get_bool(value)
+        else:
+            # TODO: handle other types - this has to make sure all other
+            #  sources that assemble BioEntity nodes use the same types
+            out[key] = value
+    return out

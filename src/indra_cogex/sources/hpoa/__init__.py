@@ -66,9 +66,9 @@ class HpDiseasePhenotypeProcessor(Processor):
         )[
             "evidence"
         ]:
-            all_ecs = ",".join(sorted(set(evidence)))
+            all_ecs = ";".join(sorted(set(evidence)))
             # Possible properties could be e.g., evidence codes
-            data = {"evidence_codes:string": all_ecs, "source": self.name}
+            data = {"evidence_codes:string[]": all_ecs, "source": self.name}
             if self.version:
                 data["version"] = self.version
             yield Relation(

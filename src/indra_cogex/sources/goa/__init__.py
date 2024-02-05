@@ -42,17 +42,17 @@ class GoaProcessor(Processor):
         self.df = load_goa(GOA_URL)
 
     def get_nodes(self):  # noqa:D102
-        for go_node in self.df["GO_ID"].unique():
-            yield Node("GO", go_node, ["BioEntity"])
+        for go_id in self.df["GO_ID"].unique():
+            yield Node(db_ns="GO", db_id=go_id, labels=["BioEntity"])
         for hgnc_id in self.df["HGNC_ID"].unique():
-            yield Node("HGNC", hgnc_id, ["BioEntity"])
+            yield Node(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
     def get_relations(self):  # noqa:D102
         rel_type = "associated_with"
         for (go_id, hgnc_id), ecs in self.df.groupby(["GO_ID", "HGNC_ID"])["EC"]:
-            all_ecs = ",".join(sorted(set(ecs)))
+            all_ecs = ";".join(sorted(set(ecs)))
             # Possible properties could be e.g., evidence codes
-            data = {"evidence_codes:string": all_ecs, "source": self.name}
+            data = {"evidence_codes:string[]": all_ecs, "source": self.name}
             yield Relation("HGNC", hgnc_id, "GO", go_id, rel_type, data)
 
 

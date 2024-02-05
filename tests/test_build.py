@@ -13,6 +13,7 @@ from unittest import mock
 import click
 from click.testing import CliRunner
 
+from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.cli import main
 from indra_cogex.sources.processor import Processor
 
@@ -32,12 +33,14 @@ class MockProcessor(Processor):
         click.echo(self.key)
 
     def get_nodes(self):
-        """Return an empty sequence of nodes for testing."""
-        return []
+        """Return mock nodes for testing."""
+        return [Node(db_ns="HGNC", db_id="123", labels=["BioEntity"]),
+                Node(db_ns="HGNC", db_id="456", labels=["BioEntity"])]
 
     def get_relations(self):
-        """Return an empty sequence of relations for testing."""
-        return []
+        """Return a mock relation for testing."""
+        return [Relation(source_ns="HGNC", source_id="123", target_ns="HGNC",
+                         target_id="456", rel_type="mock_relation"), ]
 
 
 def _new_iter() -> Iterable[Type[Processor]]:

@@ -17,17 +17,17 @@ from indra_cogex.apps.proxies import client, curation_cache
 from indra_cogex.client.curation import (
     get_disprot_statements,
     get_dub_statements,
-    get_entity_evidence_counts,
-    get_goa_evidence_counts,
+    get_entity_source_counts,
+    get_goa_source_counts,
     get_kinase_statements,
     get_mirna_statements,
     get_phosphatase_statements,
-    get_ppi_evidence_counts,
+    get_ppi_source_counts,
     get_tf_statements,
 )
 from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes
 
-from .utils import get_conflict_evidence_counts
+from .utils import get_conflict_source_counts
 from ..utils import (
     remove_curated_evidences,
     remove_curated_pa_hashes,
@@ -237,7 +237,7 @@ def _render_func(
     ----------
     func :
         A function that takes a ``client`` and any arbitrary arguments
-        (passed through ``func_kwargs``) and returns an evidence count
+        (passed through ``func_kwargs``) and returns a source count
         dictionary
     func_kwargs :
         Keyword arguments to pass to the function
@@ -312,7 +312,7 @@ def _render_evidence_counts(
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
     return _render_func(
-        get_ppi_evidence_counts,
+        get_ppi_source_counts,
         title="PPI Curator",
         description=f"""\
             The protein-protein interaction (PPI) curator identifies INDRA
@@ -330,7 +330,7 @@ def ppi():
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     return _render_func(
-        get_goa_evidence_counts,
+        get_goa_source_counts,
         title="GO Annotation Curator",
         description=f"""\
             The Gene Ontology annotation curator identifiers INDRA statements
@@ -349,7 +349,13 @@ def goa():
 def conflicts():
     """Curate statements with conflicting prior curations."""
     return _render_func(
-        get_conflict_evidence_counts, title="Conflict Resolver", filter_curated=False
+        get_conflict_source_counts, title="Conflict Resolver",
+        filter_curated=False,
+        description=f"""\
+            The conflict resolver identifies INDRA statements that have
+            conflicting prior curations. {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+        """,
     )
 
 
@@ -471,7 +477,7 @@ def entity(prefix: str, identifier: str):
         return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated)
     if prefix in {"hgnc"}:
         return _render_func(
-            get_entity_evidence_counts,
+            get_entity_source_counts,
             func_kwargs=dict(
                 prefix=prefix,
                 identifier=identifier,

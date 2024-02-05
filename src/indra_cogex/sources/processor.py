@@ -10,7 +10,16 @@ import pickle
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
-from typing import ClassVar, Iterable, List, Tuple, Optional, Mapping, Any
+from typing import (
+    ClassVar,
+    Iterable,
+    List,
+    Tuple,
+    Optional,
+    Mapping,
+    Any,
+    Dict
+)
 
 import click
 import pystow
@@ -21,6 +30,12 @@ from indra.statements.validate import assert_valid_db_refs, assert_valid_evidenc
 from indra.statements import Evidence
 
 from indra_cogex.representation import Node, Relation, norm_id
+from indra_cogex.sources.processor_util import (
+    NEO4J_DATA_TYPES,
+    data_validator,
+    DataTypeError,
+    UnknownTypeError,
+)
 
 __all__ = [
     "Processor",
@@ -33,35 +48,6 @@ logger = logging.getLogger(__name__)
 # Find neo4j conf and comment out this line: dbms.directories.import=import
 # /usr/local/Cellar/neo4j/4.1.3/libexec/conf/neo4j.conf for me
 # data stored in /usr/local/var/neo4j/data/databases
-
-
-# See https://neo4j.com/docs/operations-manual/4.4/tools/neo4j-admin/neo4j-admin-import/
-# especially sections 4, 5 and 6
-NEO4J_DATA_TYPES = (
-    "int",
-    "long",
-    "float",
-    "double",
-    "boolean",
-    "byte",
-    "short",
-    "char",
-    "string",
-    "point",
-    "date",
-    "localtime",
-    "time",
-    "localdatetime",
-    "datetime",
-    "duration",
-    # Used in node files
-    "ID",
-    "LABEL",
-    # Used in relationship files
-    "START_ID",
-    "END_ID",
-    "TYPE",
-)
 
 
 class Processor(ABC):
@@ -145,8 +131,11 @@ class Processor(ABC):
             unit="node",
         )
         # Map the nodes to their types
-        for node in nodes:
+        ix = 0
+        for ix, node in enumerate(nodes):
             nodes_by_type[node.labels[0]].append(node)
+        if ix == 0:
+            raise RuntimeError(f"No nodes were generated for {self.name}")
         # Get the paths for each type of node and dump the nodes
         for node_type in nodes_by_type:
             nodes_path, nodes_indra_path, sample_path = self._get_node_paths(node_type)
@@ -158,13 +147,43 @@ class Processor(ABC):
         return paths_by_type, dict(nodes_by_type)
 
     def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None, write_mode="wt"):
+        return self._dump_nodes_to_path_static(
+            self.name,
+            nodes,
+            nodes_path,
+            sample_path=sample_path,
+            write_mode=write_mode,
+        )
+
+    @staticmethod
+    def _dump_nodes_to_path_static(
+        processor_name,
+        nodes,
+        nodes_path,
+        sample_path=None,
+        write_mode="wt"
+    ):
+        # This method is static so it can be used in the node assembly process
+        # when running `python -m indra_cogex.sources` without instantiating
+        # the processor used (some processors load their data on
+        # instantiation and this needs to be avoided in the node assembly
+        # proces)
         logger.info(f"Dumping into {nodes_path}...")
-        nodes = list(validate_nodes(nodes))
         metadata = sorted(set(key for node in nodes for key in node.data))
+        header = "id:ID", ":LABEL", *metadata
+
+        # Validate the headers
         try:
-            validate_headers(metadata)
+            validate_headers(header)
         except TypeError as e:
-            logger.error(f"Bad node data type in header for {self.name}")
+            logger.error(f"Bad node data type in header for {processor_name}")
+            raise e
+
+        # Validate the nodes
+        try:
+            nodes = list(validate_nodes(nodes, metadata))
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"Bad node data type in node data values for {processor_name}")
             raise e
 
         node_rows = (
@@ -176,7 +195,6 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Node serialization", unit_scale=True)
         )
 
-        header = "id:ID", ":LABEL", *metadata
         with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
@@ -201,16 +219,28 @@ class Processor(ABC):
 
     def _dump_edges_to_path(self, rels, edges_path, sample_path=None, write_mode="wt"):
         logger.info(f"Dumping into {edges_path}...")
-        rels = validate_relations(rels)
-        rels = sorted(
-            rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
-        )
+
+        rels = list(rels)
+        if len(rels) == 0:
+            raise RuntimeError(f"No relations were generated for {self.name}")
         metadata = sorted(set(key for rel in rels for key in rel.data))
+        header = ":START_ID", ":END_ID", ":TYPE", *metadata
+
         try:
-            validate_headers(metadata)
+            validate_headers(header)
         except TypeError as e:
             logger.error(f"Bad edge data type in header for {self.name}")
             raise e
+
+        try:
+            rels = validate_relations(rels, metadata)
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"Bad edge data type in edge data values for {self.name}")
+            raise e
+        rels = sorted(
+            rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
+        )
+
         edge_rows = (
             (
                 norm_id(rel.source_ns, rel.source_id),
@@ -223,7 +253,7 @@ class Processor(ABC):
 
         with gzip.open(self.edges_path, mode=write_mode) as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
-            header = ":START_ID", ":END_ID", ":TYPE", *metadata
+
             # Only add header when writing to a new file
             if write_mode == "wt":
                 edge_writer.writerow(header)
@@ -240,32 +270,143 @@ class Processor(ABC):
 
 
 def assert_valid_node(
-    db_ns: str, db_id: str, data: Optional[Mapping[str, Any]] = None
-) -> None:
+    db_ns: str,
+    db_id: str,
+    data: Optional[Mapping[str, Any]] = None,
+    check_data: bool = False,
+) -> Optional[Dict[str, bool]]:
     if db_ns == "indra_evidence":
-        if data and data.get("evidence"):
-            ev = Evidence._from_json(json.loads(data["evidence"]))
+        if data and data.get("evidence:string"):
+            ev = Evidence._from_json(json.loads(data["evidence:string"]))
             assert_valid_evidence(ev)
     else:
         assert_valid_db_refs({db_ns: db_id})
 
+    if check_data and data:
+        checked_keys = {}
+        for key, value in data.items():
+            # Skip None values, mark as not checked
+            if value is None:
+                checked_keys[key] = False
+                continue
+            if ":" in key:
+                dtype = key.split(":")[1]
+            else:
+                # If no data type is specified, string is assumed by Neo4j
+                dtype = "string"
+            data_validator(dtype, value)
 
-def validate_nodes(nodes: Iterable[Node]) -> Iterable[Node]:
+            checked_keys[key] = True
+
+        return checked_keys
+
+
+def validate_nodes(
+    nodes: Iterable[Node],
+    header: Iterable[str],
+    check_all_data: bool = True,
+) -> Iterable[Node]:
+    """Validate the nodes before yielding them.
+
+    Parameters
+    ----------
+    nodes :
+        The nodes to validate.
+    header :
+        The header of the output Neo4j ingest file.
+    check_all_data :
+        If True, check all data keys in the nodes. If False, stop checking
+        when all data keys have been checked.
+
+    Yields
+    ------
+    Node
+        The validated node.
+
+    Raises
+    ------
+    UnknownTypeError
+        If a data type is not recognized.
+    DataTypeError
+        If a data type does not match the value set in the header.
+    """
+    checked_headers = {key: False for key in header}
     for idx, node in enumerate(nodes):
+        check_data = not all(checked_headers.values()) or check_all_data
         try:
-            assert_valid_node(node.db_ns, node.db_id, node.data)
+            checked_fields = assert_valid_node(
+                node.db_ns, node.db_id, node.data, check_data
+            )
+            if checked_fields:
+                for key, checked in checked_fields.items():
+                    if checked:
+                        checked_headers[key] = True
+
+            # Check if this was the iteration when all headers were checked
+            if check_data and all(checked_headers.values()) and not check_all_data:
+                logger.info(f"All node data keys checked at index {idx}. "
+                            f"Skipping the rest")
             yield node
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("Bad node data type(s) detected")
+            raise e
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
             continue
 
 
-def validate_relations(relations: Iterable[Relation]) -> Iterable[Relation]:
+def validate_relations(
+    relations: Iterable[Relation],
+    header: Iterable[str],
+    check_all_data: bool = True,
+) -> Iterable[Relation]:
+    """Validate the relations before yielding them.
+
+    Parameters
+    ----------
+    relations :
+        The relations to validate.
+    header :
+        The header of the output Neo4j ingest file.
+    check_all_data :
+        If True, check all data keys in the relations. If False, stop checking
+        when all data keys have been checked.
+
+    Yields
+    -------
+    Relation
+        The validated relation.
+
+    Raises
+    ------
+    UnknownTypeError
+        If a data type is not recognized.
+    DataTypeError
+        If a data type does not match the value set in the header.
+    """
+    checked_headers = {key: False for key in header}
     for idx, rel in enumerate(relations):
         try:
-            assert_valid_node(rel.source_ns, rel.source_id)
+            check_data = not all(checked_headers.values()) or check_all_data
+            checked_fields = assert_valid_node(
+                rel.source_ns, rel.source_id, rel.data, check_data
+            )
             assert_valid_node(rel.target_ns, rel.target_id)
+            if checked_fields:
+                for key, checked in checked_fields.items():
+                    if checked:
+                        checked_headers[key] = True
+
+            # Check if this was the iteration when all headers were checked
+            if check_data and all(checked_headers.values()) and not check_all_data:
+                logger.info(f"All relation data keys checked at index {idx}. "
+                            f"Skipping the rest")
             yield rel
+        except (UnknownTypeError, DataTypeError) as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("Bad relation data type(s) detected")
+            raise e
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")
             continue

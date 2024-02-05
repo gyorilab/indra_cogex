@@ -40,8 +40,8 @@ class PyoboProcessor(Processor):
             yield Node(
                 db_ns,
                 db_id,
-                ["BioEntity"],
-                dict(name=name, version=version),
+                labels=["BioEntity"],
+                data={"name": name, "version": version},
             )
 
     def get_relations(self):  # noqa:D102
