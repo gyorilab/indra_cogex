@@ -1,0 +1,440 @@
+chemical_curie	chemical_name	types	smiles	molecule
+chebi:95044	(2S)-2-[[(2R)-2-[(1S)-1-hydroxy-2-(hydroxyamino)-2-oxoethyl]-4-methyl-1-oxopentyl]amino]-2-phenylacetic acid cyclopentyl ester	['has_indication']	CC(C)C[C@H]([C@@H](C(=O)NO)O)C(=O)N[C@@H](C1=CC=CC=C1)C(=O)OC2CCCC2	<rdkit.Chem.rdchem.Mol object at 0x2ab0d59a0>
+chebi:94291	2-(butan-2-yldisulfanyl)-1H-imidazole	['has_indication']	CCC(C)SSC1=NC=CN1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5b60>
+chebi:9421	tazobactam	['has_indication']	C[C@]1(Cn2ccnn2)[C@@H](N2[C@@H](CC2=O)S1(=O)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5a10>
+chebi:93752	(2S)-N1-[4-methyl-5-[2-(1,1,1-trifluoro-2-methylpropan-2-yl)-4-pyridinyl]-2-thiazolyl]pyrrolidine-1,2-dicarboxamide	['has_indication']	CC1=C(SC(=N1)NC(=O)N2CCC[C@H]2C(=O)N)C3=CC(=NC=C3)C(C)(C)C(F)(F)F	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5850>
+chebi:9168	sirolimus	['has_indication', 'indra_rel']	[H][C@]1(CC[C@@H](O)[C@@H](C1)OC)C[C@@H](C)[C@]1([H])CC(=O)[C@H](C)\\C=C(C)\\[C@@H](O)[C@@H](OC)C(=O)[C@H](C)C[C@H](C)\\C=C\\C=C\\C=C(C)\\[C@H](C[C@]2([H])CC[C@@H](C)[C@@](O)(O2)C(=O)C(=O)N2CCCC[C@@]2([H])C(=O)O1)OC	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5770>
+chebi:9150	simvastatin	['has_indication']	CCC(C)(C)C(=O)O[C@H]1C[C@@H](C)C=C2C=C[C@H](C)[C@H](CC[C@@H]3C[C@@H](O)CC(=O)O3)[C@@H]12	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5690>
+chebi:91414	1-[6-(2-hydroxypropan-2-yl)-2-pyridinyl]-6-[4-(4-methyl-1-piperazinyl)anilino]-2-prop-2-enyl-3-pyrazolo[3,4-d]pyrimidinone	['has_indication']	CC(C)(C1=NC(=CC=C1)N2C3=NC(=NC=C3C(=O)N2CC=C)NC4=CC=C(C=C4)N5CCN(CC5)C)O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5700>
+chebi:91398	LSM-1131	['has_indication']	C1CC2=CC=CC3=C2N(C1)C=C3[C@H]4[C@@H](C(=O)NC4=O)C5=CNC6=CC=CC=C65	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5620>
+chebi:91368	3-(1-methyl-3-indolyl)-4-[1-[1-(2-pyridinylmethyl)-4-piperidinyl]-3-indolyl]pyrrole-2,5-dione	['has_indication']	CN1C=C(C2=CC=CC=C21)C3=C(C(=O)NC3=O)C4=CN(C5=CC=CC=C54)C6CCN(CC6)CC7=CC=CC=N7	<rdkit.Chem.rdchem.Mol object at 0x2ab0d55b0>
+chebi:91366	4-[[9-chloro-7-(2,6-difluorophenyl)-5H-pyrimido[5,4-d][2]benzazepin-2-yl]amino]benzoic acid	['has_indication']	C1C2=CN=C(N=C2C3=C(C=C(C=C3)Cl)C(=N1)C4=C(C=CC=C4F)F)NC5=CC=C(C=C5)C(=O)O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5540>
+chebi:91353	2-(2-chloro-4-iodoanilino)-N-(cyclopropylmethoxy)-3,4-difluorobenzamide	['has_indication']	C1CC1CONC(=O)C2=C(C(=C(C=C2)F)F)NC3=C(C=C(C=C3)I)Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab0d54d0>
+chebi:90936	alectinib	['has_indication']	C1OCCN(C1)C2CCN(CC2)C3=CC4=C(C=C3CC)C(C5=C(C4(C)C)NC=6C5=CC=C(C6)C#N)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d53f0>
+chebi:90914	uridine triacetate	['has_indication']	[C@@H]1(N2C(NC(=O)C=C2)=O)O[C@H](COC(=O)C)[C@H]([C@H]1OC(=O)C)OC(=O)C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5460>
+chebi:90879	tipiracil	['has_indication']	C1(=C(C(NC(N1)=O)=O)Cl)CN2C(CCC2)=N	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5380>
+chebi:90863	sonidegib	['has_indication']	O1[C@H](CN(C[C@H]1C)C2=NC=C(C=C2)NC(C3=CC=CC(=C3C)C4=CC=C(C=C4)OC(F)(F)F)=O)C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5310>
+chebi:90748	O-(chloroacetylcarbamoyl)fumagillol	['has_indication']	[C@]1([C@]2(O[C@@]2(CC=C(C)C)[H])C)([H])[C@H](OC)[C@@H](CC[C@]13CO3)OC(=O)NC(=O)CCl	<rdkit.Chem.rdchem.Mol object at 0x2ab0d52a0>
+chebi:90620	vatalanib	['has_indication']	N1=NC(=C2C(=C1CC=3C=CN=CC3)C=CC=C2)NC4=CC=C(C=C4)Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab0d51c0>
+chebi:90227	selumetinib	['has_indication']	N1(C=NC2=C1C=C(C(=C2F)NC3=CC=C(C=C3Cl)Br)C(=O)NOCCO)C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5150>
+chebi:90225	rubitecan	['has_indication']	[N+]([O-])(=O)C=1C2=CC=3CN4C(C=5COC([C@](C5C=C4C3N=C2C=CC1)(O)CC)=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d50e0>
+chebi:90195	tacedinaline	['has_indication']	C1=C(C=CC(=C1)C(NC2=C(C=CC=C2)N)=O)NC(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5070>
+chebi:8884	rocuronium	['has_indication']	[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@@H](OC(C)=O)[C@H](C[C@@]34[H])[N+]3(CCCC3)CC=C)[C@@]1(C)C[C@@H]([C@@H](O)C2)N1CCOCC1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d5000>
+chebi:87732	4-hydroxy-3-(3-oxo-1-phenylbutyl)-1-benzopyran-2-one	['has_indication']	C1=CC=CC2=C1C(=C(C(O2)=O)C(CC(C)=O)C3=CC=CC=C3)O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4f90>
+chebi:8764	mycophenolate mofetil	['has_indication']	COc1c(C)c2COC(=O)c2c(O)c1C\\C=C(/C)CCC(=O)OCCN1CCOCC1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4f20>
+chebi:85993	palbociclib	['has_indication']	CC(=O)c1c(C)c2cnc(Nc3ccc(cn3)N3CCNCC3)nc2n(C2CCCC2)c1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4c10>
+chebi:85990	panobinostat	['has_indication', 'indra_rel']	Cc1[nH]c2ccccc2c1CCNCc1ccc(\\C=C\\C(=O)NO)cc1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4c80>
+chebi:85164	nintedanib	['has_indication']	COC(=O)c1ccc2\\C(=C(\\Nc3ccc(cc3)N(C)C(=O)CN3CCN(C)CC3)c3ccccc3)C(=O)Nc2c1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4ba0>
+chebi:85078	dapagliflozin	['has_indication']	CCOc1ccc(Cc2cc(ccc2Cl)[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)cc1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4b30>
+chebi:8499	propranolol	['has_indication']	CC(C)NCC(O)COc1cccc2ccccc12	<rdkit.Chem.rdchem.Mol object at 0x2ab0d46d0>
+chebi:84050	trabectedin	['has_indication']	COc1cc2c(CCN[C@]22CS[C@H]3[C@H]4[C@@H]5N(C)[C@@H](Cc6cc(C)c(OC)c(O)c56)[C@H](O)N4[C@@H](COC2=O)c2c4OCOc4c(C)c(OC(C)=O)c32)cc1O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4660>
+chebi:83766	olaparib	['has_indication', 'indra_rel']	Fc1ccc(Cc2n[nH]c(=O)c3ccccc23)cc1C(=O)N1CCN(CC1)C(=O)C1CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d45f0>
+chebi:8232	piperacillin	['has_indication']	[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)[C@H](NC(=O)N1CCN(CC)C(=O)C1=O)c1ccccc1)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4580>
+chebi:8229	Pioglitazone hydrochloride	['has_indication']	C1(CC2=CC=C(OCCC3=CC=C(CC)C=N3)C=C2)C(NC(S1)=O)=O.Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4510>
+chebi:8228	pioglitazone	['has_indication', 'indra_rel']	CCc1ccc(CCOc2ccc(CC3SC(=O)NC3=O)cc2)nc1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d44a0>
+chebi:8107	phenytoin	['has_indication']	O=C1NC(=O)C(N1)(c1ccccc1)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4430>
+chebi:80630	irinotecan	['has_indication', 'indra_rel']	C1(=CC=C2C(=C1)C(=C3C(=N2)C=4N(C3)C(C5=C(C4)[C@](C(OC5)=O)(CC)O)=O)CC)OC(=O)N6CCC(CC6)N7CCCCC7	<rdkit.Chem.rdchem.Mol object at 0x2ab0d43c0>
+chebi:7931	paricalcitol	['has_indication']	[H][C@@]1(CC[C@]2([H])[C@]1(C)CCC\\C2=C/C=C1C[C@@H](O)C[C@H](O)C1)[C@H](C)\\C=C\\[C@H](C)C(C)(C)O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4270>
+chebi:7773	Ondansetron	['has_indication']	Cc1nccn1CC1CCc2c(C1=O)c1ccccc1n2C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4200>
+chebi:77431	1-butyl-N-(2,6-dimethylphenyl)piperidine-2-carboxamide	['has_indication']	CCCCN1CCCCC1C(=O)Nc1c(C)cccc1C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4190>
+chebi:77260	5-methoxy-2-\{[(4-methoxy-3,5-dimethylpyridin-2-yl)methyl]sulfinyl\}-1H-benzimidazole	['has_indication']	COc1ccc2[nH]c(nc2c1)S(=O)Cc1ncc(C)c(OC)c1C	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4120>
+chebi:7726	octreotide	['has_indication', 'indra_rel']	[H][C@]1(NC(=O)[C@H](CCCCN)NC(=O)[C@@H](Cc2c[nH]c3ccccc23)NC(=O)[C@H](Cc2ccccc2)NC(=O)[C@H](CSSC[C@H](NC1=O)C(=O)NC(CO)[C@@H](C)O)NC(=O)[C@H](N)Cc1ccccc1)[C@@H](C)O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d40b0>
+chebi:75998	trametinib	['has_indication', 'indra_rel']	CC(=O)Nc1cccc(c1)-n1c2c(C)c(=O)n(C)c(Nc3ccc(I)cc3F)c2c(=O)n(C2CC2)c1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0d4040>
+chebi:7496	nelfinavir	['has_indication', 'indra_rel']	Cc1c(O)cccc1C(=O)N[C@@H](CSc1ccccc1)[C@H](O)CN1C[C@H]2CCCC[C@H]2C[C@H]1C(=O)NC(C)(C)C	<rdkit.Chem.rdchem.Mol object at 0x2ab01bed0>
+chebi:72690	pomalidomide	['has_indication']	Nc1cccc2C(=O)N(C3CCC(=O)NC3=O)C(=O)c12	<rdkit.Chem.rdchem.Mol object at 0x2ab01bc30>
+chebi:72564	temozolomide	['has_indication', 'indra_rel']	Cn1nnc2c(ncn2c1=O)C(N)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01bae0>
+chebi:72317	cabozantinib	['has_indication']	COc1cc2nccc(Oc3ccc(NC(=O)C4(CC4)C(=O)Nc4ccc(F)cc4)cc3)c2cc1OC	<rdkit.Chem.rdchem.Mol object at 0x2ab01ba00>
+chebi:71940	tadalafil	['has_indication']	[H][C@]12Cc3c([nH]c4ccccc34)[C@H](N1C(=O)CN(C)C2=O)c1ccc2OCOc2c1	<rdkit.Chem.rdchem.Mol object at 0x2ab01b990>
+chebi:71219	pazopanib	['has_indication']	C1=C(C(=CC(=C1)NC=2N=CC=C(N2)N(C=3C=CC=4C(C3)=NN(C4C)C)C)S(N)(=O)=O)C	<rdkit.Chem.rdchem.Mol object at 0x2ab01b920>
+chebi:6909	metronidazole	['has_indication']	Cc1ncc(n1CCO)[N+]([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01b7d0>
+chebi:68647	regorafenib	['has_indication']	C1(=C(C=C(C=C1)NC(NC2=CC=C(C=C2F)OC3=CC=NC(=C3)C(NC)=O)=O)C(F)(F)F)Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab01b5a0>
+chebi:68534	enzalutamide	['has_indication']	CNC(=O)c1ccc(cc1F)N1C(=S)N(C(=O)C1(C)C)c1ccc(C#N)c(c1)C(F)(F)F	<rdkit.Chem.rdchem.Mol object at 0x2ab01b530>
+chebi:68478	everolimus	['has_indication', 'indra_rel']	[H][C@]1(CC[C@@H](OCCO)[C@@H](C1)OC)C[C@@H](C)[C@]1([H])CC(=O)[C@H](C)\\C=C(C)\\[C@@H](O)[C@@H](OC)C(=O)[C@H](C)C[C@H](C)\\C=C\\C=C\\C=C(C)\\[C@H](C[C@]2([H])CC[C@@H](C)[C@@](O)(O2)C(=O)C(=O)N2CCCC[C@@]2([H])C(=O)O1)OC	<rdkit.Chem.rdchem.Mol object at 0x2ab01b4c0>
+chebi:6801	metformin	['has_indication', 'indra_rel']	CN(C)C(=N)NC(N)=N	<rdkit.Chem.rdchem.Mol object at 0x2ab01b450>
+chebi:67357	dolastatin 10	['has_indication']		
+chebi:67272	perifosine	['has_indication', 'indra_rel']	CCCCCCCCCCCCCCCCCCOP([O-])(=O)OC1CC[N+](C)(C)CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01b3e0>
+chebi:66919	ruxolitinib	['has_indication', 'indra_rel']	N#CC[C@H](C1CCCC1)n1cc(cn1)-c1ncnc2[nH]ccc12	<rdkit.Chem.rdchem.Mol object at 0x2ab01b370>
+chebi:66910	axitinib	['has_indication', 'indra_rel']	CNC(=O)c1ccccc1Sc1ccc2c(\\C=C\\c3ccccn3)n[nH]c2c1	<rdkit.Chem.rdchem.Mol object at 0x2ab01b290>
+chebi:66903	vismodegib	['has_indication', 'indra_rel']	CS(=O)(=O)c1ccc(C(=O)Nc2ccc(Cl)c(c2)-c2ccccn2)c(Cl)c1	<rdkit.Chem.rdchem.Mol object at 0x2ab01b220>
+chebi:65415	antroquinonol	['has_indication']	COC1=C(OC)C(=O)[C@H](C)[C@@H](C\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2ab01b1b0>
+chebi:6541	losartan	['has_indication']	CCCCc1nc(Cl)c(CO)n1Cc1ccc(cc1)-c1ccccc1-c1nnn[nH]1	<rdkit.Chem.rdchem.Mol object at 0x2ab01b140>
+chebi:63791	lenalidomide	['has_indication']	Nc1cccc2C(=O)N(Cc12)C1CCC(=O)NC1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01b0d0>
+chebi:63637	vemurafenib	['has_indication']	CCCS(=O)(=O)NC1=CC=C(F)C(C(=O)C2=CNC3=C2C=C(C=N3)C2=CC=C(Cl)C=C2)=C1F	<rdkit.Chem.rdchem.Mol object at 0x2ab01aff0>
+chebi:63616	pemetrexed	['has_indication']	Nc1nc(=O)c2c(CCc3ccc(cc3)C(=O)N[C@@H](CCC(O)=O)C(O)=O)c[nH]c2[nH]1	<rdkit.Chem.rdchem.Mol object at 0x2ab01af80>
+chebi:63605	ixabepilone	['has_indication']	[H][C@]12C[C@H](NC(=O)C[C@H](O)C(C)(C)C(=O)[C@H](C)[C@@H](O)[C@@H](C)CCC[C@@]1(C)O2)C(\\C)=C\\c1csc(C)n1	<rdkit.Chem.rdchem.Mol object at 0x2ab01af10>
+chebi:63450	masitinib	['has_indication']	CN1CCN(CC1)Cc1ccc(cc1)C(=O)Nc1ccc(C)c(Nc2nc(cs2)-c2cccnc2)c1	<rdkit.Chem.rdchem.Mol object at 0x2ab01aea0>
+chebi:62880	veliparib	['has_indication']	C[C@@]1(CCCN1)c1nc2c(cccc2[nH]1)C(N)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01ae30>
+chebi:61390	afatinib	['has_indication', 'indra_rel']	CN(C)C\\C=C\\C(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1O[C@H]1CCOC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01ac00>
+chebi:61080	romidepsin	['has_indication']	C\\C=C1/NC(=O)[C@H]2CSSCC\\C=C\\[C@H](CC(=O)N[C@H](C(C)C)C(=O)N2)OC(=O)[C@@H](NC1=O)C(C)C	<rdkit.Chem.rdchem.Mol object at 0x2ab01ab90>
+chebi:60791	lidocaine hydrochloride monohydrate	['has_indication']	O.[Cl-].CC[NH+](CC)CC(=O)Nc1c(C)cccc1C	<rdkit.Chem.rdchem.Mol object at 0x2ab01ab20>
+chebi:5864	ifosfamide	['has_indication', 'indra_rel']	ClCCNP1(=O)OCCCN1CCCl	<rdkit.Chem.rdchem.Mol object at 0x2ab01aab0>
+chebi:5847	ICI D1694	['has_indication']	CN(Cc1ccc2nc(C)[nH]c(=O)c2c1)c1ccc(s1)C(=O)N[C@@H](CCC(O)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01aa40>
+chebi:5801	hydroxychloroquine	['has_indication', 'indra_rel']	CCN(CCO)CCCC(C)Nc1ccnc2cc(Cl)ccc12	<rdkit.Chem.rdchem.Mol object at 0x2ab01a9d0>
+chebi:53509	erlotinib hydrochloride	['has_indication', 'indra_rel']	[H+].[Cl-].COCCOc1cc2ncnc(Nc3cccc(c3)C#C)c2cc1OCCOC	<rdkit.Chem.rdchem.Mol object at 0x2ab01a960>
+chebi:52717	bortezomib	['has_indication', 'indra_rel']	CC(C)C[C@H](NC(=O)[C@H](Cc1ccccc1)NC(=O)c1cnccn1)B(O)O	<rdkit.Chem.rdchem.Mol object at 0x2ab01a8f0>
+chebi:51450	bosentan	['has_indication']	COc1ccccc1Oc1c(NS(=O)(=O)c2ccc(cc2)C(C)(C)C)nc(nc1OCCO)-c1ncccn1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a880>
+chebi:50924	sorafenib	['has_indication', 'indra_rel']	C1(=C(C=C(C=C1)NC(NC2=CC=C(C=C2)OC3=CC=NC(=C3)C(NC)=O)=O)C(F)(F)F)Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab01a810>
+chebi:50845	doxycycline	['has_indication', 'indra_rel']	[H][C@@]12[C@@H](C)c3cccc(O)c3C(=O)C1=C(O)[C@]1(O)C(=O)C(C(N)=O)=C(O)[C@@H](N(C)C)[C@]1([H])[C@H]2O	<rdkit.Chem.rdchem.Mol object at 0x2ab01a7a0>
+chebi:50729	mitoxantrone	['has_indication']	OCCNCCNc1ccc(NCCNCCO)c2C(=O)c3c(O)ccc(O)c3C(=O)c12	<rdkit.Chem.rdchem.Mol object at 0x2ab01a730>
+chebi:50694	minocycline	['has_indication']	[H][C@@]12Cc3c(ccc(O)c3C(=O)C1=C(O)[C@]1(O)C(=O)C(C(N)=O)=C(O)[C@@H](N(C)C)[C@]1([H])C2)N(C)C	<rdkit.Chem.rdchem.Mol object at 0x2ab01a6c0>
+chebi:49960	vandetanib	['has_indication']	COc1cc2c(Nc3ccc(Br)cc3F)ncnc2cc1OCC1CCN(C)CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a650>
+chebi:49668	gefitinib	['has_indication', 'indra_rel']	C1=C(C(=CC=2C1=NC=NC2NC3=CC(=C(C=C3)F)Cl)OCCCN4CCOCC4)OC	<rdkit.Chem.rdchem.Mol object at 0x2ab01a5e0>
+chebi:49603	lapatinib	['has_indication']	CS(=O)(=O)CCNCc1ccc(o1)-c1ccc2ncnc(Nc3ccc(OCc4cccc(F)c4)c(Cl)c3)c2c1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a570>
+chebi:49375	dasatinib (anhydrous)	['has_indication', 'indra_rel']	Cc1nc(Nc2ncc(s2)C(=O)Nc2c(C)cccc2Cl)cc(n1)N1CCN(CCO)CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a500>
+chebi:4911	etoposide	['has_indication', 'indra_rel']	[H][C@]12COC(=O)[C@]1([H])[C@H](c1cc(OC)c(O)c(OC)c1)c1cc3OCOc3cc1[C@H]2O[C@@H]1O[C@@H]2CO[C@@H](C)O[C@H]2[C@H](O)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2ab01a490>
+chebi:4909	etodolac	['has_indication']	CCc1cccc2c3CCOC(CC)(CC(O)=O)c3[nH]c12	<rdkit.Chem.rdchem.Mol object at 0x2ab01a420>
+chebi:47898	4'-epidoxorubicin	['has_indication']	COc1cccc2C(=O)c3c(O)c4C[C@](O)(C[C@H](O[C@H]5C[C@H](N)[C@@H](O)[C@H](C)O5)c4c(O)c3C(=O)c12)C(=O)CO	<rdkit.Chem.rdchem.Mol object at 0x2ab01a3b0>
+chebi:47458	saracatinib	['has_indication']	CN1CCN(CCOC2=CC(OC3CCOCC3)=C3C(NC4=C(Cl)C=CC5=C4OCO5)=NC=NC3=C2)CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a340>
+chebi:4672	docetaxel anhydrous	['has_indication', 'indra_rel']	[H][C@@]1(C[C@@]2(O)[C@@H](OC(=O)c3ccccc3)[C@]3([H])[C@@]4(CO[C@@H]4C[C@H](O)[C@@]3(C)C(=O)[C@H](O)C(=C1C)C2(C)C)OC(C)=O)OC(=O)[C@H](O)[C@@H](NC(=O)OC(C)(C)C)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a2d0>
+chebi:4659	disulfiram	['has_indication', 'indra_rel']	S(SC(N(CC)CC)=S)C(N(CC)CC)=S	<rdkit.Chem.rdchem.Mol object at 0x2ab01a260>
+chebi:4653	dipyridamole	['has_indication']	OCCN(CCO)c1nc(N2CCCCC2)c2nc(nc(N3CCCCC3)c2n1)N(CCO)CCO	<rdkit.Chem.rdchem.Mol object at 0x2ab01a1f0>
+chebi:46345	5-fluorouracil	['has_indication', 'indra_rel']	Fc1c[nH]c(=O)[nH]c1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01a180>
+chebi:46245	coenzyme Q10	['has_indication']	COC1=C(OC)C(=O)C(C\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)=C(C)C1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab01a110>
+chebi:45863	paclitaxel	['has_indication', 'indra_rel']	[H][C@]12[C@H](OC(=O)c3ccccc3)[C@]3(O)C[C@H](OC(=O)[C@H](O)[C@@H](NC(=O)c4ccccc4)c4ccccc4)C(C)=C([C@@H](OC(C)=O)C(=O)[C@]1(C)[C@@H](O)C[C@H]1OC[C@@]21OC(C)=O)C3(C)C	<rdkit.Chem.rdchem.Mol object at 0x2ab01a0a0>
+chebi:45783	imatinib	['has_indication', 'indra_rel']	CN1CCN(Cc2ccc(cc2)C(=O)Nc2ccc(C)c(Nc3nccc(n3)-c3cccnc3)c2)CC1	<rdkit.Chem.rdchem.Mol object at 0x2ab01a030>
+chebi:45716	vorinostat	['has_indication', 'indra_rel']	ONC(=O)CCCCCCC(=O)Nc1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2ab019fc0>
+chebi:4551	digoxin	['has_indication']	[H][C@]12CC[C@]3([H])[C@]([H])(C[C@@H](O)[C@]4(C)[C@H](CC[C@]34O)C3=CC(=O)OC3)[C@@]1(C)CC[C@@H](C2)O[C@H]1C[C@H](O)[C@H](O[C@H]2C[C@H](O)[C@H](O[C@H]3C[C@H](O)[C@H](O)[C@@H](C)O3)[C@@H](C)O2)[C@@H](C)O1	<rdkit.Chem.rdchem.Mol object at 0x2ab019f50>
+chebi:45081	pentamidine	['has_indication']	C(CCCOC1=CC=C(C=C1)C(N)=N)COC2=CC=C(C=C2)C(N)=N	<rdkit.Chem.rdchem.Mol object at 0x2ab019ee0>
+chebi:44915	propofol	['has_indication', 'indra_rel']	CC(C)c1cccc(C(C)C)c1O	<rdkit.Chem.rdchem.Mol object at 0x2ab019cb0>
+chebi:41879	dexamethasone	['has_indication']	C1=CC(C=C2[C@]1([C@@]3([C@@](CC2)([C@]4([C@](C[C@@H]3O)([C@]([C@@H](C4)C)(C(CO)=O)O)C)[H])[H])F)C)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab019850>
+chebi:41423	celecoxib	['has_indication', 'indra_rel']	CC1=CC=C(C=C1)C1=CC(=NN1C1=CC=C(C=C1)S(N)(=O)=O)C(F)(F)F	<rdkit.Chem.rdchem.Mol object at 0x2ab019460>
+chebi:4026	cyclophosphamide hydrate	['has_indication', 'indra_rel']	O.ClCCN(CCCl)P1(=O)NCCCO1	<rdkit.Chem.rdchem.Mol object at 0x2ab019310>
+chebi:39867	valproic acid	['has_indication', 'indra_rel']	CCCC(CCC)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab0192a0>
+chebi:39112	bosutinib	['has_indication']	COc1cc(Nc2c(cnc3cc(OCCCN4CCN(C)CC4)c(OC)cc23)C#N)c(Cl)cc1Cl	<rdkit.Chem.rdchem.Mol object at 0x2ab0191c0>
+chebi:38940	sunitinib	['has_indication']	CCN(CC)CCNC(=O)c1c(C)[nH]c(\\C=C2/C(=O)Nc3ccc(F)cc23)c1C	<rdkit.Chem.rdchem.Mol object at 0x2ab019150>
+chebi:3643	chlorphenesin carbamate	['has_indication']	NC(=O)OCC(O)COc1ccc(Cl)cc1	<rdkit.Chem.rdchem.Mol object at 0x2ab0190e0>
+chebi:3638	chloroquine	['has_indication']	CCN(CC)CCCC(C)Nc1ccnc2cc(Cl)ccc12	<rdkit.Chem.rdchem.Mol object at 0x2ab019070>
+chebi:34756	fenamic acid	['has_indication']	OC(=O)c1ccccc1Nc1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2ab019000>
+chebi:32243	tolfenamic acid	['has_indication', 'indra_rel']	Cc1c(Cl)cccc1Nc1ccccc1C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018f90>
+chebi:32188	Tegafur	['has_indication']	Fc1cn(C2CCCO2)c(=O)[nH]c1=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018f20>
+chebi:32181	tamibarotene	['has_indication']	CC1(C)CCC(C)(C)c2cc(NC(=O)c3ccc(cc3)C(O)=O)ccc12	<rdkit.Chem.rdchem.Mol object at 0x2ab018e40>
+chebi:32139	sodium hydrogencarbonate	['has_indication']	[Na+].OC([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018ba0>
+chebi:31941	oxaliplatin	['has_indication', 'indra_rel']	[H][N]1([H])[C@@H]2CCCC[C@H]2[N]([H])([H])[Pt]11OC(=O)C(=O)O1	
+chebi:31795	magnesium sulfate heptahydrate	['has_indication']	[Mg++].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[O-]S([O-])(=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018970>
+chebi:31690	imatinib methanesulfonate	['has_indication']	CS(O)(=O)=O.CN1CCN(CC1)Cc1ccc(cc1)C(=O)Nc1ccc(C)c(Nc2nccc(n2)-c2cccnc2)c1	<rdkit.Chem.rdchem.Mol object at 0x2ab018890>
+chebi:31652	Gimeracil	['has_indication', 'indra_rel']	OC=1C(Cl)=CNC(C1)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018820>
+chebi:31638	fulvestrant	['has_indication']	C=1C=C(C=C2C1[C@]3(CC[C@@]4([C@H](CC[C@]4([C@@]3([C@@H](C2)CCCCCCCCCS(=O)CCCC(C(F)(F)F)(F)F)[H])[H])O)C)[H])O	<rdkit.Chem.rdchem.Mol object at 0x2ab018740>
+chebi:31617	2-deoxy-2-((18)F)fluoro-alpha-D-glucose	['has_indication']	[H][C@]1([18F])[C@@H](O)O[C@H](CO)[C@@H](O)[C@@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2ab018660>
+chebi:31587	Exatecan mesilate hydrate	['has_indication']	S(=O)(=O)(C)O.O.C=1(C(=CC=2C=3C1CC[C@@H](C3C4=C(N2)C=5N(C4)C(C6=C(C5)[C@](C(OC6)=O)(CC)O)=O)N)F)C.O	<rdkit.Chem.rdchem.Mol object at 0x2ab0185f0>
+chebi:31355	carboplatin	['has_indication']	[H][N]([H])([H])[Pt]1(OC(=O)C2(CCC2)C(=O)O1)[N]([H])([H])[H]	
+chebi:31348	capecitabine	['has_indication', 'indra_rel']	CCCCCOC(=O)Nc1nc(=O)n(cc1F)[C@@H]1O[C@H](C)[C@@H](O)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2ab018580>
+chebi:31340	Calcium folinate	['has_indication']	[C@H](CCC([O-])=O)(C([O-])=O)NC(C1=CC=C(NCC2N(C3=C(NC2)NC(N)=NC3=O)C=O)C=C1)=O.[Ca+2]	<rdkit.Chem.rdchem.Mol object at 0x2ab018510>
+chebi:30863	5-azaorotic acid	['has_indication']	OC(=O)c1nc(=O)[nH]c(=O)[nH]1	<rdkit.Chem.rdchem.Mol object at 0x2ab0184a0>
+chebi:3084	bethanechol	['has_indication']	CC(C[N+](C)(C)C)OC(N)=O	<rdkit.Chem.rdchem.Mol object at 0x2ab018430>
+chebi:30621	diarsenic trioxide	['has_indication', 'indra_rel']	O1[As]2O[As]3O[As]1O[As](O2)O3	<rdkit.Chem.rdchem.Mol object at 0x2ab0183c0>
+chebi:29073	L-ascorbic acid	['has_indication', 'indra_rel']	[H][C@@]1(OC(=O)C(O)=C1O)[C@@H](O)CO	<rdkit.Chem.rdchem.Mol object at 0x2ab018350>
+chebi:29036	copper(2+)	['has_indication']	[Cu++]	<rdkit.Chem.rdchem.Mol object at 0x2ab0182e0>
+chebi:28748	doxorubicin	['has_indication', 'indra_rel']	COc1cccc2C(=O)c3c(O)c4C[C@](O)(C[C@H](O[C@H]5C[C@H](N)[C@H](O)[C@H](C)O5)c4c(O)c3C(=O)c12)C(=O)CO	<rdkit.Chem.rdchem.Mol object at 0x2aafbfa70>
+chebi:28088	genistein	['has_indication', 'indra_rel']	OC1=CC=C(C=C1)C1=COC2=C(C(O)=CC(O)=C2)C1=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbf8b0>
+chebi:27504	mitomycin C	['has_indication', 'indra_rel']	[H][C@]12CN3C4=C([C@@H](COC(N)=O)[C@@]3(OC)[C@@]1([H])N2)C(=O)C(N)=C(C)C4=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbf1b0>
+chebi:26710	sodium chloride	['has_indication', 'indra_rel']	[Na+].[Cl-]	<rdkit.Chem.rdchem.Mol object at 0x2aafbf0d0>
+chebi:209807	cefoxitin	['has_indication']	[H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@]2(NC(=O)Cc1cccs1)OC)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbee30>
+chebi:2038	5-azacytidine	['has_indication']	Nc1ncn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)n1	<rdkit.Chem.rdchem.Mol object at 0x2aafbedc0>
+chebi:18358	methoxsalen	['has_indication']	COc1c2occc2cc2ccc(=O)oc12	<rdkit.Chem.rdchem.Mol object at 0x2aafbed50>
+chebi:17823	calcitriol	['has_indication', 'indra_rel']	[H][C@@]1(CC[C@@]2([H])\\C(CCC[C@]12C)=C\\C=C1\\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CCCC(C)(C)O	<rdkit.Chem.rdchem.Mol object at 0x2aafbe9d0>
+chebi:175901	gemcitabine	['has_indication', 'indra_rel']	Nc1ccn([C@@H]2O[C@H](CO)[C@@H](O)C2(F)F)c(=O)n1	<rdkit.Chem.rdchem.Mol object at 0x2aafbe650>
+chebi:17115	L-serine	['has_indication', 'indra_rel']	N[C@@H](CO)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbe490>
+chebi:16856	glutathione	['has_indication']	N[C@@H](CCC(=O)N[C@@H](CS)C(=O)NCC(=O)O)C(=O)O	<rdkit.Chem.rdchem.Mol object at 0x2aafbe3b0>
+chebi:167707	acalabrutinib	['has_indication']	[H][C@]1(CCCN1C(=O)C#CC)C1=NC(=C2N1C=CN=C2N)C1=CC=C(C=C1)C(=O)NC1=CC=CC=N1	<rdkit.Chem.rdchem.Mol object at 0x2aafbe2d0>
+chebi:167661	LY-2090314	['has_indication']	FC1=CC2=C3N(CCN(C2)C(=O)N2CCCCC2)C=C(C3=C1)C1=C(C(=O)NC1=O)C1=CN=C2C=CC=CN12	<rdkit.Chem.rdchem.Mol object at 0x2aafbe180>
+chebi:16347	(R)-carnitine	['has_indication']	C[N+](C)(C)C[C@H](O)CC([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbdaf0>
+chebi:15640	5-formyltetrahydrofolic acid	['has_indication', 'indra_rel']	[H]C(=O)N1C(CNc2ccc(cc2)C(=O)N[C@@H](CCC(O)=O)C(O)=O)CNc2nc(N)[nH]c(=O)c12	<rdkit.Chem.rdchem.Mol object at 0x2aafbda10>
+chebi:15367	all-trans-retinoic acid	['has_indication', 'indra_rel']	CC(\\C=C\\C1=C(C)CCCC1(C)C)=C/C=C/C(C)=C/C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbd7e0>
+chebi:147412	roducitabine	['has_indication']	C1(=NC(N(C=C1)[C@H]2[C@@H]([C@@H](C(=C2F)CO)O)O)=O)N	<rdkit.Chem.rdchem.Mol object at 0x2aafbd770>
+chebi:145371	binimetinib	['has_indication']	BrC=1C=C(F)C(NC=2C(F)=C3N=CN(C3=CC2C(=O)NOCCO)C)=CC1	<rdkit.Chem.rdchem.Mol object at 0x2aafbd700>
+chebi:141969	tipifarnib	['has_indication']	C1(C=C(C2=C(N1C)C=CC(=C2)[C@](C=3C=CC(=CC3)Cl)(C4=CN=CN4C)N)C=5C=C(C=CC5)Cl)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbd690>
+chebi:137064	LY-2157299	['has_indication']	C12=C(C=CN=C1C=CC(=C2)C(N)=O)C=3C(=NN4C3CCC4)C=5N=C(C=CC5)C	<rdkit.Chem.rdchem.Mol object at 0x2aafbcf90>
+chebi:135002	irofulven	['has_indication']	CC=1C2([C@@](C)(O)C(C=3C1C(CO)=C(C3)C)=O)CC2	<rdkit.Chem.rdchem.Mol object at 0x2aafbccf0>
+chebi:134689	rucaparib	['has_indication']	CNCC1=CC=C(C=C1)C1=C2CCNC(=O)C3=C2C(N1)=CC(F)=C3	<rdkit.Chem.rdchem.Mol object at 0x2aafbcc80>
+chebi:133538	L-lysine zwitterion	['has_indication']	[O-]C([C@H](CCCCN)[NH3+])=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbcba0>
+chebi:132082	entinostat	['has_indication']	C(=O)(OCC1=CN=CC=C1)NCC2=CC=C(C=C2)C(=O)NC3=CC=CC=C3N	<rdkit.Chem.rdchem.Mol object at 0x2aafbcb30>
+chebi:131166	3-[3-[4-(methylaminomethyl)phenyl]-5-isoxazolyl]-5-(4-propan-2-ylsulfonylphenyl)-2-pyrazinamine	['has_indication']	CC(C)S(=O)(=O)C1=CC=C(C=C1)C2=CN=C(C(=N2)C3=CC(=NO3)C4=CC=C(C=C4)CNC)N	<rdkit.Chem.rdchem.Mol object at 0x2aafbcac0>
+chebi:125354	plerixafor	['has_indication']	C1CNCCNCCCN(CCNC1)CC2=CC=C(C=C2)CN3CCCNCCNCCCNCC3	<rdkit.Chem.rdchem.Mol object at 0x2aafbc900>
+chebi:124965	3-(4-chlorophenyl)-N-(pyridin-4-ylmethyl)-1-adamantanecarboxamide	['has_indication']	C1C2CC3(CC1CC(C3)(C2)C4=CC=C(C=C4)Cl)C(=O)NCC5=CC=NC=C5	<rdkit.Chem.rdchem.Mol object at 0x2aafbc890>
+chebi:124917	1-[5-bromo-4-methyl-2-[[(2S)-2-morpholinyl]methoxy]phenyl]-3-(5-methyl-2-pyrazinyl)urea	['has_indication']	CC1=CC(=C(C=C1Br)NC(=O)NC2=NC=C(N=C2)C)OC[C@@H]3CNCCO3	<rdkit.Chem.rdchem.Mol object at 0x2aafbc820>
+chebi:119915	fentanyl	['has_indication']	CCC(=O)N(C1CCN(CC1)CCc1ccccc1)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aafbc5f0>
+chebi:119486	efavirenz	['has_indication']	FC(F)(F)[C@]1(OC(=O)Nc2ccc(Cl)cc12)C#CC1CC1	<rdkit.Chem.rdchem.Mol object at 0x2aafbc580>
+chebi:114785	erlotinib	['has_indication', 'indra_rel']	COCCOc1cc2ncnc(Nc3cccc(c3)C#C)c2cc1OCCOC	<rdkit.Chem.rdchem.Mol object at 0x2aafbc510>
+chebi:10782	(S)-(-)-perillyl alcohol	['has_indication']	CC(=C)[C@H]1CCC(CO)=CC1	<rdkit.Chem.rdchem.Mol object at 0x2aafbc4a0>
+chebi:100241	ciprofloxacin	['has_indication']	OC(=O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbc3c0>
+mesh:D062085	RNA, Long Noncoding	['indra_rel']		
+mesh:D035683	MicroRNAs	['indra_rel']		
+mesh:D017382	Reactive Oxygen Species	['indra_rel']		
+mesh:D008920	Misonidazole	['indra_rel']		
+mesh:D005223	Fats	['indra_rel']		
+mesh:D000077285	Rimonabant	['indra_rel']		
+mesh:C561695	(+)-JQ1 compound	['indra_rel']		
+mesh:C547455	3-dihydroxy-6-methyl-7-(phenylmethyl)-4-propylnaphthalene-1-carboxylic acid	['indra_rel']		
+mesh:C548902	FLLL 32	['indra_rel']		
+mesh:C534866	digalloylresveratrol	['indra_rel']		
+mesh:C508870	gemcitabine-oxaliplatin regimen	['indra_rel']		
+mesh:C506698	2,5-dimethylcelecoxib	['indra_rel']		
+mesh:C056218	ML 9	['indra_rel']		
+mesh:C034587	CHOP protocol	['indra_rel']		
+mesh:C000592878	UMI-77	['indra_rel']		
+mesh:C000603500	4'-methoxy-1-naphthylfenoterol	['indra_rel']		
+mesh:C499366	Active Hexose Correlated Compound	['indra_rel']		
+mesh:C412373	AG 1879	['indra_rel']		
+mesh:C000595149	GSK2141795	['indra_rel']		
+mesh:C468919	SANT-1 compound	['indra_rel']		
+mesh:C060893	MK-886	['indra_rel']		
+mesh:C434926	N-(oxo-5,6-dihydrophenanthridin-2-yl)-N,N-dimethylacetamide hydrochloride	['indra_rel']		
+mesh:C464444	dehydroxymethylepoxyquinomicin	['indra_rel']		
+mesh:C463040	1-(2,3-dichlorobenzoyl)-5-methoxy-2-methyl-(2-(mopholin-4-yl)ethyl)-1H-indole	['indra_rel']		
+mesh:C030851	esorubicin	['indra_rel']		
+mesh:C079198	S 1 (combination)	['indra_rel']		
+mesh:C119324	arachidonylcyclopropylamide	['indra_rel']		
+mesh:C068874	raltitrexed	['indra_rel']		
+mesh:C018145	scoparone	['indra_rel']		
+mesh:C457499	2-chloro-5-nitrobenzanilide	['indra_rel']		
+mesh:C094099	LY 293111	['indra_rel']		
+mesh:C109644	Lu 28-179	['indra_rel']		
+mesh:C016527	isoquercitrin	['indra_rel']		
+chebi:9765	Trypsin	['indra_rel']		
+chebi:9288	streptozocin	['indra_rel']	CN(N=O)C(=O)N[C@H]1[C@@H](O)O[C@H](CO)[C@@H](O)[C@@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aafbc350>
+chebi:9144	silibinin	['indra_rel']	[H][C@@]1(Oc2cc(ccc2O[C@@H]1CO)[C@@]1([H])Oc2cc(O)cc(O)c2C(=O)[C@@H]1O)c1ccc(O)c(OC)c1	<rdkit.Chem.rdchem.Mol object at 0x2aafbc2e0>
+chebi:9352	sulindac	['indra_rel']	CC1=C(CC(O)=O)c2cc(F)ccc2C\\1=C/c1ccc(cc1)S(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbc270>
+chebi:94552	sepantronium	['indra_rel']	C1=CC=CC2=C1C(C=3N(C(=[N+](C3C2=O)CC=4N=CC=NC4)C)CCOC)=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbc200>
+chebi:9516	thapsigargin	['indra_rel']	[H][C@@]1(OC(=O)C(\\C)=C/C)[C@@H](OC(=O)CCCCCCC)[C@@]2([H])C(=C1C)[C@]1([H])OC(=O)[C@@](C)(O)[C@@]1(O)[C@H](C[C@]2(C)OC(C)=O)OC(=O)CCC	<rdkit.Chem.rdchem.Mol object at 0x2aafbc190>
+chebi:9191	Solasonine	['indra_rel']	C[C@H]1[C@H]2[C@H](C[C@H]3[C@@H]4CC=C5C[C@H](CC[C@]5(C)[C@H]4CC[C@]23C)O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@H]2O[C@@H]2O[C@@H](C)[C@H](O)[C@@H](O)[C@H]2O)O[C@]11CC[C@@H](C)CN1	<rdkit.Chem.rdchem.Mol object at 0x2aafbc120>
+chebi:9190	solasodine	['indra_rel']	[C@]12([C@]3([C@@]([C@@]4(C(C[C@@H](O)CC4)=CC3)C)(CC[C@]2(C)[C@]5([C@@H]([C@@]6(O[C@]5(C1)[H])NC[C@H](C)CC6)C)[H])[H])[H])[H]	<rdkit.Chem.rdchem.Mol object at 0x2aafbc0b0>
+chebi:9180	Sodium salicylate	['indra_rel']	[Na+].Oc1ccccc1C([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2aafbc040>
+chebi:92843	PD158780	['indra_rel']	CNC1=NC=C2C(=C1)C(=NC=N2)NC3=CC=CC(=C3)Br	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bf40>
+chebi:91462	SU6656	['indra_rel']	N1C(C(C2=C1C=CC(=C2)S(N(C)C)(=O)=O)=CC=3NC4=C(C3)CCCC4)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bed0>
+chebi:9747	Triptolide	['indra_rel']	CC(C)[C@]12O[C@H]1[C@@H]1O[C@]11[C@]3(O[C@H]3C[C@H]3C4=C(CC[C@]13C)C(=O)OC4)[C@@H]2O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8be60>
+chebi:9753	troglitazone	['indra_rel']	Cc1c(C)c2OC(C)(CCc2c(C)c1O)COc1ccc(CC2SC(=O)NC2=O)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bdf0>
+chebi:90724	AM-251	['indra_rel']	N=1N(C(=C(C1C(=O)NN2CCCCC2)C)C3=CC=C(C=C3)I)C4=CC=C(C=C4Cl)Cl	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bd80>
+chebi:90705	SB 203580	['indra_rel']	S(C=1C=CC(C2=NC(C=3C=CN=CC3)=C(N2)C4=CC=C(C=C4)F)=CC1)(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bd10>
+chebi:90695	anthra[1,9-cd]pyrazol-6(2H)-one	['indra_rel']	O=C1C2=CC=CC3=C2C(=NN3)C2=C1C=CC=C2	<rdkit.Chem.rdchem.Mol object at 0x2aaf8bca0>
+chebi:9055	scoparone	['indra_rel']	COC1=C(OC)C=C2C=CC(=O)OC2=C1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b8b0>
+chebi:90196	rac-selisistat	['indra_rel']		
+chebi:89324	24,25-Dihydroxyvitamin D	['indra_rel']	[C@H]1(CCC(\\C(\\C1)=C/C=C\\2/[C@@]3(CC[C@H]([C@@H](CCC(C(C)(C)O)O)C)[C@@]3(C)CCC2)[H])=C)O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b840>
+chebi:8899	rottlerin	['indra_rel']	CC(=O)c1c(O)c(C)c(O)c(Cc2c(O)c3C=CC(C)(C)Oc3c(C(=O)\\C=C\\c3ccccc3)c2O)c1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b7d0>
+chebi:88286	EC 2.7.12.2 (mitogen-activated protein kinase kinase) inhibitor	['indra_rel']		
+chebi:88249	PD 0325901	['indra_rel']	C1(=CC=C(C(=C1NC=2C(=CC(=CC2)I)F)F)F)C(NOC[C@@H](CO)O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b6f0>
+chebi:88061	polyamine	['indra_rel']		
+chebi:8753	RI	['indra_rel']	I[*]	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b680>
+chebi:8630	pterostilbene	['indra_rel']	COC1=CC(\\C=C\\C2=CC=C(O)C=C2)=CC(OC)=C1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b610>
+chebi:86193	DAPT	['indra_rel']	C([C@@H](NC(=O)[C@@H](NC(=O)CC1=CC(=CC(=C1)F)F)C)C2=CC=CC=C2)(=O)OC(C)(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b5a0>
+chebi:8273	plumbagin	['indra_rel']	CC1=CC(=O)C2=C(O)C=CC=C2C1=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b530>
+chebi:80961	5-formyluracil	['indra_rel']	N1C(NC=C(C1=O)C=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b4c0>
+chebi:78761	ML-7	['indra_rel']	Ic1cccc2c(cccc12)S(=O)(=O)N1CCCNCC1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b450>
+chebi:78432	ceritinib	['indra_rel']	N=1C(=NC(=C(C1)Cl)NC=2C(=CC=CC2)S(C(C)C)(=O)=O)NC=3C=C(C(=CC3OC(C)C)C4CCNCC4)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b370>
+chebi:78249	oxythiamine(1+)	['indra_rel']	Cc1c(CCO)sc[n+]1Cc1cnc(C)nc1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b300>
+chebi:77954	2-(2-amino-3-methoxyphenyl)chromen-4-one	['indra_rel']	COc1cccc(c1N)-c1cc(=O)c2ccccc2o1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b290>
+chebi:77733	2-(3,4-dimethoxyphenyl)-5-\{[2-(3,4-dimethoxyphenyl)ethyl](methyl)amino\}-2-(propan-2-yl)pentanenitrile	['indra_rel']	COc1ccc(CCN(C)CCCC(C#N)(C(C)C)c2ccc(OC)c(OC)c2)cc1OC	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b220>
+chebi:77131	sinapic acid	['indra_rel']	COc1cc(C=CC(O)=O)cc(OC)c1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b1b0>
+chebi:76359	butylated hydroxyanisole	['indra_rel']		
+chebi:75404	tyrphostin AG 1478	['indra_rel']	COC1=C(OC)C=C2C(NC3=CC(Cl)=CC=C3)=NC=NC2=C1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b140>
+chebi:75095	chrysin	['indra_rel']	Oc1cc(O)c2c(c1)oc(cc2=O)-c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b0d0>
+chebi:75009	Val-Asp	['indra_rel']	CC(C)[C@H](N)C(=O)N[C@@H](CC(O)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8b060>
+chebi:74699	Met-Asp	['indra_rel']	CSCC[C@H](N)C(=O)N[C@@H](CC(O)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8aff0>
+chebi:7421	NAC	['indra_rel']	CC(=O)Nc1ccc(cc1)C(=O)Nc1c(C)cccc1C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8af80>
+chebi:73657	Thr-Ala-Ser	['indra_rel']	C[C@@H](O)[C@H](N)C(=O)N[C@@H](C)C(=O)N[C@@H](CO)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ae30>
+chebi:73458	NS-398	['indra_rel']	CS(=O)(=O)Nc1ccc(cc1OC1CCCCC1)[N+]([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8adc0>
+chebi:73295	WIN 55212-2	['indra_rel']	Cc1c(C(=O)c2cccc3ccccc23)c2cccc3OC[C@@H](CN4CCOCC4)n1c23	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ad50>
+chebi:72312	pasireotide	['indra_rel']	NCCCC[C@@H]1NC(=O)[C@@H](Cc2c[nH]c3ccccc23)NC(=O)[C@@H](NC(=O)[C@@H]2C[C@H](CN2C(=O)[C@H](Cc2ccccc2)NC(=O)[C@H](Cc2ccc(OCc3ccccc3)cc2)NC1=O)OC(=O)NCCN)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ace0>
+chebi:71952	dactolisib	['indra_rel']	Cn1c2cnc3ccc(cc3c2n(-c2ccc(cc2)C(C)(C)C#N)c1=O)-c1cnc2ccccc2c1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ac70>
+chebi:71200	tofacitinib	['indra_rel']	C[C@@H]1CCN(C[C@@H]1N(C)c1ncnc2[nH]ccc12)C(=O)CC#N	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ac00>
+chebi:70726	hesperadin	['indra_rel']	CCS(=O)(=O)Nc1ccc2NC(=O)\\C(c2c1)=C(/Nc1ccc(CN2CCCCC2)cc1)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ab90>
+chebi:6804	methacholine	['indra_rel']	CC(C[N+](C)(C)C)OC(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8ab20>
+chebi:66682	maslinic acid	['indra_rel']	[H][C@@]12CC(C)(C)CC[C@@]1(CC[C@]1(C)C2=CC[C@]2([H])[C@@]3(C)C[C@@H](O)[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8aab0>
+chebi:65408	andrographolide	['indra_rel']	[H][C@]12CCC(=C)[C@@H](C\\C=C3/[C@H](O)COC3=O)[C@]1(C)CC[C@@H](O)[C@@]2(C)CO	<rdkit.Chem.rdchem.Mol object at 0x2aaf8aa40>
+chebi:6643	Magnolol	['indra_rel']	Oc1ccc(CC=C)cc1-c1cc(CC=C)ccc1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a9d0>
+chebi:65954	gedunin	['indra_rel']	[H][C@@]12C[C@@H](OC(C)=O)[C@]3(C)[C@]([H])(CC[C@@]4(C)[C@@H](OC(=O)[C@H]5O[C@@]345)c3ccoc3)[C@@]1(C)C=CC(=O)C2(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a960>
+chebi:68931	bruceine D	['indra_rel']	CC1=CC(=O)[C@@H](O)[C@@]2(C)[C@H]1C[C@H]1OC(=O)[C@H](O)[C@@]3(O)[C@]4(C)OC[C@]13[C@@H]2[C@@H](O)[C@@H]4O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a8f0>
+chebi:6520	lomustine	['indra_rel']	ClCCN(N=O)C(=O)NC1CCCCC1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a880>
+chebi:68481	mTOR inhibitor	['indra_rel']		
+chebi:68352	quercetin 3-O-beta-D-glucopyranoside	['indra_rel']	OC[C@H]1O[C@@H](OC2=C(OC3=CC(O)=CC(O)=C3C2=O)C2=CC=C(O)C(O)=C2)[C@H](O)[C@@H](O)[C@@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a810>
+chebi:7005	morusin	['indra_rel']	CC(C)=CCc1c(oc2c3C=CC(C)(C)Oc3cc(O)c2c1=O)-c1ccc(O)cc1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a7a0>
+chebi:66331	xanthohumol	['indra_rel']	COc1cc(O)c(CC=C(C)C)c(O)c1C(=O)\\C=C\\c1ccc(O)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a730>
+chebi:66964	Delta(9)-tetrahydrocannabinol	['indra_rel']	[H][C@@]12CCC(C)=C[C@@]1([H])c1c(O)cc(CCCCC)cc1OC2(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a650>
+chebi:681569	clofarabine	['indra_rel']	Nc1nc(Cl)nc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@@H]1F	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a5e0>
+chebi:66309	rocaglamide	['indra_rel']	COc1ccc(cc1)[C@@]12Oc3cc(OC)cc(OC)c3[C@]1(O)[C@H](O)[C@@H]([C@H]2c1ccccc1)C(=O)N(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a570>
+chebi:6498	lipoxin A4	['indra_rel']	CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a490>
+chebi:67040	S-adenosyl-L-methioninate	['indra_rel']	C[S+](CC[C@H](N)C([O-])=O)C[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a3b0>
+chebi:64213	cantharidin	['indra_rel']	C[C@]12[C@@H]3CC[C@@H](O3)[C@@]1(C)C(=O)OC2=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a340>
+chebi:63892	zerumbone	['indra_rel']	C\\C1=C/CC(C)(C)\\C=C\\C(=O)\\C(C)=C\\CC1	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a2d0>
+chebi:63918	artesunate	['indra_rel']	[H][C@@]12CC[C@@H](C)[C@]3([H])CC[C@@]4(C)OO[C@@]13[C@]([H])(O[C@@H](OC(=O)CCC(O)=O)[C@@H]2C)O4	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a260>
+chebi:63612	nelarabine	['indra_rel']	COc1nc(N)nc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a1f0>
+chebi:61399	canertinib	['indra_rel']	Fc1ccc(Nc2ncnc3cc(OCCCN4CCOCC4)c(NC(=O)C=C)cc23)cc1Cl	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a110>
+chebi:61115	EC 3.5.1.98 (histone deacetylase) inhibitor	['indra_rel']		
+chebi:60761	floxuridine	['indra_rel']	OC[C@H]1O[C@H](C[C@@H]1O)n1cc(F)c(=O)[nH]c1=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a0a0>
+chebi:6067	isotretinoin	['indra_rel']	CC(\\C=C\\C1=C(C)CCCC1(C)C)=C/C=C/C(C)=C\\C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf8a030>
+chebi:60325	XMD8-92	['indra_rel']	CCOc1cc(ccc1Nc1ncc2N(C)C(=O)c3ccccc3N(C)c2n1)N1CCC(O)CC1	<rdkit.Chem.rdchem.Mol object at 0x2aaf89fc0>
+chebi:62855	(-)-beta-elemene	['indra_rel']	CC(=C)[C@@H]1CC[C@@](C)(C=C)[C@@H](C1)C(C)=C	<rdkit.Chem.rdchem.Mol object at 0x2aaf89f50>
+chebi:5981	isoalantolactone	['indra_rel']	[H][C@@]12C[C@@]3(C)CCCC(=C)[C@]3([H])C[C@]1([H])C(=C)C(=O)O2	<rdkit.Chem.rdchem.Mol object at 0x2aaf89ee0>
+chebi:59163	biomarker	['indra_rel']		
+chebi:5855	ibuprofen	['indra_rel']	CC(C)Cc1ccc(cc1)C(C)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf895b0>
+chebi:58333	isoorientin(1-)	['indra_rel']	OC[C@H]1O[C@H]([C@H](O)[C@@H](O)[C@@H]1O)c1c([O-])cc2oc(cc(=O)c2c1O)-c1ccc(O)c(O)c1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88c80>
+chebi:5759	Honokiol	['indra_rel']	Oc1ccc(cc1CC=C)-c1cc(CC=C)ccc1O	<rdkit.Chem.rdchem.Mol object at 0x2aaf88c10>
+chebi:567361	cladribine	['indra_rel']	Nc1nc(Cl)nc2n(cnc12)[C@H]1C[C@H](O)[C@@H](CO)O1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88900>
+chebi:53233	3-(4,5-dimethylthiazol-2-yl)-2,5-diphenyltetrazolium bromide	['indra_rel']	[Br-].Cc1nc(sc1C)-[n+]1nc(nn1-c1ccccc1)-c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88890>
+chebi:529996	cytochalasin D	['indra_rel']	[H][C@]12[C@H](Cc3ccccc3)NC(=O)[C@]11[C@H](OC(C)=O)\\C=C\\[C@@](C)(O)C(=O)[C@@H](C)C\\C=C\\C1[C@H](O)C(=C)[C@H]2C	<rdkit.Chem.rdchem.Mol object at 0x2aaf886d0>
+chebi:5280	gatifloxacin	['indra_rel']	COc1c(N2CCNC(C)C2)c(F)cc2c1n(cc(C(O)=O)c2=O)C1CC1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88660>
+chebi:52392	2-arachidonoylglycerol	['indra_rel']	[H]C(CO)(CO)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC	<rdkit.Chem.rdchem.Mol object at 0x2aaf88580>
+chebi:52288	1-octadec-9-enoylglycero-3-phosphate	['indra_rel']	[H]C(CCCCCCCC)=C([H])CCCCCCCC(=O)OCC(O)COP(O)(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf88510>
+chebi:5262	galangin	['indra_rel']	Oc1cc(O)c2c(c1)oc(-c1ccccc1)c(O)c2=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf884a0>
+chebi:52214	ligand	['indra_rel']		
+chebi:51913	Goe 6976	['indra_rel']	Cn1c2ccccc2c2c3C(=O)NCc3c3c4ccccc4n(CCC#N)c3c12	<rdkit.Chem.rdchem.Mol object at 0x2aaf88430>
+chebi:517248	bufalin	['indra_rel']	[H][C@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@]34O)c3ccc(=O)oc3)[C@@]1(C)CC[C@H](O)C2	<rdkit.Chem.rdchem.Mol object at 0x2aaf883c0>
+chebi:51384	D-ascorbic acid	['indra_rel']	[H][C@]1(OC(=O)C(O)=C1O)[C@H](O)CO	<rdkit.Chem.rdchem.Mol object at 0x2aaf88350>
+chebi:50182	3,3'-diindolylmethane	['indra_rel']	C(c1c[nH]c2ccccc12)c1c[nH]c2ccccc12	<rdkit.Chem.rdchem.Mol object at 0x2aaf882e0>
+chebi:50131	5-aza-2'-deoxycytidine	['indra_rel']	Nc1ncn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)n1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88270>
+chebi:50122	rosiglitazone	['indra_rel']	CN(CCOc1ccc(CC2SC(=O)NC2=O)cc1)c1ccccn1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88200>
+chebi:50114	estrogen	['indra_rel']		
+chebi:5001	fenofibrate	['indra_rel']	CC(C)OC(=O)C(C)(C)Oc1ccc(cc1)C(=O)c1ccc(Cl)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88190>
+chebi:49900	arsenous acid	['indra_rel']	O[As](O)O	<rdkit.Chem.rdchem.Mol object at 0x2aaf880b0>
+chebi:49662	indometacin	['indra_rel']	COc1ccc2n(C(=O)c3ccc(Cl)cc3)c(C)c(CC(O)=O)c2c1	<rdkit.Chem.rdchem.Mol object at 0x2aaf88040>
+chebi:4948	Evodiamine	['indra_rel']	CN1[C@H]2N(CCc3c2[nH]c2ccccc32)C(=O)c2ccccc12	<rdkit.Chem.rdchem.Mol object at 0x2aaf07f40>
+chebi:48775	cadmium(2+)	['indra_rel']	[Cd++]	<rdkit.Chem.rdchem.Mol object at 0x2aaf07e60>
+chebi:48432	angiotensin II	['indra_rel']		
+chebi:480999	vinorelbine	['indra_rel']	CCC1=C[C@@H]2CN(C1)Cc1c([nH]c3ccccc13)[C@@](C2)(C(=O)OC)c1cc2c(cc1OC)N(C)[C@@H]1[C@]22CCN3CC=C[C@](CC)([C@@H]23)[C@@H](OC(C)=O)[C@]1(O)C(=O)OC	<rdkit.Chem.rdchem.Mol object at 0x2aaf07d80>
+chebi:47924	N,N'-(hexane-1,6-diyl)bis(1-\{(2S)-2-cyclohexyl-2-[(N-methyl-L-alanyl)amino]acetyl\}-L-prolyl-beta-phenyl-L-phenylalaninamide)	['indra_rel']	CN[C@@H](C)C(=O)N[C@@H](C1CCCCC1)C(=O)N1CCC[C@H]1C(=O)N[C@@H](C(c1ccccc1)c1ccccc1)C(=O)NCCCCCCNC(=O)[C@@H](NC(=O)[C@@H]1CCCN1C(=O)[C@@H](NC(=O)[C@H](C)NC)C1CCCCC1)C(c1ccccc1)c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf07bc0>
+chebi:4784	enalapril	['indra_rel']	CCOC(=O)[C@H](CCc1ccccc1)N[C@@H](C)C(=O)N1CCC[C@H]1C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf07b50>
+chebi:47807	sulforaphane	['indra_rel']	N(=C=S)CCCCS(=O)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf07ae0>
+chebi:4778	embelin	['indra_rel']	CCCCCCCCCCCC1=C(O)C(=O)C=C(O)C1=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf07a70>
+chebi:48607	lithium chloride	['indra_rel']	[Li+].[Cl-]	<rdkit.Chem.rdchem.Mol object at 0x2aaf07a00>
+chebi:4806	(-)-epigallocatechin 3-gallate	['indra_rel']	OC1=CC(O)=C2C[C@@H](OC(=O)C3=CC(O)=C(O)C(O)=C3)[C@H](OC2=C1)C1=CC(O)=C(O)C(O)=C1	<rdkit.Chem.rdchem.Mol object at 0x2aaf078b0>
+chebi:46024	trichostatin A	['indra_rel']	C[C@@H](C(=O)c1ccc(cc1)N(C)C)\\C=C(C)\\C=C\\C(=O)NO	<rdkit.Chem.rdchem.Mol object at 0x2aaf07840>
+chebi:44445	nimesulide	['indra_rel']	CS(=O)(=O)Nc1ccc(cc1Oc1ccccc1)[N+]([O-])=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf077d0>
+chebi:46557	zoledronic acid	['indra_rel']	OC(Cn1ccnc1)(P(O)(O)=O)P(O)(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf07760>
+chebi:43616	K-252a	['indra_rel']	COC(=O)[C@@]1(O)C[C@H]2O[C@]1(C)n1c3ccccc3c3c4CNC(=O)c4c4c5ccccc5n2c4c13	<rdkit.Chem.rdchem.Mol object at 0x2aaf076f0>
+chebi:4305	dacarbazine	['indra_rel']	C=1NC(=C(N1)C(=O)N)N=NN(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf07680>
+chebi:4513	dicoumarol	['indra_rel']	Oc1c(Cc2c(O)c3ccccc3oc2=O)c(=O)oc2ccccc12	<rdkit.Chem.rdchem.Mol object at 0x2aaf07610>
+chebi:42471	forskolin	['indra_rel']	[H][C@@]12[C@H](O)[C@H](OC(C)=O)[C@@]3(C)O[C@](C)(CC(=O)[C@]3(O)[C@@]1(C)[C@@H](O)CCC2(C)C)C=C	<rdkit.Chem.rdchem.Mol object at 0x2aaf075a0>
+chebi:42588	4-hydroxyphenyl retinamide	['indra_rel']	CC(\\C=C\\C1=C(C)CCCC1(C)C)=C/C=C/C(C)=C/C(=O)Nc1ccc(O)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf074c0>
+chebi:42223	emodin	['indra_rel']	Cc1cc(O)c2C(=O)c3c(O)cc(O)cc3C(=O)c2c1	<rdkit.Chem.rdchem.Mol object at 0x2aaf07060>
+chebi:422	(S)-lactic acid	['indra_rel']	C[C@H](O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf06ff0>
+chebi:41774	tamoxifen	['indra_rel']	CC\\C(c1ccccc1)=C(/c1ccccc1)c1ccc(OCCN(C)C)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf06f80>
+chebi:41500	4-phenylbutyric acid	['indra_rel']	OC(=O)CCCc1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aaf06c00>
+chebi:40618	aminoguanidine	['indra_rel']	NNC(N)=N	<rdkit.Chem.rdchem.Mol object at 0x2aaf06b20>
+chebi:4031	cyclosporin A	['indra_rel']	CC[C@@H]1NC(=O)[C@H]([C@H](O)[C@H](C)C\\C=C\\C)N(C)C(=O)[C@H](C(C)C)N(C)C(=O)[C@H](CC(C)C)N(C)C(=O)[C@H](CC(C)C)N(C)C(=O)[C@@H](C)NC(=O)[C@H](C)NC(=O)[C@H](CC(C)C)N(C)C(=O)[C@@H](NC(=O)[C@H](CC(C)C)N(C)C(=O)CN(C)C1=O)C(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aaf06810>
+chebi:42567	fisetin	['indra_rel']	Oc1ccc2c(c1)oc(-c1ccc(O)c(O)c1)c(O)c2=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf06490>
+chebi:3962	curcumin	['indra_rel']	COC1=C(O)C=CC(\\C=C\\C(=O)CC(=O)\\C=C\\C2=CC(OC)=C(O)C=C2)=C1	<rdkit.Chem.rdchem.Mol object at 0x2aaf05770>
+chebi:3947	cucurbitacin I	['indra_rel']	CC(C)(O)\\C=C\\C(=O)[C@](C)(O)[C@H]1[C@H](O)C[C@@]2(C)[C@@H]3CC=C4[C@@H](C=C(O)C(=O)C4(C)C)[C@]3(C)C(=O)C[C@]12C	<rdkit.Chem.rdchem.Mol object at 0x2aaf05310>
+chebi:39585	carbidopa (anhydrous)	['indra_rel']	C[C@@](Cc1ccc(O)c(O)c1)(NN)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf052a0>
+chebi:4021	Cyclopamine	['indra_rel']	C[C@@H]1[C@@H]2NC[C@@H](C)C[C@H]2O[C@]11CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC2=C1C	<rdkit.Chem.rdchem.Mol object at 0x2aaf05230>
+chebi:3815	Collagen	['indra_rel']		
+chebi:39548	atorvastatin	['indra_rel']	CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf05000>
+chebi:38215	calcium channel blocker	['indra_rel']		
+chebi:3918	crocetin	['indra_rel']	CC(\\C=C\\C=C(/C)C(O)=O)=C/C=C/C=C(C)/C=C/C=C(\\C)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aaf04f90>
+chebi:37537	phorbol 13-acetate 12-myristate	['indra_rel']	C=1[C@]2([C@]3([C@@]([C@H](OC(=O)CCCCCCCCCCCCC)[C@H]([C@@]2([C@]4([C@@](C(=O)C(=C4)C)(CC1CO)O)[H])O)C)(C3(C)C)OC(=O)C)[H])[H]	<rdkit.Chem.rdchem.Mol object at 0x2aaf044a0>
+chebi:40303	lovastatin	['indra_rel']	[H][C@]12[C@H](C[C@@H](C)C=C1C=C[C@H](C)[C@@H]2CC[C@@H]1C[C@@H](O)CC(=O)O1)OC(=O)[C@@H](C)CC	<rdkit.Chem.rdchem.Mol object at 0x2aaf04350>
+chebi:37136	barium(2+)	['indra_rel']	[Ba++]	<rdkit.Chem.rdchem.Mol object at 0x2aaf04270>
+chebi:37117	thallium monochloride	['indra_rel']	Cl[Tl]	<rdkit.Chem.rdchem.Mol object at 0x2aae8fd80>
+chebi:3699	cimetidine	['indra_rel']	CN\\C(NCCSCc1nc[nH]c1C)=N\\C#N	<rdkit.Chem.rdchem.Mol object at 0x2aae8f5a0>
+chebi:36467	ciguatoxin CTX1B	['indra_rel']	[H][C@]12C\\C=C/C[C@@]3([H])O[C@@]4([H])C=C[C@@]5([H])O[C@@]6([H])[C@H](O)[C@@]7([H])O[C@]([H])(C=CC[C@]7([H])O[C@]6([H])C[C@]5([H])O[C@]4([H])C=C[C@]3([H])O[C@]1([H])C[C@@H](O)[C@]1(C)O[C@]3([H])C[C@H](C)C[C@]4([H])O[C@]5([H])[C@@H](C)[C@H](O)[C@]6([H])O[C@]7(C[C@H](O)CO7)[C@@H](C)[C@H](C)[C@@]6([H])O[C@@]5([H])C[C@@]4([H])O[C@@]3([H])C[C@@]1([H])O2)\\C=C\\[C@H](O)CO	<rdkit.Chem.rdchem.Mol object at 0x2aae8f1b0>
+chebi:35895	tetraphosphorus	['indra_rel']	p12p3p1p23	<rdkit.Chem.rdchem.Mol object at 0x2aae8f140>
+chebi:35610	antineoplastic agent	['indra_rel']		
+chebi:35549	perfluorooctanoic acid	['indra_rel']	OC(=O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F	<rdkit.Chem.rdchem.Mol object at 0x2aae8f0d0>
+chebi:3941	cucurbitacin B	['indra_rel']	[H][C@@]12C[C@H](O)C(=O)C(C)(C)C1=CC[C@@]1([H])[C@]3(C)C[C@@H](O)[C@]([H])([C@@](C)(O)C(=O)\\C=C\\C(C)(C)OC(C)=O)[C@@]3(C)CC(=O)[C@@]21C	<rdkit.Chem.rdchem.Mol object at 0x2aae8edc0>
+chebi:34247	2,6-di-tert-butyl-4-methylphenol	['indra_rel']	Cc1cc(c(O)c(c1)C(C)(C)C)C(C)(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aae8ed50>
+chebi:3423	carmustine	['indra_rel']	ClCCNC(=O)N(CCCl)N=O	<rdkit.Chem.rdchem.Mol object at 0x2aae8ec00>
+chebi:3374	capsaicin	['indra_rel']	COc1cc(CNC(=O)CCCC\\C=C\\C(C)C)ccc1O	<rdkit.Chem.rdchem.Mol object at 0x2aae8e7a0>
+chebi:33709	amino acid	['indra_rel']		
+chebi:33400	platinum(0)	['indra_rel']	[Pt]	<rdkit.Chem.rdchem.Mol object at 0x2aae8e570>
+chebi:33276	delta-tocotrienol	['indra_rel']	CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC[C@]1(C)CCc2cc(O)cc(C)c2O1	<rdkit.Chem.rdchem.Mol object at 0x2aae8d2a0>
+chebi:33235	tocotrienol	['indra_rel']		
+chebi:30778	gallic acid	['indra_rel']	OC(=O)c1cc(O)c(O)c(O)c1	<rdkit.Chem.rdchem.Mol object at 0x2aae8d230>
+chebi:3087	betulinic acid	['indra_rel']	[H][C@]12CC[C@]3([H])[C@@]4(C)CC[C@H](O)C(C)(C)[C@]4([H])CC[C@@]3(C)[C@]1(C)CC[C@]1(CC[C@@H](C(C)=C)[C@]21[H])C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae8cf90>
+chebi:30772	butyric acid	['indra_rel']	CCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae8c580>
+chebi:310312	isoliquiritigenin	['indra_rel']	Oc1ccc(cc1)\\C=C\\C(=O)c1ccc(O)cc1O	<rdkit.Chem.rdchem.Mol object at 0x2aae8c510>
+chebi:31856	mithramycin	['indra_rel']	[H][C@]1(Cc2cc3cc(O[C@H]4C[C@@H](O[C@H]5C[C@@H](O)[C@H](O)[C@@H](C)O5)[C@H](O)[C@@H](C)O4)c(C)c(O)c3c(O)c2C(=O)[C@H]1O[C@H]1C[C@@H](O[C@H]2C[C@@H](O[C@H]3C[C@](C)(O)[C@H](O)[C@@H](C)O3)[C@@H](O)[C@@H](C)O2)[C@H](O)[C@@H](C)O1)[C@H](OC)C(=O)[C@@H](O)[C@@H](C)O	<rdkit.Chem.rdchem.Mol object at 0x2aae8c4a0>
+chebi:32325	beta-ionone	['indra_rel']	CC(=O)\\C=C\\C1=C(C)CCCC1(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aae8c430>
+chebi:2979	baicalein	['indra_rel']	OC1=C(O)C(O)=C2C(=O)C=C(OC2=C1)C1=CC=CC=C1	<rdkit.Chem.rdchem.Mol object at 0x2aae8c3c0>
+chebi:29108	calcium(2+)	['indra_rel']	[Ca++]	<rdkit.Chem.rdchem.Mol object at 0x2aae8c350>
+chebi:29105	zinc(2+)	['indra_rel']	[Zn++]	<rdkit.Chem.rdchem.Mol object at 0x2aae8c2e0>
+chebi:29063	L-mimosine	['indra_rel']	C1=C(C(C=CN1C[C@@H](C(O)=O)N)=O)O	<rdkit.Chem.rdchem.Mol object at 0x2aae8c200>
+chebi:29033	iron(2+)	['indra_rel']	[Fe++]	<rdkit.Chem.rdchem.Mol object at 0x2aae8c120>
+chebi:28955	2-methoxy-17beta-estradiol	['indra_rel']	[H][C@]12CC[C@]3(C)[C@@H](O)CC[C@@]3([H])[C@]1([H])CCc1cc(O)c(OC)cc21	<rdkit.Chem.rdchem.Mol object at 0x2aae8c0b0>
+chebi:28918	(R)-adrenaline	['indra_rel']	CNC[C@H](O)c1ccc(O)c(O)c1	<rdkit.Chem.rdchem.Mol object at 0x2aae8c040>
+chebi:28866	tetracosanoic acid	['indra_rel']	CCCCCCCCCCCCCCCCCCCCCCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae37f40>
+chebi:28842	octadecanoic acid	['indra_rel']	C(CCCCCCCCCC)CCCCCCC(=O)O	<rdkit.Chem.rdchem.Mol object at 0x2aae37ed0>
+chebi:28834	deoxycholic acid	['indra_rel']	[H][C@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)CCC(O)=O)[C@@]4(C)[C@@H](O)C[C@]3([H])[C@@]1(C)CC[C@@H](O)C2	<rdkit.Chem.rdchem.Mol object at 0x2aae37e60>
+chebi:28815	heparan sulfate	['indra_rel']		
+chebi:28499	kaempferol	['indra_rel']	Oc1ccc(cc1)-c1oc2cc(O)cc(O)c2c(=O)c1O	<rdkit.Chem.rdchem.Mol object at 0x2aae37df0>
+chebi:28445	vincristine	['indra_rel']	[H][C@@]12N3CC[C@@]11c4cc(c(OC)cc4N(C=O)[C@@]1([H])[C@](O)([C@H](OC(C)=O)[C@]2(CC)C=CC3)C(=O)OC)[C@]1(C[C@@H]2C[N@](CCc3c1[nH]c1ccccc31)C[C@](O)(CC)C2)C(=O)OC	<rdkit.Chem.rdchem.Mol object at 0x2aae37d80>
+chebi:28364	all-cis-5,8,11,14,17-icosapentaenoic acid	['indra_rel']	CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae37d10>
+chebi:28262	dimethyl sulfoxide	['indra_rel']	CS(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae37c30>
+chebi:28201	rotenone	['indra_rel']	[H][C@@]1(CC2=C3O[C@]4([H])COC5=C(C=C(OC)C(OC)=C5)[C@]4([H])C(=O)C3=CC=C2O1)C(C)=C	<rdkit.Chem.rdchem.Mol object at 0x2aae37bc0>
+chebi:28082	5alpha-cholestane-3beta,5,6beta-triol	['indra_rel']	[H][C@@]1(CC[C@@]2([H])[C@]3([H])C[C@@H](O)[C@@]4(O)C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aae37b50>
+chebi:27899	cisplatin	['indra_rel']	[H][N]([H])([H])[Pt](Cl)(Cl)[N]([H])([H])[H]	
+chebi:27881	resveratrol	['indra_rel']	[H]C(=C([H])c1cc(O)cc(O)c1)c1ccc(O)cc1	<rdkit.Chem.rdchem.Mol object at 0x2aae37ae0>
+chebi:27834	deoxycoformycin	['indra_rel']	OC[C@H]1O[C@H](C[C@@H]1O)N1C=NC2=C1N=CNC[C@H]2O	<rdkit.Chem.rdchem.Mol object at 0x2aae37a70>
+chebi:28584	gossypol	['indra_rel']		
+chebi:27666	actinomycin D	['indra_rel']	[H][C@@]12CCCN1C(=O)[C@H](NC(=O)[C@@H](NC(=O)c1ccc(C)c3oc4c(C)c(=O)c(N)c(C(=O)N[C@H]5[C@@H](C)OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C)C(=O)[C@]6([H])CCCN6C(=O)[C@H](NC5=O)C(C)C)c4nc13)[C@@H](C)OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C)C2=O)C(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aae37a00>
+chebi:27656	camptothecin	['indra_rel']	CC[C@@]1(O)C(=O)OCc2c1cc1-c3nc4ccccc4cc3Cn1c2=O	<rdkit.Chem.rdchem.Mol object at 0x2aae37840>
+chebi:2762	antimycin A	['indra_rel']	C1([C@H]([C@H](OC([C@@H]([C@H]([C@@H](O1)C)OC(CC(C)C)=O)CCCCCC)=O)C)NC(C2=C(C(=CC=C2)NC(=O)[H])O)=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae35540>
+chebi:26020	phosphate	['indra_rel']		
+chebi:26333	prostaglandin	['indra_rel']		
+chebi:27413	beta-aminopropionitrile	['indra_rel']	NCCC#N	<rdkit.Chem.rdchem.Mol object at 0x2aae354d0>
+chebi:26536	retinoic acid	['indra_rel']	CC(C=CC1=C(C)CCCC1(C)C)=CC=CC(C)=CC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae35460>
+chebi:26523	reactive oxygen species	['indra_rel']		
+chebi:2672	Ammothamnine	['indra_rel']	C1[C@]2(CN3[C@@]([C@]4(CCC[N+](CC1)([C@@]24[H])[O-])[H])(CCCC3=O)[H])[H]	<rdkit.Chem.rdchem.Mol object at 0x2aae35310>
+chebi:2636	amifostine	['indra_rel']	NCCCNCCSP(O)(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae35150>
+chebi:25367	molecule	['indra_rel']		
+chebi:25461	myxothiazol	['indra_rel']	CO[C@@H](\\C=C\\C1=CSC(=N1)C1=CSC(=N1)[C@@H](C)\\C=C\\C=C\\C(C)C)[C@@H](C)C(\\OC)=C/C(N)=O	<rdkit.Chem.rdchem.Mol object at 0x2aae34eb0>
+chebi:24636	proton	['indra_rel']	[1H+]	<rdkit.Chem.rdchem.Mol object at 0x2aae34cf0>
+chebi:23888	drug	['indra_rel']		
+chebi:22977	cadmium atom	['indra_rel']	[Cd]	<rdkit.Chem.rdchem.Mol object at 0x2aae34c80>
+chebi:18388	apigenin	['indra_rel']	Oc1ccc(cc1)-c1cc(=O)c2c(O)cc(O)cc2o1	<rdkit.Chem.rdchem.Mol object at 0x2aae34c10>
+chebi:18385	thiamine(1+)	['indra_rel']	CC1=C(CCO)SC=[N+]1CC1=CN=C(C)N=C1N	<rdkit.Chem.rdchem.Mol object at 0x2aae34660>
+chebi:18320	1,4-dithiothreitol	['indra_rel']	OC(CS)C(O)CS	<rdkit.Chem.rdchem.Mol object at 0x2aae345f0>
+chebi:18295	histamine	['indra_rel']	NCCc1c[nH]cn1	<rdkit.Chem.rdchem.Mol object at 0x2aae34270>
+chebi:18248	iron atom	['indra_rel']	[Fe]	<rdkit.Chem.rdchem.Mol object at 0x2aade7a70>
+chebi:18220	isoflavone	['indra_rel']	O=c1c(coc2ccccc12)-c1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aade6f80>
+chebi:18152	myricetin	['indra_rel']	Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)c(O)c1)c(O)c2=O	<rdkit.Chem.rdchem.Mol object at 0x2aade6ab0>
+chebi:18145	(R,R,R)-alpha-tocopherol	['indra_rel']	CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC[C@]1(C)CCc2c(C)c(O)c(C)c(C)c2O1	<rdkit.Chem.rdchem.Mol object at 0x2aade6a40>
+chebi:18139	trimethylamine	['indra_rel']	CN(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aade69d0>
+chebi:18050	L-glutamine	['indra_rel']	N[C@@H](CCC(N)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade5bd0>
+chebi:17997	dinitrogen	['indra_rel']	N#N	<rdkit.Chem.rdchem.Mol object at 0x2aade51c0>
+chebi:17741	N,N-dimethylformamide	['indra_rel']	[H]C(=O)N(C)C	<rdkit.Chem.rdchem.Mol object at 0x2aade4d60>
+chebi:176783	vitamin C	['indra_rel']		
+chebi:17688	(S)-nicotine	['indra_rel']	[H][C@]1(CCCN1C)C1=CC=CN=C1	<rdkit.Chem.rdchem.Mol object at 0x2aade4900>
+chebi:17621	FMN	['indra_rel']	C12=NC(NC(C1=NC=3C(N2C[C@@H]([C@@H]([C@@H](COP(=O)(O)O)O)O)O)=CC(=C(C3)C)C)=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade4890>
+chebi:17489	3',5'-cyclic AMP	['indra_rel']	Nc1ncnc2n(cnc12)[C@@H]1O[C@@H]2COP(O)(=O)O[C@H]2[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aade4820>
+chebi:177710	Gemcitabine elaidate	['indra_rel']	FC1(F)[C@H](O)[C@H](O[C@H]1N2C=CC(=NC2=O)N)COC(=O)CCCCCCC/C=C/CCCCCCCC	<rdkit.Chem.rdchem.Mol object at 0x2aade47b0>
+chebi:17484	benzyl isothiocyanate	['indra_rel']	S=C=NCc1ccccc1	<rdkit.Chem.rdchem.Mol object at 0x2aade4660>
+chebi:17447	geraniol	['indra_rel']	CC(C)=CCC\\C(C)=C\\CO	<rdkit.Chem.rdchem.Mol object at 0x2aade45f0>
+chebi:17439	cyanocob(III)alamin	['indra_rel']	[H][C@@]1(C)CNC(=O)CC[C@]2(C)[C@@H](CC(N)=O)[C@@]3([H])N4C2=C(C)C2=[N+]5C(=CC6=[N+]7C(=C(C)C8=[N+]([C@]3(C)[C@@](C)(CC(N)=O)[C@@H]8CCC(N)=O)[Co-3]457(C#N)[n+]3cn([C@H]4O[C@H](CO)[C@@H](OP([O-])(=O)O1)[C@H]4O)c1cc(C)c(C)cc31)[C@@](C)(CC(N)=O)[C@@H]6CCC(N)=O)C(C)(C)[C@@H]2CCC(N)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade4580>
+chebi:17376	cystine	['indra_rel']	NC(CSSCC(N)C(O)=O)C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade43c0>
+chebi:17351	linoleic acid	['indra_rel']	CCCCC\\C=C/C\\C=C/CCCCCCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade4350>
+chebi:17234	glucose	['indra_rel']		
+chebi:17154	nicotinamide	['indra_rel']	NC(=O)c1cccnc1	<rdkit.Chem.rdchem.Mol object at 0x2aade4270>
+chebi:17141	cysteamine	['indra_rel']	NCCS	<rdkit.Chem.rdchem.Mol object at 0x2aade4200>
+chebi:17033	biliverdin	['indra_rel']	CC1=C(CCC(O)=O)\\C(/N=C1/C=C1NC(=O)C(C=C)=C/1C)=C\\c1[nH]c(\\C=C2NC(=O)C(C)=C/2C=C)c(C)c1CCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aade4120>
+chebi:16990	bilirubin IXalpha	['indra_rel']	CC1=C(C=C)\\C(NC1=O)=C\\C1=C(C)C(CCC(O)=O)=C(CC2=C(CCC(O)=O)C(C)=C(N2)\\C=C2/NC(=O)C(C=C)=C2C)N1	<rdkit.Chem.rdchem.Mol object at 0x2aade40b0>
+chebi:16865	gamma-aminobutyric acid	['indra_rel']	NCCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8ff40>
+chebi:16755	chenodeoxycholic acid	['indra_rel']	[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8fd80>
+chebi:16480	nitric oxide	['indra_rel']	[N]=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8fd10>
+chebi:16412	lipopolysaccharide	['indra_rel']		
+chebi:16619	(2-trans,6-trans)-farnesol	['indra_rel']	CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CO	<rdkit.Chem.rdchem.Mol object at 0x2aad8fca0>
+chebi:16796	melatonin	['indra_rel']	C=1C=C(C=C2C(=CNC12)CCNC(=O)C)OC	<rdkit.Chem.rdchem.Mol object at 0x2aad8fc30>
+chebi:16474	NADPH	['indra_rel']	NC(=O)C1=CN(C=CC1)[C@@H]1O[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](OP(O)(O)=O)[C@@H]2O)n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aad8fbc0>
+chebi:16670	peptide	['indra_rel']		
+chebi:16336	hyaluronic acid	['indra_rel']		
+chebi:16335	adenosine	['indra_rel']	Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aad8fb50>
+chebi:16243	quercetin	['indra_rel']	OC1=CC(O)=C2C(OC(=C(O)C2=O)C2=CC(O)=C(O)C=C2)=C1	<rdkit.Chem.rdchem.Mol object at 0x2aad8fae0>
+chebi:16240	hydrogen peroxide	['indra_rel']	[H]OO[H]	<rdkit.Chem.rdchem.Mol object at 0x2aad8fa70>
+chebi:16236	ethanol	['indra_rel']	CCO	<rdkit.Chem.rdchem.Mol object at 0x2aad8fa00>
+chebi:16118	berberine	['indra_rel']	COc1ccc2cc3-c4cc5OCOc5cc4CC[n+]3cc2c1OC	<rdkit.Chem.rdchem.Mol object at 0x2aad8f990>
+chebi:15940	nicotinic acid	['indra_rel']	OC(=O)c1cccnc1	<rdkit.Chem.rdchem.Mol object at 0x2aad8f920>
+chebi:15891	taurine	['indra_rel']	C(CS(O)(=O)=O)N	<rdkit.Chem.rdchem.Mol object at 0x2aad8f8b0>
+chebi:15756	hexadecanoic acid	['indra_rel']	CCCCCCCCCCCCCCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f840>
+chebi:15647	leukotriene B4	['indra_rel']	CCCCC\\C=C/C[C@@H](O)\\C=C\\C=C\\C=C/[C@@H](O)CCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f7d0>
+chebi:155848	Ala-Pro zwitterion	['indra_rel']	C(=O)([C@@H]([NH3+])C)N1[C@H](C(=O)[O-])CCC1	<rdkit.Chem.rdchem.Mol object at 0x2aad8f760>
+chebi:15551	prostaglandin E2	['indra_rel']	CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)CC(=O)[C@@H]1C\\C=C/CCCC(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f680>
+chebi:15422	ATP	['indra_rel']	Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(=O)OP(O)(=O)OP(O)(O)=O)[C@@H](O)[C@H]1O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f610>
+chebi:15420	perillyl alcohol	['indra_rel']	CC(=C)C1CCC(CO)=CC1	<rdkit.Chem.rdchem.Mol object at 0x2aad8f530>
+chebi:15384	limonene	['indra_rel']	CC(=C)C1CCC(C)=CC1	<rdkit.Chem.rdchem.Mol object at 0x2aad8f4c0>
+chebi:15365	acetylsalicylic acid	['indra_rel']	CC(=O)Oc1ccccc1C(O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f450>
+chebi:145535	pevonedistat	['indra_rel']	C1=CC2=C(C=C1)[C@H](CC2)NC3=C4C(=NC=N3)N(C=C4)[C@@H]5C[C@H]([C@H](C5)O)COS(N)(=O)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f3e0>
+chebi:138486	cholest-5-en-3-ol	['indra_rel']	OC1CC=2[C@@]([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H](CCCC(C)C)C)[H])(CC3)C)[H])(CC2)[H])[H])(CC1)C	<rdkit.Chem.rdchem.Mol object at 0x2aad8f300>
+chebi:138366	bile acids	['indra_rel']		
+chebi:135921	artenimol	['indra_rel']	C[C@@H]1[C@]2([C@]34[C@](O[C@@H]1O)(O[C@](OO3)(CC[C@]4([C@@H](CC2)C)[H])C)[H])[H]	<rdkit.Chem.rdchem.Mol object at 0x2aad8f290>
+chebi:134609	nitrosobis(2-oxopropyl)amine	['indra_rel']	N(N=O)(CC(C)=O)CC(C)=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f220>
+chebi:132992	radiosensitizing agent	['indra_rel']		
+chebi:113532	thymoquinone	['indra_rel']	CC(C)C1=CC(=O)C(C)=CC1=O	<rdkit.Chem.rdchem.Mol object at 0x2aad8f060>
+chebi:156287	CX-5461	['indra_rel']	CN1CCCN(CC1)C1=NC2=C(C=C1)C(=O)C(C(=O)NCC1=CN=C(C)C=N1)=C1SC3=C(C=CC=C3)N21	<rdkit.Chem.rdchem.Mol object at 0x2aad8eff0>
+chebi:10033	warfarin	['indra_rel']		
