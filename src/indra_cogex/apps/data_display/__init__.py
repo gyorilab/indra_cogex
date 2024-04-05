@@ -14,8 +14,10 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
+
+from indra.assemblers.english import EnglishAssembler
 from indra.sources.indra_db_rest import IndraDBRestAPIError
-from indra.statements import Statement
+from indra.statements import Statement, stmts_from_json
 from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client, curation_cache
@@ -171,6 +173,21 @@ def get_stmts():
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
+
+
+@data_display_blueprint.route("/get_stmts_english", methods=["POST"])
+def get_stmts_english():
+    try:
+        stmts_json = request.json.get("stmts")
+        stmts = stmts_from_json(stmts_json)
+        english = {}
+        for stmt in stmts:
+            english[str(stmt.get_hash())] = EnglishAssembler([stmt]).make_model()
+
+        return jsonify(english)
+    except Exception as err:
+        logger.exception(err)
+        abort(Response("Could not parse statement list", status=415))
 
 
 # Endpoint for getting evidence
