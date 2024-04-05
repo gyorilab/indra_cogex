@@ -187,7 +187,8 @@ def get_stmts_english():
         return jsonify(english)
     except Exception as err:
         logger.exception(err)
-        abort(Response("Could not parse statement list", status=415))
+        abort(Response("Could not parse statement list",
+                       status=HTTPStatus.INTERNAL_SERVER_ERROR))
 
 
 # Endpoint for getting evidence
