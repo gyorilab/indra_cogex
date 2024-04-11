@@ -177,18 +177,18 @@ def get_stmts():
 
 @data_display_blueprint.route("/get_english_stmts", methods=["POST"])
 def get_english_stmts():
-    try:
-        stmts_json = request.json.get("statements")
-        stmts = stmts_from_json(stmts_json)
-        english = {}
-        for stmt in stmts:
-            english[str(stmt.get_hash())] = EnglishAssembler([stmt]).make_model()
-
-        return jsonify(english)
-    except Exception as err:
-        logger.exception(err)
-        abort(Response("Could not parse statement list",
-                       status=HTTPStatus.INTERNAL_SERVER_ERROR))
+    stmts_json = request.json.get("statements")
+    if isinstance(stmts_json, dict):
+        stmts_json = [stmts_json]
+    if not stmts_json or not isinstance(stmts_json, list):
+        logger.warning("No statements provided to generate English statements")
+        abort(HTTPStatus.UNPROCESSABLE_ENTITY,
+              "No statements provided, cannot generate English statements from empty list")
+    stmts = stmts_from_json(stmts_json)
+    english = {}
+    for stmt in stmts:
+        english[stmt.uuid] = EnglishAssembler([stmt]).make_model()
+    return jsonify({"sentences": english})
 
 
 # Endpoint for getting evidence
