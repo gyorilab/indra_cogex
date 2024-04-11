@@ -175,8 +175,8 @@ def get_stmts():
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
 
 
-@data_display_blueprint.route("/get_stmts_english", methods=["POST"])
-def get_stmts_english():
+@data_display_blueprint.route("/get_english_stmts", methods=["POST"])
+def get_english_stmts():
     try:
         stmts_json = request.json.get("stmts")
         stmts = stmts_from_json(stmts_json)
