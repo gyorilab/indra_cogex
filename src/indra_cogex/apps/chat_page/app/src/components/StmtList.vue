@@ -189,7 +189,7 @@ export default {
       return `${firstAgent.name} ${verb} ${restOfAgentsString}`;
     },
     async getEnglishArray() {
-      const indraApi = "http://api.indra.bio:8000/assemblers/english";
+      const indraApi = "https://discovery.indra.bio/get_english_stmts";
       // POST to get the English assembly of the statements
       const response = await fetch(indraApi, {
         method: "POST",
