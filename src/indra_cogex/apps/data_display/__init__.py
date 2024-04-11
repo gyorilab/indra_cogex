@@ -178,7 +178,7 @@ def get_stmts():
 @data_display_blueprint.route("/get_english_stmts", methods=["POST"])
 def get_english_stmts():
     try:
-        stmts_json = request.json.get("stmts")
+        stmts_json = request.json.get("statements")
         stmts = stmts_from_json(stmts_json)
         english = {}
         for stmt in stmts:
