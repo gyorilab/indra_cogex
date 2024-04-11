@@ -12,6 +12,7 @@ from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+import requests
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
 
@@ -177,6 +178,12 @@ def get_stmts():
 
 @data_display_blueprint.route("/get_english_stmts", methods=["POST"])
 def get_english_stmts():
+    """Get English statements from a list of INDRA statements in JSON format
+
+    This does the same thing as http://api.indra.bio:8000/assemble/english,
+    we do it here to avoid CORS issues and blocking by the browser
+    when calling http from a https page
+    """
     stmts_json = request.json.get("statements")
     if isinstance(stmts_json, dict):
         stmts_json = [stmts_json]
@@ -189,6 +196,29 @@ def get_english_stmts():
     for stmt in stmts:
         english[stmt.uuid] = EnglishAssembler([stmt]).make_model()
     return jsonify({"sentences": english})
+
+
+@data_display_blueprint.route("/biolookup/<curie>", methods=["GET"])
+def biolookup(curie):
+    """A simple wrapper to biolookup that returns the results as JSON
+
+    We use this wrapper to avoid browser blocking when calling the biolookup
+    service (that's running on http) from a https page.
+
+    Parameters
+    ----------
+    curie :
+        The CURIE to look up
+
+    Returns
+    -------
+    :
+        The JSON response from biolookup
+    """
+    res = requests.get("http://biolookup.io/api/lookup/%s" % curie)
+    if res.status_code != 200:
+        abort(res.status_code, res.text)
+    return jsonify(res.json())
 
 
 # Endpoint for getting evidence
