@@ -100,18 +100,18 @@ export default {
             this.$source_mapping[lowerSource] ?? lowerSource;
 
           if (
-            this.$sources.readers.includes(lowerSource) &&
+            this.$sources.readers.includes(mappedLowerSource) &&
             !availableSources.readers.includes(mappedLowerSource)
           ) {
             availableSources.readers.push(mappedLowerSource);
           } else if (
-            this.$sources.databases.includes(lowerSource) &&
+            this.$sources.databases.includes(mappedLowerSource) &&
             !availableSources.databases.includes(mappedLowerSource)
           ) {
             availableSources.databases.push(mappedLowerSource);
           } else if (
-            !this.$sources.databases.includes(lowerSource) &&
-            !this.$sources.readers.includes(lowerSource)
+            !this.$sources.databases.includes(mappedLowerSource) &&
+            !this.$sources.readers.includes(mappedLowerSource)
           ) {
             console.warn(`Unknown source: ${source}`);
           }
