@@ -63,12 +63,12 @@ app.config.globalProperties.$sources = {
   ],
 };
 app.config.globalProperties.$source_mapping = {
-  "bel": "bel_lc",
-  "phosphoelm": "pe",
-  "biopax": "pc",
-  "virhostnet": "vhn",
-  "phosphosite": "psp",
-}
+  bel: "bel_lc",
+  phosphoelm: "pe",
+  biopax: "pc",
+  virhostnet: "vhn",
+  phosphosite: "psp",
+};
 
 const GStore = reactive({
   xrefs: {},

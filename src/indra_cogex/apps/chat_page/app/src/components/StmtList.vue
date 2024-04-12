@@ -96,7 +96,8 @@ export default {
         for (let source of Object.keys(metaEntry.sourceCounts)) {
           // If the source is a reader, add it to the readers array
           const lowerSource_ = source.toLowerCase();
-          const lowerSource = this.$source_mapping[lowerSource_] ?? lowerSource_;
+          const lowerSource =
+            this.$source_mapping[lowerSource_] ?? lowerSource_;
 
           if (
             this.$sources.readers.includes(lowerSource) &&
