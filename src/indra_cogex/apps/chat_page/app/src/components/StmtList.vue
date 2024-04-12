@@ -95,20 +95,20 @@ export default {
         // Loop the meta entry's keys of the sourceCounts dict
         for (let source of Object.keys(metaEntry.sourceCounts)) {
           // If the source is a reader, add it to the readers array
-          const lowerSource_ = source.toLowerCase();
-          const lowerSource =
-            this.$source_mapping[lowerSource_] ?? lowerSource_;
+          const lowerSource = source.toLowerCase();
+          const mappedLowerSource =
+            this.$source_mapping[lowerSource] ?? lowerSource;
 
           if (
             this.$sources.readers.includes(lowerSource) &&
-            !availableSources.readers.includes(lowerSource)
+            !availableSources.readers.includes(mappedLowerSource)
           ) {
-            availableSources.readers.push(lowerSource);
+            availableSources.readers.push(mappedLowerSource);
           } else if (
             this.$sources.databases.includes(lowerSource) &&
-            !availableSources.databases.includes(lowerSource)
+            !availableSources.databases.includes(mappedLowerSource)
           ) {
-            availableSources.databases.push(lowerSource);
+            availableSources.databases.push(mappedLowerSource);
           } else if (
             !this.$sources.databases.includes(lowerSource) &&
             !this.$sources.readers.includes(lowerSource)
