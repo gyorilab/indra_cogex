@@ -62,6 +62,13 @@ app.config.globalProperties.$sources = {
     "acsn",
   ],
 };
+app.config.globalProperties.$source_mapping = {
+  bel: "bel_lc",
+  phosphoelm: "pe",
+  biopax: "pc",
+  virhostnet: "vhn",
+  phosphosite: "psp",
+};
 
 const GStore = reactive({
   xrefs: {},

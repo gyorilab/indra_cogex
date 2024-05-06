@@ -12,10 +12,13 @@ from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+import requests
 from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_optional
+
+from indra.assemblers.english import EnglishAssembler
 from indra.sources.indra_db_rest import IndraDBRestAPIError
-from indra.statements import Statement
+from indra.statements import Statement, stmts_from_json
 from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client, curation_cache
@@ -171,6 +174,51 @@ def get_stmts():
     except (TypeError, ValueError) as err:
         logger.exception(err)
         abort(Response("Parameter 'stmt_hash' unfilled", status=415))
+
+
+@data_display_blueprint.route("/get_english_stmts", methods=["POST"])
+def get_english_stmts():
+    """Get English statements from a list of INDRA statements in JSON format
+
+    This does the same thing as http://api.indra.bio:8000/assemble/english,
+    we do it here to avoid CORS issues and blocking by the browser
+    when calling http from a https page
+    """
+    stmts_json = request.json.get("statements")
+    if isinstance(stmts_json, dict):
+        stmts_json = [stmts_json]
+    if not stmts_json or not isinstance(stmts_json, list):
+        logger.warning("No statements provided to generate English statements")
+        abort(HTTPStatus.UNPROCESSABLE_ENTITY,
+              "No statements provided, cannot generate English statements from empty list")
+    stmts = stmts_from_json(stmts_json)
+    english = {}
+    for stmt in stmts:
+        english[stmt.uuid] = EnglishAssembler([stmt]).make_model()
+    return jsonify({"sentences": english})
+
+
+@data_display_blueprint.route("/biolookup/<curie>", methods=["GET"])
+def biolookup(curie):
+    """A simple wrapper to biolookup that returns the results as JSON
+
+    We use this wrapper to avoid browser blocking when calling the biolookup
+    service (that's running on http) from a https page.
+
+    Parameters
+    ----------
+    curie :
+        The CURIE to look up
+
+    Returns
+    -------
+    :
+        The JSON response from biolookup
+    """
+    res = requests.get("http://biolookup.io/api/lookup/%s" % curie)
+    if res.status_code != 200:
+        abort(res.status_code, res.text)
+    return jsonify(res.json())
 
 
 # Endpoint for getting evidence

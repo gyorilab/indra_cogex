@@ -216,8 +216,8 @@ export default {
       }
 
       if (Object.entries(this.lookupData).length === 0) {
-        // Call biolookup.io, e.g. http://biolookup.io/api/lookup/DOID:14330
-        const bioluUrl = `http://biolookup.io/api/lookup/${topNsUpper}:${this.topGrounding[1]}`; // Currently only supports http
+        // Call the biolookup.io wrapper, e.g. https://discovery.indra.bio/biolookup/DOID:14330
+        const bioluUrl = `https://discovery.indra.bio/biolookup/${topNsUpper}:${this.topGrounding[1]}`;
         const bioluResp = await fetch(bioluUrl);
         const bioluData = await bioluResp.json();
         this.lookupData = await bioluData;

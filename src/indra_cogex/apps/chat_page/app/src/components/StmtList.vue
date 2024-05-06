@@ -96,20 +96,22 @@ export default {
         for (let source of Object.keys(metaEntry.sourceCounts)) {
           // If the source is a reader, add it to the readers array
           const lowerSource = source.toLowerCase();
+          const mappedLowerSource =
+            this.$source_mapping[lowerSource] ?? lowerSource;
 
           if (
-            this.$sources.readers.includes(lowerSource) &&
-            !availableSources.readers.includes(lowerSource)
+            this.$sources.readers.includes(mappedLowerSource) &&
+            !availableSources.readers.includes(mappedLowerSource)
           ) {
-            availableSources.readers.push(lowerSource);
+            availableSources.readers.push(mappedLowerSource);
           } else if (
-            this.$sources.databases.includes(lowerSource) &&
-            !availableSources.databases.includes(lowerSource)
+            this.$sources.databases.includes(mappedLowerSource) &&
+            !availableSources.databases.includes(mappedLowerSource)
           ) {
-            availableSources.databases.push(lowerSource);
+            availableSources.databases.push(mappedLowerSource);
           } else if (
-            !this.$sources.databases.includes(lowerSource) &&
-            !this.$sources.readers.includes(lowerSource)
+            !this.$sources.databases.includes(mappedLowerSource) &&
+            !this.$sources.readers.includes(mappedLowerSource)
           ) {
             console.warn(`Unknown source: ${source}`);
           }
@@ -189,7 +191,7 @@ export default {
       return `${firstAgent.name} ${verb} ${restOfAgentsString}`;
     },
     async getEnglishArray() {
-      const indraApi = "http://api.indra.bio:8000/assemblers/english";
+      const indraApi = "https://discovery.indra.bio/get_english_stmts";
       // POST to get the English assembly of the statements
       const response = await fetch(indraApi, {
         method: "POST",

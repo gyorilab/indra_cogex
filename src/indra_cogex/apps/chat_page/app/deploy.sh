@@ -61,7 +61,7 @@ echo "Deploying to $S3_URI"
 
 # Copy the content of the dist directory to the S3 bucket
 # See https://awscli.amazonaws.com/v2/documentation/api/latest/reference/s3/sync.html for more details
-aws s3 sync --exact-timestamps --delete dist/ "${S3_URI}"
+aws s3 sync --exact-timestamps --delete dist/ "${S3_URI}" --acl public-read
 echo "Deployment complete"
 echo ""
 
