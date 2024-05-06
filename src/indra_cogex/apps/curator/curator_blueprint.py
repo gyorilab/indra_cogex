@@ -104,6 +104,7 @@ def _enrich_render_statements(
     title: str,
     description: str,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    no_stmts_message: Optional[str] = None,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -127,6 +128,7 @@ def _enrich_render_statements(
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
         description=description,
+        no_stmts_message=no_stmts_message
         # no limit necessary here since it was already applied above
     )
 
@@ -651,6 +653,7 @@ def subnetwork():
         <p>
         {nodes_html}
         """,
+        no_stmts_message="No statements found for the given nodes.",
     )
 
 
