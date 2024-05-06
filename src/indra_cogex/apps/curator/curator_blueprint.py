@@ -35,6 +35,7 @@ from ..utils import (
     render_statements,
 )
 from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
+from ...client.neo4j_client import process_identifier
 
 __all__ = [
     "curator_blueprint",
@@ -613,7 +614,7 @@ class NodesForm(FlaskForm):
         """Get the CURIEs from the form."""
         return sorted(
             {
-                tuple(entry.strip().split(":", 1))
+                tuple(process_identifier(entry.strip()))
                 for line in self.curies.data.split("\n")
                 for entry in line.strip().split(",")
             }
