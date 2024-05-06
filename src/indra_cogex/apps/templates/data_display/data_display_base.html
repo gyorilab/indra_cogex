@@ -76,7 +76,7 @@
                     </a>
                 {% else %}
                     <p class="card-text">
-                        There are no statements for this publication.
+                        {{ no_stmts_message if no_stmts_message else 'No statements to display.' }}
                     </p>
                 {% endif %}
             </div>
