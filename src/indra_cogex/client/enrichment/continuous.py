@@ -464,11 +464,11 @@ def indra_downstream_gsea(
 
 GSEA_RETURN_COLUMNS = [
     "term",
-    "name",
-    "es",
-    "nes",
-    "pval",
-    "fdr",
+    "Name",
+    "ES",
+    "NES",
+    "NOM p-val",
+    "FDR q-val",
     "geneset_size",
     "matched_size",
 ]
@@ -528,9 +528,14 @@ def gsea(
         **kwargs,
     )
     res.res2d.index.name = "term"
+    # Full column list as of gseapy 1.1.2:
+    # Name, Term, ES, NES, NOM p-val, FDR q-val, FWER p-val, Tag %, Gene %,
+    # Lead_genes
     rv = res.res2d.reset_index()
     rv["name"] = rv["term"].map(curie_to_name)
+    rv["matched_size"] = rv['Tag %'].apply(lambda s: s.split('/')[0])
+    rv["geneset_size"] = rv['Tag %'].apply(lambda s: s.split('/')[1])
     rv = rv[GSEA_RETURN_COLUMNS]
     if not keep_insignificant:
-        rv = rv[rv["pval"] < alpha]
+        rv = rv[rv["NOM p-val"] < alpha]
     return rv
