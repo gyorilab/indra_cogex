@@ -233,6 +233,7 @@ def collect_genes_with_confidence(
         curie_to_hgnc_ids = defaultdict(dict)
         max_beliefs: Dict[Tuple[str, str, str], float] = {}
         max_ev_counts: Dict[Tuple[str, str, str], int] = {}
+        stmt_hashes = set()
         query_res = client.query_tx(query)
         if query_res is None:
             raise RuntimeError
@@ -240,7 +241,8 @@ def collect_genes_with_confidence(
             curie = result[0]
             name = result[1]
             hgnc_ids = set()
-            for hgnc_curie, belief, ev_count in result[2]:
+            for hgnc_curie, belief, ev_count, stmt_hash in result[2]:
+                stmt_hashes.add(stmt_hash)
                 hgnc_id = (
                     hgnc_curie.lower().replace("hgnc:", "")
                     if hgnc_curie.lower().startswith("hgnc:")
@@ -516,7 +518,7 @@ def get_entity_to_targets(
         RETURN
             regulator.id,
             regulator.name,
-            collect([gene.id, r.belief, r.evidence_count]);
+            collect([gene.id, r.belief, r.evidence_count, r.stmt_hash]);
     """
     )
     genes_with_confidence = collect_genes_with_confidence(

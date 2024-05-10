@@ -194,6 +194,8 @@
                                 one step from all entities in the INDRA Database.
                             </p>
                             <p>
+                                 Add linkout to data display (the one used by subnetwork)
+                                {# To see the resulting statements, click <a href="{{ url_for("indra_cogex.statements", gene_list_id=gene_list_id) }}">here</a>. #}
                             </p>
                             {{ render_table(indra_downstream_results, "table-downstream") }}
                         </div>

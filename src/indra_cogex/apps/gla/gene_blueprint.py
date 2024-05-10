@@ -298,7 +298,9 @@ def discretize_analysis():
             reactome_results=reactome_results,
             phenotype_results=phenotype_results,
             indra_downstream_results=indra_downstream_results,
+            # indra_downstream_linkout=...,
             indra_upstream_results=indra_upstream_results,
+            # indra_upstream_linkout=...,
         )
 
     return flask.render_template(

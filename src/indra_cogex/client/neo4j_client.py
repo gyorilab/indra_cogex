@@ -137,7 +137,7 @@ class Neo4jClient:
             The query string to be executed.
         squeeze :
             If true, unpacks the 0-indexed element in each value returned.
-            Useful when only returning value per row of the results.
+            Useful when only returning one value per row of the results.
         query_params :
             kwargs to pass to query
 
