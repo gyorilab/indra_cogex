@@ -6,16 +6,15 @@
     {{ super() }}
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
     <link
+            href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
-            href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
     />
 {% endblock %}
 
 {% block scripts %}
     {{ super() }}
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
-    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
         const datatablesConf = {
             "order": [[2, "asc"]],
@@ -112,14 +111,6 @@
                     inhibited/down-regulated genes for each entity in the INDRA database with a positive and negative
                     query gene set. A <i>p</i>-value is calculated by applying a binomial test to the matches and
                     non-matches.
-                </p>
-                {# Download button #}
-                <p>
-                    <button
-                        class="btn btn-primary"
-                        onclick="download_table_as_csv('table-rcr');">
-                        Download <i class="fas fa-download"></i>
-                    </button>
                 </p>
                 {{ render_table(results, "table-rcr") }}
             </div>
