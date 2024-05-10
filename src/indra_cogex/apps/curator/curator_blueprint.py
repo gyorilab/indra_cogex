@@ -35,6 +35,7 @@ from ..utils import (
     render_statements,
 )
 from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
+from ...client.neo4j_client import process_identifier
 
 __all__ = [
     "curator_blueprint",
@@ -104,6 +105,7 @@ def _enrich_render_statements(
     title: str,
     description: str,
     curations: Optional[List[Mapping[str, Any]]] = None,
+    no_stmts_message: Optional[str] = None,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -127,6 +129,7 @@ def _enrich_render_statements(
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
         description=description,
+        no_stmts_message=no_stmts_message
         # no limit necessary here since it was already applied above
     )
 
@@ -611,7 +614,7 @@ class NodesForm(FlaskForm):
         """Get the CURIEs from the form."""
         return sorted(
             {
-                tuple(entry.strip().split(":", 1))
+                tuple(process_identifier(entry.strip()))
                 for line in self.curies.data.split("\n")
                 for entry in line.strip().split(",")
             }
@@ -651,6 +654,7 @@ def subnetwork():
         <p>
         {nodes_html}
         """,
+        no_stmts_message="No statements found for the given nodes.",
     )
 
 

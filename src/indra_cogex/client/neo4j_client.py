@@ -17,7 +17,7 @@ from neo4j import GraphDatabase, Transaction, unit_of_work
 from indra_cogex.representation import Node, Relation, norm_id, \
     triple_query, triple_parameter_query
 
-__all__ = ["Neo4jClient", "autoclient"]
+__all__ = ["Neo4jClient", "autoclient", "process_identifier"]
 
 logger = logging.getLogger(__name__)
 
