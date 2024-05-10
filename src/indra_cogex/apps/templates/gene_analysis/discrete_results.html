@@ -17,7 +17,25 @@
     <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
     <script>
-        const datatablesConf = {"order": [[2, "asc"]]};
+        const datatablesConf = {
+            "order": [[2, "asc"]],
+            // CSV export, see: https://datatables.net/reference/button/csv#Examples
+            layout: {
+                topStart: {
+                    buttons: [
+                        {
+                            extend: 'csv',
+                            text: 'Copy all data',
+                            exportOptions: {
+                                modifier: {
+                                    search: 'none'
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        };
         $(document).ready(function () {
             $("#table-go").DataTable(datatablesConf);
             $("#table-reactome").DataTable(datatablesConf);
@@ -127,14 +145,6 @@
                             via the <a href="http://geneontology.org/docs/go-annotations/">Gene
                             Ontology Annotations Database</a>.
                         </p>
-                        <p>
-                            {# Download button #}
-                            <button
-                                class="btn btn-primary"
-                                onclick="download_table_as_csv('table-go');">
-                                Download <i class="fas fa-download"></i>
-                            </button>
-                        </p>
                         {{ render_table(go_results, "table-go") }}
                     </div>
                     <div class="tab-pane" id="reactome" role="tabpanel" aria-labelledby="reactome-tab">
@@ -143,14 +153,6 @@
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
                             the <a href="https://reactome.org/">Reactome</a>
                             pathway database.
-                        </p>
-                        <p>
-                            {# Download button #}
-                            <button
-                                class="btn btn-primary"
-                                onclick="download_table_as_csv('table-reactome');">
-                                Download <i class="fas fa-download"></i>
-                            </button>
                         </p>
                         {{ render_table(reactome_results, "table-reactome") }}
                     </div>
@@ -161,14 +163,6 @@
                             the <a href="https://www.wikipathways.org/">WikiPathways</a>
                             pathway database.
                         </p>
-                        <p>
-                            {# Download button #}
-                            <button
-                                class="btn btn-primary"
-                                onclick="download_table_as_csv('table-wikipathways');">
-                                Download <i class="fas fa-download"></i>
-                            </button>
-                        </p>
                         {{ render_table(wikipathways_results, "table-wikipathways") }}
                     </div>
                     <div class="tab-pane" id="hpo" role="tabpanel" aria-labelledby="hpo-tab">
@@ -176,14 +170,6 @@
                             These results are acquired by running over-representation analysis using Fisher's exact test
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to phenotypes in
                             the <a href="https://hpo.jax.org/">Human Phenotype Ontology annotation database</a>.
-                        </p>
-                        <p>
-                            {# Download button #}
-                            <button
-                                class="btn btn-primary"
-                                onclick="download_table_as_csv('table-hpo');">
-                                Download <i class="fas fa-download"></i>
-                            </button>
                         </p>
                         {{ render_table(phenotype_results, "table-hpo") }}
                     </div>
@@ -198,12 +184,6 @@
                                 one step from all entities in the INDRA Database.
                             </p>
                             <p>
-                                {# Download button #}
-                                <button
-                                    class="btn btn-primary"
-                                    onclick="download_table_as_csv('table-downstream');">
-                                    Download <i class="fas fa-download"></i>
-                                </button>
                             </p>
                             {{ render_table(indra_downstream_results, "table-downstream") }}
                         </div>
@@ -215,14 +195,6 @@
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
                                 one step from all entities in the INDRA Database.
-                            </p>
-                            <p>
-                                {# Download button #}
-                                <button
-                                    class="btn btn-primary"
-                                    onclick="download_table_as_csv('table-upstream');">
-                                    Download <i class="fas fa-download"></i>
-                                </button>
                             </p>
                             {{ render_table(indra_upstream_results, "table-upstream") }}
                         </div>

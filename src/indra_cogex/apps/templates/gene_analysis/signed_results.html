@@ -17,7 +17,25 @@
     <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
     <script>
-        const datatablesConf = {"order": [[2, "asc"]]};
+        const datatablesConf = {
+            "order": [[2, "asc"]],
+            // CSV export, see: https://datatables.net/reference/button/csv#Examples
+            layout: {
+                topStart: {
+                    buttons: [
+                        {
+                            extend: 'csv',
+                            text: 'Copy all data',
+                            exportOptions: {
+                                modifier: {
+                                    search: 'none'
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        };
         $(document).ready(function () {
             $("#table-rcr").DataTable(datatablesConf);
         });
