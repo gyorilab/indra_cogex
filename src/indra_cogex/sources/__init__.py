@@ -14,6 +14,7 @@ from .cellmarker import CellMarkerProcessor
 from .chembl import ChemblIndicationsProcessor
 from .clinicaltrials import ClinicaltrialsProcessor
 from .disgenet import DisgenetProcessor
+from .ec import HGNCEnzymeProcessor
 from .goa import GoaProcessor
 from .hpoa import HpDiseasePhenotypeProcessor, HpPhenotypeGeneProcessor
 from .indra_db import DbProcessor, EvidenceProcessor
@@ -51,7 +52,8 @@ __all__ = [
     "CellMarkerProcessor",
     "JournalPublisherProcessor",
     "DisgenetProcessor",
-    "GWASProcessor"
+    "GWASProcessor",
+    "HGNCEnzymeProcessor",
 ]
 
 processor_resolver: Resolver[Processor] = Resolver.from_subclasses(
