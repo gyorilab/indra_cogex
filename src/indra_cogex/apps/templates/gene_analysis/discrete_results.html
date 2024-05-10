@@ -18,11 +18,17 @@
     <script>
         const datatablesConf = {
             "order": [[2, "asc"]],
-            // CSV export, see: https://datatables.net/reference/button/csv#Examples
+            pageLength: 10,
             layout: {
+                // Placement of paging needs to be specified or it won't show up
+                // See: https://datatables.net/reference/feature/pageLength
                 topStart: {
+                    pageLength: {
+                        menu: [10, 25, 50, 75, 100],
+                    },
                     buttons: [
                         {
+                            // CSV export, see: https://datatables.net/reference/button/csv#Examples
                             extend: 'csv',
                             text: 'Download full table as CSV',
                             exportOptions: {
