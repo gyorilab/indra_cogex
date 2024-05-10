@@ -95,6 +95,14 @@
                     query gene set. A <i>p</i>-value is calculated by applying a binomial test to the matches and
                     non-matches.
                 </p>
+                {# Download button #}
+                <p>
+                    <button
+                        class="btn btn-primary"
+                        onclick="download_table_as_csv('table-rcr');">
+                        Download <i class="fas fa-download"></i>
+                    </button>
+                </p>
                 {{ render_table(results, "table-rcr") }}
             </div>
         </div>

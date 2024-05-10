@@ -75,6 +75,14 @@
                         INDRA downstream regulators.
                     {% endif %}
                 </p>
+                {# Download button #}
+                <p>
+                    <button
+                        class="btn btn-primary"
+                        onclick="download_table_as_csv('table-continuous');">
+                        Download <i class="fas fa-download"></i>
+                    </button>
+                </p>
                 {{ render_table(results, "table-continuous") }}
             </div>
         </div>
