@@ -88,6 +88,8 @@ def main(
     # processors)
     node_labels_to_processor_name = defaultdict(list)
     for processor_cls in _iter_resolvers():
+        if not processor_cls.importable:
+            continue
         for label in processor_cls.node_types:
             node_labels_to_processor_name[label].append(processor_cls.name)
 
