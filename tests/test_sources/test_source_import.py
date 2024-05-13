@@ -1,7 +1,7 @@
 from pathlib import Path
 import importlib
 
-from indra_cogex.sources.cli import _iter_resolvers
+from indra_cogex.sources.cli import _iter_processors
 
 
 def get_processor_classes():
@@ -31,7 +31,7 @@ def get_processor_classes():
 
 def test_source_import():
     all_subclasses = {cls.__name__ for cls in get_processor_classes()}
-    iter_resolve_classes = {cls.__name__ for cls in _iter_resolvers()}
+    iter_resolve_classes = {cls.__name__ for cls in _iter_processors()}
     ignore = {"Processor", "PyoboProcessor", "WikiDataProcessor"}
     actual = iter_resolve_classes - ignore
     expected = all_subclasses - ignore

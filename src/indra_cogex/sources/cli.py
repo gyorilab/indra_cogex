@@ -19,7 +19,7 @@ from .processor import Processor
 from ..assembly import NodeAssembler
 
 
-def _iter_resolvers() -> Iterable[Type[Processor]]:
+def _iter_processors() -> Iterable[Type[Processor]]:
     return iter(processor_resolver)
 
 
@@ -87,7 +87,7 @@ def main(
     # Check which nodes labels need to be assembled (i.e. have multiple
     # processors)
     node_labels_to_processor_name = defaultdict(list)
-    for processor_cls in _iter_resolvers():
+    for processor_cls in _iter_processors():
         if not processor_cls.importable:
             continue
         for label in processor_cls.node_types:
@@ -104,7 +104,7 @@ def main(
     config = {} if config is None else json.load(config)
     edge_paths = []
     node_assemblers = {}
-    for processor_cls in _iter_resolvers():
+    for processor_cls in _iter_processors():
         if not processor_cls.importable:
             continue
         click.secho(f"Checking {processor_cls.name}", fg="green", bold=True)
