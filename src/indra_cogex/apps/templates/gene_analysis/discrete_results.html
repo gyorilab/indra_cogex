@@ -20,12 +20,17 @@
             "order": [[2, "asc"]],
             pageLength: 10,
             layout: {
-                // Placement of paging needs to be specified or it won't show up
+                // Full documentation of layout:
+                // https://datatables.net/reference/option/layout
+                // The placement of paging needs to be specified or it won't
+                // show up at all
                 // See: https://datatables.net/reference/feature/pageLength
-                topStart: {
+                bottomStart: {
                     pageLength: {
                         menu: [10, 25, 50, 75, 100],
-                    },
+                    }
+                },
+                topStart: {
                     buttons: [
                         {
                             // CSV export, see: https://datatables.net/reference/button/csv#Examples
