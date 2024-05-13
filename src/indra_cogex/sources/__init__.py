@@ -25,7 +25,7 @@ from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
 from .pubmed import PubmedProcessor
 from .sider import SIDERSideEffectProcessor
-from .wikidata import JournalPublisherProcessor, WikiDataProcessor
+from .wikidata import JournalPublisherProcessor
 from .gwas import GWASProcessor
 
 __all__ = [
@@ -56,6 +56,4 @@ __all__ = [
     "HGNCEnzymeProcessor",
 ]
 
-processor_resolver: Resolver[Processor] = Resolver.from_subclasses(
-    Processor, skip=[WikiDataProcessor]
-)
+processor_resolver: Resolver[Processor] = Resolver.from_subclasses(Processor)
