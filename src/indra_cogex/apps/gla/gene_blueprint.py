@@ -167,7 +167,7 @@ class ContinuousForm(FlaskForm):
         elif self.species.data == "human":
             scores = get_human_scores(df)
         else:
-            raise ValueError
+            raise ValueError(f"Unknown species: {self.species.data}")
         return scores
 
 
@@ -387,7 +387,7 @@ def continuous_analysis():
                 minimum_belief=form.minimum_belief.data,
             )
         else:
-            raise ValueError
+            raise ValueError(f"Unknown source: {source}")
 
         return flask.render_template(
             "gene_analysis/continuous_results.html",

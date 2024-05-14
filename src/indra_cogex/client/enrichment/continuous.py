@@ -42,33 +42,12 @@ __all__ = [
     "gsea",
 ]
 
-GENE_SYMBOL_COLUMN_GUESSES = [
-    "gene_name",
-]
-SCORE_COLUMN_GUESSES = [
-    "log2FoldChange",
-]
-
-
-def _guess_symbol_col(df: pd.DataFrame) -> str:
-    for guess in GENE_SYMBOL_COLUMN_GUESSES:
-        if guess in df.columns:
-            return guess
-    raise ValueError(f"could not guess gene symbol column name from: {df.columns}")
-
-
-def _guess_score_col(df: pd.DataFrame) -> str:
-    for guess in SCORE_COLUMN_GUESSES:
-        if guess in df.columns:
-            return guess
-    raise ValueError(f"could not guess score column name from: {df.columns}")
-
 
 def get_rat_scores(
     path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
     read_csv_kwargs: Optional[Dict[str, Any]] = None,
-    gene_symbol_column_name: Optional[str] = None,
-    score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with rat measurements.
 
@@ -107,9 +86,9 @@ def get_rat_scores(
 
 def get_mouse_scores(
     path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
     read_csv_kwargs: Optional[Dict[str, Any]] = None,
-    gene_symbol_column_name: Optional[str] = None,
-    score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with mouse measurements.
 
@@ -148,9 +127,9 @@ def get_mouse_scores(
 
 def get_human_scores(
     path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
     read_csv_kwargs: Optional[Dict[str, Any]] = None,
-    gene_symbol_column_name: Optional[str] = None,
-    score_column_name: Optional[str] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with human measurements.
 
@@ -182,9 +161,9 @@ def get_human_scores(
 
 def _get_species_scores(
     path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
     read_csv_kwargs: Optional[Dict[str, Any]] = None,
-    gene_symbol_column_name: Optional[str] = None,
-    score_column_name: Optional[str] = None,
     *,
     prefix=None,
     func=None,
@@ -193,14 +172,10 @@ def _get_species_scores(
         df = path
     else:
         df = pd.read_csv(path, **(read_csv_kwargs or {}))
-    if gene_symbol_column_name is None:
-        gene_symbol_column_name = _guess_symbol_col(df)
-    elif gene_symbol_column_name not in df.columns:
-        raise ValueError
-    if score_column_name is None:
-        score_column_name = _guess_score_col(df)
-    elif score_column_name not in df.columns:
-        raise ValueError
+    if gene_symbol_column_name not in df.columns:
+        raise ValueError(f"no column named {gene_symbol_column_name} in input data")
+    if score_column_name not in df.columns:
+        raise ValueError(f"no column named {score_column_name} in input data")
 
     if prefix is not None and func is not None:
         mapped_gene_symbol_column_name = f"{prefix}_id"
