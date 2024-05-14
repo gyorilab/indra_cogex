@@ -35,7 +35,7 @@ from indra_cogex.sources.pubmed import issn_nlm_map_path, \
     process_mesh_xml_to_csv
 
 
-__all__ = ["JournalPublisherProcessor", "WikiDataProcessor"]
+__all__ = ["JournalPublisherProcessor"]
 
 
 logger = logging.getLogger(__name__)
@@ -70,6 +70,7 @@ JournalPublisherTuple = namedtuple(
 class WikiDataProcessor(Processor):
     """Base class for Wikidata processors"""
     name = "wikidata"
+    importable = False
     sparql_query = NotImplemented
     WIKIDATA_ENDPOINT = \
         "https://query.wikidata.org/bigdata/namespace/wdq/sparql"
@@ -111,6 +112,7 @@ class WikiDataProcessor(Processor):
 class JournalPublisherProcessor(WikiDataProcessor):
     """Processor for the Journal Publisher relations"""
     name = "journal_publisher"
+    importable = True
     journal_node_type = "Journal"
     publisher_node_type = "Publisher"
     node_types = [publisher_node_type, journal_node_type]

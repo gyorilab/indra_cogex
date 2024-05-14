@@ -50,7 +50,7 @@ def _new_iter() -> Iterable[Type[Processor]]:
 #: This patch allows for switching out the normal class resolver for
 #: a test set of resolvers
 processor_mock = mock.patch(
-    "indra_cogex.sources.cli._iter_resolvers", side_effect=_new_iter
+    "indra_cogex.sources.cli._iter_processors", side_effect=_new_iter
 )
 
 

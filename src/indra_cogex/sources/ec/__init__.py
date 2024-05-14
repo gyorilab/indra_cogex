@@ -9,7 +9,7 @@ from indra.databases.hgnc_client import enzyme_to_hgncs, hgnc_to_enzymes
 from indra.ontology.bio import bio_ontology
 
 from indra_cogex.representation import Node, Relation
-from indra_cogex.sources import Processor
+from ..processor import Processor
 
 __all__ = [
     "HGNCEnzymeProcessor",
