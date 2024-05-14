@@ -8,7 +8,7 @@ import pandas as pd
 from flask import url_for
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
-from wtforms import BooleanField, SubmitField, TextAreaField
+from wtforms import BooleanField, SubmitField, TextAreaField, StringField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
@@ -146,6 +146,18 @@ class ContinuousForm(FlaskForm):
     """A form for continuous gene set enrichment analysis."""
 
     file = file_field
+    gene_name_column = StringField(
+        "Gene Name Column",
+        description="The name of the column containing gene names (HGNC sybmols) in the "
+                    "uploaded file.",
+        validators=[DataRequired()],
+    )
+    log_fold_change_column = StringField(
+        "Log Fold Change Column",
+        description="The name of the column containing log fold change values in the "
+                    "uploaded file.",
+        validators=[DataRequired()],
+    )
     species = species_field
     permutations = permutations_field
     alpha = alpha_field
@@ -161,11 +173,23 @@ class ContinuousForm(FlaskForm):
         sep = "," if name.endswith("csv") else "\t"
         df = pd.read_csv(self.file.data, sep=sep)
         if self.species.data == "rat":
-            scores = get_rat_scores(df)
+            scores = get_rat_scores(
+                df,
+                gene_symbol_column_name=self.gene_name_column.data,
+                score_column_name=self.log_fold_change_column.data,
+            )
         elif self.species.data == "mouse":
-            scores = get_mouse_scores(df)
+            scores = get_mouse_scores(
+                df,
+                gene_symbol_column_name=self.gene_name_column.data,
+                score_column_name=self.log_fold_change_column.data,
+            )
         elif self.species.data == "human":
-            scores = get_human_scores(df)
+            scores = get_human_scores(
+                df,
+                gene_symbol_column_name=self.gene_name_column.data,
+                score_column_name=self.log_fold_change_column.data,
+            )
         else:
             raise ValueError(f"Unknown species: {self.species.data}")
         return scores
