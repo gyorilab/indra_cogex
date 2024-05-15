@@ -24,7 +24,7 @@ def get_processor_classes():
             if name.startswith("_"):
                 continue
             obj = getattr(submodule, name)
-            if isinstance(obj, type) and issubclass(obj, Processor):
+            if isinstance(obj, type) and issubclass(obj, Processor) and obj not in yielded:
                 yielded.add(obj)
                 yield obj
 
