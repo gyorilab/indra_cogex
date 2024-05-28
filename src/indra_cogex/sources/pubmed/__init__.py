@@ -213,12 +213,15 @@ class JournalProcessor(PubmedProcessor):
                 other = json.loads(other) or []
                 assert isinstance(other, list)
                 data = {
+                    # Should match journal_name in JournalPublisherProcessor
                     "name": journal_name,
                     "abbr_title": journal_abbrev,
+                    # Should match issn_l in JournalPublisherProcessor
                     "issn_l": issn_l,
                     "p_issn": p_issn,
                     "e_issn": e_issn,
-                    "issn_list:string[]": ";".join(other),
+                    # Rely on data from JournalPublisherProcessor for the issn_list
+                    # "issn_list:string[]": ";".join(other),
                 }
                 yield Node(
                     "NLM",
