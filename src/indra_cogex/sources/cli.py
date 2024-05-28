@@ -34,7 +34,7 @@ def _get_assembled_path(node_type: str) -> Path:
 @click.option(
     "--process",
     is_flag=True,
-    help="If true, builds all missing resouces.",
+    help="If true, builds all missing resources.",
 )
 @click.option(
     "--force_process",
