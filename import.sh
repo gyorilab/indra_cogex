@@ -36,6 +36,7 @@ $NEO4J_PREFIX rm -rf $NEO4J_DATA/transactions/indra
 cat $NEO4J_CONFIG/neo4j.conf | grep "dbms\.default_database"
 
 
+# The import can take significant time (4+ hours) and memory.
 python -m indra_cogex.sources --process --assemble --run_import $COGEX_SUDO_ARG
 
 $NEO4J_PREFIX neo4j start
