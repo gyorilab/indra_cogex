@@ -32,7 +32,7 @@ def reverse_causal_reasoning(
     minimum_belief: Optional[float] = None,
 ) -> pd.DataFrame:
     """Implement the Reverse Causal Reasoning algorithm from
-    :ref:`Catlett, N. L., *et al.* (2013) <ref-causal-reas-references>`.
+    :ref:`Catlett, N. L., et al. (2013) <ref-causal-reas-references>`.
 
     Parameters
     ----------
