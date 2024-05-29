@@ -42,6 +42,7 @@ edge_labels = {
     "variant_disease_association": "Variant Disease Associations",
     "variant_gene_association": "Variant Gene Associations",
     "variant_phenotype_association": "Variant Phenotype Associations",
+    "has_activity": "Enzyme Annotations",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
