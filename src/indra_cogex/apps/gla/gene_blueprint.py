@@ -349,9 +349,9 @@ def continuous_analysis():
     """Render the continuous analysis form."""
     form = ContinuousForm()
     form.file.description = """\
-    Make sure the uploaded file contains at least two columns: one with gene names with
-    the column name "gene_name" (set in the first row) and one with the log fold change
-    values with the column name "log2FoldChange" (set in the first row)."""
+    Make sure the uploaded file contains at least two columns: one with gene names and 
+    one with the values of the ranking metric. The first row od the file should contain 
+    the column names."""
     if form.validate_on_submit():
         scores = form.get_scores()
         source = form.source.data
