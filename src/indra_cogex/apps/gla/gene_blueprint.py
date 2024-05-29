@@ -153,8 +153,8 @@ class ContinuousForm(FlaskForm):
         validators=[DataRequired()],
     )
     log_fold_change_column = StringField(
-        "Log Fold Change Column",
-        description="The name of the column containing log fold change values in the "
+        "Ranking Metric Column",
+        description="The name of the column containing the ranking metric values in the "
                     "uploaded file.",
         validators=[DataRequired()],
     )
