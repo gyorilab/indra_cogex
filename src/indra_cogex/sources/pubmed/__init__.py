@@ -158,7 +158,7 @@ class PublicationProcessor(PubmedProcessor):
                 yield Node(
                     "PUBMED",
                     pmid,
-                    labels=[self.publication_node_type],
+                    labels=[PUBLICATION_NODE_TYPE],
                     data=data,
                 )
 
