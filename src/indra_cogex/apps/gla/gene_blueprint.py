@@ -148,7 +148,7 @@ class ContinuousForm(FlaskForm):
     file = file_field
     gene_name_column = StringField(
         "Gene Name Column",
-        description="The name of the column containing gene names (HGNC sybmols) in the "
+        description="The name of the column containing gene names (HGNC symbols) in the "
                     "uploaded file.",
         validators=[DataRequired()],
     )
