@@ -46,9 +46,9 @@ non-causal contextual relations including properties, ontology, and data.
 Install the `indra_cogex` package with:
 
 ```shell
-$ git clone https://github.com/bgyori/indra_cogex
-$ cd indra_cogex
-$ pip install -e .
+git clone https://github.com/bgyori/indra_cogex
+cd indra_cogex
+pip install -e .
 ```
 
 ## Build
@@ -56,8 +56,8 @@ $ pip install -e .
 Build the graph then bulk import into Neo4j with:
 
 ```shell
-$ python -m indra_cogex.sources
-$ sh import.sh
+python -m indra_cogex.sources
+sh import.sh
 ```
 
 ## Funding
