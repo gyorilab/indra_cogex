@@ -188,22 +188,23 @@ class JournalPublisherProcessor(WikiDataProcessor):
         cs_df = pd.read_excel(
             self.scopus_citescore_path, engine="openpyxl", sheet_name=0
         ).dropna(subset=["Source title"])
+
         # Set column types (if other than string)
-        cs_df["CiteScore"] = cs_df["CiteScore"].astype(float)
-        cs_df["2019-22 Citations"] = cs_df["2019-22 Citations"].astype(int)
-        cs_df["2019-22 Documents"] = cs_df["2019-22 Documents"].astype(int)
-        cs_df["% Cited"] = cs_df["% Cited"].astype(float)
-        cs_df["SNIP"] = cs_df["SNIP"].astype(float)
-        cs_df["SJR"] = cs_df["SJR"].astype(float)
+        cs_df["CiteScore"] = cs_df["CiteScore"].astype("Float64")
+        cs_df["2019-22 Citations"] = cs_df["2019-22 Citations"].astype("Int64")
+        cs_df["2019-22 Documents"] = cs_df["2019-22 Documents"].astype("Int64")
+        cs_df["% Cited"] = cs_df["% Cited"].astype("Float64")
+        cs_df["SNIP"] = cs_df["SNIP"].astype("Float64")
+        cs_df["SJR"] = cs_df["SJR"].astype("Float64")
 
         # Split the percentile column into three columns
         cs_df[["Percentile", "Rank", "Category"]] = (
             cs_df["Highest percentile"].str.split("\n", expand=True)
         )
         cs_df["Percentile"] = \
-            cs_df["Percentile"].str.replace("%", "").astype(float)
+            cs_df["Percentile"].str.replace("%", "").astype("Float64")
         # For rank, just keep the rank number (e.g. 2/80 -> 2) to allow sorting
-        cs_df["Rank"] = cs_df["Rank"].str.split("/").str[0].astype(int)
+        cs_df["Rank"] = cs_df["Rank"].str.split("/").str[0].astype("Int64")
 
         # Drop the original column
         cs_df = cs_df.drop(columns=["Highest percentile"])
