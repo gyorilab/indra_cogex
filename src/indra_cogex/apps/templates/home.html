@@ -42,7 +42,13 @@
     <div class="col" style="margin-bottom: 1em">
         {% set count, suffix = format_number(counter[key]) %}
         <span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}<br/>
-        <small>{{ label|replace(" ", "&nbsp;")|safe }}</small>
+        <small>
+            {% if label %}
+                {{ label|replace(" ", "&nbsp;")|safe }}
+            {% else %}
+                {{ key }}
+            {% endif %}
+        </small>
     </div>
 {% endmacro %}
 
