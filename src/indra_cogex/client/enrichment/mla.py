@@ -11,6 +11,7 @@ import indra.statements
 import pandas as pd
 import pyobo
 from indra.databases.hgnc_client import hgnc_to_enzymes
+from indra.ontology.bio import bio_ontology
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
@@ -67,7 +68,7 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, collect(chemical.id)
+        enzyme.id, enzyme.name, collect(chemical.id)
     UNION ALL
     MATCH
         (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
@@ -78,12 +79,18 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, collect(chemical.id)
+        enzyme.id, enzyme.name, collect(chemical.id)
     """
     )
-    for ec_curie, chebi_curies in client.query_tx(query):
+    for ec_curie, ec_name, chebi_curies in client.query_tx(query):
         ec_code = ec_curie.split(":", 1)[1]
-        rv[ec_code, pyobo.get_name("ec", ec_code)].update(
+        # There are a few cases where the name is not in the database, try to get it
+        # from the bio_ontology in those cases
+        if not ec_name:
+            name = bio_ontology.get_name("ECCODE", ec_code)
+        else:
+            name = ec_name
+        rv[ec_code, name].update(
             {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         )
 
