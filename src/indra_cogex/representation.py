@@ -23,6 +23,8 @@ from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
 from indra.statements import stmts_from_json, Statement
 
+from indra_cogex.sources.processor_util import data_validator
+
 NodeJson = Dict[str, Union[Collection[str], Dict[str, Any]]]
 RelJson = Dict[str, Union[Mapping[str, Any], Dict]]
 
@@ -36,6 +38,7 @@ class Node:
         db_id: str,
         labels: Collection[str],
         data: Optional[Mapping[str, Any]] = None,
+        validate_data: bool = False,
     ):
         """Initialize the node.
 
@@ -50,12 +53,23 @@ class Node:
             A collection of labels for the node.
         data :
             An optional data dictionary associated with the node.
+        validate_data :
+            If True, validate the data dictionary. Default: True.
         """
         if not db_ns or not db_id:
             raise ValueError("Missing namespace or ID.")
         self.db_ns = db_ns
         self.db_id = db_id
         self.labels = labels
+
+        if data is not None and validate_data:
+            for header_key, data_value in data.items():
+                if ":" in header_key:
+                    data_type = header_key.split(":")[1]
+                else:
+                    # If no data type is specified, string is assumed by Neo4j
+                    data_type = "string"
+                data_validator(data_type, data_value)
         self.data = data if data else {}
 
     @classmethod
