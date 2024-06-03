@@ -8,19 +8,23 @@ INDRA CoGEx Sources
 
    source_cli
    sources_processor
+   processor_util
    bgee
    cbioportal
    cellmarker
    chembl
    clinicaltrials
+   disgenet
+   ec
    goa
+   gwas
+   hpoa
    indra_db
    indra_ontology
    interpro
+   nih_reporter
    odinson/index
    pathways
    pubmed
    sider
-   disgenet
-   gwas
-
+   wikidata

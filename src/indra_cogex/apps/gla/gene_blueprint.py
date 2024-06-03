@@ -148,13 +148,13 @@ class ContinuousForm(FlaskForm):
     file = file_field
     gene_name_column = StringField(
         "Gene Name Column",
-        description="The name of the column containing gene names (HGNC sybmols) in the "
+        description="The name of the column containing gene names (HGNC symbols) in the "
                     "uploaded file.",
         validators=[DataRequired()],
     )
     log_fold_change_column = StringField(
-        "Log Fold Change Column",
-        description="The name of the column containing log fold change values in the "
+        "Ranking Metric Column",
+        description="The name of the column containing the ranking metric values in the "
                     "uploaded file.",
         validators=[DataRequired()],
     )
@@ -349,9 +349,9 @@ def continuous_analysis():
     """Render the continuous analysis form."""
     form = ContinuousForm()
     form.file.description = """\
-    Make sure the uploaded file contains at least two columns: one with gene names with
-    the column name "gene_name" (set in the first row) and one with the log fold change
-    values with the column name "log2FoldChange" (set in the first row)."""
+    Make sure the uploaded file contains at least two columns: one with gene names and 
+    one with the values of the ranking metric. The first row od the file should contain 
+    the column names."""
     if form.validate_on_submit():
         scores = form.get_scores()
         source = form.source.data

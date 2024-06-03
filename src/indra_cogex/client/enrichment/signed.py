@@ -31,7 +31,8 @@ def reverse_causal_reasoning(
     minimum_evidence_count: Optional[int] = None,
     minimum_belief: Optional[float] = None,
 ) -> pd.DataFrame:
-    """Implement the Reverse Causal Reasoning algorithm from [catlett2013]_.
+    """Implement the Reverse Causal Reasoning algorithm from
+    :ref:`Catlett, N. L., et al. (2013) <ref-causal-reas-references>`.
 
     Parameters
     ----------
@@ -62,9 +63,14 @@ def reverse_causal_reasoning(
     :
         A pandas DataFrame with results for each entity in the graph database
 
-    .. [catlett2013] Catlett, N. L., *et al.* (2013). `Reverse causal reasoning: applying
-       qualitative causal knowledge to the interpretation of high-throughput data
-       <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14**(1), 340.
+
+    .. _ref-causal-reas-references:
+
+    References
+    ----------
+    Catlett, N. L., *et al.* (2013): `Reverse causal reasoning: applying qualitative
+    causal knowledge to the interpretation of high-throughput data
+    <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14** (1), 340.
     """
     if alpha is None:
         alpha = 0.05

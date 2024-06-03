@@ -12,11 +12,11 @@ page has a really strict timeout so if nothing happens, open the developer
 console and check for 429 errors. If you see them, you have to wait at least
 5 minutes before trying again.
 
-Fixme: scopus only allows 1000 journals to be exported at a time,
- i.e. if the list of journals is longer than 1000, only the first 1000
- journals will be exported. There is no paging mechanism to get the rest of
- the journals beyond the first 1000.
 """
+# Fixme: scopus only allows 1000 journals to be exported at a time,
+#  i.e. if the list of journals is longer than 1000, only the first 1000
+#  journals will be exported. There is no paging mechanism to get the rest of
+#  the journals beyond the first 1000.
 
 import csv
 import gzip
