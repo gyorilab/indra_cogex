@@ -31,7 +31,7 @@ class Neo4jClient:
         The bolt URL to the neo4j instance to override INDRA_NEO4J_URL
         set as an environment variable or set in the INDRA config file.
     auth :
-        A tuple consisting of the user name and password for the neo4j instance to
+        A tuple consisting of the username and password for the neo4j instance to
         override INDRA_NEO4J_USER and
         INDRA_NEO4J_PASSWORD set as environment variables or set in the INDRA config file.
     """
