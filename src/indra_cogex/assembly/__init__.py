@@ -81,7 +81,7 @@ class NodeAssembler:
                     self.conflicts.append(Conflict(data_key, previous_val, data_val))
                 else:
                     data[data_key] = data_val
-        return Node(db_ns, db_id, sorted(labels), data)
+        return Node(db_ns, db_id, sorted(labels), data, validate_data=True)
 
 
 class Conflict:
