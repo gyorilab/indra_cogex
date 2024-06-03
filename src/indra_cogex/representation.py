@@ -23,8 +23,6 @@ from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
 from indra.statements import stmts_from_json, Statement
 
-from indra_cogex.sources.processor_util import data_validator
-
 NodeJson = Dict[str, Union[Collection[str], Dict[str, Any]]]
 RelJson = Dict[str, Union[Mapping[str, Any], Dict]]
 
@@ -63,6 +61,7 @@ class Node:
         self.labels = labels
 
         if data is not None and validate_data:
+            from indra_cogex.sources.processor_util import data_validator
             for header_key, data_value in data.items():
                 if ":" in header_key:
                     data_type = header_key.split(":")[1]
