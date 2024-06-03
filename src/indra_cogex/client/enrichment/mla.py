@@ -9,7 +9,6 @@ from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import indra.statements
 import pandas as pd
-import pyobo
 from indra.databases.hgnc_client import hgnc_to_enzymes
 from indra.ontology.bio import bio_ontology
 from indra.statements import stmts_from_json
@@ -111,7 +110,8 @@ def get_metabolomics_sets(
         hgnc_id = hgnc_curie.replace("hgnc:", "", 1)
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         for ec_code in hgnc_to_enzymes.get(hgnc_id, []):
-            rv[ec_code, pyobo.get_name("ec", ec_code)].update(chebi_ids)
+            ec_name = bio_ontology.get_name("ECCODE", ec_code)
+            rv[ec_code, ec_name].update(chebi_ids)
     rv = dict(rv)
     print(f"got {len(rv)} enzymes to {_sum_values(rv)} chemicals")
     return rv
