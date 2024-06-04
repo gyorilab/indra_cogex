@@ -109,3 +109,8 @@ else:
         "and CLARE_PUSHER_CLUSTER."
     )
     pusher_app = None
+
+PYOBO_RESOURCE_FILE_VERSIONS = {
+    "mgi": "6.23",
+    "rgd": "2024-05-31",
+}
