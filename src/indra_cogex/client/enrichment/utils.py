@@ -752,15 +752,23 @@ def get_negative_stmt_sets(
     )
 
 
-def build_caches(force_refresh: bool = False):
+def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = False):
     """Call each gene set construction to build up cache
 
     Parameters
     ----------
     force_refresh :
-        If True, the cache will be ignored and the query will be run again.
-        The current results will overwrite any existing cache.
+        If True, the current cache will be ignored and the queries to get the
+        caches will be run again. The current results will overwrite any existing
+        cache. Default: False.
+    lazy_loading_ontology :
+        If True, the bioontology will be loaded lazily. If False, the bioontology
+        will be loaded immediately. The former is useful for testing and rapid development.
+        The latter is useful for production. Default: False.
     """
+    if not lazy_loading_ontology:
+        logger.info("Warming up bioontology...")
+        bio_ontology.initialize()
     logger.info("Building up caches for gene set enrichment analysis...")
     get_go(force_cache_refresh=force_refresh)
     get_reactome(force_cache_refresh=force_refresh)
