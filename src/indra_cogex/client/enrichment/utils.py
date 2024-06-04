@@ -22,6 +22,7 @@ from typing import (
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
+from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.representation import norm_id
@@ -752,6 +753,20 @@ def get_negative_stmt_sets(
     )
 
 
+def get_mouse_cache(force_cache_refresh: bool = False):
+    import pyobo
+    _ = pyobo.get_name_id_mapping(
+        "mgi", force=force_cache_refresh, version=PYOBO_RESOURCE_FILE_VERSIONS.get("mgi")
+    )
+
+
+def get_rat_cache(force_cache_refresh: bool = False):
+    import pyobo
+    _ = pyobo.get_name_id_mapping(
+        "rgd", force=force_cache_refresh, version=PYOBO_RESOURCE_FILE_VERSIONS.get("rgd")
+    )
+
+
 def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = False):
     """Call each gene set construction to build up cache
 
@@ -785,6 +800,11 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     )
     get_negative_stmt_sets(force_cache_refresh=force_refresh)
     get_positive_stmt_sets(force_cache_refresh=force_refresh)
+    # Build the pyobo name-id mapping caches. Skip force refresh since the data
+    # isn't from CoGEx, rather change the version to download a new cache.
+    # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
+    get_mouse_cache()
+    get_rat_cache()
     logger.info("Finished building caches for gene set enrichment analysis.")
 
 
