@@ -423,6 +423,8 @@ def validate_headers(headers: Iterable[str]) -> None:
             # Strip trailing '[]' for array types
             if dtype.endswith("[]"):
                 dtype = dtype[:-2]
+                if not dtype:
+                    raise ValueError(f"Data type value for header '{header}' is empty!")
 
             if dtype not in NEO4J_DATA_TYPES:
                 raise TypeError(
