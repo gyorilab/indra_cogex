@@ -35,7 +35,7 @@ class HGNCEnzymeProcessor(Processor):
 
         self.enzymes = {}
         for enzyme_id in enzyme_to_hgncs:
-            stripped_id = _strip_ec_code(enzyme_id)
+            stripped_id = strip_ec_code(enzyme_id)
             self.enzymes[enzyme_id] = Node.standardized(
                 db_ns="ec-code",
                 db_id=stripped_id,
@@ -64,7 +64,7 @@ class HGNCEnzymeProcessor(Processor):
                 )
 
 
-def _strip_ec_code(code: str) -> str:
+def strip_ec_code(code: str) -> str:
     """Strips off trailing dashes from ec codes"""
     # Continue to strip off '.-' until name does not end with '.-'
     while code.endswith(".-"):
