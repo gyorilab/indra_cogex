@@ -236,7 +236,7 @@ class JournalProcessor(PubmedProcessor):
             reader = csv.reader(fh)
             # Skip header
             next(reader)
-            # The file has more than 3500000 lines - a batch size of 1M is
+            # The file has more than 37M lines - a batch size of 1M is
             # reasonable
             batch_size = 1_000_000
             for batch in batch_iter(
