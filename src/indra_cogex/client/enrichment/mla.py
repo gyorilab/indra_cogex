@@ -52,6 +52,7 @@ def get_metabolomics_sets(
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
+    from indra_cogex.sources.ec import strip_ec_code
     rv = defaultdict(set)
 
     evidence_line = minimum_evidence_helper(minimum_evidence_count)
@@ -109,7 +110,8 @@ def get_metabolomics_sets(
     for hgnc_curie, chebi_curies in client.query_tx(query):
         hgnc_id = hgnc_curie.replace("hgnc:", "", 1)
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
-        for ec_code in hgnc_to_enzymes.get(hgnc_id, []):
+        for raw_ec_code in hgnc_to_enzymes.get(hgnc_id, []):
+            ec_code = strip_ec_code(raw_ec_code)
             ec_name = bio_ontology.get_name("ECCODE", ec_code)
             rv[ec_code, ec_name].update(chebi_ids)
     rv = dict(rv)
