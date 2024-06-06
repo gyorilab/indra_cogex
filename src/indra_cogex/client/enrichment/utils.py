@@ -803,8 +803,10 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     # Build the pyobo name-id mapping caches. Skip force refresh since the data
     # isn't from CoGEx, rather change the version to download a new cache.
     # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
-    get_mouse_cache()
-    get_rat_cache()
+    # NOTE: This will build all files for the pyobo caches, but we only need names.tsv
+    # Instead, we copy names.tsv files during docker build for each resource.
+    # get_mouse_cache()
+    # get_rat_cache()
     logger.info("Finished building caches for gene set enrichment analysis.")
 
 
