@@ -9,8 +9,9 @@ ARG RGD_VERSION
 RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea] && \
     python -m indra.ontology.bio build
 
-# Symlink the directories for the caches to this directory then run the docker build
-# Copy the pre-built pyobo caches for mouse (mgi) and rat (rgd) for pyobo
+# Copy the names.tsv files for the pre-built pyobo caches to this directory as
+# mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
+# full cache build process for these resources (which can take hours).
 RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
     mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
 COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
