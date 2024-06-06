@@ -6,6 +6,7 @@ INDRA CoGEx |release| Documentation
    :name: start
 
    license.rst
+   enrichment_set_analysis.rst
    modules/index
 
 Indices and Tables

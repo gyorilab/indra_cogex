@@ -64,7 +64,7 @@ class DbProcessor(Processor):
         ----------
         dir_path :
             The path to the directory containing unique and grounded
-            statements as a *.tsv.gz file, source counts as a pickle file and
+            statements as a \*.tsv.gz file, source counts as a pickle file and
             belief scores as a pickle file.
         """
         if dir_path is None:

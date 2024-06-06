@@ -1334,7 +1334,8 @@ def get_mutated_genes(cell_line: Tuple[str, str], *, client: Neo4jClient) -> Lis
     """Return the list of genes that are mutated in a given cell line.
 
     Parameters
-    client:
+    ----------
+    client :
         The Neo4j client.
     cell_line :
         The cell line to query.

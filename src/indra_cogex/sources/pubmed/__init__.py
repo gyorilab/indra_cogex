@@ -271,13 +271,12 @@ def extract_info_from_medline_xml(
     Yields
     ------
     :
-        Tuple of (
-            PMID,
-            year,
-            MeSH annotations,
-            journal info,
-            publication type tags
-        )
+        Tuple of:
+            - PMID,
+            - year,
+            - MeSH annotations,
+            - journal info,
+            - publication type tags
     """
     tree = etree.parse(xml_path)
 
