@@ -6,7 +6,6 @@ INDRA CoGEx modules reference
 .. toctree::
    :maxdepth: 4
 
-   apps/index
    assembly/index
    client/index
    indexing/index

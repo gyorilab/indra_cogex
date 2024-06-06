@@ -6,18 +6,46 @@
     {{ super() }}
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
     <link
+            href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
-            href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
     />
 {% endblock %}
 
 {% block scripts %}
     {{ super() }}
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
-    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
-        const datatablesConf = {"order": [[2, "asc"]]};
+        const datatablesConf = {
+            "order": [[2, "asc"]],
+            pageLength: 10,
+            layout: {
+                // Full documentation of layout:
+                // https://datatables.net/reference/option/layout
+                // The placement of paging needs to be specified or it won't
+                // show up at all
+                // See: https://datatables.net/reference/feature/pageLength
+                bottomStart: {
+                    pageLength: {
+                        menu: [10, 25, 50, 75, 100],
+                    }
+                },
+                topStart: {
+                    buttons: [
+                        {
+                            // CSV export, see: https://datatables.net/reference/button/csv#Examples
+                            extend: 'csv',
+                            text: 'Download full table as CSV',
+                            exportOptions: {
+                                modifier: {
+                                    search: 'none'
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        };
         $(document).ready(function () {
             $("#table-continuous").DataTable(datatablesConf);
         });
@@ -25,7 +53,7 @@
 {% endblock %}
 
 {% macro render_table(df, table_id) -%}
-    <table class="table table-hover table-striped" id="{{ table_id }}">
+    <table class="table table-hover table-striped" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
             <th scope="col">CURIE</th>
