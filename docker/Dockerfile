@@ -11,10 +11,10 @@ RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[w
 
 # Symlink the directories for the caches to this directory then run the docker build
 # Copy the pre-built pyobo caches for mouse (mgi) and rat (rgd) for pyobo
-COPY mgi/metadata.json /root/.data/pyobo/raw/mgi/
-COPY mgi/${MGI_VERSION} /root/.data/pyobo/raw/mgi/${MGI_VERSION}
-COPY rgd/metadata.json /root/.data/pyobo/raw/rgd/
-COPY rgd/${RGD_VERSION} /root/.data/pyobo/raw/rgd/${RGD_VERSION}
+RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
+    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
+COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
+COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
 
 RUN python -m indra_cogex.client.enrichment.utils --force
 
