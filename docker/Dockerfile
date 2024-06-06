@@ -17,6 +17,7 @@ RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
 COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
 COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
 
+# Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
 
 ENTRYPOINT python -m indra_cogex.apps.cli --port 5000 --host "0.0.0.0" --with-gunicorn --workers 4 --timeout 300
