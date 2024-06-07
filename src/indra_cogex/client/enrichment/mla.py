@@ -52,7 +52,15 @@ def get_metabolomics_sets(
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
-    from indra_cogex.sources.ec import strip_ec_code
+    # Create local helper function instead of importing this from the sources/ec module
+    # to avoid importing the whole ec module
+    def _strip_ec_code(raw_code: str) -> str:
+        """Strips off trailing dashes from ec codes"""
+        # Continue to strip off '.-' until name does not end with '.-'
+        while raw_code.endswith(".-"):
+            raw_code = raw_code[:-2]
+        return raw_code
+
     rv = defaultdict(set)
 
     evidence_line = minimum_evidence_helper(minimum_evidence_count)
@@ -111,7 +119,7 @@ def get_metabolomics_sets(
         hgnc_id = hgnc_curie.replace("hgnc:", "", 1)
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         for raw_ec_code in hgnc_to_enzymes.get(hgnc_id, []):
-            ec_code = strip_ec_code(raw_ec_code)
+            ec_code = _strip_ec_code(raw_ec_code)
             ec_name = bio_ontology.get_name("ECCODE", ec_code)
             rv[ec_code, ec_name].update(chebi_ids)
     rv = dict(rv)
