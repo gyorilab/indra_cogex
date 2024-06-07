@@ -788,6 +788,7 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     get_go(force_cache_refresh=force_refresh)
     get_reactome(force_cache_refresh=force_refresh)
     get_wikipathways(force_cache_refresh=force_refresh)
+    get_phenotype_gene_sets(force_cache_refresh=force_refresh)
     get_entity_to_targets(
         minimum_evidence_count=1,
         minimum_belief=0.0,
