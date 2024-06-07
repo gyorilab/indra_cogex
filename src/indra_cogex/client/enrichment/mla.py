@@ -9,8 +9,8 @@ from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 import indra.statements
 import pandas as pd
-import pyobo
 from indra.databases.hgnc_client import hgnc_to_enzymes
+from indra.ontology.bio import bio_ontology
 from indra.statements import stmts_from_json
 
 from indra_cogex.client.enrichment.discrete import _do_ora
@@ -52,6 +52,7 @@ def get_metabolomics_sets(
     -------
     : A dictionary of EC codes to set of ChEBI identifiers
     """
+    from indra_cogex.sources.ec import strip_ec_code
     rv = defaultdict(set)
 
     evidence_line = minimum_evidence_helper(minimum_evidence_count)
@@ -67,7 +68,7 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, collect(chemical.id)
+        enzyme.id, enzyme.name, collect(chemical.id)
     UNION ALL
     MATCH
         (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
@@ -78,12 +79,18 @@ def get_metabolomics_sets(
         {evidence_line}
         {belief_line}
     RETURN
-        enzyme.id, collect(chemical.id)
+        enzyme.id, enzyme.name, collect(chemical.id)
     """
     )
-    for ec_curie, chebi_curies in client.query_tx(query):
+    for ec_curie, ec_name, chebi_curies in client.query_tx(query):
         ec_code = ec_curie.split(":", 1)[1]
-        rv[ec_code, pyobo.get_name("ec", ec_code)].update(
+        # There are a few cases where the name is not in the database, try to get it
+        # from the bio_ontology in those cases
+        if not ec_name:
+            name = bio_ontology.get_name("ECCODE", ec_code)
+        else:
+            name = ec_name
+        rv[ec_code, name].update(
             {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
         )
 
@@ -103,8 +110,10 @@ def get_metabolomics_sets(
     for hgnc_curie, chebi_curies in client.query_tx(query):
         hgnc_id = hgnc_curie.replace("hgnc:", "", 1)
         chebi_ids = {chebi_curie.split(":", 1)[1] for chebi_curie in chebi_curies}
-        for ec_code in hgnc_to_enzymes.get(hgnc_id, []):
-            rv[ec_code, pyobo.get_name("ec", ec_code)].update(chebi_ids)
+        for raw_ec_code in hgnc_to_enzymes.get(hgnc_id, []):
+            ec_code = strip_ec_code(raw_ec_code)
+            ec_name = bio_ontology.get_name("ECCODE", ec_code)
+            rv[ec_code, ec_name].update(chebi_ids)
     rv = dict(rv)
     print(f"got {len(rv)} enzymes to {_sum_values(rv)} chemicals")
     return rv

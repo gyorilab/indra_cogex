@@ -22,6 +22,7 @@ from typing import (
 import pystow
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
+from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.representation import norm_id
@@ -61,6 +62,7 @@ def collect_gene_sets(
     background_gene_ids: Optional[Iterable[str]] = None,
     include_ontology_children: bool = False,
     cache_file: Optional[Path] = None,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Collect gene sets based on the given query.
 
@@ -78,6 +80,9 @@ def collect_gene_sets(
         child terms using the indra ontology
     cache_file :
         The path to the cache file.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        The current results will overwrite any existing cache.
 
     Returns
     -------
@@ -85,13 +90,22 @@ def collect_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each queried
         item and whose values are sets of HGNC gene identifiers (as strings)
     """
-    # If we are using caching and already have the cache loaded in memory
-    if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
+    # If we are using caching and already have the cache loaded in memory and
+    # we're not forcing a refresh
+    if (
+            cache_file is not None and
+            not force_cache_refresh and
+            cache_file.as_posix() in GENE_SET_CACHE
+    ):
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         res = GENE_SET_CACHE[cache_file.as_posix()]
     # If we are using caching but it's not in memory yet so we need to load
-    # it from a file
-    elif cache_file is not None and cache_file.exists():
+    # it from a file and we're not forcing a refresh
+    elif (
+            cache_file is not None and
+            not force_cache_refresh and
+            cache_file.exists()
+    ):
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             res = pickle.load(fh)
@@ -162,6 +176,7 @@ def collect_genes_with_confidence(
     cache_file: Optional[Path] = None,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Collect gene sets based on the given query.
 
@@ -177,6 +192,9 @@ def collect_genes_with_confidence(
         to query multiple times.
     client :
         The Neo4j client.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        The current results will overwrite any existing cache.
 
     Returns
     -------
@@ -187,12 +205,19 @@ def collect_genes_with_confidence(
         the given HGNC gene.
     """
     # If we are using caching and already have the cache loaded in memory
-    if cache_file is not None and cache_file.as_posix() in GENE_SET_CACHE:
+    if (
+            cache_file is not None and
+            not force_cache_refresh and
+            cache_file.as_posix() in GENE_SET_CACHE):
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         res = GENE_SET_CACHE[cache_file.as_posix()]
     # If we are using caching but it's not in memory yet so we need to load
     # it from a file
-    elif cache_file is not None and cache_file.exists():
+    elif (
+            cache_file is not None and
+            not force_cache_refresh and
+            cache_file.exists()
+    ):
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
             curie_to_hgnc_ids = pickle.load(fh)
@@ -259,6 +284,7 @@ def get_go(
     *,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
@@ -269,6 +295,9 @@ def get_go(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        The current results will overwrite any existing cache.
 
     Returns
     -------
@@ -289,12 +318,16 @@ def get_go(
         cache_file=GO_GENE_SET_PATH,
         background_gene_ids=background_gene_ids,
         include_ontology_children=True,
+        force_cache_refresh=force_cache_refresh,
     )
 
 
 @autoclient()
 def get_wikipathways(
-    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    force_cache_refresh: bool = False,
+    client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -305,6 +338,9 @@ def get_wikipathways(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        Any existing cache will be overwritten.
 
     Returns
     -------
@@ -325,12 +361,16 @@ def get_wikipathways(
         query=query,
         cache_file=WIKIPATHWAYS_GENE_SET_PATH,
         background_gene_ids=background_gene_ids,
+        force_cache_refresh=force_cache_refresh,
     )
 
 
 @autoclient()
 def get_reactome(
-    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    force_cache_refresh: bool = False,
+    client: Neo4jClient,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -341,6 +381,8 @@ def get_reactome(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
 
     Returns
     -------
@@ -361,12 +403,16 @@ def get_reactome(
         query=query,
         cache_file=REACTOME_GENE_SETS_PATH,
         background_gene_ids=background_gene_ids,
+        force_cache_refresh=force_cache_refresh,
     )
 
 
 @autoclient()
 def get_phenotype_gene_sets(
-    *, background_gene_ids: Optional[Iterable[str]] = None, client: Neo4jClient
+    *,
+    background_gene_ids: Optional[Iterable[str]] = None,
+    force_cache_refresh: bool = False,
+    client: Neo4jClient
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
@@ -377,6 +423,9 @@ def get_phenotype_gene_sets(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        Any existing cache will be overwritten.
 
     Returns
     -------
@@ -397,6 +446,7 @@ def get_phenotype_gene_sets(
         query=query,
         cache_file=HPO_GENE_SETS_PATH,
         background_gene_ids=background_gene_ids,
+        force_cache_refresh=force_cache_refresh,
     )
 
 
@@ -427,6 +477,7 @@ def get_entity_to_targets(
     background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that it regulates.
@@ -444,6 +495,9 @@ def get_entity_to_targets(
     minimum_belief :
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        Any existing cache will be overwritten.
 
     Returns
     -------
@@ -470,6 +524,7 @@ def get_entity_to_targets(
         query=query,
         cache_file=TO_TARGETS_GENE_SETS_PATH,
         background_gene_ids=background_gene_ids,
+        force_cache_refresh=force_cache_refresh
     )
     return filter_gene_set_confidences(
         genes_with_confidence,
@@ -485,6 +540,7 @@ def get_entity_to_regulators(
     background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     human genes that are causally upstream of it.
@@ -502,6 +558,9 @@ def get_entity_to_regulators(
     minimum_belief :
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        Any existing cache will be overwritten.
 
     Returns
     -------
@@ -528,6 +587,7 @@ def get_entity_to_regulators(
         query=query,
         cache_file=TO_REGULATORS_GENE_SETS_PATH,
         background_gene_ids=background_gene_ids,
+        force_cache_refresh=force_cache_refresh,
     )
     return filter_gene_set_confidences(
         genes_with_confidence,
@@ -602,6 +662,7 @@ def get_positive_stmt_sets(
     background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     entities that are causally downstream of human genes via an "activates"
@@ -620,6 +681,9 @@ def get_positive_stmt_sets(
     minimum_belief :
         The minimum belief for a relationship.
         Defaults to 0.0 (i.e., cutoff not applied).
+    force_cache_refresh
+        If True, the cache will be ignored and the query will be run again.
+        The current results will overwrite any existing cache.
 
     Returns
     -------
@@ -633,6 +697,7 @@ def get_positive_stmt_sets(
             client=client,
             cache_file=POSITIVES_GENE_SETS_PATH,
             background_gene_ids=background_gene_ids,
+            force_cache_refresh=force_cache_refresh,
         ),
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
@@ -646,6 +711,7 @@ def get_negative_stmt_sets(
     background_gene_ids: Optional[Iterable[str]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
+    force_cache_refresh: bool = False,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get a mapping from each entity in the INDRA database to the set of
     entities that are causally downstream of human genes via an "inhibits"
@@ -660,10 +726,13 @@ def get_negative_stmt_sets(
         given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
         The minimum number of evidences for a relationship.
-        Defaults to 1 (i.e., cutoff not applied.
+        Defaults to 1 (i.e., cutoff not applied).
     minimum_belief :
         The minimum belief for a relationship.
         Defaults to 0.0 (i.e., cutoff not applied).
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+        The current results will overwrite any existing cache.
 
     Returns
     -------
@@ -677,20 +746,79 @@ def get_negative_stmt_sets(
             client=client,
             cache_file=NEGATIVES_GENE_SETS_PATH,
             background_gene_ids=background_gene_ids,
+            force_cache_refresh=force_cache_refresh,
         ),
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
 
 
-def build_caches():
-    """Call each gene set constuction to build up cache,"""
+def get_mouse_cache(force_cache_refresh: bool = False):
+    import pyobo
+    _ = pyobo.get_name_id_mapping(
+        "mgi", force=force_cache_refresh, version=PYOBO_RESOURCE_FILE_VERSIONS.get("mgi")
+    )
+
+
+def get_rat_cache(force_cache_refresh: bool = False):
+    import pyobo
+    _ = pyobo.get_name_id_mapping(
+        "rgd", force=force_cache_refresh, version=PYOBO_RESOURCE_FILE_VERSIONS.get("rgd")
+    )
+
+
+def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = False):
+    """Call each gene set construction to build up cache
+
+    Parameters
+    ----------
+    force_refresh :
+        If True, the current cache will be ignored and the queries to get the
+        caches will be run again. The current results will overwrite any existing
+        cache. Default: False.
+    lazy_loading_ontology :
+        If True, the bioontology will be loaded lazily. If False, the bioontology
+        will be loaded immediately. The former is useful for testing and rapid development.
+        The latter is useful for production. Default: False.
+    """
+    if not lazy_loading_ontology:
+        logger.info("Warming up bioontology...")
+        bio_ontology.initialize()
     logger.info("Building up caches for gene set enrichment analysis...")
-    get_go()
-    get_reactome()
-    get_wikipathways()
-    get_entity_to_targets(minimum_evidence_count=1, minimum_belief=0.0)
-    get_entity_to_regulators(minimum_evidence_count=1, minimum_belief=0.0)
-    get_negative_stmt_sets()
-    get_positive_stmt_sets()
+    get_go(force_cache_refresh=force_refresh)
+    get_reactome(force_cache_refresh=force_refresh)
+    get_wikipathways(force_cache_refresh=force_refresh)
+    get_entity_to_targets(
+        minimum_evidence_count=1,
+        minimum_belief=0.0,
+        force_cache_refresh=force_refresh
+    )
+    get_entity_to_regulators(
+        minimum_evidence_count=1,
+        minimum_belief=0.0,
+        force_cache_refresh=force_refresh
+    )
+    get_negative_stmt_sets(force_cache_refresh=force_refresh)
+    get_positive_stmt_sets(force_cache_refresh=force_refresh)
+    # Build the pyobo name-id mapping caches. Skip force refresh since the data
+    # isn't from CoGEx, rather change the version to download a new cache.
+    # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
+    # NOTE: This will build all files for the pyobo caches, but we only need names.tsv
+    # Instead, we copy names.tsv files during docker build for each resource.
+    # get_mouse_cache()
+    # get_rat_cache()
     logger.info("Finished building caches for gene set enrichment analysis.")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Build caches for gene set enrichment analysis."
+    )
+    parser.add_argument(
+        "-f", "--force-refresh",
+        action="store_true",
+        help="Force a refresh of the cache.",
+    )
+    args = parser.parse_args()
+    build_caches(force_refresh=args.force_refresh)

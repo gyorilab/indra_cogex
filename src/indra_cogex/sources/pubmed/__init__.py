@@ -1,3 +1,15 @@
+"""
+This module provides processors for PubMed data.
+
+Processors:
+    - PubmedProcessor: Base class for PubMed processors. This processor should not be
+    used directly.
+    - PublicationProcessor: Extracts publication nodes and relations between
+    publications and MeSH terms.
+    - JournalProcessor: Extracts journal nodes and relations between publications
+    and journals.
+"""
+
 import csv
 import gzip
 import json
@@ -27,13 +39,19 @@ logger = logging.getLogger(__name__)
 
 pubmed_base_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/"
 pubmed_update_url = "https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/"
+PUBLICATION_NODE_TYPE = "Publication"
+JOURNAL_NODE_TYPE = "Journal"
+
+
+__all__ = [
+    "PublicationProcessor",
+    "JournalProcessor",
+]
 
 
 class PubmedProcessor(Processor):
+    importable = False
     name = "pubmed"
-    publication_node_type = "Publication"
-    journal_node_type = "Journal"
-    node_types = [publication_node_type, journal_node_type]
 
     def __init__(self):
         # Maps MeSH terms to PMIDs
@@ -47,17 +65,61 @@ class PubmedProcessor(Processor):
         # Maps PMIDs to other text reference IDs
         self.text_refs_path = text_refs_fname
 
+    def __init_subclass__(cls, **kwargs):
+        # Modify the module path to include the name of this processor
+        cls.module = cls.module.module(cls.name)
+
+        # Now update paths for the node and relation data
+        cls.directory = cls.module.base
+        # These are nodes directly in the neo4j encoding
+        cls.nodes_path = cls.module.join(name="nodes.tsv.gz")
+        # These are nodes in the original INDRA-oriented representation
+        # needed for assembly
+        cls.nodes_indra_path = cls.module.join(name="nodes.pkl")
+        cls.edges_path = cls.module.join(name="edges.tsv.gz")
+
     def get_nodes(self) -> Iterable[Node]:
+        # Ensure cached files exist
         process_mesh_xml_to_csv(
             mesh_pmid_fpath=self.mesh_pmid_path,
             pmid_year_types_fpath=self.pmid_year_types_path,
             pmid_nlm_fpath=self.pmid_nlm_path,
             journal_info_fpath=self.journal_info_path,
         )
-        yield from self._yield_publication_nodes()
-        yield from self._yield_journal_nodes()
+        yield from self._get_nodes()
 
-    def _yield_publication_nodes(self) -> Iterable[Node]:
+    def get_relations(self) -> Iterable[List[Relation]]:
+        # Ensure cached files exist
+        process_mesh_xml_to_csv(
+            mesh_pmid_fpath=self.mesh_pmid_path,
+            pmid_year_types_fpath=self.pmid_year_types_path,
+            pmid_nlm_fpath=self.pmid_nlm_path,
+            journal_info_fpath=self.journal_info_path,
+        )
+        yield from self._get_relations()
+
+    def _dump_edges(self) -> Path:
+        # This overrides the default implementation in Processor because
+        # we want to process relations in batches
+        for bidx, batch in enumerate(self.get_relations()):
+            logger.info(f"Dumping relations batch {bidx}")
+            sample_path = None
+            write_mode = "at"
+            if bidx == 0:
+                sample_path = self.module.join(name="edges_sample.tsv")
+                write_mode = "wt"
+            edges_path = self._dump_edges_to_path(
+                batch, self.edges_path, sample_path, write_mode
+            )
+        return edges_path
+
+
+class PublicationProcessor(PubmedProcessor):
+    importable = True
+    name = "publication"
+    node_types = [PUBLICATION_NODE_TYPE]
+
+    def _get_nodes(self) -> Iterable[Node]:
         logger.info("Loading PMID year info from %s" % self.pmid_year_types_path)
         with gzip.open(self.pmid_year_types_path, "rt") as fh:
             pmid_years_pubtypes = {
@@ -96,58 +158,11 @@ class PubmedProcessor(Processor):
                 yield Node(
                     "PUBMED",
                     pmid,
-                    labels=[self.publication_node_type],
+                    labels=[PUBLICATION_NODE_TYPE],
                     data=data,
                 )
 
-    def _yield_journal_nodes(self) -> Iterable[Node]:
-        # Load the journal info
-        logger.info("Loading journal info from %s" % self.journal_info_path)
-        with gzip.open(self.journal_info_path, "rt") as fh:
-            reader = csv.reader(fh, delimiter="\t")
-            next(reader)  # skip header
-            for (
-                    nlm_id,
-                    journal_name,
-                    journal_abbrev,
-                    issn,
-                    issn_l,
-                    p_issn,
-                    e_issn,
-                    other
-            ) in reader:
-                other = json.loads(other) or []
-                assert isinstance(other, list)
-                data = {
-                    "title": journal_name,
-                    "abbr_title": journal_abbrev,
-                    "issn_l": issn_l,
-                    "p_issn": p_issn,
-                    "e_issn": e_issn,
-                    "alternate_issn:string[]": ";".join(other),
-                }
-                yield Node(
-                    "NLM",
-                    nlm_id,
-                    labels=[self.journal_node_type],
-                    data=data,
-                )
-
-    def get_relations(self) -> Iterable[List[Relation]]:
-        # Ensure cached files exist
-        # Todo: Add force option to download files?
-        process_mesh_xml_to_csv(
-            mesh_pmid_fpath=self.mesh_pmid_path,
-            pmid_year_types_fpath=self.pmid_year_types_path,
-            pmid_nlm_fpath=self.pmid_nlm_path,
-            journal_info_fpath=self.journal_info_path,
-        )
-        logger.info("Generating mesh-pmid relations")
-        yield from self._yield_mesh_pmid_relations()
-        logger.info("Generating pmid-journal relations")
-        yield from self._yield_pmid_journal_relations()
-
-    def _yield_mesh_pmid_relations(self) -> Iterable[List[Relation]]:
+    def _get_relations(self) -> Iterable[List[Relation]]:
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
@@ -173,13 +188,55 @@ class PubmedProcessor(Processor):
                     )
                 yield relations_batch
 
-    def _yield_pmid_journal_relations(self) -> Iterable[List[Relation]]:
+
+class JournalProcessor(PubmedProcessor):
+    importable = True
+    name = "journal"
+    node_types = [JOURNAL_NODE_TYPE]
+
+    def _get_nodes(self) -> Iterable[Node]:
+        # Load the journal info
+        logger.info("Loading journal info from %s" % self.journal_info_path)
+        with gzip.open(self.journal_info_path, "rt") as fh:
+            reader = csv.reader(fh, delimiter="\t")
+            next(reader)  # skip header
+            for (
+                    nlm_id,
+                    journal_name,
+                    journal_abbrev,
+                    issn,
+                    issn_l,
+                    p_issn,
+                    e_issn,
+                    other
+            ) in reader:
+                other = json.loads(other) or []
+                assert isinstance(other, list)
+                data = {
+                    # Should match journal_name in JournalPublisherProcessor
+                    "name": journal_name,
+                    "abbr_title": journal_abbrev,
+                    # Should match issn_l in JournalPublisherProcessor
+                    "issn_l": issn_l,
+                    "p_issn": p_issn,
+                    "e_issn": e_issn,
+                    # Rely on data from JournalPublisherProcessor for the issn_list
+                    # "issn_list:string[]": ";".join(other),
+                }
+                yield Node(
+                    "NLM",
+                    nlm_id,
+                    labels=[JOURNAL_NODE_TYPE],
+                    data=data,
+                )
+
+    def _get_relations(self) -> Iterable[List[Relation]]:
         # Yield batches of relations
         with gzip.open(self.pmid_nlm_path, "rt") as fh:
             reader = csv.reader(fh)
             # Skip header
             next(reader)
-            # The file has more than 35000000 lines - a batch size of 1M is
+            # The file has more than 37M lines - a batch size of 1M is
             # reasonable
             batch_size = 1_000_000
             for batch in batch_iter(
@@ -197,21 +254,6 @@ class PubmedProcessor(Processor):
                         )
                     )
                 yield relations_batch
-
-    def _dump_edges(self) -> Path:
-        # This overrides the default implementation in Processor because
-        # we want to process relations in batches
-        for bidx, batch in enumerate(self.get_relations()):
-            logger.info(f"Dumping relations batch {bidx}")
-            sample_path = None
-            write_mode = "at"
-            if bidx == 0:
-                sample_path = self.module.join(name="edges_sample.tsv")
-                write_mode = "wt"
-            edges_path = self._dump_edges_to_path(
-                batch, self.edges_path, sample_path, write_mode
-            )
-        return edges_path
 
 
 def get_url_paths(url: str) -> Iterable[str]:
@@ -474,7 +516,8 @@ def process_mesh_xml_to_csv(
 
 def download_medline_pubmed_xml_resource(
     force: bool = False,
-    raise_http_error: bool = False
+    raise_http_error: bool = False,
+    raise_checksum_error: bool = False,
 ) -> None:
     """Downloads the medline and pubmed data from the NCBI ftp site.
 
@@ -487,6 +530,9 @@ def download_medline_pubmed_xml_resource(
     raise_http_error :
         If True, will raise error instead of skipping the file when
         downloading. Default: False.
+    raise_checksum_error :
+        If True, will raise error instead of skipping the file when
+        checksums do not match. Default: False.
     """
     for xml_file, stow, base_url in xml_path_generator(description="Download"):
         # Check if resource already exists
@@ -510,9 +556,11 @@ def download_medline_pubmed_xml_resource(
             r"[0-9a-z]+(?=\n)", md5_response.content.decode("utf-8")
         ).group()
         if actual_checksum != expected_checksum:
-            logger.warning(
-                f"Checksum does not match for {xml_file}. Is index out of bounds?"
-            )
+            err_msg = f"Checksum does not match for {xml_file}. Download timeout?"
+            if raise_checksum_error:
+                raise ValueError(err_msg)
+            logger.warning(err_msg)
+            # todo: better handling of bad downloads, don't use the file?
             continue
 
         # PyStow the file

@@ -49,7 +49,7 @@ source_field = RadioField(
         ("wikipathways", "WikiPathways"),
         ("phenotype", "HPO Phenotypes"),
         ("indra-upstream", "INDRA Upstream"),
-        ("indra-downstrea", "INDRA Downstream"),
+        ("indra-downstream", "INDRA Downstream"),
     ],
     default="go",
     description="The source of gene sets. Only one can be run at a time because"

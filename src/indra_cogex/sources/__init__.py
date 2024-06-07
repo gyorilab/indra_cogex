@@ -23,7 +23,7 @@ from .interpro import InterproProcessor
 from .nih_reporter import NihReporterProcessor
 from .pathways import ReactomeProcessor, WikipathwaysProcessor
 from .processor import Processor
-from .pubmed import PubmedProcessor
+from .pubmed import PublicationProcessor, JournalProcessor
 from .sider import SIDERSideEffectProcessor
 from .wikidata import JournalPublisherProcessor
 from .gwas import GWASProcessor
@@ -44,7 +44,8 @@ __all__ = [
     "ChemblIndicationsProcessor",
     "SIDERSideEffectProcessor",
     "EvidenceProcessor",
-    "PubmedProcessor",
+    "PublicationProcessor",
+    "JournalProcessor",
     "HpDiseasePhenotypeProcessor",
     "HpPhenotypeGeneProcessor",
     "NihReporterProcessor",

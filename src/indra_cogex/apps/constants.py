@@ -43,6 +43,7 @@ edge_labels = {
     "variant_gene_association": "Variant Gene Associations",
     "variant_phenotype_association": "Variant Phenotype Associations",
     "has_activity": "Enzyme Annotations",
+    "published_by": "Journal-Publisher Associations",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
@@ -108,3 +109,8 @@ else:
         "and CLARE_PUSHER_CLUSTER."
     )
     pusher_app = None
+
+PYOBO_RESOURCE_FILE_VERSIONS = {
+    "mgi": "6.23",
+    "rgd": "2024-05-31",
+}

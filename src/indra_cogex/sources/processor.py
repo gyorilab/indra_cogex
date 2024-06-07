@@ -99,7 +99,7 @@ class Processor(ABC):
         """Run the CLI for this processor."""
         cls.get_cli()()
 
-    def dump(self) -> Tuple[Path, List[Node], Path]:
+    def dump(self) -> Tuple[Dict[str, Path], Dict[str, List[Node]], Path]:
         """Dump the contents of this processor to CSV files ready for use in ``neo4-admin import``."""
         node_paths, nodes = self._dump_nodes()
         edge_paths = self._dump_edges()
@@ -120,7 +120,7 @@ class Processor(ABC):
             cls.module.join(name="nodes_sample.tsv"),
         )
 
-    def _dump_nodes(self) -> Tuple[Path, List[Node]]:
+    def _dump_nodes(self) -> Tuple[Dict[str, Path], Dict[str, List[Node]]]:
         paths_by_type = {}
         nodes_by_type = defaultdict(list)
         # Get all the nodes
@@ -423,6 +423,8 @@ def validate_headers(headers: Iterable[str]) -> None:
             # Strip trailing '[]' for array types
             if dtype.endswith("[]"):
                 dtype = dtype[:-2]
+                if not dtype:
+                    raise ValueError(f"Data type value for header '{header}' is empty!")
 
             if dtype not in NEO4J_DATA_TYPES:
                 raise TypeError(
