@@ -8,6 +8,8 @@ ARG RGD_VERSION
 
 RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea] && \
     python -m indra.ontology.bio build
+RUN pip3 install -U Flask-JWT-Extended && \
+    pip3 install -U Flask-WTF
 
 # Copy the names.tsv files for the pre-built pyobo caches to this directory as
 # mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
