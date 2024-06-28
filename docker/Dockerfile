@@ -6,6 +6,14 @@ ARG INDRA_NEO4J_PASSWORD
 ARG MGI_VERSION
 ARG RGD_VERSION
 
+# Copy the names.tsv files for the pre-built pyobo caches to this directory as
+# mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
+# full cache build process for these resources (which can take hours).
+RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
+    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
+COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
+COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
+
 # Setup copied and slightly modified from indra_docker Dockerfile
 ARG INDRA_BUILD_BRANCH
 
@@ -61,17 +69,8 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     # Install things related to API deployment
     pip install gunicorn
 
-
 # CoGEx specific setup
 RUN pip3 install git+https://github.com/bgyori/indra_cogex.git@flask3#egg=indra_cogex[web,gunicorn,gsea]
-
-# Copy the names.tsv files for the pre-built pyobo caches to this directory as
-# mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
-# full cache build process for these resources (which can take hours).
-RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
-    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
-COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
-COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
 
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
