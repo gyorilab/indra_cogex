@@ -1,4 +1,4 @@
-FROM labsyspharm/indra
+FROM ubuntu:20.04
 
 ARG INDRA_NEO4J_URL
 ARG INDRA_NEO4J_USER
@@ -6,8 +6,67 @@ ARG INDRA_NEO4J_PASSWORD
 ARG MGI_VERSION
 ARG RGD_VERSION
 
-RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea] && \
-    python -m indra.ontology.bio build
+# Setup copied and slightly modified from indra_docker Dockerfile
+ARG INDRA_BUILD_BRANCH
+
+# Set working folder
+ENV DIRPATH /sw
+WORKDIR $DIRPATH
+
+RUN apt-get update && \
+    # Install Java
+    apt-get install -y openjdk-8-jdk && \
+    # jnius-indra requires cython which requires gcc
+    apt-get install -y git wget zip unzip bzip2 gcc graphviz graphviz-dev \
+        pkg-config python3-dev python3-pip && \
+    ln -s /usr/bin/python3 /usr/bin/python
+
+# Set default character encoding
+# See http://stackoverflow.com/questions/27931668/encoding-problems-when-running-an-app-in-docker-python-java-ruby-with-u/27931669
+# See http://stackoverflow.com/questions/39760663/docker-ubuntu-bin-sh-1-locale-gen-not-found
+RUN apt-get install -y locales && \
+    locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# Set environment variables
+ENV BNGPATH $DIRPATH/BioNetGen-2.4.0
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+
+RUN git clone https://github.com/sorgerlab/indra.git && \
+    cd indra && \
+    git checkout $INDRA_BUILD_BRANCH && \
+    git branch && \
+    mkdir /root/.config && \
+    mkdir /root/.config/indra && \
+    echo "[indra]" > /root/.config/indra/config.ini && \
+    # Install Python dependencies
+    pip install --upgrade pip && \
+    # Install cython first for pyjnius
+    pip install cython && \
+    pip install -e .[all] && \
+    pip uninstall -y enum34 && \
+    # Pre-build the bio ontology
+    python -m indra.ontology.bio build && \
+    # Download Adeft models
+    python -m adeft.download && \
+    # Download protmapper resources
+    python -m protmapper.resources && \
+    # Install BioNetGen
+    cd $DIRPATH && \
+    wget "https://github.com/RuleWorld/bionetgen/releases/download/BioNetGen-2.4.0/BioNetGen-2.4.0-Linux.tgz" \
+        -O bionetgen.tar.gz -nv && \
+    tar xzf bionetgen.tar.gz && \
+    # Install things related to API deployment
+    pip install gunicorn
+
+
+# CoGEx specific setup
+RUN pip3 install git+https://github.com/bgyori/indra_cogex.git@flask3#egg=indra_cogex[web,gunicorn,gsea]
+
+# todo: Figure out how to get the installs working in setup.cfg instead of haiving to do this
+RUN pip3 install --upgrade --force-reinstall git+https://github.com/gyorilab/ui_util.git@flask3#egg=indralab_auth_tools&subdirectory=indralab_auth_tools
 RUN pip3 install -U Flask-JWT-Extended && \
     pip3 install -U Flask-WTF && \
     pip3 install -U 'SQLAlchemy<2'
