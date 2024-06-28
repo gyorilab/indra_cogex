@@ -65,12 +65,6 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
 # CoGEx specific setup
 RUN pip3 install git+https://github.com/bgyori/indra_cogex.git@flask3#egg=indra_cogex[web,gunicorn,gsea]
 
-# todo: Figure out how to get the installs working in setup.cfg instead of haiving to do this
-RUN pip3 install --upgrade --force-reinstall git+https://github.com/gyorilab/ui_util.git@flask3#egg=indralab_auth_tools&subdirectory=indralab_auth_tools
-RUN pip3 install -U Flask-JWT-Extended && \
-    pip3 install -U Flask-WTF && \
-    pip3 install -U 'SQLAlchemy<2'
-
 # Copy the names.tsv files for the pre-built pyobo caches to this directory as
 # mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
 # full cache build process for these resources (which can take hours).
