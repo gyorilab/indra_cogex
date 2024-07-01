@@ -26,7 +26,7 @@ RUN apt-get update && \
     apt-get install -y openjdk-8-jdk && \
     # jnius-indra requires cython which requires gcc
     apt-get install -y git wget zip unzip bzip2 gcc graphviz graphviz-dev \
-        pkg-config python3-dev python3-pip && \
+        pkg-config python3-pip && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Set default character encoding
