@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Mapping, Optional, Tuple
 
 import flask
 from flask import Response, abort, redirect, render_template, url_for
-from flask_jwt_extended import jwt_optional
+from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import Statement
 from wtforms import BooleanField, StringField, SubmitField, TextAreaField
@@ -81,7 +81,7 @@ def gene_ontology():
 
 
 @curator_blueprint.route("/go/<term>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def curate_go(term: str):
     stmts = indra_subnetwork_go(
         go_term=("GO", term),
@@ -163,7 +163,7 @@ MESH_CURATION_SUBSETS = {
 
 @curator_blueprint.route("/mesh/<term>", methods=["GET"])
 @curator_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def curate_mesh(term: str, subset: Optional[str] = None):
     """Curate all statements for papers with a given MeSH annotation."""
     if subset is None:
@@ -311,7 +311,7 @@ def _render_evidence_counts(
 
 
 @curator_blueprint.route("/ppi", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
     return _render_func(
@@ -329,7 +329,7 @@ def ppi():
 
 
 @curator_blueprint.route("/goa", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     return _render_func(
@@ -348,7 +348,7 @@ def goa():
 
 
 @curator_blueprint.route("/conflicts", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def conflicts():
     """Curate statements with conflicting prior curations."""
     return _render_func(
@@ -363,7 +363,7 @@ def conflicts():
 
 
 @curator_blueprint.route("/tf", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def tf():
     """Curate transcription factors."""
     return _render_func(
@@ -380,7 +380,7 @@ def tf():
 
 
 @curator_blueprint.route("/kinase", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def kinase():
     """Curate kinases."""
     return _render_func(
@@ -397,7 +397,7 @@ def kinase():
 
 
 @curator_blueprint.route("/phosphatase", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def phosphatase():
     """Curate phosphatases."""
     return _render_func(
@@ -414,7 +414,7 @@ def phosphatase():
 
 
 @curator_blueprint.route("/dub", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def deubiquitinase():
     """Curate deubiquitinases."""
     return _render_func(
@@ -431,7 +431,7 @@ def deubiquitinase():
 
 
 @curator_blueprint.route("/mirna", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def mirna():
     """Curate miRNAs."""
     return _render_func(
@@ -449,7 +449,7 @@ def mirna():
 
 @curator_blueprint.route("/disprot", methods=["GET"])
 @curator_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def disprot(object_prefix: Optional[str] = None):
     """Curate intrensically disordered proteins."""
     assert object_prefix in {None, "hgnc", "go", "chebi"}
@@ -466,14 +466,14 @@ def disprot(object_prefix: Optional[str] = None):
 
 
 @curator_blueprint.route("/modulator/", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def modulator():
     """Get small molecule modulators for the given protein."""
     raise NotImplementedError
 
 
 @curator_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
     if prefix in {"pubmed", "pmc", "doi", "trid"}:
@@ -548,7 +548,7 @@ class PaperForm(FlaskForm):
 
 
 @curator_blueprint.route("/paper", methods=["GET", "POST"])
-@jwt_optional
+@jwt_required(optional=True)
 def paper():
     """Get all statements for the given paper."""
     form = PaperForm()
@@ -622,7 +622,7 @@ class NodesForm(FlaskForm):
 
 
 @curator_blueprint.route("/subnetwork", methods=["GET", "POST"])
-@jwt_optional
+@jwt_required(optional=True)
 def subnetwork():
     """Get all statements induced by the nodes."""
     form = NodesForm()
@@ -659,7 +659,7 @@ def subnetwork():
 
 
 @curator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def curate_statement(stmt_hash: int):
     """Curate all evidences for the statement."""
     start_time = time.time()
