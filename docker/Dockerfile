@@ -70,7 +70,7 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     pip install gunicorn
 
 # CoGEx specific setup
-RUN pip3 install git+https://github.com/bgyori/indra_cogex.git@flask3#egg=indra_cogex[web,gunicorn,gsea]
+RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
 
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
