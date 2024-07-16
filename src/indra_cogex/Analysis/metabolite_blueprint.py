@@ -13,7 +13,14 @@ from indra_cogex.client.enrichment.mla import (
 
 
 def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a metabolites field string."""
+    """Parse a string of metabolite identifiers into ChEBI IDs and names.
+
+    Args:
+    s (str): A string containing metabolite identifiers (ChEBI IDs or CURIEs)
+
+    Returns:
+    Tuple[Dict[str, str], List[str]]: A tuple containing a dictionary of ChEBI IDs to metabolite names,
+    and a list of any metabolite identifiers that couldn't be parsed."""
     records = {
         record.strip().strip('"').strip("'").strip()
         for line in s.strip().lstrip("[").rstrip("]").split()
@@ -44,7 +51,19 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
 
 def discrete_analysis(client, metabolites: str, method: str, alpha: float, keep_insignificant: bool,
                           minimum_evidence_count: int, minimum_belief: float):
-    """Render the discrete metabolomic set analysis page."""
+    """Perform discrete metabolite set analysis using metabolomics over-representation analysis.
+
+    Args:
+    client: The client object for making API calls
+    metabolites (str): A string of metabolite identifiers
+    method (str): The statistical method for multiple testing correction
+    alpha (float): The significance level
+    keep_insignificant (bool): Whether to keep statistically insignificant results
+    minimum_evidence_count (int): Minimum number of evidence required for analysis
+    minimum_belief (float): Minimum belief score for analysis
+
+    Returns:
+    dict: A dictionary containing results from the analysis"""
     metabolite_chebi_ids, errors = parse_metabolites_field(metabolites)
 
     results = metabolomics_ora(
@@ -65,7 +84,15 @@ def discrete_analysis(client, metabolites: str, method: str, alpha: float, keep_
 
 
 def enzyme_analysis(client, ec_code: str, chebi_ids: List[str] = None):
-    """Render the enzyme page."""
+    """Perform enzyme analysis and explanation for given EC code and optional ChEBI IDs.
+
+    Args:
+    client: The client object for making API calls
+    ec_code (str): The EC code for the enzyme
+    chebi_ids (List[str], optional): List of ChEBI IDs for additional context
+
+    Returns:
+    List: A list of statements explaining the enzyme's function"""
     stmts = metabolomics_explanation(
         client=client, ec_code=ec_code, chebi_ids=chebi_ids
     )
