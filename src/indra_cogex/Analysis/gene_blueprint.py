@@ -1,43 +1,21 @@
 """Gene-centric analysis blueprint."""
 
-from pathlib import Path
 from typing import Dict, List, Mapping, Tuple
-
-#import flask
-#import pandas as pd
-#from flask import url_for
-#from flask_wtf import FlaskForm
-#from indra.databases import hgnc_client
-#from wtforms import BooleanField, SubmitField, TextAreaField, StringField
-#from wtforms.validators import DataRequired
-#from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
-
-from indra_cogex.apps.proxies import client
+import pandas as pd
+from indra.databases import hgnc_client
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
+    get_rat_scores,
     indra_downstream_gsea,
     indra_upstream_gsea,
     phenotype_gsea,
     reactome_gsea,
     wikipathways_gsea,
+    go_gsea
 )
 
-from .fields import (
-    alpha_field,
-    correction_field,
-    file_field,
-    indra_path_analysis_field,
-    keep_insignificant_field,
-    minimum_belief_field,
-    minimum_evidence_field,
-    permutations_field,
-    source_field,
-    species_field,
-)
-from ...client.enrichment.continuous import get_rat_scores, go_gsea
-from ...client.enrichment.discrete import (
-    EXAMPLE_GENE_IDS,
+from indra_cogex.client.enrichment.discrete import (
     go_ora,
     indra_downstream_ora,
     indra_upstream_ora,
@@ -45,35 +23,8 @@ from ...client.enrichment.discrete import (
     reactome_ora,
     wikipathways_ora,
 )
-from ...client.enrichment.signed import (
-    EXAMPLE_NEGATIVE_HGNC_IDS,
-    EXAMPLE_POSITIVE_HGNC_IDS,
-    reverse_causal_reasoning,
-)
 
-__all__ = ["gene_blueprint"]
-
-gene_blueprint = flask.Blueprint("gla", __name__, url_prefix="/gene")
-
-genes_field = TextAreaField(
-    "Genes",
-    description="Paste your list of gene symbols, HGNC gene identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
-    " example list of human genes</a> related to COVID-19.",
-    validators=[DataRequired()],
-)
-positive_genes_field = TextAreaField(
-    "Positive Genes",
-    description="Paste your list of gene symbols, HGNC gene identifiers, or CURIEs here",
-    validators=[DataRequired()],
-)
-negative_genes_field = TextAreaField(
-    "Negative Genes",
-    description="Paste your list of gene symbols, HGNC gene identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleGenes()">an'
-    " example list</a> related to prostate cancer.",
-    validators=[DataRequired()],
-)
+from ...client.enrichment.signed import reverse_casual_reasoning
 
 
 def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
@@ -104,117 +55,44 @@ def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
 """
 """
 
-@gene_blueprint.route("/discrete", methods=["GET", "POST"])
-def discretize_analysis():
+def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insignificant: bool,
+                      minimum_evidence_count: int, minimum_belief: float):
+
     """Render the home page."""
-    form = DiscreteForm()
-    if form.validate_on_submit():
-        method = form.correction.data
-        alpha = form.alpha.data
-        keep_insignificant = form.keep_insignificant.data
-        minimum_evidence_count = form.minimum_evidence.data
-        minimum_belief = form.minimum_belief.data
-        genes, errors = form.parse_genes()
-        gene_set = set(genes)
+    genes, errors = parse_genes_field(genes)
+    gene_set = set(genes)
 
-        go_results = go_ora(
-            client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        wikipathways_results = wikipathways_ora(
-            client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        reactome_results = reactome_ora(
-            client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        phenotype_results = phenotype_ora(
-            gene_set,
-            client=client,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        if form.indra_path_analysis.data:
-            indra_upstream_results = indra_upstream_ora(
-                client,
-                gene_set,
-                method=method,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=minimum_evidence_count,
-                minimum_belief=minimum_belief,
-            )
-            indra_downstream_results = indra_downstream_ora(
-                client,
-                gene_set,
-                method=method,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=minimum_evidence_count,
-                minimum_belief=minimum_belief,
-            )
-        else:
-            indra_upstream_results = None
-            indra_downstream_results = None
-
-        if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
-            downloads = Path.home().joinpath("Downloads")
-            go_results.to_csv(
-                downloads.joinpath("go_results.tsv"), sep="\t", index=False
-            )
-            wikipathways_results.to_csv(
-                downloads.joinpath("wikipathways_results.tsv"), sep="\t", index=False
-            )
-            reactome_results.to_csv(
-                downloads.joinpath("reactome_results.tsv"), sep="\t", index=False
-            )
-            phenotype_results.to_csv(
-                downloads.joinpath("phenotype_results.tsv"), sep="\t", index=False
-            )
-            if form.indra_path_analysis.data:
-                indra_downstream_results.to_csv(
-                    downloads.joinpath("indra_downstream_results.tsv"),
-                    sep="\t",
-                    index=False,
-                )
-                indra_upstream_results.to_csv(
-                    downloads.joinpath("indra_upstream_results.tsv"),
-                    sep="\t",
-                    index=False,
-                )
-            flask.flash(f"Downloaded files to {downloads}")
-            return flask.redirect(url_for(f".{discretize_analysis.__name__}"))
-
-        return flask.render_template(
-            "gene_analysis/discrete_results.html",
-            genes=genes,
-            errors=errors,
-            method=method,
-            alpha=alpha,
-            go_results=go_results,
-            wikipathways_results=wikipathways_results,
-            reactome_results=reactome_results,
-            phenotype_results=phenotype_results,
-            indra_downstream_results=indra_downstream_results,
-            indra_upstream_results=indra_upstream_results,
-        )
-
-    return flask.render_template(
-        "gene_analysis/discrete_form.html",
-        form=form,
-        example_hgnc_ids=", ".join(EXAMPLE_GENE_IDS),
+    go_results = go_ora(
+        client, gene_set, method=method, alpha=alpha, keep_insignificant=keep_insignificant
     )
+    wikipathways_results = wikipathways_ora(
+        client, gene_set, method=method, alpha=alpha, keep_insignificant=keep_insignificant
+    )
+    reactome_results = reactome_ora(
+        client, gene_set, method=method, alpha=alpha, keep_insignificant=keep_insignificant
+    )
+    phenotype_results = phenotype_ora(
+        gene_set, client=client, method=method, alpha=alpha, keep_insignificant=keep_insignificant
+    )
+
+    indra_upstream_results = indra_upstream_ora(
+        client, gene_set, method=method, alpha=alpha, keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count, minimum_belief=minimum_belief
+    )
+    indra_downstream_results = indra_downstream_ora(
+        client, gene_set, method=method, alpha=alpha, keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count, minimum_belief=minimum_belief
+    )
+
+    return {
+        "go_results": go_results,
+        "wikipathways_results": wikipathways_results,
+        "reactome_results": reactome_results,
+        "phenotype_results": phenotype_results,
+        "indra_upstream_results": indra_upstream_results,
+        "indra_downstream_results": indra_downstream_results,
+        "errors": errors
+    }
 
 
 @gene_blueprint.route("/signed", methods=["GET", "POST"])
