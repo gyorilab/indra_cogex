@@ -1,22 +1,14 @@
 """Metabolite-centric analysis blueprint."""
 
 from typing import Dict, List, Mapping, Tuple
-
-from indra_cogex.apps.proxies import client
-
-from .fields import (
-    alpha_field,
-    correction_field,
-    keep_insignificant_field,
-    minimum_belief_field,
-    minimum_evidence_field,
-)
-from ..utils import render_statements
-from ...client.enrichment.mla import (
+import pandas as pd
+from indra.databases import chebi_client
+from indra_cogex.client.enrichment.mla import (
     EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,
     metabolomics_ora,
 )
+
 
 
 
@@ -50,54 +42,26 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     }
     return metabolites, errors
 
-
-metabolites_field = TextAreaField(
-    "Metabolites",
-    description="Paste your list of CHEBI identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleMetabolites()">an'
-    " example list of metabolites</a>.",
-    validators=[DataRequired()],
-)
-
-
-
-
-
-@metabolite_blueprint.route("/discrete", methods=["GET", "POST"])
-def discrete_analysis():
+def discrete_analysis(client, metabolites: str, method: str, alpha: float, keep_insignificant: bool,
+                          minimum_evidence_count: int, minimum_belief: float):
     """Render the discrete metabolomic set analysis page."""
-    form = DiscreteForm()
-    if form.validate_on_submit():
-        method = form.correction.data
-        alpha = form.alpha.data
-        keep_insignificant = form.keep_insignificant.data
-        metabolite_chebi_ids, errors = form.parse_metabolites()
+    metabolite_chebi_ids, errors = parse_metabolites_field(metabolites)
 
-        results = metabolomics_ora(
-            client=client,
-            chebi_ids=metabolite_chebi_ids,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-            minimum_evidence_count=form.minimum_evidence.data,
-            minimum_belief=form.minimum_belief.data,
-        )
-
-        return flask.render_template(
-            "metabolite_analysis/discrete_results.html",
-            metabolites=metabolite_chebi_ids,
-            errors=errors,
-            method=method,
-            alpha=alpha,
-            results=results,
-        )
-
-    return flask.render_template(
-        "metabolite_analysis/discrete_form.html",
-        form=form,
-        example_chebi_curies=", ".join(EXAMPLE_CHEBI_CURIES),
+    results = metabolomics_ora(
+        client=client,
+        chebi_ids=metabolite_chebi_ids,
+        method=method,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
     )
 
+    return {
+        "metabolites": metabolite_chebi_ids,
+        "errors": errors,
+        "results": results
+    }
 
 
 def enzyme(ec_code: str):
