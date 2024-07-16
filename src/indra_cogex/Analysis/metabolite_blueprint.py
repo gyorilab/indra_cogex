@@ -2,15 +2,6 @@
 
 from typing import Dict, List, Mapping, Tuple
 
-import bioregistry
-import flask
-from flask import request
-from flask_wtf import FlaskForm
-from indra.databases import chebi_client
-from indralab_auth_tools.auth import resolve_auth
-from wtforms import SubmitField, TextAreaField
-from wtforms.validators import DataRequired
-
 from indra_cogex.apps.proxies import client
 
 from .fields import (
@@ -27,11 +18,6 @@ from ...client.enrichment.mla import (
     metabolomics_ora,
 )
 
-__all__ = [
-    "metabolite_blueprint",
-]
-
-metabolite_blueprint = flask.Blueprint("mla", __name__, url_prefix="/metabolite")
 
 
 def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
@@ -74,20 +60,7 @@ metabolites_field = TextAreaField(
 )
 
 
-class DiscreteForm(FlaskForm):
-    """A form for discrete metabolute set enrichment analysis."""
 
-    metabolites = metabolites_field
-    minimum_evidence = minimum_evidence_field
-    minimum_belief = minimum_belief_field
-    alpha = alpha_field
-    correction = correction_field
-    keep_insignificant = keep_insignificant_field
-    submit = SubmitField("Submit")
-
-    def parse_metabolites(self) -> Tuple[Mapping[str, str], List[str]]:
-        """Resolve the contents of the text field."""
-        return parse_metabolites_field(self.metabolites.data)
 
 
 @metabolite_blueprint.route("/discrete", methods=["GET", "POST"])
@@ -126,7 +99,7 @@ def discrete_analysis():
     )
 
 
-@metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
+
 def enzyme(ec_code: str):
     """Render the enzyme page."""
     user, roles = resolve_auth(dict(request.args))
