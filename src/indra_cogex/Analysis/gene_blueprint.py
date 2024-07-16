@@ -116,81 +116,45 @@ def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insign
         "negative_errors": negative_errors
     }
 
-@gene_blueprint.route("/continuous", methods=["GET", "POST"])
-def continuous_analysis():
+    def continuous_analysis(client, file_path: str, gene_name_column: str, log_fold_change_column: str,
+                            species: str, permutations: int, alpha: float, keep_insignificant: bool,
+                            source: str, minimum_evidence_count: int, minimum_belief: float):
     """Render the continuous analysis form."""
-    form = ContinuousForm()
-    form.file.description = """\
-    Make sure the uploaded file contains at least two columns: one with gene names and 
-    one with the values of the ranking metric. The first row od the file should contain 
-    the column names."""
-    if form.validate_on_submit():
-        scores = form.get_scores()
-        source = form.source.data
-        alpha = form.alpha.data
-        permutations = form.permutations.data
-        keep_insignificant = form.keep_insignificant.data
-        if source == "go":
-            results = go_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "wikipathways":
-            results = wikipathways_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "reactome":
-            results = reactome_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "phenotype":
-            results = phenotype_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "indra-upstream":
-            results = indra_upstream_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=form.minimum_evidence.data,
-                minimum_belief=form.minimum_belief.data,
-            )
-        elif source == "indra-downstream":
-            results = indra_downstream_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=form.minimum_evidence.data,
-                minimum_belief=form.minimum_belief.data,
-            )
-        else:
-            raise ValueError(f"Unknown source: {source}")
+    sep = "," if file_path.endswith("csv") else "\t"
+    df = pd.read_csv(file_path, sep=sep)
 
-        return flask.render_template(
-            "gene_analysis/continuous_results.html",
-            source=source,
-            results=results,
-        )
-    return flask.render_template(
-        "gene_analysis/continuous_form.html",
-        form=form,
-    )
+    if species == "rat":
+        scores = get_rat_scores(df, gene_symbol_column_name=gene_name_column, score_column_name=log_fold_change_column)
+    elif species == "mouse":
+        scores = get_mouse_scores(df, gene_symbol_column_name=gene_name_column,
+                                  score_column_name=log_fold_change_column)
+    elif species == "human":
+        scores = get_human_scores(df, gene_symbol_column_name=gene_name_column,
+                                  score_column_name=log_fold_change_column)
+    else:
+        raise ValueError(f"Unknown species: {species}")
+
+    if source == "go":
+        results = go_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                          keep_insignificant=keep_insignificant)
+    elif source == "wikipathways":
+        results = wikipathways_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                                    keep_insignificant=keep_insignificant)
+    elif source == "reactome":
+        results = reactome_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                                keep_insignificant=keep_insignificant)
+    elif source == "phenotype":
+        results = phenotype_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                                 keep_insignificant=keep_insignificant)
+    elif source == "indra-upstream":
+        results = indra_upstream_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                                      keep_insignificant=keep_insignificant,
+                                      minimum_evidence_count=minimum_evidence_count, minimum_belief=minimum_belief)
+    elif source == "indra-downstream":
+        results = indra_downstream_gsea(client=client, scores=scores, permutation_num=permutations, alpha=alpha,
+                                        keep_insignificant=keep_insignificant,
+                                        minimum_evidence_count=minimum_evidence_count, minimum_belief=minimum_belief)
+    else:
+        raise ValueError(f"Unknown source: {source}")
+
+    return results
