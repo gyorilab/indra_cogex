@@ -28,7 +28,14 @@ from ...client.enrichment.signed import reverse_casual_reasoning
 
 
 def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a gene field string."""
+    """Parse a string of gene identifiers into HGNC IDs and names.
+
+    Args:
+    s (str): A string containing gene identifiers (symbols, HGNC IDs, or CURIEs)
+
+    Returns:
+    Tuple[Dict[str, str], List[str]]: A tuple containing a dictionary of HGNC IDs to gene names,
+    and a list of any gene identifiers that couldn't be parsed."""
     records = {
         record.strip().strip('"').strip("'").strip()
         for line in s.strip().lstrip("[").rstrip("]").split()
@@ -52,13 +59,24 @@ def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
     return genes, errors
 
-"""
-"""
+
 
 def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insignificant: bool,
                       minimum_evidence_count: int, minimum_belief: float):
 
-    """Render the home page."""
+    """Perform discrete gene set analysis using various enrichment methods.
+
+    Args:
+    client: The client object for making API calls
+    genes (str): A string of gene identifiers
+    method (str): The statistical method for multiple testing correction
+    alpha (float): The significance level
+    keep_insignificant (bool): Whether to keep statistically insignificant results
+    minimum_evidence_count (int): Minimum number of evidence required for INDRA analysis
+    minimum_belief (float): Minimum belief score for INDRA analysis
+
+    Returns:
+    dict: A dictionary containing results from various analyses"""
     genes, errors = parse_genes_field(genes)
     gene_set = set(genes)
 
@@ -96,7 +114,19 @@ def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insign
 
     def signed_analysis(client, positive_genes: str, negative_genes: str, alpha: float,
                         keep_insignificant: bool, minimum_evidence_count: int, minimum_belief: float):
-    """Render the signed gene set enrichment analysis form."""
+         """Perform signed gene set analysis using reverse causal reasoning.
+
+    Args:
+    client: The client object for making API calls
+    positive_genes (str): A string of gene identifiers for positively regulated genes
+    negative_genes (str): A string of gene identifiers for negatively regulated genes
+    alpha (float): The significance level
+    keep_insignificant (bool): Whether to keep statistically insignificant results
+    minimum_evidence_count (int): Minimum number of evidence required
+    minimum_belief (float): Minimum belief score required
+
+    Returns:
+    dict: A dictionary containing results and any parsing errors"""
     positive_genes, positive_errors = parse_genes_field(positive_genes)
     negative_genes, negative_errors = parse_genes_field(negative_genes)
 
@@ -119,7 +149,23 @@ def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insign
     def continuous_analysis(client, file_path: str, gene_name_column: str, log_fold_change_column: str,
                             species: str, permutations: int, alpha: float, keep_insignificant: bool,
                             source: str, minimum_evidence_count: int, minimum_belief: float):
-    """Render the continuous analysis form."""
+         """Perform continuous gene set analysis on gene expression data.
+
+    Args:
+    client: The client object for making API calls
+    file_path (str): Path to the input file containing gene expression data
+    gene_name_column (str): Name of the column containing gene names
+    log_fold_change_column (str): Name of the column containing log fold change values
+    species (str): Species of the gene expression data ('rat', 'mouse', or 'human')
+    permutations (int): Number of permutations for statistical analysis
+    alpha (float): The significance level
+    keep_insignificant (bool): Whether to keep statistically insignificant results
+    source (str): The type of analysis to perform ('go', 'wikipathways', 'reactome', 'phenotype', 'indra-upstream', 'indra-downstream')
+    minimum_evidence_count (int): Minimum number of evidence required for INDRA analysis
+    minimum_belief (float): Minimum belief score for INDRA analysis
+
+    Returns:
+    The results of the specified analysis"""
     sep = "," if file_path.endswith("csv") else "\t"
     df = pd.read_csv(file_path, sep=sep)
 
