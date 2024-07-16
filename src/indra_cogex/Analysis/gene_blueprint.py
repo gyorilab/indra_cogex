@@ -94,42 +94,27 @@ def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insign
         "errors": errors
     }
 
-
-@gene_blueprint.route("/signed", methods=["GET", "POST"])
-def signed_analysis():
+    def signed_analysis(client, positive_genes: str, negative_genes: str, alpha: float,
+                        keep_insignificant: bool, minimum_evidence_count: int, minimum_belief: float):
     """Render the signed gene set enrichment analysis form."""
-    form = SignedForm()
-    if form.validate_on_submit():
-        # method = form.correction.data
-        # alpha = form.alpha.data
-        positive_genes, positive_errors = form.parse_positive_genes()
-        negative_genes, negative_errors = form.parse_negative_genes()
-        results = reverse_causal_reasoning(
-            client=client,
-            positive_hgnc_ids=positive_genes,
-            negative_hgnc_ids=negative_genes,
-            alpha=form.alpha.data,
-            keep_insignificant=form.keep_insignificant.data,
-            minimum_evidence_count=form.minimum_evidence.data,
-            minimum_belief=form.minimum_belief.data,
-        )
-        return flask.render_template(
-            "gene_analysis/signed_results.html",
-            positive_genes=positive_genes,
-            positive_errors=positive_errors,
-            negative_genes=negative_genes,
-            negative_errors=negative_errors,
-            results=results,
-            # method=method,
-            # alpha=alpha,
-        )
-    return flask.render_template(
-        "gene_analysis/signed_form.html",
-        form=form,
-        example_positive_hgnc_ids=", ".join(EXAMPLE_POSITIVE_HGNC_IDS),
-        example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
+    positive_genes, positive_errors = parse_genes_field(positive_genes)
+    negative_genes, negative_errors = parse_genes_field(negative_genes)
+
+    results = reverse_causal_reasoning(
+        client=client,
+        positive_hgnc_ids=positive_genes,
+        negative_hgnc_ids=negative_genes,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
     )
 
+    return {
+        "results": results,
+        "positive_errors": positive_errors,
+        "negative_errors": negative_errors
+    }
 
 @gene_blueprint.route("/continuous", methods=["GET", "POST"])
 def continuous_analysis():
