@@ -64,18 +64,9 @@ def discrete_analysis(client, metabolites: str, method: str, alpha: float, keep_
     }
 
 
-def enzyme(ec_code: str):
+def enzyme_analysis(client, ec_code: str, chebi_ids: List[str] = None):
     """Render the enzyme page."""
-    user, roles = resolve_auth(dict(request.args))
-
-    chebi_ids = request.args.get("q").split(",") if "q" in request.args else None
-    _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
-    if identifier is None:
-        return flask.abort(400, f"Invalid EC Code: {ec_code}")
     stmts = metabolomics_explanation(
-        client=client, ec_code=identifier, chebi_ids=chebi_ids
+        client=client, ec_code=ec_code, chebi_ids=chebi_ids
     )
-    return render_statements(
-        stmts,
-        title=f"Statements for EC:{identifier}",
-    )
+    return stmts
