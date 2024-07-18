@@ -96,6 +96,46 @@ def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,
     }
 
 
+def signed_analysis(client, positive_genes: Dict[str, str],
+                    negative_genes: Dict[str, str], alpha: float,
+                    keep_insignificant: bool, minimum_evidence_count: int,
+                    minimum_belief: float) -> Dict:
+    """
+    Perform signed gene set analysis using reverse causal reasoning.
+
+    Parameters
+    ----------
+    client : object
+        The client object for making API calls.
+    positive_genes : dict
+        A dictionary of HGNC IDs to gene names for positively regulated genes.
+    negative_genes : dict
+        A dictionary of HGNC IDs to gene names for negatively regulated genes.
+    alpha : float
+        The significance level.
+    keep_insignificant : bool
+        Whether to keep statistically insignificant results.
+    minimum_evidence_count : int
+        Minimum number of evidence required.
+    minimum_belief : float
+        Minimum belief score required.
+
+    Returns
+    -------
+    dict
+        A dictionary containing results from the analysis.
+    """
+    results = reverse_causal_reasoning(
+        client=client,
+        positive_hgnc_ids=positive_genes,
+        negative_hgnc_ids=negative_genes,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+    )
+
+    return {"results": results}
 
 
 
