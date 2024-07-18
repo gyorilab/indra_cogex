@@ -7,22 +7,20 @@ Exploring how a unique set of protiens relates to a target protein through
 INDRA statements, exploring pathway membership,determining if any of the proteins 
 belong to the same protein family/complex as the target and using 
 INDRA discrete gene list analysis results
-
-@author: ariaagarwal
 """
 
-from indra_cogex.client import Neo4jClient
 import json
-client = Neo4jClient()
-from indra.assemblers.html import HtmlAssembler
-import json
-from indra.statements import *
+
 import pandas as pd
-from indra_cogex.client import *
 import matplotlib.pyplot as plt
+from indra.assemblers.html import HtmlAssembler
+from indra.statements import *
+from indra.databases import hgnc_client
+
+from indra_cogex.client import *
 
 
-def find_indra_relationships(target_protein, protein_list):
+def get_stmts_from_source(source_protein, target_proteins=None):
     """To get a dataframe of proteins that the target protien has direct INDRA
     relationship with to find the stmt_jsons, type, and id
     
@@ -41,28 +39,31 @@ def find_indra_relationships(target_protein, protein_list):
     protein_df: Dataframe
         Unfiltered dataframe that contains all INDRA relationships for target protein  
     """
-    
+    res = client.get_target_relations(
+        source=('HGNC', source_protein),
+        relation='indra_rel',
+        source_type='BioEntity',
+        target_type='BioEntity',
+    )
+
+    # TODO: get the same values from this result as what you got from the old
+    # query
+
     # cypher to get dataframe with all proteins that have INDRA relationship with target protein
-    cypher = f"""MATCH p=(n:BioEntity)-[r:indra_rel]->(m:BioEntity) 
-                 WHERE n.name = '{target_protein}'
-                 RETURN m.name, r.stmt_json, m.type, m.id, r.stmt_type"""
-    
-    proteins = client.query_tx(cypher)
-    protein_df = pd.DataFrame(proteins, columns=["name", "stmt_json", "type", "id", "indra_type"])
-    
-    df_list = []
-    protein = protein_df["name"].values
-    
-    # filters the dataframe that contains all INDRA relationships for target protein 
-    # for genes in the "protein_list" list
-    for gene in protein_list:
-        if gene in protein:
-           df_list.append(protein_df[protein_df["name"] == gene])
-           
-    # combines dataframes for each gene into single dataframe
-    filtered_df = pd.concat(df_list, ignore_index=True)
-    
-    return filtered_df, protein_df
+    # query = f"""MATCH p=(n:BioEntity)-[r:indra_rel]->(m:BioEntity)
+    #            WHERE n.name = '{source_protein}'
+    #            RETURN m.name, r.stmt_json, m.type, m.id, r.stmt_type"""
+    #res = client.query_tx(query)
+
+    stmts_by_protein_df = pd.DataFrame(res, columns=["name", "stmt_json", "type", "id", "indra_type"])
+    if target_proteins:
+        # TODO: since the target proteins are now HGNC ids, you need to change this filter
+        # to be using HGNC ids
+        stmts_by_protein_filtered_df = stmts_by_protein_df[stmts_by_protein_df.name.isin(target_proteins)]
+    else:
+        stmts_by_protein_filtered_df = stmts_by_protein_df
+
+    return stmts_by_protein_df, stmts_by_protein_filtered_df
 
 
 def graph_barchart(filtered_df):
@@ -118,44 +119,45 @@ def download_indra_htmls(filtered_df):
         ha.save_model('%s_statements.html' % (name+str(index)))
 
 
-def get_gene_ids(protein_list, target_protein):
-    """Method to get gene ids for protiens of interest and target protein
-    
+def get_gene_id(protein_name):
+    """Return HGNC id for protein of interest
+
     Parameters
     ----------
-    protein_list: list 
-        Contains proteins in the top_25 list but not paper_protiens
+    protein_name: string
+        The protein of interest in relation to protien list user enters
 
     Returns
     -------
-    id_df: dataframe
-        Contains HGNC ids for protein_list protein list
-    target_id: string 
-        The target proteins HGNC id
-        
+    gene_id: string
+        The HGNC id for the protein of interest
+
     """
-    id_df_list = []
-    
-    # iterates through the gene names
-    for names in protein_list:
-        
-        # cypher query to get the gene ids 
-        cypher = f"""MATCH p=(n:BioEntity) WHERE n.name = '{names}' 
-        AND n.id starts with 'hgnc' RETURN n.name, n.id"""
-        results = client.query_tx(cypher)
-        
-        # save and loads results into a dataframe for each gene id
-        id_df_list.append(pd.DataFrame(results, columns=["name", "gene_id"]))
-        
-    # combines the dataframes into a single dataframe
-    id_df = pd.concat(id_df_list, ignore_index=True)  
-    
-    target_id_cypher = f"""MATCH p=(n:BioEntity)-[r:indra_rel]->(m:BioEntity) 
-    WHERE n.name = '{target_protein}' RETURN n.id LIMIT 1"""
-    target_results = client.query_tx(target_id_cypher)
-    target_id = target_results[0][0][5:]
-    
-    return id_df, target_id
+    hgnc_id = hgnc_client.get_hgnc_id(protein_name)
+    if not hgnc_id:
+        hgnc_id = hgnc_client.get_current_hgnc_id(protein_name)
+        if not hgnc_id:
+            print("%s is not a valid gene name" % protein_name)
+            return None
+    return hgnc_id
+
+def get_gene_ids(protein_list):
+    """Return HGNC ids for all proteins in the list
+
+    Parameters
+    ----------
+    protein_list: list
+        Contains proteins user enters to analyze in relation to target
+
+    Returns
+    -------
+    """
+    hgnc_ids = []
+    for protein in protein_list:
+        hgnc_id = get_gene_id(protein)
+        if hgnc_id:
+            hgnc_ids.append(hgnc_id)
+    return hgnc_ids
 
 
 def shared_pathway(id_df, target_id, target_protein):
@@ -396,9 +398,9 @@ def graph_boxplots(shared_complexes_df,shared_entities):
     plt.show()
 
 
-def run_analysis(protein_list, target_protein):
+def run_analysis(source_hgnc_id, target_hgnc_ids):
     # to get dataframe with protiens that target has INDRA rel with filtered by users gene list
-    filtered_df, protein_df = find_indra_relationships(target_protein, protein_list)
+    filtered_df, protein_df = get_stmts_from_source(source_hgnc_id, target_hgnc_ids)
     print("\nThis is a dataframe of protiens that have INDRA relationships with ",
          target_protein, " that have been filtered for the protein list")
     print(filtered_df)
@@ -438,17 +440,29 @@ def run_analysis(protein_list, target_protein):
     pathways_df = gene_pathways()
 
     graph_boxplots(shared_complexes_df,shared_entities)
-   
+
+
 def main():
     # the protien list the user wants to analyze in relationship to target protein
-    protein_list = ['GLCE', 'ACSL5', 'APCDD1', 'ADAMTSL2', 'CALML3', 'CEMIP2',
-                    'AMOT', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
-                    'CRYBB1', 'PDZD8', 'FNDC3A']
+    target_protein_names = \
+        ['GLCE', 'ACSL5', 'APCDD1', 'ADAMTSL2', 'CALML3', 'CEMIP2',
+         'AMOT', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
+         'CRYBB1', 'PDZD8', 'FNDC3A']
+
+    target_hgnc_ids = get_gene_ids(target_protein_names)
 
     # the protein of interest in relation to protien list user enters
-    target_protein = "CTNNB1"
-    run_analysis(protein_list, target_protein)
+    source_protein_name = "CTNNB1"
+
+    source_hgnc_id = get_gene_id(source_protein_name)
+
+    if not source_hgnc_id or not target_hgnc_ids:
+        print("Cannot perform analysis due to invalid gene names")
+        return
+
+    run_analysis(source_hgnc_id, target_hgnc_ids)
 
 
 if __name__ == '__main__':
+    client = Neo4jClient()
     main()
