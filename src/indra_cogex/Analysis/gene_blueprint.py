@@ -27,43 +27,8 @@ from indra_cogex.client.enrichment.discrete import (
 from ...client.enrichment.signed import reverse_casual_reasoning
 
 
-def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a string of gene identifiers into HGNC IDs and names.
-
-    Args:
-    s (str): A string containing gene identifiers (symbols, HGNC IDs, or CURIEs)
-
-    Returns:
-    Tuple[Dict[str, str], List[str]]: A tuple containing a dictionary of HGNC IDs to gene names,
-    and a list of any gene identifiers that couldn't be parsed."""
-    records = {
-        record.strip().strip('"').strip("'").strip()
-        for line in s.strip().lstrip("[").rstrip("]").split()
-        if line
-        for record in line.strip().split(",")
-        if record.strip()
-    }
-    hgnc_ids = []
-    errors = []
-    for entry in records:
-        if entry.lower().startswith("hgnc:"):
-            hgnc_ids.append(entry.lower().replace("hgnc:", "", 1))
-        elif entry.isnumeric():
-            hgnc_ids.append(entry)
-        else:  # probably a symbol
-            hgnc_id = hgnc_client.get_current_hgnc_id(entry)
-            if hgnc_id:
-                hgnc_ids.append(hgnc_id)
-            else:
-                errors.append(entry)
-    genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
-    return genes, errors
-
-
-
 def discrete_analysis(client, genes: str, method: str, alpha: float, keep_insignificant: bool,
                       minimum_evidence_count: int, minimum_belief: float):
-
     """Perform discrete gene set analysis using various enrichment methods.
 
     Args:
