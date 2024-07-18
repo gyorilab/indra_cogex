@@ -19,20 +19,27 @@ import json
 from indra.statements import *
 import pandas as pd
 from indra_cogex.client import *
+import matplotlib.pyplot as plt
 
 
 def find_indra_relationships(target_protein, protein_list):
-    """
+    """To get a dataframe of proteins that the target protien has direct INDRA
+    relationship with to find the stmt_jsons, type, and id
+    
     Parameters
     ----------
-    target_protein: string, the protein of interest in relation to protien list user enters
-    protein_list: list that contains proteins user enters to analyze in relation to target
+    target_protein: string
+        The protein of interest in relation to protien list user enters
+    
+    protein_list: list 
+        Contains proteins user enters to analyze in relation to target
         
     Returns
     -------
-    combined_df: dataframe that contains INDRA relationships for target protein filtered
-    by "protein_list" genes
-    protein_df: unfiltered dataframe that contains all INDRA relationships for target protein  
+    combined_df: dataframe 
+        Contains INDRA relationships for target protein filtered by "protein_list" genes
+    protein_df: Dataframe
+        Unfiltered dataframe that contains all INDRA relationships for target protein  
     """
     
     # cypher to get dataframe with all proteins that have INDRA relationship with target protein
@@ -41,7 +48,7 @@ def find_indra_relationships(target_protein, protein_list):
     RETURN m.name, r.stmt_json, m.type, m.id, r.stmt_type"""
     
     proteins = client.query_tx(cypher)
-    protein_df = pd.DataFrame(proteins, columns=["name", "stmt_json", "type", "id", "type"])
+    protein_df = pd.DataFrame(proteins, columns=["name", "stmt_json", "type", "id", "indra_type"])
     
     df_list = []
     protein = protein_df["name"].values
@@ -58,14 +65,38 @@ def find_indra_relationships(target_protein, protein_list):
     return combined_df, protein_df
 
 
-# method to get INDRA statements for proteins of interest 
-def get_indra_statements(combined_df):
-    '''
+def graph_barchart(combined_df):
+    """Visualize frequnecy of interaction types among protiens that have direct
+       INDRA relationship to target
+    
 
     Parameters
     ----------
-    combined_df: dataframe that contains INDRA relationships for target protein filtered
-    by "protein_list" genes
+    combined_df : dataframe
+        Contains INDRA relationships for target protein filtered by 
+        "protein_list" genes
+
+    Returns
+    -------
+    None.
+
+    """
+    type_counts = combined_df["indra_type"].value_counts()
+    type_counts.plot.bar()
+    plt.xlabel("Interaction Type")
+    plt.ylabel("Frequency")
+    plt.title("Frequency of Type of Interaction With Target")
+    plt.show()
+
+
+def get_indra_statements(combined_df):
+    '''Method to get INDRA statements for proteins of interest using html assembler
+
+    Parameters
+    ----------
+    combined_df: dataframe 
+        Contains INDRA relationships for target protein filtered by                 
+        "protein_list" genes
 
     Returns
     -------
@@ -88,17 +119,21 @@ def get_indra_statements(combined_df):
         ha.save_model('%s_statements.html' % (name+str(index)))
 
 
-# method to get gene ids for protiens of interest
+
 def get_gene_ids(protein_list, target_protein):
-    """
+    """Method to get gene ids for protiens of interest
+    
     Parameters
     ----------
-    protein_list: list that contains proteins in the top_25 list but not paper_protiens
+    protein_list: list 
+        Contains proteins in the top_25 list but not paper_protiens
 
     Returns
     -------
-    id_df: dataframe that contains HGNC ids for protein_list protein list
-    target_id: string that is the target proteins HGNC id
+    id_df: dataframe
+        Contains HGNC ids for protein_list protein list
+    target_id: string 
+        The target proteins HGNC id
         
     """
     id_df_list = []
@@ -126,12 +161,16 @@ def get_gene_ids(protein_list, target_protein):
 
 
 def shared_pathway(id_df, target_id, target_protein):
-    """
+    """Find shared pathways between list of genes and target protien 
+    
     Parameters
     ----------
-    id_df: dataframe that contains HGNC ids for protein_list protein list
-    target_id: string that is the target proteins HGNC id
-    target_protein: string, the protein of interest in relation to protien list user enters
+    id_df: dataframe
+        Contains HGNC ids for protein_list protein list
+    target_id: string 
+        The target proteins HGNC id
+    target_protein: string
+        The protein of interest in relation to protien list 
     
     Returns
     -------
@@ -151,18 +190,21 @@ def shared_pathway(id_df, target_id, target_protein):
 
 
 def child_of_target(id_df, target_id, target_protein):
-    '''
+    """ Determine if any gene in gene list isa/partof the target protein 
     Parameters
     ----------
-    id_df : dataframe that contains HGNC ids for protein_list
-    target_id : tring that is the target proteins HGNC id
-    target_protein : string, the protein of interest in relation to protien list user enters
+    id_df : dataframe
+        Contains HGNC ids for protein_list
+    target_id : string 
+        The target proteins HGNC id
+    target_protein : string
+        The protein of interest in relation to protien list user enters
 
     Returns
     -------
     None.
 
-    '''
+    """
     #iterates through the ids and names of the protein_list proteins 
     for ids, names in zip(id_df["gene_id"].values, id_df["name"].values):
        # gets the numerical part of the string only
@@ -179,15 +221,17 @@ def child_of_target(id_df, target_id, target_protein):
       
 
 def get_go_terms_for_target(target_id):
-    """
+    """ This method gets the go terms for the target protein
     Parameters
     ----------
     none
 
     Returns
     -------
-    target_go: contains list of GO terms for target protein
-    go_nodes: contains list of node objects that has information about GO terms for target protein
+    target_go: list 
+        Contains the GO terms for target protein
+    go_nodes: list 
+        List of node objects that has information about GO terms for target protein
         
     """
     # these are the GO terms for target protein
@@ -207,25 +251,31 @@ def get_go_terms_for_target(target_id):
     return target_go, go_nodes
 
 
-# this method uses the indra_upstream csv to get a dataframe that is the intersection
-# of the upstream molecules and the bioentities that target protein has direct INDRA relationships with
+
 # for now this code needs to have a downloaded csv, but if there is eventually a rest api 
 # for discrete gene analysis data, the way the data is loaded can be changed
-def shared_entities(protein_df):
-    """
+def shared_bioentities(protein_df):
+    """This method uses the indra_upstream csv to get a dataframe that is the 
+        intersection of the upstream molecules and the bioentities that target 
+        protein has direct INDRA relationships with and the bioentities that 
+        target protein has direct INDRA relationships with
+    
     Parameters
     ----------
-    protein_df: dataframe which contains all bioentities target protien has a 
-    direct INDRA relationship with 
+    protein_df: dataframe 
+        Contains all bioentities target protien has a direct INDRA relationship with 
 
     Returns
     -------
-    shared_proteins: list of shared bioentities between the indra_upstream results 
-    and bioenties that have direct INDRA relationships with target protein
+    shared_proteins: list
+        list of shared bioentities between the indra_upstream results 
+        and bioenties that have direct INDRA relationships with target protein
     
-    shared_indra: dataframe that is the filtered the indra_upstream_df using the shared_protiens list 
-    (you can pick whether you want to filter the indra_upstream_df or protein_df which 
-    contains all bioentities that target protein has a direct INDRA relationship with)
+    shared_entities: dataframe 
+        The filtered the indra_upstream_df using the shared_protiens list 
+        (you can pick whether you want to filter the indra_upstream_df or 
+        protein_df which contains all bioentities that target protein has a 
+        direct INDRA relationship with)
         
     """
     # downloaded the upstream gene list analysis as a csv
@@ -240,31 +290,36 @@ def shared_entities(protein_df):
         # can pick if you want to filter from protein_df (which has proteins 
         #that have INDRA relationships to target) or indra_upstream_df 
             df_list.append(indra_upstream_df[indra_upstream_df["Name"] == shared_proteins[i]])
-            shared_indra = pd.concat(df_list)
-    shared_indra = shared_indra.reset_index()
+            shared_entities = pd.concat(df_list)
+    shared_entities = shared_entities.reset_index()
 
     # code if want to filter for specific type of bioentity 
     # ex: protein_family_complex, small_molecule ect.
     
-     #for num, type in enumerate(shared_indra["type"].values):
+     #for num, type in enumerate(shared_entities["type"].values):
         #if type[0] == "protein_family_complex":
-            #print(shared_indra.iloc[num])
+            #print(shared_entities.iloc[num])
     
-    return shared_proteins, shared_indra
+    return shared_proteins, shared_entities
     
 
-# this method finds the shared go terms between the gene list and target proteins GO terms
-# again the data is downloaded from the discrete gene analysis is as csv file
+
 def finding_protein_complexes(target_go):
-    """
+    """This method finds the shared go terms between the gene list and target 
+        proteins GO terms again the data is downloaded from the discrete gene 
+        analysis is as csv file
+        
     Parameters
     ----------
-    target_go: list of GO terms for Target protein
+    target_go: list 
+        GO terms for Target protein
 
     Returns
     -------
-    shared_df = dataframe that contains shared bioentities that have the same go terms 
-    between the GO terms provided from the gene analysis and GO terms associated with target protein
+    shared_df: dataframe
+        Contains shared bioentities that have the same go terms 
+        between the GO terms provided from the gene analysis and GO terms 
+        associated with target protein
         
     """
     go_terms_df = pd.read_csv("/Users/ariaagarwal/Desktop/goterms.csv")
@@ -276,14 +331,46 @@ def finding_protein_complexes(target_go):
     
     return shared_complexes_df
 
-# combined dataframe of REACTOME and Wikipathways provided by gene analysis for gene list
-# did not perform analysis because shared pathways was already explored 
+ # did not perform analysis because shared pathways was already explored 
 def gene_pathways():
+    """ This method creates combined dataframe of REACTOME and Wikipathways
+    provided by gene analysis for gene list
+   
+    Parameters
+    ----------
+    none
+
+    Returns
+    -------
+    pathways_df : dataframe
+        This dataframe contains the combined wikipathways and reactome
+        pathways for the gene list 
+
+    """
     reactome_df = pd.read_csv("/Users/ariaagarwal/Desktop/reactome.csv")
     wikipathways_df = pd.read_csv("/Users/ariaagarwal/Desktop/wikipathways.csv")
     pathways_df = pd.concat([reactome_df, wikipathways_df])
     
     return pathways_df
+
+def graph_boxplots(shared_complexes_df,shared_entities):
+
+    plt.title("P-values for Shared Complexes")
+    shared_complexes_df.boxplot(column=["p-value"])
+    plt.show()
+    plt.title("Q-values for Shared Complexes")
+    shared_complexes_df.boxplot(column=["q-value"])
+    plt.show()
+
+    plt.title("P-values for Shared Bioentities")
+    shared_entities.boxplot(column=["p-value"])
+    plt.show()
+    
+    plt.title("Q-values for Shared Bioentities")
+    shared_entities.boxplot(column=["q-value"])
+    plt.show()
+
+    
 
 def main():
     
@@ -294,11 +381,16 @@ def main():
    
    # the protein of interest in relation to protien list user enters
    target_protein = "CTNNB1"
+   
    # to get dataframe with protiens that target has INDRA rel with filtered by users gene list
    combined_df, protein_df = find_indra_relationships(target_protein, protein_list)
    print("\nThis is a dataframe of protiens that have INDRA relationships with ", 
          target_protein, " that have been filtered for the protein list")
    print(combined_df)
+   
+   # visualize frequnecy of interaction types among protiens that have direct
+   # INDRA relationship to target
+   graph_barchart(combined_df)
    
    # to get INDRA statements for protiens that have direct INDRA rel with target
    get_indra_statements(combined_df)
@@ -317,10 +409,10 @@ def main():
    target_go, go_nodes = get_go_terms_for_target(target_id)
   
    # finds shared upstream bioentities between the users gene list and target protein
-   shared_proteins, shared_indra = shared_entities(protein_df)
+   shared_proteins, shared_entities = shared_bioentities(protein_df)
    print("These are the shared upstream bioentities between the gene list and",
          target_protein)
-   print(shared_indra)
+   print(shared_entities)
    
    # finds shared bioentities between users gene list and target protein using GO terms
    shared_complexes_df = finding_protein_complexes(target_go)
@@ -329,6 +421,8 @@ def main():
    
    # gets a list of reactome and wikipathways for shared genes
    pathways_df = gene_pathways()
+   
+   graph_boxplots(shared_complexes_df,shared_entities)
    
 main()
 
