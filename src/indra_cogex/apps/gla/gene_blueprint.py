@@ -82,7 +82,6 @@ def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
     return genes, errors
 
-
 class DiscreteForm(FlaskForm):
     """A form for discrete gene set enrichment analysis."""
 
@@ -125,7 +124,6 @@ class SignedForm(FlaskForm):
 
 class ContinuousForm(FlaskForm):
     """A form for continuous gene set enrichment analysis."""
-
     file = file_field
     gene_name_column = StringField(
         "Gene Name Column",
@@ -148,138 +146,43 @@ class ContinuousForm(FlaskForm):
     minimum_belief = minimum_belief_field
     submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
-    def get_scores(self) -> Dict[str, float]:
-        """Get scores dictionary."""
-        name = self.file.data.filename
-        sep = "," if name.endswith("csv") else "\t"
-        df = pd.read_csv(self.file.data, sep=sep)
-        if self.species.data == "rat":
-            scores = get_rat_scores(
-                df,
-                gene_symbol_column_name=self.gene_name_column.data,
-                score_column_name=self.log_fold_change_column.data,
-            )
-        elif self.species.data == "mouse":
-            scores = get_mouse_scores(
-                df,
-                gene_symbol_column_name=self.gene_name_column.data,
-                score_column_name=self.log_fold_change_column.data,
-            )
-        elif self.species.data == "human":
-            scores = get_human_scores(
-                df,
-                gene_symbol_column_name=self.gene_name_column.data,
-                score_column_name=self.log_fold_change_column.data,
-            )
-        else:
-            raise ValueError(f"Unknown species: {self.species.data}")
-        return scores
-
 
 @gene_blueprint.route("/discrete", methods=["GET", "POST"])
 def discretize_analysis():
-    """Render the home page."""
+    """Render the discrete analysis page and handle form submission.
+
+    Returns
+    -------
+    str
+        Rendered HTML template.
+    """
     form = DiscreteForm()
     if form.validate_on_submit():
-        method = form.correction.data
-        alpha = form.alpha.data
-        keep_insignificant = form.keep_insignificant.data
-        minimum_evidence_count = form.minimum_evidence.data
-        minimum_belief = form.minimum_belief.data
         genes, errors = form.parse_genes()
-        gene_set = set(genes)
-
-        go_results = go_ora(
+        results = discrete_analysis(
             client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
+            genes,
+            form.correction.data,
+            form.alpha.data,
+            form.keep_insignificant.data,
+            form.minimum_evidence.data,
+            form.minimum_belief.data,
+            form.indra_path_analysis.data
         )
-        wikipathways_results = wikipathways_ora(
-            client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        reactome_results = reactome_ora(
-            client,
-            gene_set,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        phenotype_results = phenotype_ora(
-            gene_set,
-            client=client,
-            method=method,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-        )
-        if form.indra_path_analysis.data:
-            indra_upstream_results = indra_upstream_ora(
-                client,
-                gene_set,
-                method=method,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=minimum_evidence_count,
-                minimum_belief=minimum_belief,
-            )
-            indra_downstream_results = indra_downstream_ora(
-                client,
-                gene_set,
-                method=method,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=minimum_evidence_count,
-                minimum_belief=minimum_belief,
-            )
-        else:
-            indra_upstream_results = None
-            indra_downstream_results = None
+        results['parsing_errors'] = errors
 
         if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
             downloads = Path.home().joinpath("Downloads")
-            go_results.to_csv(
-                downloads.joinpath("go_results.tsv"), sep="\t", index=False
-            )
-            wikipathways_results.to_csv(
-                downloads.joinpath("wikipathways_results.tsv"), sep="\t", index=False
-            )
-            reactome_results.to_csv(
-                downloads.joinpath("reactome_results.tsv"), sep="\t", index=False
-            )
-            phenotype_results.to_csv(
-                downloads.joinpath("phenotype_results.tsv"), sep="\t", index=False
-            )
-            if form.indra_path_analysis.data:
-                indra_downstream_results.to_csv(
-                    downloads.joinpath("indra_downstream_results.tsv"),
-                    sep="\t",
-                    index=False,
-                )
-                indra_upstream_results.to_csv(
-                    downloads.joinpath("indra_upstream_results.tsv"),
-                    sep="\t",
-                    index=False,
-                )
+            for key, df in results.items():
+                if isinstance(df, pd.DataFrame):
+                    df.to_csv(downloads.joinpath(f"{key}.tsv"), sep="\t", index=False)
             flask.flash(f"Downloaded files to {downloads}")
             return flask.redirect(url_for(f".{discretize_analysis.__name__}"))
 
         return flask.render_template(
             "gene_analysis/discrete_results.html",
             genes=genes,
-            errors=errors,
-            method=method,
-            alpha=alpha,
-            go_results=go_results,
-            wikipathways_results=wikipathways_results,
-            reactome_results=reactome_results,
-            phenotype_results=phenotype_results,
-            indra_downstream_results=indra_downstream_results,
-            indra_upstream_results=indra_upstream_results,
+            **results
         )
 
     return flask.render_template(
@@ -290,32 +193,35 @@ def discretize_analysis():
 
 
 @gene_blueprint.route("/signed", methods=["GET", "POST"])
-def signed_analysis():
-    """Render the signed gene set enrichment analysis form."""
+def signed_analysis_route():
+    """Render the signed gene set enrichment analysis form and handle form submission.
+
+    Returns
+    -------
+    str
+        Rendered HTML template.
+    """
     form = SignedForm()
     if form.validate_on_submit():
-        # method = form.correction.data
-        # alpha = form.alpha.data
         positive_genes, positive_errors = form.parse_positive_genes()
         negative_genes, negative_errors = form.parse_negative_genes()
-        results = reverse_causal_reasoning(
-            client=client,
-            positive_hgnc_ids=positive_genes,
-            negative_hgnc_ids=negative_genes,
-            alpha=form.alpha.data,
-            keep_insignificant=form.keep_insignificant.data,
-            minimum_evidence_count=form.minimum_evidence.data,
-            minimum_belief=form.minimum_belief.data,
+        results = signed_analysis(
+            client,
+            positive_genes,
+            negative_genes,
+            form.alpha.data,
+            form.keep_insignificant.data,
+            form.minimum_evidence.data,
+            form.minimum_belief.data
         )
+        results['positive_parsing_errors'] = positive_errors
+        results['negative_parsing_errors'] = negative_errors
+
         return flask.render_template(
             "gene_analysis/signed_results.html",
             positive_genes=positive_genes,
-            positive_errors=positive_errors,
             negative_genes=negative_genes,
-            negative_errors=negative_errors,
-            results=results,
-            # method=method,
-            # alpha=alpha,
+            **results
         )
     return flask.render_template(
         "gene_analysis/signed_form.html",
@@ -323,7 +229,6 @@ def signed_analysis():
         example_positive_hgnc_ids=", ".join(EXAMPLE_POSITIVE_HGNC_IDS),
         example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
     )
-
 
 @gene_blueprint.route("/continuous", methods=["GET", "POST"])
 def continuous_analysis():
