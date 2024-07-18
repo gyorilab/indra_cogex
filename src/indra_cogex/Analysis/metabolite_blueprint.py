@@ -52,20 +52,25 @@ def discrete_analysis(client, metabolites: Dict[str, str], method: str, alpha: f
     }
 
 
-def enzyme_analysis(client, ec_code: str, chebi_ids: List[str] = None):
+def enzyme_analysis(client, ec_code: str, chebi_ids: List[str] = None) -> List:
     """Perform enzyme analysis and explanation for given EC code and optional ChEBI IDs.
 
+    Parameters
+    ----------
+    client : object
+        The client object for making API calls.
+    ec_code : str
+        The EC code for the enzyme.
+    chebi_ids : List[str], optional
+        List of ChEBI IDs for additional context.
 
-    client: The client object for making API calls
-    ec_code (str): The EC code for the enzyme
-    chebi_ids (List[str], optional): List of ChEBI IDs for additional context
-
-    Returns:
-    List: A list of statements explaining the enzyme's function"""
+    Returns
+    -------
+    List
+        A list of statements explaining the enzyme's function."""
     stmts = metabolomics_explanation(
         client=client, ec_code=ec_code, chebi_ids=chebi_ids
     )
     return stmts
-
 
 
