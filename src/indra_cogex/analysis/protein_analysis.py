@@ -36,7 +36,7 @@ def find_indra_relationships(target_protein, protein_list):
         
     Returns
     -------
-    combined_df: dataframe 
+    filtered_df: dataframe 
         Contains INDRA relationships for target protein filtered by "protein_list" genes
     protein_df: Dataframe
         Unfiltered dataframe that contains all INDRA relationships for target protein  
@@ -60,19 +60,18 @@ def find_indra_relationships(target_protein, protein_list):
            df_list.append(protein_df[protein_df["name"] == gene])
            
     # combines dataframes for each gene into single dataframe
-    combined_df = pd.concat(df_list, ignore_index=True)
+    filtered_df = pd.concat(df_list, ignore_index=True)
     
-    return combined_df, protein_df
+    return filtered_df, protein_df
 
 
-def graph_barchart(combined_df):
+def graph_barchart(filtered_df):
     """Visualize frequnecy of interaction types among protiens that have direct
        INDRA relationship to target
     
-
     Parameters
     ----------
-    combined_df : dataframe
+    filtered_df : dataframe
         Contains INDRA relationships for target protein filtered by 
         "protein_list" genes
 
@@ -81,7 +80,7 @@ def graph_barchart(combined_df):
     None.
 
     """
-    type_counts = combined_df["indra_type"].value_counts()
+    type_counts = filtered_df["indra_type"].value_counts()
     type_counts.plot.bar()
     plt.xlabel("Interaction Type")
     plt.ylabel("Frequency")
@@ -89,12 +88,12 @@ def graph_barchart(combined_df):
     plt.show()
 
 
-def get_indra_statements(combined_df):
+def download_indra_htmls(filtered_df):
     '''Method to get INDRA statements for proteins of interest using html assembler
 
     Parameters
     ----------
-    combined_df: dataframe 
+    filtered_df: dataframe 
         Contains INDRA relationships for target protein filtered by                 
         "protein_list" genes
 
@@ -103,8 +102,8 @@ def get_indra_statements(combined_df):
     None.
 
     '''
-    json_list = combined_df["stmt_json"].values
-    protein_names = combined_df["name"].values
+    json_list = filtered_df["stmt_json"].values
+    protein_names = filtered_df["name"].values
     
     # iterates through the gene name and json strings for each gene 
     for name, strings, index in zip(protein_names, json_list, range(len(protein_names))):
@@ -121,7 +120,7 @@ def get_indra_statements(combined_df):
 
 
 def get_gene_ids(protein_list, target_protein):
-    """Method to get gene ids for protiens of interest
+    """Method to get gene ids for protiens of interest and target protein
     
     Parameters
     ----------
@@ -322,9 +321,14 @@ def finding_protein_complexes(target_go):
         associated with target protein
         
     """
+    
+    # loads data fron csv file
     go_terms_df = pd.read_csv("/Users/ariaagarwal/Desktop/goterms.csv")
     df_list = []
+    # gets list of shared go terns between protein list and target protien
     shared_go = list((set(go_terms_df["CURIE"]).intersection(set(target_go))))
+    
+    # filters the target's go_term dataframe using the shared go term list 
     for i, j in enumerate(shared_go):
         df_list.append(go_terms_df[go_terms_df["CURIE"] == shared_go[i]])
     shared_complexes_df = pd.concat(df_list)
@@ -354,7 +358,29 @@ def gene_pathways():
     return pathways_df
 
 def graph_boxplots(shared_complexes_df,shared_entities):
+    """ This method creates boxplots to visualize p and q values for 
+        shared complexes/GO terms and bioentiies 
+    
 
+    Parameters
+    ----------
+    shared_complexes_df : dataframe
+        Contains shared bioentities that have the same go terms 
+        between the GO terms provided from the gene analysis and GO terms 
+        associated with target protein.
+    shared_entities : dataframe
+        The filtered the indra_upstream_df using the shared_protiens list 
+        (you can pick whether you want to filter the indra_upstream_df or 
+        protein_df which contains all bioentities that target protein has a 
+        direct INDRA relationship with).
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    # plots boxplots for each type of graph 
     plt.title("P-values for Shared Complexes")
     shared_complexes_df.boxplot(column=["p-value"])
     plt.show()
@@ -383,17 +409,17 @@ def main():
    target_protein = "CTNNB1"
    
    # to get dataframe with protiens that target has INDRA rel with filtered by users gene list
-   combined_df, protein_df = find_indra_relationships(target_protein, protein_list)
+   filtered_df, protein_df = find_indra_relationships(target_protein, protein_list)
    print("\nThis is a dataframe of protiens that have INDRA relationships with ", 
          target_protein, " that have been filtered for the protein list")
-   print(combined_df)
+   print(filtered_df)
    
    # visualize frequnecy of interaction types among protiens that have direct
    # INDRA relationship to target
-   graph_barchart(combined_df)
+   graph_barchart(filtered_df)
    
    # to get INDRA statements for protiens that have direct INDRA rel with target
-   get_indra_statements(combined_df)
+   download_indra_htmls(filtered_df)
    
    # to get gene ids for users gene list and target protein 
    id_df, target_id = get_gene_ids(protein_list, target_protein)
