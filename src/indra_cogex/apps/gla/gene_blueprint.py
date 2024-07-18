@@ -1,4 +1,4 @@
-"""Gene-centric analysis blueprint."""
+"""Gene-centric blueprint."""
 
 from pathlib import Path
 from typing import Dict, List, Mapping, Tuple
@@ -13,16 +13,6 @@ from wtforms.validators import DataRequired
 
 from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
 from indra_cogex.apps.proxies import client
-from indra_cogex.client.enrichment.continuous import (
-    get_human_scores,
-    get_mouse_scores,
-    indra_downstream_gsea,
-    indra_upstream_gsea,
-    phenotype_gsea,
-    reactome_gsea,
-    wikipathways_gsea,
-)
-
 from .fields import (
     alpha_field,
     correction_field,
@@ -35,21 +25,7 @@ from .fields import (
     source_field,
     species_field,
 )
-from ...client.enrichment.continuous import get_rat_scores, go_gsea
-from ...client.enrichment.discrete import (
-    EXAMPLE_GENE_IDS,
-    go_ora,
-    indra_downstream_ora,
-    indra_upstream_ora,
-    phenotype_ora,
-    reactome_ora,
-    wikipathways_ora,
-)
-from ...client.enrichment.signed import (
-    EXAMPLE_NEGATIVE_HGNC_IDS,
-    EXAMPLE_POSITIVE_HGNC_IDS,
-    reverse_causal_reasoning,
-)
+
 
 __all__ = ["gene_blueprint"]
 
