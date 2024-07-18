@@ -44,8 +44,8 @@ def find_indra_relationships(target_protein, protein_list):
     
     # cypher to get dataframe with all proteins that have INDRA relationship with target protein
     cypher = f"""MATCH p=(n:BioEntity)-[r:indra_rel]->(m:BioEntity) 
-    WHERE n.name = '{target_protein}'
-    RETURN m.name, r.stmt_json, m.type, m.id, r.stmt_type"""
+                 WHERE n.name = '{target_protein}'
+                 RETURN m.name, r.stmt_json, m.type, m.id, r.stmt_type"""
     
     proteins = client.query_tx(cypher)
     protein_df = pd.DataFrame(proteins, columns=["name", "stmt_json", "type", "id", "indra_type"])
@@ -116,7 +116,6 @@ def download_indra_htmls(filtered_df):
         # uses HtmlAssembler to get html pages of INDRA statements for each gene 
         ha = HtmlAssembler(stmts, title='Statements for %s' % name, db_rest_url='https://db.indra.bio')
         ha.save_model('%s_statements.html' % (name+str(index)))
-
 
 
 def get_gene_ids(protein_list, target_protein):
@@ -250,7 +249,6 @@ def get_go_terms_for_target(target_id):
     return target_go, go_nodes
 
 
-
 # for now this code needs to have a downloaded csv, but if there is eventually a rest api 
 # for discrete gene analysis data, the way the data is loaded can be changed
 def shared_bioentities(protein_df):
@@ -302,7 +300,6 @@ def shared_bioentities(protein_df):
     return shared_proteins, shared_entities
     
 
-
 def finding_protein_complexes(target_go):
     """This method finds the shared go terms between the gene list and target 
         proteins GO terms again the data is downloaded from the discrete gene 
@@ -335,6 +332,7 @@ def finding_protein_complexes(target_go):
     
     return shared_complexes_df
 
+
  # did not perform analysis because shared pathways was already explored 
 def gene_pathways():
     """ This method creates combined dataframe of REACTOME and Wikipathways
@@ -356,6 +354,7 @@ def gene_pathways():
     pathways_df = pd.concat([reactome_df, wikipathways_df])
     
     return pathways_df
+
 
 def graph_boxplots(shared_complexes_df,shared_entities):
     """ This method creates boxplots to visualize p and q values for 
@@ -396,60 +395,60 @@ def graph_boxplots(shared_complexes_df,shared_entities):
     shared_entities.boxplot(column=["q-value"])
     plt.show()
 
-    
 
-def main():
-    
-   #the protien list the user wants to analyze in relationship to target protein
-   protein_list = ['GLCE','ACSL5', 'APCDD1', 'ADAMTSL2', 'CALML3', 'CEMIP2',
-                   'AMOT','PLA2G4A','RCN2','TTC9','FABP4','GPCPD1','VSNL1',
-                   'CRYBB1', 'PDZD8','FNDC3A']
-   
-   # the protein of interest in relation to protien list user enters
-   target_protein = "CTNNB1"
-   
-   # to get dataframe with protiens that target has INDRA rel with filtered by users gene list
-   filtered_df, protein_df = find_indra_relationships(target_protein, protein_list)
-   print("\nThis is a dataframe of protiens that have INDRA relationships with ", 
+def run_analysis(protein_list, target_protein):
+    # to get dataframe with protiens that target has INDRA rel with filtered by users gene list
+    filtered_df, protein_df = find_indra_relationships(target_protein, protein_list)
+    print("\nThis is a dataframe of protiens that have INDRA relationships with ",
          target_protein, " that have been filtered for the protein list")
-   print(filtered_df)
-   
-   # visualize frequnecy of interaction types among protiens that have direct
-   # INDRA relationship to target
-   graph_barchart(filtered_df)
-   
-   # to get INDRA statements for protiens that have direct INDRA rel with target
-   download_indra_htmls(filtered_df)
-   
-   # to get gene ids for users gene list and target protein 
-   id_df, target_id = get_gene_ids(protein_list, target_protein)
- 
-    # to find shared pathways between users gene list and target protein 
-   shared_pathway(id_df, target_id, target_protein)
-   
-   # which proteins of interest are part of the same protien family complex
-   # as the target
-   child_of_target(id_df, target_id, target_protein)
-   
-   # to get go term ids for target gene
-   target_go, go_nodes = get_go_terms_for_target(target_id)
-  
-   # finds shared upstream bioentities between the users gene list and target protein
-   shared_proteins, shared_entities = shared_bioentities(protein_df)
-   print("These are the shared upstream bioentities between the gene list and",
+    print(filtered_df)
+
+    # visualize frequnecy of interaction types among protiens that have direct
+    # INDRA relationship to target
+    graph_barchart(filtered_df)
+
+    # to get INDRA statements for protiens that have direct INDRA rel with target
+    download_indra_htmls(filtered_df)
+
+    # to get gene ids for users gene list and target protein
+    id_df, target_id = get_gene_ids(protein_list, target_protein)
+
+    # to find shared pathways between users gene list and target protein
+    shared_pathway(id_df, target_id, target_protein)
+
+    # which proteins of interest are part of the same protien family complex
+    # as the target
+    child_of_target(id_df, target_id, target_protein)
+
+    # to get go term ids for target gene
+    target_go, go_nodes = get_go_terms_for_target(target_id)
+
+    # finds shared upstream bioentities between the users gene list and target protein
+    shared_proteins, shared_entities = shared_bioentities(protein_df)
+    print("These are the shared upstream bioentities between the gene list and",
          target_protein)
-   print(shared_entities)
+    print(shared_entities)
+
+    # finds shared bioentities between users gene list and target protein using GO terms
+    shared_complexes_df = finding_protein_complexes(target_go)
+    print("These are shared complexes between the gene list and", target_protein)
+    print(shared_complexes_df)
+
+    # gets a list of reactome and wikipathways for shared genes
+    pathways_df = gene_pathways()
+
+    graph_boxplots(shared_complexes_df,shared_entities)
    
-   # finds shared bioentities between users gene list and target protein using GO terms
-   shared_complexes_df = finding_protein_complexes(target_go)
-   print("These are shared complexes between the gene list and", target_protein)
-   print(shared_complexes_df)
-   
-   # gets a list of reactome and wikipathways for shared genes
-   pathways_df = gene_pathways()
-   
-   graph_boxplots(shared_complexes_df,shared_entities)
-   
-main()
+def main():
+    # the protien list the user wants to analyze in relationship to target protein
+    protein_list = ['GLCE', 'ACSL5', 'APCDD1', 'ADAMTSL2', 'CALML3', 'CEMIP2',
+                    'AMOT', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
+                    'CRYBB1', 'PDZD8', 'FNDC3A']
+
+    # the protein of interest in relation to protien list user enters
+    target_protein = "CTNNB1"
+    run_analysis(protein_list, target_protein)
 
 
+if __name__ == '__main__':
+    main()
