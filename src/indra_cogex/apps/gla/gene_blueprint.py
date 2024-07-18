@@ -26,6 +26,11 @@ from .fields import (
     species_field,
 )
 
+from indra_cogex.Analysis.gene_analysis import (
+    discrete_analysis,
+    signed_analysis,
+    continuous_analysis
+)
 
 __all__ = ["gene_blueprint"]
 
