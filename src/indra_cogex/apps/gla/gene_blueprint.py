@@ -26,7 +26,7 @@ from .fields import (
     species_field,
 )
 
-from indra_cogex.Analysis.gene_analysis import (
+from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
     signed_analysis,
     continuous_analysis

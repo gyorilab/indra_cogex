@@ -24,7 +24,7 @@ from indra_cogex.client.enrichment.discrete import (
     wikipathways_ora,
 )
 
-from ...client.enrichment.signed import reverse_casual_reasoning
+from indra_cogex.client.enrichment.signed import reverse_casual_reasoning
 
 
 def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,

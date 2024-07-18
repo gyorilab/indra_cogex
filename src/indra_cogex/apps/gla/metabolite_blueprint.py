@@ -12,6 +12,7 @@ from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.proxies import client
+from indra_cogex.analysis.metabolite_analysis import discrete_analysis, enzyme_analysis
 
 from .fields import (
     alpha_field,
