@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 
 import requests
 from flask import Blueprint, Response, abort, jsonify, render_template, request
-from flask_jwt_extended import jwt_optional
+from flask_jwt_extended import jwt_required
 
 from indra.assemblers.english import EnglishAssembler
 from indra.sources.indra_db_rest import IndraDBRestAPIError
@@ -223,7 +223,7 @@ def biolookup(curie):
 
 # Endpoint for getting evidence
 @data_display_blueprint.route("/expand/<stmt_hash>", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def get_evidence(stmt_hash):
     try:
         # Todo:
@@ -297,7 +297,7 @@ def get_evidence(stmt_hash):
 
 # Serve the statement display template
 @data_display_blueprint.route("/statement_display", methods=["GET"])
-@jwt_optional
+@jwt_required(optional=True)
 def statement_display():
     user, roles = resolve_auth(dict(request.args))
     email = user.email if user else ""
@@ -400,7 +400,7 @@ def _get_user():
 
 
 @data_display_blueprint.route("/curate/<hash_val>", methods=["POST"])
-@jwt_optional
+@jwt_required(optional=True)
 def submit_curation_endpoint(hash_val: str):
     email = _get_user()
     if not isinstance(email, str):
