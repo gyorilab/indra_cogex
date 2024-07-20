@@ -868,8 +868,11 @@ class Neo4jClient:
             rel_type = neo4j_relation.type
             props = dict(neo4j_relation)
             source_ns, source_id = process_identifier(neo4j_relation.start_node["id"])
+            source_name = neo4j_relation.start_node.get("name")
             target_ns, target_id = process_identifier(neo4j_relation.end_node["id"])
-            rel = Relation(source_ns, source_id, target_ns, target_id, rel_type, props)
+            target_name = neo4j_relation.end_node.get("name")
+            rel = Relation(source_ns, source_id, target_ns, target_id, rel_type, props,
+                           source_name=source_name, target_name=target_name)
             relations.append(rel)
         return relations
 

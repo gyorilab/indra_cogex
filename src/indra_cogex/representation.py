@@ -164,6 +164,8 @@ class Relation:
         target_id: str,
         rel_type: str,
         data: Optional[Mapping[str, Any]] = None,
+        source_name: Optional[str] = None,
+        target_name: Optional[str] = None,
     ):
         """Initialize the relation.
 
@@ -181,6 +183,10 @@ class Relation:
             The type of relation.
         data :
             An optional data dictionary associated with the relation.
+        source_name :
+            An optional name for the source node.
+        target_name :
+            An optional name for the target node.
         """
         self.source_ns = source_ns
         self.source_id = source_id
@@ -188,6 +194,8 @@ class Relation:
         self.target_id = target_id
         self.rel_type = rel_type
         self.data = data if data else {}
+        self.source_name = source_name
+        self.target_name = target_name
 
     def to_json(self) -> RelJson:
         """Serialize the relation to JSON format.
@@ -204,6 +212,8 @@ class Relation:
             "target_id": self.target_id,
             "rel_type": self.rel_type,
             "data": self.data,
+            "source_name": self.source_name,
+            "target_name": self.target_name,
         }
 
     def __str__(self):  # noqa:D105

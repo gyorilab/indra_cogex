@@ -59,3 +59,16 @@ def test_process_identifier():
     assert process_identifier("hgnc:6871") == ("HGNC", "6871")
     assert process_identifier("chebi:1234") == ("CHEBI", "CHEBI:1234")
     assert process_identifier("uploc:SL-0086") == ("UPLOC", "SL-0086")
+
+
+@pytest.mark.nonpublic
+def test_get_source_relations():
+    nc = _get_client()
+    relations = nc.get_source_relations(
+        target=("HGNC", "9875"),
+        relation="indra_rel",
+        source_type='BioEntity',
+        target_type='BioEntity',
+    )
+
+    assert relations[0].target_name == "RASGRF1"
