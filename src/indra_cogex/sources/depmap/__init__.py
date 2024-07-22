@@ -50,6 +50,9 @@ def load_sigs(correction_method=CORRECTION_METHOD):
     sig_by_gene = defaultdict(dict)
     for row in tqdm.tqdm(df.itertuples(), total=len(df),
                          desc='Processing DepMap significant pairs'):
+        # Note that we are sorting the genes here since
+        # we will generate a single directed edge a->b
+        # and this makes that process deterministic
         a, b = sorted(row.Index)
         a_hgnc_id = hgnc_client.get_current_hgnc_id(a)
         b_hgnc_id = hgnc_client.get_current_hgnc_id(b)
@@ -87,6 +90,8 @@ class DepmapProcessor(Processor):
                        data={'name': gene_name})
 
     def get_relations(self):  # noqa:D102
+        # Note that we have previously sorted a and b and
+        # we are generating a single directed edge a->b here
         for (a, a_hgnc_id), genes in \
                 tqdm.tqdm(self.sigs_by_gene.items(),
                           desc='Processing DepMap into relations'):
