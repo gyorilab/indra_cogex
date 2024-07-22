@@ -21,13 +21,32 @@ logger = logging.getLogger(__name__)
 
 SUBMODULE = pystow.module("indra", "cogex", "depmap")
 
+# This is an intermediate processed file created using
+# https://github.com/sorgerlab/indra_assembly_paper/blob/master/bioexp/depmap/data_processing.py
 DEPMAP_SIGS = pystow.join('depmap_analysis', 'depmap', '21q2',
                           name='dep_stouffer_signif.pkl')
 
+CORRECTION_METHODS = {
+    'bonferroni': 'bc_cutoff',
+    'benjamini-hochberg': 'bh_crit_val',
+    'benjamini-yekutieli': 'by_crit_val',
+}
 
-def load_sigs():
+CORRECTION_METHOD = 'benjamini-yekutieli'
+
+
+def load_sigs(correction_method=CORRECTION_METHOD):
+    # Load the significance data frame
     with open(DEPMAP_SIGS, 'rb') as f:
         df = pickle.load(f)
+
+    # Apply correction method filter
+    if correction_method is not None:
+        crit_col = CORRECTION_METHODS[correction_method]
+        df = df[df.logp < df[crit_col]]
+
+    # Get the current HGNC IDs for the genes since
+    # some are outdated and organize them by pairs
     sig_by_gene = defaultdict(dict)
     for row in tqdm.tqdm(df.itertuples(), total=len(df),
                          desc='Processing DepMap significant pairs'):
