@@ -40,6 +40,7 @@ non-causal contextual relations including properties, ontology, and data.
 | [PubMed](https://ncbi.nlm.nih.gov/)                                 | published_in                        | The publication represented by the source is published in the journal represented by the target.                                                   |
 | [CellMarker](http://xteam.xbio.top/)                                | has_marker                          | The cell type represented by the source node has the gene marker represented by the target node.                                                   |
 | [InterPro](https://www.ebi.ac.uk/interpro/)                         | has_domain                          | The gene represented by the source node has a protein domain represented by the target node.                                                       |
+| [DepMap](https://depmap.org/portal/) | codependent_with | The gene represented by the source node is codependent with the gene represented by the target node in cancer cell lines.                          |
 
 ## Installation
 
