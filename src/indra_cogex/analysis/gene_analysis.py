@@ -1,6 +1,6 @@
 """Gene-centric analysis."""
 
-from typing import Dict, List, Mapping, Tuple
+from typing import Dict, List, Mapping, Tuple, Union
 import pandas as pd
 
 from indra.databases import hgnc_client
