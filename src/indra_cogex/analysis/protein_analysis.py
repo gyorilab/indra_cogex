@@ -8,7 +8,7 @@ INDRA statements, exploring pathway membership, determining if any of the
 proteins belong to the same protein family/complex as the target and using
 INDRA discrete gene list analysis results
 """
-
+import itertools
 import os
 import json
 import logging
@@ -23,57 +23,62 @@ from indra_cogex.client import *
 
 logger = logging.getLogger(__name__)
 
-def get_gene_id(source_protein):
-    """Return HGNC id for source protein
+
+def get_valid_gene_id(gene_name):
+    """Return HGNC id for a gene name handling outdated symbols.
 
     Parameters
     ----------
-    source_protein: string
-        The source protein of interest in relation to target list user enters
+    gene_name : str
+        The gene name to get the HGNC id for.
+
     Returns
     -------
-    source_hgnc_id: string
-        The HGNC id for the source protein
-
+    hgnc_id : str
+        The HGNC id corresponding ton the gene name.
     """
-    # gets gene id for source protein
-    source_hgnc_id = hgnc_client.get_hgnc_id(source_protein)
+    # Get ID for gene name
+    hgnc_id = hgnc_client.get_hgnc_id(gene_name)
 
-    # checks for validity of input
-    if not source_hgnc_id:
-        source_hgnc_id = hgnc_client.get_current_hgnc_id(source_protein)
-        if not source_hgnc_id:
-            logger.warning("%s is not a valid gene name" % source_protein)
+    # Try to turn an outdated symbol into a valid one
+    # if possible
+    if not hgnc_id:
+        hgnc_id = hgnc_client.get_current_hgnc_id(gene_name)
+        if isinstance(hgnc_id, list):
+            hgnc_id = hgnc_id[0]
+        elif not hgnc_id:
+            logger.warning("%s is not a valid gene name" % gene_name)
             return None
 
-    return source_hgnc_id
+    return hgnc_id
 
 
-def get_gene_ids(target_proteins):
-    """Return HGNC ids for all proteins in the list
+def get_valid_gene_ids(gene_names):
+    """Return valid HGNC ids for all genes in the list.
+
+    Any gene names that cannot be converted to HGNC ids are ignored.
 
     Parameters
     ----------
-    target_proteins: list
+    gene_names : list
         Contains proteins user enters to analyze in relation to source
 
     Returns
     -------
-    target_hgnc_ids: list
-        list of HGNC ids for target proteins
+    hgnc_ids : list
+        HGNC ids for the input gene names
     """
-    target_hgnc_ids = []
-    # iterates through target proteins to get gene ids
-    for protein in target_proteins:
-        hgnc_id = get_gene_id(protein)
+    hgnc_ids = []
+    for gene_name in gene_names:
+        hgnc_id = get_valid_gene_id(gene_name)
         if hgnc_id:
-            target_hgnc_ids.append(hgnc_id)
+            hgnc_ids.append(hgnc_id)
 
-    return target_hgnc_ids
+    return hgnc_ids
 
 
 @autoclient()
-def get_stmts_from_source(source_protein, *, client, target_proteins=None):
+def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_proteins=None):
     """To get a dataframe of proteins that the target protien has direct INDRA
     relationship with to find the stmt_jsons, type, and id
 
@@ -93,37 +98,38 @@ def get_stmts_from_source(source_protein, *, client, target_proteins=None):
     stmts_by_protein_filtered_df: dataframe
         Contains INDRA relationships for source protein filtered by
         "target_proteins"
-
     """
-    # gets indra_rel objects for protiens that have a direct INDRA relationship
+    # Get indra_rel objects for protiens that have a direct INDRA relationship
     # with the source protein
     res = client.get_target_relations(
-        source=('HGNC', source_protein),
+        source=(source_ns, source_id),
         relation='indra_rel',
         source_type='BioEntity',
         target_type='BioEntity',
     )
 
+
+    # Extract necessary information from the result and creates dictionary
+    # TODO: couldn't this be implemented using a list of dicts with
+    # a single dict-comprehension that is then loadded into a data frame?
     jsons = []
     types = []
     ids = []
     stmt_types = []
     names = []
-    # extracts necessary information from the result and creates dictionary
-    for i in range(len(res)):
-        names.append(res[i].target_name)
-        jsons.append(res[i].data["stmt_json"])
-        types.append(res[i].target_ns)
-        ids.append(res[i].target_id)
-        stmt_types.append(res[i].data["stmt_type"])
+    for entry in res:
+        names.append(entry.target_name)
+        jsons.append(entry.data["stmt_json"])
+        types.append(entry.target_ns)
+        ids.append(entry.target_id)
+        stmt_types.append(entry.data["stmt_type"])
     protein_dict = {"name": names, "stmt_json": jsons, "target_type": types,
-                   "target_id":ids, "stmt_type": stmt_types}
+                    "target_id": ids, "stmt_type": stmt_types}
     stmts_by_protein_df = pd.DataFrame(protein_dict)
 
-    # if there are target proteins filters data frame based on that list
+    # If there are target proteins filters data frame based on that list
     if target_proteins:
-
-        stmts_by_protein_filtered_df =stmts_by_protein_df[
+        stmts_by_protein_filtered_df = stmts_by_protein_df[
             stmts_by_protein_df.target_id.isin(target_proteins)]
         logger.info("\nDataframe of protiens that have INDRA relationships with source\
                     that have been filtered", stmts_by_protein_filtered_df)
@@ -134,50 +140,38 @@ def get_stmts_from_source(source_protein, *, client, target_proteins=None):
     return stmts_by_protein_df, stmts_by_protein_filtered_df
 
 
-def graph_interaction_barchart(stmts_by_protein_filtered_df, filename):
+def plot_stmts_by_type(stmts_df, fname):
     """Visualize frequnecy of interaction types among protiens that have direct
        INDRA relationship to source
 
     Parameters
     ----------
-    stmts_by_protein_filtered_df : dataframe
-        Contains INDRA relationships for source protein filtered by
-        "target_proteins" genes
-    filename: string
-        name of the file bar chart will be downloaded under
-
-    Returns
-    -------
-    None.
-
+    stmts_df : pd.DataGrame
+        Contains INDRA statements represented as a data frame.
+    fname : str
+        Name of the file bar chart will be saved into.
     """
-    # plots bar chart based on "stmt_type" which are the interaction types
-    type_counts = stmts_by_protein_filtered_df["stmt_type"].value_counts()
+    # Plot bar chart based on "stmt_type" which are the interaction types
+    type_counts = stmts_df["stmt_type"].value_counts()
     type_counts.plot.bar()
     plt.xlabel("Interaction Type")
     plt.ylabel("Frequency")
     plt.title("Frequency of Type of Interaction With Target")
 
-    plt.savefig(filename, bbox_inches="tight")
-    plt.show(block = False)
+    plt.savefig(fname, bbox_inches="tight")
 
 
-def assemble_indra_htmls(stmts_by_protein_filtered_df, output_path):
-    """Download INDRA statements for proteins of interest using HTML assembler
+def assemble_protein_stmt_htmls(stmts_df, output_path):
+    """Assemble HTML page for each protein's INDRA statements in a data frame.
 
     Parameters
     ----------
-    stmts_by_protein_filtered_df: dataframe
+    stmts_df : pd.DataFrame
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
-
-    Returns
-    -------
-    None.
-
     """
-    json_list = stmts_by_protein_filtered_df["stmt_json"].values
-    protein_names = stmts_by_protein_filtered_df["name"].values
+    json_list = stmts_df["stmt_json"].values
+    protein_names = stmts_df["name"].values
 
     # iterates through the gene name and json strings for each gene
     for idx, (name, strings) in enumerate(zip(protein_names, json_list)):
@@ -197,30 +191,28 @@ def assemble_indra_htmls(stmts_by_protein_filtered_df, output_path):
         ha.save_model('%s_statements.html' % fname)
 
 
-def shared_pathways(target_hgnc_ids, source_hgnc_id):
+def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
     """Find shared pathways between list of target genes and source protien
 
     Parameters
     ----------
-    target_hgnc_ids: list
-        Contains HGNC ids for target_list protein list
-
-    source_hgnc_id: string
-        The source proteins HGNC id
+    target_hgnc_ids : list
+        HGNC ids for a source set
+    source_hgnc_ids : list
+        HGNC ids for a target set
 
     Returns
     -------
-    shared_pathways_list: list
-        nested list of indra relation objects describing the pathway for
-        a given protein
-
+    shared_pathways_list : list
+        Nested list of Relation objects describing the pathways shared for
+        a given pair of genes.
     """
+    # FIXME: is there a reason to use a list here instead of a set?
+    # this  presumably results in the same pathway being listed multiple times
     shared_pathways_list = []
-    # iterates through ids and names of protein_list genes
-    for target_id in target_hgnc_ids :
-
+    for source_id, target_id in itertools.product(source_hgnc_ids, target_hgnc_ids):
         result = get_shared_pathways_for_genes((
-            ("HGNC", target_id),("HGNC", source_hgnc_id)))
+            ("HGNC", target_id), ("HGNC", source_id)))
         if result:
             shared_pathways_list.append(result)
     if not shared_pathways_list:
@@ -306,18 +298,16 @@ def get_go_terms_for_source(source_hgnc_id):
     -------
     target_go: list
         Contains the GO terms for target proteins
+        FIXME: documentation seems to be wrong here
     go_nodes: list
         List of node objects that has information about GO terms for t
         arget protein
-
     """
     # these are the GO terms for target protein
     go_nodes = get_go_terms_for_gene(("HGNC", source_hgnc_id))
-    source_go_terms = []
-
-    # iterates through node objects in list
-    for i in range(len(go_nodes)):
-        source_go_terms.append(go_nodes[i].db_id.lower())
+    source_go_terms = [
+        go_node.db_id.lower() for go_node in go_nodes
+    ]
 
     return source_go_terms, go_nodes
 
@@ -344,7 +334,6 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
         (can pick whether you want to filter the indra_upstream_df or
         protein_df which contains all bioentities that target protein has a
         direct INDRA relationship with)
-
     """
     # load csv into dataframe
     indra_upstream_df = pd.read_csv(filename)
@@ -414,7 +403,6 @@ def combine_target_gene_pathways(reactome_filename, wiki_filename):
     pathways_df : dataframe
         This dataframe contains the combined wikipathways and reactome
         pathways for the gene list
-
     """
     reactome_df = pd.read_csv(reactome_filename)
     wikipathways_df = pd.read_csv(wiki_filename)
@@ -481,14 +469,16 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     # INDRA relationship to source
     interaction_barchart_fname = os.path.join(output_path,
                                               "interaction_barchart.png")
-    graph_interaction_barchart(stmts_by_protein_filtered_df,
-                               interaction_barchart_fname)
+    plot_stmts_by_type(stmts_by_protein_filtered_df,
+                       interaction_barchart_fname)
 
     # Get INDRA statements for protiens that have direct INDRA rel
-    assemble_indra_htmls(stmts_by_protein_filtered_df, output_path)
+    assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
 
     # Find shared pathways between users gene list and target protein
-    shared_pathways_result = shared_pathways(target_hgnc_ids, source_hgnc_id)
+    shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
+                                                               target_hgnc_ids)
+    # FIXME: Is a plain text file the right choice here?
     with open(os.path.join(output_path, "shared_pathways.txt"), "w") as fh:
         fh.write(str(shared_pathways_result))
 
@@ -524,8 +514,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
 def explain_downstream(source, targets, output_path, id_type='hgnc.symbol'):
     if id_type == 'hgnc.symbol':
-        source_hgnc_id = get_gene_id(source)
-        target_hgnc_ids = get_gene_ids(targets)
+        source_hgnc_id = get_valid_gene_id(source)
+        target_hgnc_ids = get_valid_gene_ids(targets)
 
         if not source_hgnc_id:
             raise ValueError('Could not convert the source gene name to '
