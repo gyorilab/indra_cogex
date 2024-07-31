@@ -1,6 +1,7 @@
 """Gene-centric analysis."""
 
 from typing import Dict, List, Mapping, Tuple, Union
+from pathlib import Path
 import pandas as pd
 
 from indra.databases import hgnc_client
@@ -85,7 +86,7 @@ def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,
         minimum_belief=minimum_belief
     )
 
-    return {
+    results = {
         "go_results": go_results,
         "wikipathways_results": wikipathways_results,
         "reactome_results": reactome_results,
@@ -93,6 +94,12 @@ def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,
         "indra_upstream_results": indra_upstream_results,
         "indra_downstream_results": indra_downstream_results
     }
+
+    if not keep_insignificant:
+        for key in results:
+            results[key] = {k: v for k, v in results[key].items() if v['adjusted_p_value'] <= alpha}
+
+    return results
 
 
 def signed_analysis(client, positive_genes: Dict[str, str],
@@ -131,22 +138,31 @@ def signed_analysis(client, positive_genes: Dict[str, str],
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
+    print(f"Before filtering: {len(results)} results")
 
-    return {"results": results}
+    """Apply alpha and keep_insignificant filters"""
+    filtered_results = [
+        r for r in results
+        if keep_insignificant or (r['pvalue'] is not None and r['pvalue'] <= alpha)
+    ]
+    print(f"After filtering: {len(filtered_results)} results")
+    print(f"Filtered results: {filtered_results}")
+
+    return {"results": filtered_results}
 
 
 def continuous_analysis(
-    client,
-    file_path: str,
-    gene_name_column: str,
-    log_fold_change_column: str,
-    species: str,
-    permutations: int,
-    alpha: float,
-    keep_insignificant: bool,
-    source: str,
-    minimum_evidence_count: int,
-    minimum_belief: float
+        client,
+        file_path: Union[str, Path],
+        gene_name_column: str,
+        log_fold_change_column: str,
+        species: str,
+        permutations: int,
+        alpha: float,
+        keep_insignificant: bool,
+        source: str,
+        minimum_evidence_count: int,
+        minimum_belief: float
 ) -> Union[Dict, str]:
     """
     Perform continuous gene set analysis on gene expression data.
@@ -155,7 +171,7 @@ def continuous_analysis(
     ----------
     client : object
         The client object for making API calls.
-    file_path : str
+    file_path : str or Path
         Path to the input file containing gene expression data.
     gene_name_column : str
         Name of the column containing gene names.
@@ -182,55 +198,43 @@ def continuous_analysis(
         A dictionary containing the results of the specified analysis,
         or a string containing an error message if the analysis fails.
     """
-    sep = "," if file_path.endswith("csv") else "\t"
+    # Convert file_path to Path object if it's a string
+    file_path = Path(file_path)
+
+    # Determine the separator based on the file extension
+    sep = "," if file_path.suffix.lower() == ".csv" else "\t"
+
+    # Read the input file
     df = pd.read_csv(file_path, sep=sep)
 
-    # Ensure we have at least two valid entries
-    df = df.dropna(subset=[gene_name_column, log_fold_change_column])
+    # Check if we have enough initial data
     if len(df) < 2:
-        return ("Error: Insufficient valid data for analysis. "
-                "At least 2 genes with non-null values are required.")
+        return "Error: Input file contains insufficient data. At least 2 genes are required."
 
+    # Get scores based on species
     if species == "rat":
-        scores = get_rat_scores(
-            df,
-            gene_symbol_column_name=gene_name_column,
-            score_column_name=log_fold_change_column
-        )
+        scores = get_rat_scores(df, gene_name_column, log_fold_change_column)
     elif species == "mouse":
-        scores = get_mouse_scores(
-            df,
-            gene_symbol_column_name=gene_name_column,
-            score_column_name=log_fold_change_column
-        )
+        scores = get_mouse_scores(df, gene_name_column, log_fold_change_column)
     elif species == "human":
-        scores = get_human_scores(
-            df,
-            gene_symbol_column_name=gene_name_column,
-            score_column_name=log_fold_change_column
-        )
+        scores = get_human_scores(df, gene_name_column, log_fold_change_column)
     else:
         return f"Error: Unknown species: {species}"
+        # Debugging: Print scores
+    print(f"Scores for {species}: {scores}")
 
-    # Ensure we have at least two scores after processing
+    # Remove any None keys from scores
+    scores = {k: v for k, v in scores.items() if k is not None}
+
+    # Check if we have enough valid scores after processing
     if len(scores) < 2:
-        return ("Error: Insufficient data after processing. "
-                "At least 2 valid genes are required.")
+        return f"Error: Insufficient valid genes after processing. Got {len(scores)} genes, need at least 2."
 
-    analysis_functions = {
-        "go": go_gsea,
-        "wikipathways": wikipathways_gsea,
-        "reactome": reactome_gsea,
-        "phenotype": phenotype_gsea,
-        "indra-upstream": indra_upstream_gsea,
-        "indra-downstream": indra_downstream_gsea
-    }
-
-    if source not in analysis_functions:
-        return f"Error: Unknown source: {source}"
+    if source != 'go':
+        return f"Error: Unsupported source: {source}. Only 'go' is currently supported."
 
     try:
-        results = analysis_functions[source](
+        results = go_gsea(
             client=client,
             scores=scores,
             permutation_num=permutations,
@@ -240,6 +244,6 @@ def continuous_analysis(
             minimum_belief=minimum_belief
         )
     except Exception as e:
-        return f"Error in {source} analysis: {str(e)}"
+        return f"Error in GO GSEA analysis: {str(e)}"
 
     return results
