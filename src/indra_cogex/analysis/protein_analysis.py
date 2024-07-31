@@ -108,25 +108,22 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
         source_type='BioEntity',
         target_type='BioEntity',
     )
-
+    # TODO: we should look up additional evidence for these
+    # statements and add them here
 
     # Extract necessary information from the result and creates dictionary
-    # TODO: couldn't this be implemented using a list of dicts with
-    # a single dict-comprehension that is then loadded into a data frame?
-    jsons = []
-    types = []
-    ids = []
-    stmt_types = []
-    names = []
-    for entry in res:
-        names.append(entry.target_name)
-        jsons.append(entry.data["stmt_json"])
-        types.append(entry.target_ns)
-        ids.append(entry.target_id)
-        stmt_types.append(entry.data["stmt_type"])
-    protein_dict = {"name": names, "stmt_json": jsons, "target_type": types,
-                    "target_id": ids, "stmt_type": stmt_types}
-    stmts_by_protein_df = pd.DataFrame(protein_dict)
+    records = [
+        {
+            "name": entry.target_name,
+            "stmt_json": entry.data["stmt_json"],
+            "target_type": entry.target_ns,
+            "target_id": entry.target_id,
+            "stmt_type": entry.data["stmt_type"]
+         }
+        for entry in res
+    ]
+
+    stmts_by_protein_df = pd.DataFrame.from_records(records)
 
     # If there are target proteins filters data frame based on that list
     if target_proteins:
@@ -176,8 +173,8 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     # as expected, and there are multiple rows for each protein name
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
-        stmts = stmts_from_json(json.loads(row['stmt_json']))
-        stmts_by_protein[row['name']] += stmts
+        stmt = stmt_from_json(json.loads(row['stmt_json']))
+        stmts_by_protein[row['name']].append(stmt)
 
     for name, stmts in stmts_by_protein.items():
         # uses HtmlAssembler to get html pages of INDRA statements for each gene
@@ -185,7 +182,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
                            db_rest_url='https://db.indra.bio')
         # FIXME: why do we need the index here?
         fname = os.path.join(output_path, '%s_statements.html' % name)
-        ha.save_model('%s_statements.html' % fname)
+        ha.save_model(fname)
 
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
@@ -381,7 +378,7 @@ def find_shared_go_terms(source_go_terms, filename):
     if shared_go:
         # filters the go terms dataframe by the id of the protiens in shared_go
         shared_go_df = go_terms_df[go_terms_df.CURIE.isin(shared_go)]
-        logger.info("These are shared complexes between the gene list and the",
+        logger.info("These are shared complexes between the gene list and the "
                     "source_protein\n" + str(shared_go_df))
 
     else:
