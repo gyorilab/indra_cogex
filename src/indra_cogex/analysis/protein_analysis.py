@@ -12,6 +12,7 @@ import itertools
 import os
 import json
 import logging
+from collections import defaultdict
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -131,8 +132,8 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     if target_proteins:
         stmts_by_protein_filtered_df = stmts_by_protein_df[
             stmts_by_protein_df.target_id.isin(target_proteins)]
-        logger.info("\nDataframe of protiens that have INDRA relationships with source\
-                    that have been filtered", stmts_by_protein_filtered_df)
+        logger.info("Dataframe of protiens that have INDRA relationships with source\
+                    that have been filtered:\n" + str(stmts_by_protein_filtered_df))
 
     else:
         stmts_by_protein_filtered_df = stmts_by_protein_df
@@ -170,24 +171,20 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
     """
-    json_list = stmts_df["stmt_json"].values
-    protein_names = stmts_df["name"].values
+    # FIXME: the fact that there are multiple files generated for a given
+    # protein indicates that the data frame is not grouping statements
+    # as expected, and there are multiple rows for each protein name
+    stmts_by_protein = defaultdict(list)
+    for _, row in stmts_df.iterrows():
+        stmts = stmts_from_json(json.loads(row['stmt_json']))
+        stmts_by_protein[row['name']] += stmts
 
-    # iterates through the gene name and json strings for each gene
-    for idx, (name, strings) in enumerate(zip(protein_names, json_list)):
-        # FIXME: why do this in this circuitous way with an empty list
-        # that we append to?
-        stmt_jsons = []
-        # iterates through the individual json string within the statements for
-        # each gene and converts it to an INDRA statement object
-        stmt_jsons.append(json.loads(strings))
-        stmts = stmts_from_json(json_in=stmt_jsons)
-
+    for name, stmts in stmts_by_protein.items():
         # uses HtmlAssembler to get html pages of INDRA statements for each gene
         ha = HtmlAssembler(stmts, title='Statements for %s' % name,
                            db_rest_url='https://db.indra.bio')
         # FIXME: why do we need the index here?
-        fname = os.path.join(output_path, '%s_statements.html' % name+str(idx))
+        fname = os.path.join(output_path, '%s_statements.html' % name)
         ha.save_model('%s_statements.html' % fname)
 
 
@@ -385,7 +382,7 @@ def find_shared_go_terms(source_go_terms, filename):
         # filters the go terms dataframe by the id of the protiens in shared_go
         shared_go_df = go_terms_df[go_terms_df.CURIE.isin(shared_go)]
         logger.info("These are shared complexes between the gene list and the",
-                    "source_protein\n", shared_go_df)
+                    "source_protein\n" + str(shared_go_df))
 
     else:
         logger.info("There are no shared go terms between the source and targets")
