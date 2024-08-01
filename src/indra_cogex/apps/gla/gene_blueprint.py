@@ -154,8 +154,7 @@ def discretize_analysis():
     Returns
     -------
     str
-        Rendered HTML template.
-    """
+        Rendered HTML template."""
     form = DiscreteForm()
     if form.validate_on_submit():
         genes, errors = form.parse_genes()
@@ -199,8 +198,7 @@ def signed_analysis_route():
     Returns
     -------
     str
-        Rendered HTML template.
-    """
+        Rendered HTML template."""
     form = SignedForm()
     if form.validate_on_submit():
         positive_genes, positive_errors = form.parse_positive_genes()
@@ -230,78 +228,35 @@ def signed_analysis_route():
         example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
     )
 
+
 @gene_blueprint.route("/continuous", methods=["GET", "POST"])
-def continuous_analysis():
-    """Render the continuous analysis form."""
+def continuous_analysis_route():
+    """Render the continuous analysis form and handle form submission.
+
+    Returns
+    -------
+    str
+        Rendered HTML template."""
     form = ContinuousForm()
-    form.file.description = """\
-    Make sure the uploaded file contains at least two columns: one with gene names and 
-    one with the values of the ranking metric. The first row od the file should contain 
-    the column names."""
     if form.validate_on_submit():
-        scores = form.get_scores()
-        source = form.source.data
-        alpha = form.alpha.data
-        permutations = form.permutations.data
-        keep_insignificant = form.keep_insignificant.data
-        if source == "go":
-            results = go_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "wikipathways":
-            results = wikipathways_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "reactome":
-            results = reactome_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "phenotype":
-            results = phenotype_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-            )
-        elif source == "indra-upstream":
-            results = indra_upstream_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=form.minimum_evidence.data,
-                minimum_belief=form.minimum_belief.data,
-            )
-        elif source == "indra-downstream":
-            results = indra_downstream_gsea(
-                client=client,
-                scores=scores,
-                permutation_num=permutations,
-                alpha=alpha,
-                keep_insignificant=keep_insignificant,
-                minimum_evidence_count=form.minimum_evidence.data,
-                minimum_belief=form.minimum_belief.data,
-            )
-        else:
-            raise ValueError(f"Unknown source: {source}")
+        file_path = form.file.data.filename
+        results = continuous_analysis(
+            client,
+            file_path,
+            form.gene_name_column.data,
+            form.log_fold_change_column.data,
+            form.species.data,
+            form.permutations.data,
+            form.alpha.data,
+            form.keep_insignificant.data,
+            form.source.data,
+            form.minimum_evidence.data,
+            form.minimum_belief.data
+        )
 
         return flask.render_template(
             "gene_analysis/continuous_results.html",
-            source=source,
+            source=form.source.data,
             results=results,
         )
     return flask.render_template(
