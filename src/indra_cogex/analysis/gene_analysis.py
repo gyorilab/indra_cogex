@@ -115,11 +115,17 @@ def discrete_analysis(
     return results
 
 
-def signed_analysis(client, positive_genes: Dict[str, str],
-                    negative_genes: Dict[str, str], alpha: float,
-                    keep_insignificant: bool, minimum_evidence_count: int,
-                    minimum_belief: float) -> Dict:
-    """Perform signed gene set analysis using reverse causal reasoning.
+    def signed_analysis(
+            positive_genes: Dict[str, str],
+            negative_genes: Dict[str, str],
+            *,
+            client,
+            alpha: float = 0.05,
+            keep_insignificant: bool = False,
+            minimum_evidence_count: int = 1,
+            minimum_belief: float = 0
+    ) -> Dict:
+     """Perform signed gene set analysis using reverse causal reasoning.
 
     Parameters
     ----------
@@ -151,66 +157,64 @@ def signed_analysis(client, positive_genes: Dict[str, str],
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
-    print(f"Before filtering: {len(results)} results")
 
     """Apply alpha and keep_insignificant filters"""
     filtered_results = [
         r for r in results
         if keep_insignificant or (r['pvalue'] is not None and r['pvalue'] <= alpha)
     ]
-    print(f"After filtering: {len(filtered_results)} results")
-    print(f"Filtered results: {filtered_results}")
 
     return {"results": filtered_results}
 
 
-def continuous_analysis(
-        client,
-        file_path: Union[str, Path],
-        gene_name_column: str,
-        log_fold_change_column: str,
-        species: str,
-        permutations: int,
-        alpha: float,
-        keep_insignificant: bool,
-        source: str,
-        minimum_evidence_count: int,
-        minimum_belief: float
-) -> Union[Dict, str]:
-    """
-    Perform continuous gene set analysis on gene expression data.
+    def continuous_analysis(
+            file_path: Union[str, Path],
+            gene_name_column: str,
+            log_fold_change_column: str,
+            species: str,
+            permutations: int,
+            *,
+            client,
+            alpha: float = 0.05,
+            keep_insignificant: bool = False,
+            source: str = 'go',
+            minimum_evidence_count: int = 1,
+            minimum_belief: float = 0
+    ) -> Union[Dict, str]:
+     """
+     Perform continuous gene set analysis on gene expression data.
 
-    Parameters
-    ----------
-    client : object
+     Parameters
+     ----------
+     client : object
         The client object for making API calls.
-    file_path : str or Path
+     file_path : str or Path
         Path to the input file containing gene expression data.
-    gene_name_column : str
+     gene_name_column : str
         Name of the column containing gene names.
-    log_fold_change_column : str
+     log_fold_change_column : str
         Name of the column containing log fold change values.
-    species : str
+     species : str
         Species of the gene expression data ('rat', 'mouse', or 'human').
-    permutations : int
+     permutations : int
         Number of permutations for statistical analysis.
-    alpha : float
+     alpha : float
         The significance level.
-    keep_insignificant : bool
+     keep_insignificant : bool
         Whether to keep statistically insignificant results.
-    source : str
+     source : str
         The type of analysis to perform.
-    minimum_evidence_count : int
+     minimum_evidence_count : int
         Minimum number of evidence required for INDRA analysis.
-    minimum_belief : float
+     minimum_belief : float
         Minimum belief score for INDRA analysis.
 
-    Returns
-    -------
-    Union[Dict, str]
+     Returns
+     -------
+     Union[Dict, str]
         A dictionary containing the results of the specified analysis,
         or a string containing an error message if the analysis fails.
-    """
+     """
     # Convert file_path to Path object if it's a string
     file_path = Path(file_path)
 
