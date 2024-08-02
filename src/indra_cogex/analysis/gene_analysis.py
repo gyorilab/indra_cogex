@@ -114,11 +114,9 @@ def discrete_analysis(
 
     return results
 
-
-    def signed_analysis(
+def signed_analysis(
             positive_genes: Dict[str, str],
             negative_genes: Dict[str, str],
-            *,
             client,
             alpha: float = 0.05,
             keep_insignificant: bool = False,
@@ -147,7 +145,7 @@ def discrete_analysis(
     Returns
     -------
     dict
-        A dictionary containing results from the analysis."""
+        A dictionary containing results from the analysis.""" 
     results = reverse_causal_reasoning(
         client=client,
         positive_hgnc_ids=positive_genes,
@@ -158,7 +156,7 @@ def discrete_analysis(
         minimum_belief=minimum_belief,
     )
 
-    """Apply alpha and keep_insignificant filters"""
+    "Apply alpha and keep_insignificant filters"
     filtered_results = [
         r for r in results
         if keep_insignificant or (r['pvalue'] is not None and r['pvalue'] <= alpha)
@@ -264,3 +262,7 @@ def discrete_analysis(
         return f"Error in GO GSEA analysis: {str(e)}"
 
     return results
+
+
+def continuous_analysis():
+    return None
