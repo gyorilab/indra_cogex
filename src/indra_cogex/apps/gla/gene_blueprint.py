@@ -159,14 +159,14 @@ def discretize_analysis():
     if form.validate_on_submit():
         genes, errors = form.parse_genes()
         results = discrete_analysis(
-            client,
             genes,
-            form.correction.data,
-            form.alpha.data,
-            form.keep_insignificant.data,
-            form.minimum_evidence.data,
-            form.minimum_belief.data,
-            form.indra_path_analysis.data
+            client=client,
+            method=form.correction.data,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
+            indra_path_analysis=form.indra_path_analysis.data  # Include this line
         )
         results['parsing_errors'] = errors
 
