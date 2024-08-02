@@ -204,13 +204,13 @@ def signed_analysis_route():
         positive_genes, positive_errors = form.parse_positive_genes()
         negative_genes, negative_errors = form.parse_negative_genes()
         results = signed_analysis(
-            client,
             positive_genes,
             negative_genes,
-            form.alpha.data,
-            form.keep_insignificant.data,
-            form.minimum_evidence.data,
-            form.minimum_belief.data
+            client=client,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data
         )
         results['positive_parsing_errors'] = positive_errors
         results['negative_parsing_errors'] = negative_errors
@@ -241,17 +241,17 @@ def continuous_analysis_route():
     if form.validate_on_submit():
         file_path = form.file.data.filename
         results = continuous_analysis(
-            client,
             file_path,
             form.gene_name_column.data,
             form.log_fold_change_column.data,
             form.species.data,
             form.permutations.data,
-            form.alpha.data,
-            form.keep_insignificant.data,
-            form.source.data,
-            form.minimum_evidence.data,
-            form.minimum_belief.data
+            client=client,
+            alpha=form.alpha.data,
+            keep_insignificant=form.keep_insignificant.data,
+            source=form.source.data,
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data
         )
 
         return flask.render_template(
