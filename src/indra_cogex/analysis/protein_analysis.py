@@ -24,6 +24,9 @@ from indra_cogex.client import *
 
 logger = logging.getLogger(__name__)
 
+from gene_analysis import discrete_analysis
+
+client = Neo4jClient()
 
 def get_valid_gene_id(gene_name):
     """Return HGNC id for a gene name handling outdated symbols.
@@ -118,28 +121,37 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
             "stmt_json": entry.data["stmt_json"],
             "target_type": entry.target_ns,
             "target_id": entry.target_id,
-            "stmt_type": entry.data["stmt_type"]
+            "stmt_type": entry.data["stmt_type"],
+            "evidence_count":entry.data["evidence_count"], 
+            "stmt_hash":entry.data["stmt_hash"]
          }
         for entry in res
     ]
 
     stmts_by_protein_df = pd.DataFrame.from_records(records)
-
+    
+    
     # If there are target proteins filters data frame based on that list
     if target_proteins:
         stmts_by_protein_filtered_df = stmts_by_protein_df[
             stmts_by_protein_df.target_id.isin(target_proteins)]
+        
+        evidences = []
+        for hashes in stmts_by_protein_filtered_df["stmt_hash"].values:
+                evidences.append(get_evidences_for_stmt_hash(int(hashes)))
+        stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
+        stmts_by_protein_filtered_df_copy["evidences"] = evidences
         logger.info("Dataframe of protiens that have INDRA relationships with source\
-                    that have been filtered:\n" + str(stmts_by_protein_filtered_df))
+                    that have been filtered:\n" + str(stmts_by_protein_filtered_df_copy))
 
     else:
-        stmts_by_protein_filtered_df = stmts_by_protein_df
+        stmts_by_protein_filtered_df_copy = stmts_by_protein_df
 
-    return stmts_by_protein_df, stmts_by_protein_filtered_df
+    return stmts_by_protein_df, stmts_by_protein_filtered_df_copy
 
 
 def plot_stmts_by_type(stmts_df, fname):
-    """Visualize frequnecy of interaction types among protiens that have direct
+    """Visualize frequency of interaction types among protiens that have direct
        INDRA relationship to source
 
     Parameters
@@ -168,9 +180,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
     """
-    # FIXME: the fact that there are multiple files generated for a given
-    # protein indicates that the data frame is not grouping statements
-    # as expected, and there are multiple rows for each protein name
+
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
         stmt = stmt_from_json(json.loads(row['stmt_json']))
@@ -180,7 +190,6 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         # uses HtmlAssembler to get html pages of INDRA statements for each gene
         ha = HtmlAssembler(stmts, title='Statements for %s' % name,
                            db_rest_url='https://db.indra.bio')
-        # FIXME: why do we need the index here?
         fname = os.path.join(output_path, '%s_statements.html' % name)
         ha.save_model(fname)
 
@@ -201,8 +210,6 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
         Nested list of Relation objects describing the pathways shared for
         a given pair of genes.
     """
-    # FIXME: is there a reason to use a list here instead of a set?
-    # this  presumably results in the same pathway being listed multiple times
     shared_pathways_list = []
     for source_id, target_id in itertools.product(source_hgnc_ids, target_hgnc_ids):
         result = get_shared_pathways_for_genes((
@@ -290,12 +297,10 @@ def get_go_terms_for_source(source_hgnc_id):
 
     Returns
     -------
-    target_go: list
-        Contains the GO terms for target proteins
-        FIXME: documentation seems to be wrong here
+    source_go_terms: list
+        Contains the GO terms for source proteins
     go_nodes: list
-        List of node objects that has information about GO terms for t
-        arget protein
+        List of node objects that has information about GO terms for source
     """
     # these are the GO terms for target protein
     go_nodes = get_go_terms_for_gene(("HGNC", source_hgnc_id))
@@ -307,7 +312,7 @@ def get_go_terms_for_source(source_hgnc_id):
 
 
 def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
-    """This method uses the indra_upstream csv to get a dataframe that is the
+    """Use the indra_upstream csv to get a dataframe that is the
         intersection of the upstream molecules and the bioentities that target
         protein has direct INDRA relationships with and the bioentities that
         target protein has direct INDRA relationships with
@@ -444,7 +449,13 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
     plt.savefig(filename, bbox_inches="tight")
 
 
-def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path):
+def test_discrete_analysis(client, discrete_dict, method: str, alpha: float,
+                      keep_insignificant: bool, minimum_evidence_count: int,
+                      minimum_belief: float):
+   return discrete_analysis(client, discrete_dict, str, float, bool, int, float)
+
+
+def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids,discrete_dict, output_path):
     """This method uses the HGNC ids of the source and targets
         to pass into and call other methods
 
@@ -468,7 +479,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
     # Get INDRA statements for protiens that have direct INDRA rel
     assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
-
+    
+    # FIXME: NEW
+    discrete_result = test_discrete_analysis(client, discrete_dict, str,float,bool,int,float)
+    
     # Find shared pathways between users gene list and target protein
     shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
                                                                target_hgnc_ids)
@@ -504,8 +518,9 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     # Visualizes p and q values for shared GO terms
     go_graph_fname = os.path.join(output_path, 'shared_go_terms.png')
     graph_boxplots(shared_go_df, shared_entities, go_graph_fname)
-
-
+    
+   
+    
 def explain_downstream(source, targets, output_path, id_type='hgnc.symbol'):
     if id_type == 'hgnc.symbol':
         source_hgnc_id = get_valid_gene_id(source)
@@ -527,5 +542,15 @@ def explain_downstream(source, targets, output_path, id_type='hgnc.symbol'):
     if not os.path.exists(output_path):
         logger.info(f"Creating output directory {output_path}")
         os.makedirs(output_path)
+    
+    discrete_dict = dict(zip(target_hgnc_ids,targets))
+    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, discrete_dict, output_path)
 
-    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path)
+
+source_protein_name = 'CTNNB1'
+
+target_protein_names = ['GLCE', 'ACSL5', 'APCDD1', 'ADAMTSL2', 'CALML3', 'CEMIP2',
+                        'AMOT', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
+                        'CRYBB1', 'PDZD8', 'FNDC3A']
+
+explain_downstream(source_protein_name, target_protein_names, 'analysis_test')
