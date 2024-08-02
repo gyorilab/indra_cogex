@@ -15,7 +15,7 @@ from indra_cogex.client.enrichment.continuous import (
     reactome_gsea,
     wikipathways_gsea,
     go_gsea
-) 
+)
 
 from indra_cogex.client.enrichment.discrete import (
     go_ora,
@@ -110,20 +110,22 @@ def discrete_analysis(
 
     if not keep_insignificant:
         for key in results:
-            results[key] = {k: v for k, v in results[key].items() if v['adjusted_p_value'] <= alpha}
+            results[key] = {k: v for k, v in results[key].items() if
+                            v['adjusted_p_value'] <= alpha}
 
     return results
 
+
 def signed_analysis(
-            positive_genes: Dict[str, str],
-            negative_genes: Dict[str, str],
-            client,
-            alpha: float = 0.05,
-            keep_insignificant: bool = False,
-            minimum_evidence_count: int = 1,
-            minimum_belief: float = 0
-    ) -> Dict:
-     """Perform signed gene set analysis using reverse causal reasoning.
+        positive_genes: Dict[str, str],
+        negative_genes: Dict[str, str],
+        client,
+        alpha: float = 0.05,
+        keep_insignificant: bool = False,
+        minimum_evidence_count: int = 1,
+        minimum_belief: float = 0
+) -> Dict:
+    """Perform signed gene set analysis using reverse causal reasoning.
 
     Parameters
     ----------
@@ -145,7 +147,7 @@ def signed_analysis(
     Returns
     -------
     dict
-        A dictionary containing results from the analysis.""" 
+        A dictionary containing results from the analysis."""
     results = reverse_causal_reasoning(
         client=client,
         positive_hgnc_ids=positive_genes,
@@ -165,54 +167,55 @@ def signed_analysis(
     return {"results": filtered_results}
 
 
-    def continuous_analysis(
-            file_path: Union[str, Path],
-            gene_name_column: str,
-            log_fold_change_column: str,
-            species: str,
-            permutations: int,
-            *,
-            client,
-            alpha: float = 0.05,
-            keep_insignificant: bool = False,
-            source: str = 'go',
-            minimum_evidence_count: int = 1,
-            minimum_belief: float = 0
-    ) -> Union[Dict, str]:
-     """
-     Perform continuous gene set analysis on gene expression data.
+def continuous_analysis(
+    file_path: Union[str, Path],
+    gene_name_column: str,
+    log_fold_change_column: str,
+    species: str,
+    permutations: int,
+    *,
+    client,
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    source: str = 'go',
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0
+) -> Union[Dict, str]:
+    """
+    Perform continuous gene set analysis on gene expression data.
 
-     Parameters
-     ----------
-     client : object
-        The client object for making API calls.
-     file_path : str or Path
-        Path to the input file containing gene expression data.
-     gene_name_column : str
-        Name of the column containing gene names.
-     log_fold_change_column : str
-        Name of the column containing log fold change values.
-     species : str
-        Species of the gene expression data ('rat', 'mouse', or 'human').
-     permutations : int
-        Number of permutations for statistical analysis.
-     alpha : float
-        The significance level.
-     keep_insignificant : bool
-        Whether to keep statistically insignificant results.
-     source : str
-        The type of analysis to perform.
-     minimum_evidence_count : int
-        Minimum number of evidence required for INDRA analysis.
-     minimum_belief : float
-        Minimum belief score for INDRA analysis.
+    Parameters
+    ----------
+    client : Neo4jClient
+       The client object for making API calls.
+    file_path : str or Path
+       Path to the input file containing gene expression data.
+    gene_name_column : str
+       Name of the column containing gene names.
+    log_fold_change_column : str
+       Name of the column containing log fold change values.
+    species : str
+       Species of the gene expression data ('rat', 'mouse', or 'human').
+    permutations : int
+       Number of permutations for statistical analysis.
+    alpha : float
+       The significance level.
+    keep_insignificant : bool
+       Whether to keep statistically insignificant results.
+    source : str
+       The type of analysis to perform.
+    minimum_evidence_count : int
+       Minimum number of evidence required for INDRA analysis.
+    minimum_belief : float
+       Minimum belief score for INDRA analysis.
 
-     Returns
-     -------
-     Union[Dict, str]
-        A dictionary containing the results of the specified analysis,
-        or a string containing an error message if the analysis fails.
-     """
+    Returns
+    -------
+    Union[Dict, str]
+       A dictionary containing the results of the specified analysis,
+       or a string containing an error message if the analysis fails.
+    """
+
     # Convert file_path to Path object if it's a string
     file_path = Path(file_path)
 
@@ -262,7 +265,3 @@ def signed_analysis(
         return f"Error in GO GSEA analysis: {str(e)}"
 
     return results
-
-
-def continuous_analysis():
-    return None
