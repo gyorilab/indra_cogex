@@ -29,17 +29,24 @@ from indra_cogex.client.enrichment.discrete import (
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 
 
-def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,
-                      keep_insignificant: bool, minimum_evidence_count: int,
-                      minimum_belief: float) -> Dict:
+def discrete_analysis(
+    genes: Dict[str, str],
+    *,
+    client,
+    method: str = 'fdr_bh',
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0
+) -> Dict:
     """Perform discrete gene set analysis using various enrichment methods.
 
     Parameters
     ----------
-    client : object
-        The client object for making API calls.
     genes : dict
         A dictionary of HGNC IDs to gene names.
+    client : object
+        The client object for making API calls.
     method : str
         The statistical method for multiple testing correction.
     alpha : float
@@ -54,31 +61,37 @@ def discrete_analysis(client, genes: Dict[str, str], method: str, alpha: float,
     Returns
     -------
     dict
-        A dictionary containing results from various analyses."""
+        A dictionary containing results from various analyses.
+    """
     gene_set = set(genes.keys())
 
     go_results = go_ora(
         client, gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
+
     wikipathways_results = wikipathways_ora(
         client, gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
+
     reactome_results = reactome_ora(
         client, gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
+
     phenotype_results = phenotype_ora(
         gene_set, client=client, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
+
     indra_upstream_results = indra_upstream_ora(
         client, gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant,
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief
     )
+
     indra_downstream_results = indra_downstream_ora(
         client, gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant,
