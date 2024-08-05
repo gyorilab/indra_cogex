@@ -33,8 +33,8 @@ class TestDiscreteAnalysis(unittest.TestCase):
         mock_indra_downstream_ora.return_value = self.mock_ora_results
 
         result = discrete_analysis(
-            self.mock_client,
             self.test_genes,
+            client=self.mock_client,
             method='bonferroni',
             alpha=0.05,
             keep_insignificant=True,
@@ -76,8 +76,8 @@ class TestDiscreteAnalysis(unittest.TestCase):
             mock_func.return_value = significant_results
 
         result = discrete_analysis(
-            self.mock_client,
             self.test_genes,
+            client=self.mock_client,
             method='bonferroni',
             alpha=0.05,
             keep_insignificant=False,
@@ -110,8 +110,8 @@ class TestDiscreteAnalysis(unittest.TestCase):
             mock_func.return_value = empty_results
 
         result = discrete_analysis(
-            self.mock_client,
             {},
+            client=self.mock_client,
             method='bonferroni',
             alpha=0.05,
             keep_insignificant=True,
@@ -142,8 +142,8 @@ class TestDiscreteAnalysis(unittest.TestCase):
         }
 
         result = discrete_analysis(
-            self.mock_client,
             self.test_genes,
+            client=self.mock_client,
             method='bonferroni',
             alpha=0.05,
             keep_insignificant=False,
@@ -181,7 +181,7 @@ class TestSignedAnalysis(unittest.TestCase):
 
     # Mock function to simulate reverse causal reasoning
     @staticmethod
-    def mock_reverse_causal_reasoning(client, positive_hgnc_ids, negative_hgnc_ids, *args, **kwargs):
+    def mock_reverse_causal_reasoning(positive_hgnc_ids, negative_hgnc_ids, *, client, **kwargs):
         if not positive_hgnc_ids and not negative_hgnc_ids:
             return []
         elif not negative_hgnc_ids:
@@ -209,9 +209,9 @@ class TestSignedAnalysis(unittest.TestCase):
         with patch('src.indra_cogex.analysis.gene_analysis.reverse_causal_reasoning',
                    side_effect=self.mock_reverse_causal_reasoning):
             return signed_analysis(
-                mock_client,
                 positive_genes,
                 negative_genes,
+                client=mock_client,
                 alpha=alpha,
                 keep_insignificant=keep_insignificant,
                 minimum_evidence_count=1,
