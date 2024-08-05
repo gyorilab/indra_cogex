@@ -114,6 +114,7 @@ def discrete_analysis(
 def signed_analysis(
         positive_genes: Dict[str, str],
         negative_genes: Dict[str, str],
+        *,
         client,
         alpha: float = 0.05,
         keep_insignificant: bool = False,
