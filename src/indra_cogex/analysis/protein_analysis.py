@@ -26,8 +26,6 @@ logger = logging.getLogger(__name__)
 
 from .gene_analysis import discrete_analysis
 
-client = Neo4jClient()
-
 
 def get_valid_gene_id(gene_name):
     """Return HGNC id for a gene name handling outdated symbols.
@@ -450,7 +448,8 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
     plt.savefig(filename, bbox_inches="tight")
 
 
-def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path):
+@autoclient()
+def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path, *, client):
     """This method uses the HGNC ids of the source and targets
         to pass into and call other methods
 
@@ -501,7 +500,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
     # FIXME: given the availability of the analysis module, the below
     # and the associated functions e.g., shared_upstream_bioentities_from_targets
-    # are probably not needed
+    # should be named and documented more clearly to make sure we know
+    # what they do exactly
 
     # Find shared upstream bioentities between the target list and source protein
     upstream_fname = os.path.join(output_path, "shared_upstream.csv")
@@ -523,7 +523,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     graph_boxplots(shared_go_df, shared_entities, go_graph_fname)
     
 
-def explain_downstream(source, targets, output_path, id_type='hgnc.symbol'):
+@autoclient()
+def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.symbol'):
     if id_type == 'hgnc.symbol':
         source_hgnc_id = get_valid_gene_id(source)
         target_hgnc_ids = get_valid_gene_ids(targets)
@@ -545,4 +546,6 @@ def explain_downstream(source, targets, output_path, id_type='hgnc.symbol'):
         logger.info(f"Creating output directory {output_path}")
         os.makedirs(output_path)
     
-    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path)
+    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
+                                           client=client)
+
