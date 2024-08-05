@@ -45,7 +45,7 @@ def discrete_analysis(
     ----------
     genes : dict
         A dictionary of HGNC IDs to gene names.
-    client : object
+    client : Neo4jClient
         The client object for making API calls.
     method : str
         The statistical method for multiple testing correction.
@@ -66,34 +66,34 @@ def discrete_analysis(
     gene_set = set(genes.keys())
 
     go_results = go_ora(
-        client, gene_set, method=method, alpha=alpha,
+        client=client, gene_ids=gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
 
     wikipathways_results = wikipathways_ora(
-        client, gene_set, method=method, alpha=alpha,
+        client=client, gene_ids=gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
 
     reactome_results = reactome_ora(
-        client, gene_set, method=method, alpha=alpha,
+        client=client, gene_ids=gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
 
     phenotype_results = phenotype_ora(
-        gene_set, client=client, method=method, alpha=alpha,
+        gene_ids=gene_set, client=client, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant
     )
 
     indra_upstream_results = indra_upstream_ora(
-        client, gene_set, method=method, alpha=alpha,
+        client=client, gene_ids=gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant,
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief
     )
 
     indra_downstream_results = indra_downstream_ora(
-        client, gene_set, method=method, alpha=alpha,
+        client=client, gene_ids=gene_set, method=method, alpha=alpha,
         keep_insignificant=keep_insignificant,
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief
@@ -125,12 +125,12 @@ def signed_analysis(
 
     Parameters
     ----------
-    client : object
-        The client object for making API calls.
     positive_genes : dict
         A dictionary of HGNC IDs to gene names for positively regulated genes.
     negative_genes : dict
         A dictionary of HGNC IDs to gene names for negatively regulated genes.
+    client : Neo4jClient
+        The client object for making API calls.
     alpha : float
         The significance level.
     keep_insignificant : bool
@@ -145,22 +145,16 @@ def signed_analysis(
     dict
         A dictionary containing results from the analysis."""
     results = reverse_causal_reasoning(
-        client=client,
         positive_hgnc_ids=positive_genes,
         negative_hgnc_ids=negative_genes,
+        client=client,
         alpha=alpha,
         keep_insignificant=keep_insignificant,
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
 
-    "Apply alpha and keep_insignificant filters"
-    filtered_results = [
-        r for r in results
-        if keep_insignificant or (r['pvalue'] is not None and r['pvalue'] <= alpha)
-    ]
-
-    return {"results": filtered_results}
+    return {"results": results}
 
 
 def continuous_analysis(
