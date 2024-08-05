@@ -108,11 +108,6 @@ def discrete_analysis(
         "indra_downstream_results": indra_downstream_results
     }
 
-    if not keep_insignificant:
-        for key in results:
-            results[key] = {k: v for k, v in results[key].items() if
-                            v['adjusted_p_value'] <= alpha}
-
     return results
 
 
