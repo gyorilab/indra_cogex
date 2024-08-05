@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from indra.databases import hgnc_client
+from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
@@ -30,37 +31,38 @@ from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 
 
 def discrete_analysis(
-    genes: Dict[str, str],
-    *,
-    client,
-    method: str = 'fdr_bh',
-    alpha: float = 0.05,
-    keep_insignificant: bool = False,
-    minimum_evidence_count: int = 1,
-    minimum_belief: float = 0
-) -> Dict:
-    """Perform discrete gene set analysis using various enrichment methods.
+        genes: Dict[str, str],
+        *,
+        client: Neo4jClient,
+        method: str = 'fdr_bh',
+        alpha: float = 0.05,
+        keep_insignificant: bool = False,
+        minimum_evidence_count: int = 1,
+        minimum_belief: float = 0
+) -> Dict[str, Dict]:
+    """
+    Perform discrete gene set analysis using various enrichment methods.
 
     Parameters
     ----------
-    genes : dict
+    genes : Dict[str, str]
         A dictionary of HGNC IDs to gene names.
     client : Neo4jClient
         The client object for making API calls.
-    method : str
-        The statistical method for multiple testing correction.
+    method : str, optional
+        The statistical method for multiple testing correction (default is 'fdr_bh').
     alpha : float
-        The significance level.
+        The significance level (default is 0.05).
     keep_insignificant : bool
-        Whether to keep statistically insignificant results.
-    minimum_evidence_count : int
-        Minimum number of evidence required for INDRA analysis.
+        Whether to keep statistically insignificant results (default is False).
+    minimum_evidence_count : int, optional
+        Minimum number of evidence required for INDRA analysis (default is 1).
     minimum_belief : float
-        Minimum belief score for INDRA analysis.
+        Minimum belief score for INDRA analysis (default is 0).
 
     Returns
     -------
-    dict
+    Dict[str, Dict]
         A dictionary containing results from various analyses.
     """
     gene_set = set(genes.keys())
@@ -125,9 +127,9 @@ def signed_analysis(
 
     Parameters
     ----------
-    positive_genes : dict
+    positive_genes : Dict[str, str]
         A dictionary of HGNC IDs to gene names for positively regulated genes.
-    negative_genes : dict
+    negative_genes : Dict[str, str]
         A dictionary of HGNC IDs to gene names for negatively regulated genes.
     client : Neo4jClient
         The client object for making API calls.
@@ -142,12 +144,13 @@ def signed_analysis(
 
     Returns
     -------
-    dict
-        A dictionary containing results from the analysis."""
+    Dict[str, List[Dict]]
+        A dictionary containing results from the analysis.
+    """
     results = reverse_causal_reasoning(
+        client=client,
         positive_hgnc_ids=positive_genes,
         negative_hgnc_ids=negative_genes,
-        client=client,
         alpha=alpha,
         keep_insignificant=keep_insignificant,
         minimum_evidence_count=minimum_evidence_count,
@@ -158,18 +161,18 @@ def signed_analysis(
 
 
 def continuous_analysis(
-    file_path: Union[str, Path],
-    gene_name_column: str,
-    log_fold_change_column: str,
-    species: str,
-    permutations: int,
-    *,
-    client,
-    alpha: float = 0.05,
-    keep_insignificant: bool = False,
-    source: str = 'go',
-    minimum_evidence_count: int = 1,
-    minimum_belief: float = 0
+        file_path: Union[str, Path],
+        gene_name_column: str,
+        log_fold_change_column: str,
+        species: str,
+        permutations: int,
+        *,
+        client: Neo4jClient,
+        alpha: float = 0.05,
+        keep_insignificant: bool = False,
+        source: str = 'go',
+        minimum_evidence_count: int = 1,
+        minimum_belief: float = 0
 ) -> Union[Dict, str]:
     """
     Perform continuous gene set analysis on gene expression data.
