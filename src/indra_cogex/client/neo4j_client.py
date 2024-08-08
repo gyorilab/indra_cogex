@@ -51,7 +51,7 @@ class Neo4jClient:
             INDRA_NEO4J_URL = get_config("INDRA_NEO4J_URL")
             if INDRA_NEO4J_URL:
                 url = INDRA_NEO4J_URL
-                logger.info("Using configured URL for INDRA neo4j connection")
+                logger.debug("Using configured URL for INDRA neo4j connection")
             else:
                 logger.info("INDRA_NEO4J_URL not configured")
         if not auth:
@@ -59,7 +59,7 @@ class Neo4jClient:
             INDRA_NEO4J_PASSWORD = get_config("INDRA_NEO4J_PASSWORD")
             if INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD:
                 auth = (INDRA_NEO4J_USER, INDRA_NEO4J_PASSWORD)
-                logger.info("Using configured credentials for INDRA neo4j connection")
+                logger.debug("Using configured credentials for INDRA neo4j connection")
             else:
                 logger.info("INDRA_NEO4J_USER and INDRA_NEO4J_PASSWORD not configured")
         # Set max_connection_lifetime to something smaller than the timeouts
