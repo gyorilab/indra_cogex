@@ -128,16 +128,15 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     ]
 
     stmts_by_protein_df = pd.DataFrame.from_records(records)
-    
-    
+
     # If there are target proteins filters data frame based on that list
     if target_proteins:
         stmts_by_protein_filtered_df = stmts_by_protein_df[
             stmts_by_protein_df.target_id.isin(target_proteins)]
         
         evidences = []
-        for hashes in stmts_by_protein_filtered_df["stmt_hash"].values:
-                evidences.append(get_evidences_for_stmt_hash(int(hashes)))
+        for stmt_hash in stmts_by_protein_filtered_df["stmt_hash"].values:
+            evidences.append(get_evidences_for_stmt_hash(int(stmt_hash)))
         stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
         stmts_by_protein_filtered_df_copy["evidences"] = evidences
         logger.info("Dataframe of protiens that have INDRA relationships with source\
@@ -186,6 +185,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
         stmt = stmt_from_json(json.loads(row['stmt_json']))
+        stmt.evidence = row['evidences']
         stmts_by_protein[row['name']].append(stmt)
 
     for name, stmts in stmts_by_protein.items():
@@ -495,7 +495,6 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
                        interaction_barchart_fname)
 
     # Get INDRA statements for protiens that have direct INDRA rel
-    breakpoint()
     assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
 
     hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id)
