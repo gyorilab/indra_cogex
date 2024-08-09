@@ -586,13 +586,3 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     
     return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
-
-source_protein_name = 'CTNNB1'
-
-target_protein_names = ['VWA2', 'LRP4', 'CTNNB1', 'GLCE', 'ACSL5', 'NOTUM', 'APCDD1',
-                        'DKK4', 'EPHA7', 'CTNNA2', 'ADAMTSL2', 'CALML3', 'CEMIP2', 'AMOT',
-                        'CXCL14', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
-                        'CRYBB1', 'LEF1', 'PDZD8', 'FNDC3A']
-
-output_folder = 'analysis_output'
-explain_downstream(source_protein_name, target_protein_names, output_folder)
