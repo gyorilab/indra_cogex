@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 from indra.assemblers.html import HtmlAssembler
 from indra.statements import *
 from indra.databases import hgnc_client
+from indra.sources import indra_db_rest
+from indra.tools import assemble_corpus as ac
 
 from indra_cogex.client import *
 
@@ -179,6 +181,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
     """
+    curs = indra_db_rest.get_curations()
 
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
@@ -186,7 +189,10 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         stmts_by_protein[row['name']].append(stmt)
 
     for name, stmts in stmts_by_protein.items():
-        # uses HtmlAssembler to get html pages of INDRA statements for each gene
+        # Use HtmlAssembler to get html pages of INDRA statements for each gene
+        stmts = ac.filter_by_curation(stmts, curs)
+        if not stmts:
+            continue
         ha = HtmlAssembler(stmts, title='Statements for %s' % name,
                            db_rest_url='https://db.indra.bio')
         fname = os.path.join(output_path, '%s_statements.html' % name)
@@ -489,6 +495,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
                        interaction_barchart_fname)
 
     # Get INDRA statements for protiens that have direct INDRA rel
+    breakpoint()
     assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
 
     hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id)
@@ -541,9 +548,15 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
             raise ValueError('Could not convert the source gene name to '
                              'HGNC ID, aborting.')
 
+        # Remove the source from the targets in case it is there
+        target_hgnc_ids = [hgnc_id for hgnc_id in target_hgnc_ids
+                           if hgnc_id != source_hgnc_id]
+
         if not target_hgnc_ids:
             raise ValueError('Could not convert any target gene names to '
                              'HGNC IDs, aborting.')
+
+
     elif id_type == 'hgnc':
         source_hgnc_id = source
         target_hgnc_ids = targets
