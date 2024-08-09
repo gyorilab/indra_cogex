@@ -16,6 +16,7 @@ from collections import defaultdict
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib_venn import venn2
 from indra.assemblers.html import HtmlAssembler
 from indra.statements import *
 from indra.databases import hgnc_client
@@ -84,7 +85,7 @@ def get_valid_gene_ids(gene_names):
 
 @autoclient()
 def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_proteins=None):
-    """To get a dataframe of proteins that the target protien has direct INDRA
+    """To get a dataframe of proteins that the source protien has direct INDRA
     relationship with to find the stmt_jsons, type, and id
 
     Parameters
@@ -128,7 +129,6 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     ]
 
     stmts_by_protein_df = pd.DataFrame.from_records(records)
-
     # If there are target proteins filters data frame based on that list
     if target_proteins:
         stmts_by_protein_filtered_df = stmts_by_protein_df[
@@ -148,8 +148,9 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     return stmts_by_protein_df, stmts_by_protein_filtered_df_copy
 
 
-def plot_stmts_by_type(stmts_df, fname):
-    """Visualize frequency of interaction types among proteins that have direct
+def plot_barchart(stmts_df, pathways_df,
+                   interaction_fname, indra_rel_fname, pathways_fname):
+    """Visualize frequency of interaction types among protiens that have direct
        INDRA relationship to source
 
     Parameters
@@ -164,9 +165,22 @@ def plot_stmts_by_type(stmts_df, fname):
     type_counts.plot.bar()
     plt.xlabel("Interaction Type")
     plt.ylabel("Frequency")
-    plt.title("Frequency of Type of Interaction With Target")
+    plt.title("Frequency of Type of Interaction With Source")
+    plt.savefig(interaction_fname, bbox_inches="tight")
 
-    plt.savefig(fname, bbox_inches="tight")
+    type_counts = stmts_df["name"].value_counts()
+    type_counts.plot.bar()
+    plt.xlabel("Protein Name")
+    plt.ylabel("# Indra Stmts")
+    plt.title("Frequency of Indra Statements to Source")
+    plt.savefig(indra_rel_fname, bbox_inches="tight")
+
+    path_counts = pathways_df["target_protein"].value_counts()
+    path_counts.plot.bar()
+    plt.xlabel("Protein HGNC ID")
+    plt.ylabel("# Shared Pathways")
+    plt.title("Frequency of Shared Pathways with Source by Target")
+    plt.savefig(indra_rel_fname, bbox_inches="tight")
 
 
 def assemble_protein_stmt_htmls(stmts_df, output_path):
@@ -221,14 +235,16 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
             ("HGNC", target_id), ("HGNC", source_id)))
         if res:
             for entry in res:
-                shared_pathways_list.append({"name": entry.data["name"], "id": entry.db_id})
+                shared_pathways_list.append({"name": entry.data["name"],
+                        "id": entry.db_id, "target_protein":"HGNC: " + target_id})
 
     if not shared_pathways_list:
         logger.info("There are no shared pathways between the "
                     "source and targets")
-    return shared_pathways_list
+    shared_pathways_df = pd.DataFrame.from_records(shared_pathways_list)
+    return shared_pathways_df
 
-
+# FIXME: source id is string
 @autoclient()
 def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id, *, client):
     """Determine if any gene in gene list isa/partof the source protein
@@ -282,6 +298,7 @@ def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id, *
             target_df = pd.DataFrame(results[0][1])
             # creates new dataframe for shared complexes
             shared_families_df = target_df[target_df.id.isin(source_df["id"].values)]
+
             return shared_families_df
 
         # if only the source or only the target returned results
@@ -294,7 +311,7 @@ def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id, *
         logger.info("There are no shared protein family complexes")
         return None
 
-
+# FIXME: source id is string
 def get_go_terms_for_source(source_hgnc_id):
     """This method gets the go terms for the source protein
 
@@ -487,13 +504,6 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     stmts_by_protein_df, stmts_by_protein_filtered_df = \
         get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
 
-    # Visualize frequnecy of interaction types among protiens that have direct
-    # INDRA relationship to source
-    interaction_barchart_fname = os.path.join(output_path,
-                                              "interaction_barchart.png")
-    plot_stmts_by_type(stmts_by_protein_filtered_df,
-                       interaction_barchart_fname)
-
     # Get INDRA statements for protiens that have direct INDRA rel
     assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
 
@@ -504,16 +514,29 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
         # The values here are data frames
         v.to_csv(os.path.join(output_path, f"{k}_discrete.csv"))
     # Find shared pathways between users gene list and target protein
-
     shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
                                                                target_hgnc_ids)
     # FIXME: Is a plain text file the right choice here?
     with open(os.path.join(output_path, "shared_pathways.txt"), "w") as fh:
         fh.write(str(shared_pathways_result))
 
+    # Visualize frequnecy of interaction types among protiens that have direct
+    # INDRA relationship to source
+    interaction_fname = os.path.join(output_path,
+                                              "interaction_barchart.png")
+
+    indra_rel_fname = os.path.join(output_path,
+                                              "indra_relationship_frequency.png")
+
+    pathways_fname = os.path.join(output_path,
+                                              "pathways_frequency.png")
+    plot_barchart(stmts_by_protein_filtered_df, shared_pathways_result,
+                       interaction_fname, indra_rel_fname, pathways_fname)
+
     # Determine which proteins of interest are part of the same protien\
     # family/complex as the target
     shared_families_result = shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id)
+    print(shared_families_result)
     # FIXME: Is a plain text file the right choice here?
     with open(os.path.join(output_path, "shared_families.txt"), "w") as fh:
         fh.write(str(shared_families_result))
@@ -521,6 +544,12 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     # Get go term ids for target gene
     source_go_terms, go_nodes = get_go_terms_for_source(source_hgnc_id)
 
+    # FIXME: given the availability of the analysis module, the below
+    # and the associated functions e.g., shared_upstream_bioentities_from_targets
+    # should be named and documented more clearly to make sure we know
+    # what they do exactly
+
+    # FIXME: changed file paths and removed discrete analysis function bc pusher
     # Find shared upstream bioentities between the target list and source protein
 
     shared_proteins, shared_entities = \
@@ -540,8 +569,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 @autoclient()
 def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.symbol'):
     if id_type == 'hgnc.symbol':
-        source_hgnc_id = get_valid_gene_id(source)
         target_hgnc_ids = get_valid_gene_ids(targets)
+        source_hgnc_id = get_valid_gene_id(source)
 
         if not source_hgnc_id:
             raise ValueError('Could not convert the source gene name to '
@@ -568,3 +597,4 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     
     return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
+
