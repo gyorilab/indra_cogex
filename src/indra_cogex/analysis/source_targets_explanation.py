@@ -464,7 +464,6 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
     filename : string
         name of the file chart will be downloaded under
     """
-
     # plots boxplots for each type of graph
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
 
@@ -544,22 +543,12 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     # Get go term ids for target gene
     source_go_terms, go_nodes = get_go_terms_for_source(source_hgnc_id)
 
-    # FIXME: given the availability of the analysis module, the below
-    # and the associated functions e.g., shared_upstream_bioentities_from_targets
-    # should be named and documented more clearly to make sure we know
-    # what they do exactly
-
-    # FIXME: changed file paths and removed discrete analysis function bc pusher
-    # Find shared upstream bioentities between the target list and source protein
-
     shared_proteins, shared_entities = \
         shared_upstream_bioentities_from_targets(stmts_by_protein_df,
                                                  discrete_result)
 
     # Get shared bioentities between target list and source protein using GO terms
-
     shared_go_df = shared_goterms_between_gene_sets(source_go_terms, discrete_result)
-
 
     # Visualizes p and q values for shared GO terms
     go_graph_fname = os.path.join(output_path, 'shared_go_terms.png')
@@ -598,3 +587,12 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
 
+source_protein_name = 'CTNNB1'
+
+target_protein_names = ['VWA2', 'LRP4', 'CTNNB1', 'GLCE', 'ACSL5', 'NOTUM', 'APCDD1',
+                        'DKK4', 'EPHA7', 'CTNNA2', 'ADAMTSL2', 'CALML3', 'CEMIP2', 'AMOT',
+                        'CXCL14', 'PLA2G4A', 'RCN2', 'TTC9', 'FABP4', 'GPCPD1', 'VSNL1',
+                        'CRYBB1', 'LEF1', 'PDZD8', 'FNDC3A']
+
+output_folder = 'analysis_output'
+explain_downstream(source_protein_name, target_protein_names, output_folder)
