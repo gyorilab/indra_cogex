@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 This module implements analysis of mechanisms connecting a source with a set of
 downstream targets to construct possible explanations from the INDRA CoGEx
@@ -124,12 +126,12 @@ def get_stmts_from_source(source_ids, *, client, source_ns='HGNC', target_protei
         records = [
             {
                 "name": entry.target_name,
-                "stmt_json": entry.data["stmt_json"],
                 "target_type": entry.target_ns,
                 "target_id": entry.target_id,
                 "stmt_type": entry.data["stmt_type"],
-                "evidence_count":entry.data["evidence_count"],
-                "stmt_hash":entry.data["stmt_hash"]
+                "evidence_count":entry.data["evidence_count"], 
+                "stmt_hash":entry.data["stmt_hash"],
+                "stmt_json": entry.data["stmt_json"]
              }
             for entry in res
         ]
@@ -190,9 +192,9 @@ def plot_barchart(stmts_df, pathways_df,
     plt.xlabel("Protein HGNC ID")
     plt.ylabel("# Shared Pathways")
     plt.title("Frequency of Shared Pathways with Source by Target")
-    plt.savefig(indra_rel_fname, bbox_inches="tight")
-
-
+    plt.savefig(pathways_fname, bbox_inches="tight")
+    
+    
 def assemble_protein_stmt_htmls(stmts_df, output_path):
     """Assemble HTML page for each protein's INDRA statements in a data frame.
 
@@ -214,6 +216,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         stmt.evidence = row['evidences']
         stmts_by_protein[row['name']].append(stmt)
 
+    stmt_html_list = []
     for name, stmts in stmts_by_protein.items():
         # Use HtmlAssembler to get html pages of INDRA statements for each gene
         stmts = ac.filter_by_curation(stmts, curs)
@@ -223,7 +226,9 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
                            db_rest_url='https://db.indra.bio')
         fname = os.path.join(output_path, '%s_statements.html' % name)
         ha.save_model(fname)
+        stmt_html_list.append(fname)
 
+    return stmt_html_list
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
     """Find shared pathways between list of target genes and source protien
@@ -401,8 +406,6 @@ def shared_goterms_between_gene_sets(source_go_terms, discrete_result):
     ----------
     source_go_terms : list
         GO terms for the source proteins
-    filename : str
-        Path to the CSV file containing GO terms for the target proteins
 
     Returns
     -------
@@ -489,6 +492,9 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
 
         axs[0, 1].set_title("Q-values for Shared Go Terms")
         shared_go_df.boxplot(column=["q"], ax=axs[0, 1])
+    else:
+        axs[0, 0].set_title("No Shared Go Terms")
+        axs[0, 1].set_title("No Shared Go Terms")
 
     if shared_entities is not None:
         axs[1, 0].set_title("P-values for Shared Bioentities")
@@ -497,6 +503,9 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
         axs[1, 1].set_title("Q-values for Shared Bioentities")
         shared_entities.boxplot(column=["q"], ax=axs[1, 1])
         plt.savefig(filename, bbox_inches="tight")
+    else:
+        axs[0, 0].set_title("No Shared Go Bioentities")
+        axs[0, 1].set_title("No Shared Go Bioentities")
 
 
 @autoclient()
@@ -510,7 +519,7 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
         Path where output files such as visualizations and CSVs will be saved.
     client : object
         The client object used to handle database connections or API interactions.
-    source_hgnc_id : string
+    source_hgnc_ids : list
         The HGNC id for the source protein
     target_hgnc_ids : list
         List of strings of HGNC ids for target proteins
@@ -521,8 +530,8 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
         get_stmts_from_source(source_hgnc_ids, target_proteins=target_hgnc_ids)
 
     # Get INDRA statements for protiens that have direct INDRA rel
-    assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
-
+    stmts_html_list = assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
+    
     hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id)
                 for hgnc_id in target_hgnc_ids}
     discrete_result = discrete_analysis(hgnc_map, client=client)
@@ -555,7 +564,7 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
     # Determine which proteins of interest are part of the same protien\
     # family/complex as the target
     shared_families_result = shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids)
-    print(shared_families_result)
+
     # FIXME: Is a plain text file the right choice here?
     with open(os.path.join(output_path, "shared_families.txt"), "w") as fh:
         fh.write(str(shared_families_result))
@@ -574,6 +583,20 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
     go_graph_fname = os.path.join(output_path, 'shared_go_terms.png')
     graph_boxplots(shared_go_df, shared_entities, go_graph_fname)
     
+
+    stmt_df_html = stmts_by_protein_filtered_df.to_html(classes='table table-striped table-sm')
+    shared_family_html = shared_families_result.to_html(classes='table table-striped table-sm')
+    upstream_entities_html = shared_entities.to_html(classes='table table-striped table-sm')
+    result = {"staments_by_protein_filtered":stmt_df_html,
+              "indra_stmt_htmls": stmts_html_list,
+              "interaction_chart":interaction_fname,
+              "indra_rel_chart": indra_rel_fname,
+              "pathways_chart":pathways_fname,
+              "shared_families":shared_family_html,
+              "upstream_entities":upstream_entities_html,
+              "stats_boxplot": go_graph_fname}
+
+    return result
 
 @autoclient()
 def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.symbol'):
@@ -606,3 +629,4 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     
     return run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_path,
                                            client=client)
+
