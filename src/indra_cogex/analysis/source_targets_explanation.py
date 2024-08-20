@@ -85,14 +85,14 @@ def get_valid_gene_ids(gene_names):
 
 
 @autoclient()
-def get_stmts_from_source(source_ids, *, client, source_ns='HGNC', target_proteins=None):
+def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_proteins=None):
     """To get a dataframe of proteins that the source protien has direct INDRA
     relationship with to find the stmt_jsons, type, and id
 
     Parameters
     ----------
-    source_ids: list
-        List of HGNC ids for source protiens
+    source_id: string
+        HGNC id for source protiens
     client: autoclient
     source_ns: str
         Ids entered are HGNC ids
@@ -101,63 +101,54 @@ def get_stmts_from_source(source_ids, *, client, source_ns='HGNC', target_protei
 
     Returns
     -------
-    stmts_by_protein_df_concat: Dataframe
+    stmts_by_protein_df: Dataframe
         Unfiltered dataframe that contains all INDRA relationships for
         source proteins
-    filtered_stmts_by_protein_concat: Dataframe
+    stmts_by_protein_filtered_df: Dataframe
         Contains INDRA relationships for source proteins filtered by
         target_proteins
     """
-    all_stmts_by_protein_dflist = []
-    filtered_stmts_by_protein_dflist = []
-
-    # Iterates through source protien ids in list
-    for source_id in source_ids:
-        # Get indra_rel objects for protiens that have a direct INDRA relationship
-        # with the source protein
-        res = client.get_target_relations(
-            source=(source_ns, source_id),
-            relation='indra_rel',
-            source_type='BioEntity',
-            target_type='BioEntity',
+    # Get indra_rel objects for protiens that have a direct INDRA relationship
+    # with the source protein
+    res = client.get_target_relations(
+        source=(source_ns, source_id),
+        relation='indra_rel',
+        source_type='BioEntity',
+        target_type='BioEntity',
         )
-
-        # Extract necessary information from the result and creates dictionary
-        records = [
-            {
-                "name": entry.target_name,
-                "target_type": entry.target_ns,
-                "target_id": entry.target_id,
-                "stmt_type": entry.data["stmt_type"],
-                "evidence_count":entry.data["evidence_count"], 
-                "stmt_hash":entry.data["stmt_hash"],
-                "stmt_json": entry.data["stmt_json"]
+    
+    # Extract necessary information from the result and creates dictionary
+    records = [
+           {
+            "name": entry.target_name,
+            "target_type": entry.target_ns,
+            "target_id": entry.target_id,
+            "stmt_type": entry.data["stmt_type"],
+            "evidence_count":entry.data["evidence_count"],
+            "stmt_hash":entry.data["stmt_hash"],
+            "stmt_json": entry.data["stmt_json"]
              }
             for entry in res
         ]
+    
+    stmts_by_protein_df = pd.DataFrame.from_records(records)
+    # If there are target proteins filters data frame based on that list
+    if target_proteins:
+        stmts_by_protein_filtered_df = stmts_by_protein_df[
+            stmts_by_protein_df.target_id.isin(target_proteins)]
+        # Adds evidences to the dataframe using stmt hashes
+        evidences = []
+        for stmt_hash in stmts_by_protein_filtered_df["stmt_hash"].values:
+            evidences.append(get_evidences_for_stmt_hash(int(stmt_hash)))
+        stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
+        stmts_by_protein_filtered_df_copy["evidences"] = evidences
+        logger.info("Dataframe of protiens that have INDRA relationships with HGNC:"+ source_id +
+                    " that have been filtered:\n" + str(stmts_by_protein_filtered_df_copy))
 
-        stmts_by_protein_df = pd.DataFrame.from_records(records)
-        # If there are target proteins filters data frame based on that list
-        if target_proteins:
-            stmts_by_protein_filtered_df = stmts_by_protein_df[
-                stmts_by_protein_df.target_id.isin(target_proteins)]
-            # Adds evidences to the dataframe using stmt hashes
-            evidences = []
-            for stmt_hash in stmts_by_protein_filtered_df["stmt_hash"].values:
-                evidences.append(get_evidences_for_stmt_hash(int(stmt_hash)))
-            stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
-            stmts_by_protein_filtered_df_copy["evidences"] = evidences
-            logger.info("Dataframe of protiens that have INDRA relationships with HGNC:"+ source_id +
-                        " that have been filtered:\n" + str(stmts_by_protein_filtered_df_copy))
-            filtered_stmts_by_protein_dflist.append(stmts_by_protein_filtered_df_copy)
+    else:
+        stmts_by_protein_filtered_df_copy = stmts_by_protein_df
 
-        else:
-            stmts_by_protein_filtered_df_copy = stmts_by_protein_df
-        all_stmts_by_protein_dflist.append(stmts_by_protein_df)
-
-    stmts_by_protein_df_concat = pd.concat(all_stmts_by_protein_dflist)
-    filtered_stmts_by_protein_concat = pd.concat(filtered_stmts_by_protein_dflist)
-    return stmts_by_protein_df_concat,filtered_stmts_by_protein_concat
+    return stmts_by_protein_df, stmts_by_protein_filtered_df_copy
 
 
 def plot_barchart(stmts_df, pathways_df,
@@ -205,6 +196,10 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         "target_proteins" genes
     output_path: str
         String for output path
+    Returns
+    -------
+    stmt_html_list: list
+        List of filenames for INDRA html pages
     """
     curs = indra_db_rest.get_curations()
 
@@ -251,7 +246,7 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
             ("HGNC", target_id), ("HGNC", source_id)))
         if res:
             for entry in res:
-                shared_pathways_list.append({"name": entry.data["name"],
+                shared_pathways_list.append({"pathway_name": entry.data["name"],
                         "id": entry.db_id, "target_protein":"HGNC: " + target_id})
 
     if not shared_pathways_list:
@@ -262,13 +257,13 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
 
 
 @autoclient()
-def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids, *, client):
+def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id, *, client):
     """ Determine if any gene in gene list isa/partof the source protein
     Parameters
     ----------
     target_hgnc_ids : list
         Contains HGNC ids for target list
-    source_hgnc_ids : list
+    source_hgnc_id : str
         The source proteins HGNC ids
 
     Returns
@@ -278,17 +273,15 @@ def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids, 
         the source
     """
     #  Iterates through source ids to format for query
-    source_list = [f"hgnc:{ids}" for ids in source_hgnc_ids]
-    source_ids = str(source_list)
+    source_hgnc_id = "hgnc:"+source_hgnc_id
     # Iterates through target ids to format for query
     targets_list = [f"hgnc:{ids}" for ids in target_hgnc_ids]
     target_ids = str(targets_list)
 
     # if the list is too long \n would appear so removes it
     # adds commas to blank spaces to format for cypher
-    if "\n" in target_ids and "\n" in source_ids:
+    if "\n" in target_ids:
         target_ids = target_ids.replace("\n", "").replace(" ", ",")
-        source_ids = source_ids.replace("\n", "").replace(" ", ",")
 
     # query to return protein family complexes for the targets and source
     cypher = f"""MATCH (target_proteins:BioEntity)-[:isa|partof*1..]->(family1:BioEntity)
@@ -296,7 +289,7 @@ def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids, 
     WITH collect(family1) AS targets_members
 
     MATCH (source_protein:BioEntity)-[:isa|partof*1..]->(family2:BioEntity)
-    WHERE source_protein.id in {source_ids}
+    WHERE source_protein.id = '{source_hgnc_id}'
     WITH collect(family2) AS source_members, targets_members
 
     RETURN source_members, targets_members """
@@ -326,30 +319,25 @@ def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids, 
         return None
 
 
-def get_go_terms_for_source(source_hgnc_ids):
+def get_go_terms_for_source(source_hgnc_id):
     """ This method gets the go terms for the source protein
     Parameters
     ----------
-    source_hgnc_ids: list
+    source_hgnc_id: string
         HGNC ids strings for the source proteins
 
     Returns
     -------
     source_go_terms : list
         Contains the GO terms for source proteins
-    go_nodes : list
-        List of node objects that has information about GO terms for source
     """
-    all_sources_go_terms = []
-    for source_id in source_hgnc_ids:
-        # these are the GO terms for target protein
-        go_nodes = get_go_terms_for_gene(("HGNC", source_id))
-        source_go_terms = [
-            go_node.db_id.lower() for go_node in go_nodes
-        ]
-        all_sources_go_terms.append(source_go_terms)
-    return all_sources_go_terms
-
+    # these are the GO terms for target protein
+    go_nodes = get_go_terms_for_gene(("HGNC", source_hgnc_id))
+    source_go_terms = [
+        go_node.db_id.lower() for go_node in go_nodes
+    ]
+    return source_go_terms
+        
 
 def shared_upstream_bioentities_from_targets(stmts_by_protein_df, discrete_result):
     """Use the indra_upstream csv to get a dataframe that is the
@@ -415,14 +403,10 @@ def shared_goterms_between_gene_sets(source_go_terms, discrete_result):
 
     # loads data fron csv file
     go_terms_df = discrete_result["go_results"]
-    go_terms = []
-    for term_set in source_go_terms:
-        for term in term_set:
-            go_terms.append(term)
 
     # gets list of shared go terms between protein list and target protien
     shared_go = list((set(go_terms_df["curie"].values).
-                      intersection(set(go_terms))))
+                      intersection(set(source_go_terms))))
     if shared_go:
         # filters the go terms dataframe by the id of the protiens in shared_go
         shared_go_df = go_terms_df[go_terms_df.curie.isin(shared_go)]
@@ -464,7 +448,6 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
     """ This method creates boxplots to visualize p and q values for
         shared complexes/GO terms and bioentiies
 
-
     Parameters
     ----------
     shared_complexes_df : pd.DataFrame
@@ -477,7 +460,6 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
         (you can pick whether you want to filter the indra_upstream_df or
         protein_df which contains all bioentities that source protein has a
         direct INDRA relationship with).
-
     filename: str
         name of the file chart will be downloaded under
     """
@@ -507,7 +489,7 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
 
 
 @autoclient()
-def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_path, *, client):
+def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path, *, client):
     """This method uses the HGNC ids of the source and targets
         to pass into and call other methods
 
@@ -517,16 +499,19 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
         Path where output files such as visualizations and CSVs will be saved.
     client : object
         The client object used to handle database connections or API interactions.
-    source_hgnc_ids : list
+    source_hgnc_id : str
         The HGNC id for the source protein
     target_hgnc_ids : list
         List of strings of HGNC ids for target proteins
+    Returns
+    -------
+    result: dict
+        Dictionary of analysis results
     """
-
     # Get filtered dataframe by protiens that source has INDRA rel with
     stmts_by_protein_df, stmts_by_protein_filtered_df = \
-        get_stmts_from_source(source_hgnc_ids, target_proteins=target_hgnc_ids)
-
+        get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
+   
     # Get INDRA statements for protiens that have direct INDRA rel
     stmts_html_list = assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
     
@@ -537,10 +522,9 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
         # The values here are data frames
         v.to_csv(os.path.join(output_path, f"{k}_discrete.csv"))
     # Find shared pathways between users gene list and target protein
-
-    shared_pathways_result = shared_pathways_between_gene_sets(source_hgnc_ids,
+    
+    shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
                                                                target_hgnc_ids)
-
     with open(os.path.join(output_path, "shared_pathways.txt"), "w") as fh:
         fh.write(str(shared_pathways_result))
 
@@ -559,13 +543,13 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
 
     # Determine which proteins of interest are part of the same protien\
     # family/complex as the target
-    shared_families_result = shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_ids)
-
+    shared_families_result = shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id)
+   
     with open(os.path.join(output_path, "shared_families.txt"), "w") as fh:
         fh.write(str(shared_families_result))
 
     # Get go term ids for target gene
-    source_go_terms = get_go_terms_for_source(source_hgnc_ids)
+    source_go_terms = get_go_terms_for_source(source_hgnc_id)
 
     shared_proteins, shared_entities = \
         shared_upstream_bioentities_from_targets(stmts_by_protein_df,
@@ -573,22 +557,39 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
 
     # Get shared bioentities between target list and source protein using GO terms
     shared_go_df = shared_goterms_between_gene_sets(source_go_terms, discrete_result)
+    print(shared_go_df)
 
     # Visualizes p and q values for shared GO terms
     go_graph_fname = os.path.join(output_path, 'shared_go_terms.png')
     graph_boxplots(shared_go_df, shared_entities, go_graph_fname)
     
-
     stmt_df_html = stmts_by_protein_filtered_df.to_html(classes='table table-striped table-sm')
-    shared_family_html = shared_families_result.to_html(classes='table table-striped table-sm')
-    upstream_entities_html = shared_entities.to_html(classes='table table-striped table-sm')
-    result = {"staments_by_protein_filtered":stmt_df_html,
-              "indra_stmt_htmls": stmts_html_list,
-              "interaction_chart":interaction_fname,
-              "indra_rel_chart": indra_rel_fname,
+    if shared_families_result is not None:
+        shared_family_html = shared_families_result.to_html(classes='table table-striped table-sm')
+    else:
+        shared_family_html = "There are no shared families"
+    if shared_entities is not None:
+        upstream_entities_html = shared_entities.to_html(classes='table table-striped table-sm')
+    else:
+        upstream_entities_html = "There are no shared upstream entities"
+    if shared_pathways_result is not None:
+        shared_pathways_html = shared_pathways_result.to_html(classes='table table-striped table-sm')
+    else:
+        shared_pathways_html = "There are no shared pathways"
+    if shared_go_df is not None:
+        shared_go_html = shared_go_df.to_html(classes='table table-striped table-sm')
+    else:
+        shared_go_html = "There are no shared go terms between gene sets"
+
+    result = {"staments_by_protein_filtered":stmt_df_html, 
+              "indra_stmt_htmls": stmts_html_list, 
+              "interaction_chart":interaction_fname, 
+              "indra_rel_chart": indra_rel_fname, 
               "pathways_chart":pathways_fname,
               "shared_families":shared_family_html,
               "upstream_entities":upstream_entities_html,
+              "shared_pathways": shared_pathways_html,
+              "shared_go_terms": shared_go_html,
               "stats_boxplot": go_graph_fname}
 
     return result
@@ -597,15 +598,15 @@ def run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_pat
 def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.symbol'):
     if id_type == 'hgnc.symbol':
         target_hgnc_ids = get_valid_gene_ids(targets)
-        source_hgnc_ids = get_valid_gene_ids(source)
+        source_hgnc_id = get_valid_gene_id(source)
 
-        if not source_hgnc_ids:
+        if not source_hgnc_id:
             raise ValueError('Could not convert the source gene name to '
                              'HGNC ID, aborting.')
 
         # Remove the source from the targets in case it is there
         target_hgnc_ids = [hgnc_id for hgnc_id in target_hgnc_ids
-                           if hgnc_id != source_hgnc_ids]
+                           if hgnc_id != source_hgnc_id]
 
         if not target_hgnc_ids:
             raise ValueError('Could not convert any target gene names to '
@@ -613,7 +614,7 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
 
 
     elif id_type == 'hgnc':
-        source_hgnc_ids = source
+        source_hgnc_id = source
         target_hgnc_ids = targets
     else:
         raise ValueError('Invalid id_type, must be hgnc.symbol or hgnc.')
@@ -622,6 +623,6 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
         logger.info(f"Creating output directory {output_path}")
         os.makedirs(output_path)
     
-    return run_explain_downstream_analysis(source_hgnc_ids, target_hgnc_ids, output_path,
+    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
 
