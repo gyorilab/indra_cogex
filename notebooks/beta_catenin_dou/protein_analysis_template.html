@@ -13,7 +13,9 @@
                 ('barchart-tab','#barcharts','Bar Charts'), 
                 ('families-tab','#sharedfamilies','Shared Families'),
                 ('upstream-tab','#upstream','Shared Upstream Bioentities'),
-                ('boxplots-tab','#boxplots', 'Boxplots' ),
+                ('pathways-tab', '#sharedpathways', 'Shared Pathways'),
+                ('goterms-tab', '#sharedgoterms', 'Shared Go Terms'),
+                ('boxplots-tab','#boxplots', 'Boxplots')
                 ] %}
             {% for tab_id, href, caption in navigation_bar %}
                 <li class="nav-item">
@@ -54,6 +56,14 @@
             <div class="tab-pane fade" id="upstream" role="tabpanel">
                 <h2>Shared Upstream Bioentities from Target Proteins</h2>
                 {{ result['upstream_entities'] | safe }}
+            </div>
+            <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
+                <h2>Shared Pathways Between Gene Sets</h2>
+                {{ result['shared_pathways'] | safe }}
+            </div>
+            <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
+                <h2>Shared Go Terms Between Gene Sets</h2>
+                {{ result['shared_go_terms'] | safe }}
             </div>
             <div class="tab-pane fade" id="boxplots" role="tabpanel">
                 <h2>Boxplots for Shared Go Terms and Bioentities</h2>
