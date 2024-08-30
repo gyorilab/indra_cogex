@@ -76,7 +76,7 @@ if not SOURCE_BADGES_CSS.exists():
 LOCAL_VUE: Union[str, bool] = get_config("LOCAL_VUE") or False
 
 # Set up indralab-vue Vue components, either from local build or from S3
-VUE_URL_ROOT = get_config("VUE_URL_ROOT").rstrip("/")
+VUE_URL_ROOT = (get_config("VUE_URL_ROOT") or "").rstrip("/")
 VUE_JS = "IndralabVue.umd.min.js"
 VUE_CSS = "IndralabVue.css"
 if LOCAL_VUE:
