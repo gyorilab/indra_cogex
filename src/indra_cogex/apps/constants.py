@@ -83,8 +83,16 @@ if LOCAL_VUE:
     VUE_SRC_JS: Union[bool, str] = False
     VUE_SRC_CSS: Union[bool, str] = False
 else:
-    VUE_SRC_JS = f"{VUE_URL_ROOT}/{VUE_JS}"
-    VUE_SRC_CSS = f"{VUE_URL_ROOT}/{VUE_CSS}"
+    if not VUE_URL_ROOT:
+        logger.warning(
+            "VUE_URL_ROOT not set in environment. Statement Vue components will "
+            "not be available in the web app."
+        )
+        VUE_SRC_JS = False
+        VUE_SRC_CSS = False
+    else:
+        VUE_SRC_JS = f"{VUE_URL_ROOT}/{VUE_JS}"
+        VUE_SRC_CSS = f"{VUE_URL_ROOT}/{VUE_CSS}"
 
 # Pusher parameters
 pusher_app_id = get_config("CLARE_PUSHER_APP_ID")
