@@ -8,14 +8,11 @@
         <h1>Protein Analysis Results</h1>
         <ul class="nav nav-tabs", id="resultTabs" role="tablist">
             {% set navigation_bar = [
-                ('statements-tab','#statements', 'INDRA Statements'),
-                ('evidences-tab','#evidences', 'Evidences'), 
+                ('evidences-tab','#evidences', 'INDRA Statements'), 
                 ('families-tab','#sharedfamilies','Shared Families'),
                 ('upstream-tab','#upstream','Shared Upstream Bioentities'),
                 ('pathways-tab', '#sharedpathways', 'Shared Pathways'),
-                ('goterms-tab', '#sharedgoterms', 'Shared Go Terms'),
-                ('barchart-tab','#barcharts','Bar Charts'),
-                ('boxplots-tab','#boxplots', 'Boxplots')
+                ('goterms-tab', '#sharedgoterms', 'Shared Go Terms')
                 ] %}
             {% for tab_id, href, caption in navigation_bar %}
                 <li class="nav-item">
@@ -25,33 +22,11 @@
         </ul>
         <div class="container: 20px;" style="margin-top: 20px; margin-bottom: 20px; margin-left: 30px; margin-right: 30px;">
             <div class="tab-content", id="resultTabsContent">
-                <div class="tab-pane fade show active" id="statements" role="tabpanel">
-                    <h2>INDRA Statements for Source Filtered by Target Proteins</h2>
-                    {{ result['staments_by_protein_filtered'] | safe }}
-                </div>
-                <div class="tab-pane fade" id="evidences" role="tabpanel">
+                <div class="tab-pane fade show active" id="evidences" role="tabpanel">
                     <h2>INDRA Statements with Evidences</h2>
                     {% for stmt_html_filename in result['indra_stmt_htmls'] %}
-                    <iframe src="{{ stmt_html_filename }}" width="800" height="300"></iframe>
+                    <iframe src="{{ stmt_html_filename }}" width="800" height="500"></iframe>
                     {% endfor %}
-                </div>
-                <div class="tab-pane fade" id="sharedfamilies" role="tabpanel">
-                    <h2>Shared Families</h2>
-                    {{ result['shared_families'] | safe }}
-                </div>
-                <div class="tab-pane fade" id="upstream" role="tabpanel">
-                    <h2>Shared Upstream Bioentities from Target Proteins</h2>
-                    {{ result['upstream_entities'] | safe }}
-                </div>
-                <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
-                    <h2>Shared Pathways Between Gene Sets</h2>
-                    {{ result['shared_pathways'] | safe }}
-                </div>
-                <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
-                    <h2>Shared Go Terms Between Gene Sets</h2>
-                    {{ result['shared_go_terms'] | safe }}
-                </div>
-                <div class="tab-pane fade" id="barcharts" role="tabpanel">
                     <h2> Bar Charts</h2>
                         <div class="row">
                             <div class="col-md-4">
@@ -60,16 +35,28 @@
                             <div class="col-md-4">
                                 <img src="{{ result['indra_rel_chart'] }}" width="400" height="400" alt="INDRA Relations Chart">
                             </div>
-                            <div class="col-md-4">
-                                <img src="{{ result['pathways_chart'] }}" width="400" height="400" alt="Pathways Chart">
-                            </div>
                         </div>
                 </div>
-                <div class="tab-pane fade" id="boxplots" role="tabpanel">
+                <div class="tab-pane fade" id="sharedfamilies" role="tabpanel">
+                    <h2>Shared Families</h2>
+                    {{ result['shared_families'] | safe }}
+                </div>
+                <div class="tab-pane fade" id="upstream" role="tabpanel">
+                    <h2>Shared Upstream Bioentities from Target Proteins</h2>
+                    {{ result['upstream_entities'] | safe }}
                     <h2>Boxplots for Shared Go Terms and Bioentities</h2>
                     <img src="{{ result['stats_boxplot'] }}" alt="Stats Boxplot">
                 </div>
-                
+                <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
+                    <h2>Shared Pathways Between Source and Enriched Targets Set</h2>
+                    {{ result['shared_pathways'] | safe }}
+                    <h2>Bar Chart for Frequency of Shared Pathways by Protein</h2>
+                    <img src="{{ result['pathways_chart'] }}" width="400" height="400" alt="Pathways Chart">
+                </div>
+                <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
+                    <h2>Shared Go Terms Between Gene Sets</h2>
+                    {{ result['shared_go_terms'] | safe }}
+                </div>
             </div>
         </div>
     </div>
