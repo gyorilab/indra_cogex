@@ -255,6 +255,35 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
     shared_pathways_df = pd.DataFrame.from_records(shared_pathways_list)
     return shared_pathways_df
 
+def shared_enriched_pathways(source_hgnc_id, discrete_result):
+    """Find shared enriched pathways between gene sets
+
+    Parameters
+    ----------
+    source_hgnc_id : string
+        This is the source hgnc id.
+    discrete_result : dict
+        Dictionary of gene enrichment results
+
+    Returns
+    -------
+    None.
+
+    """
+    reactome_df = discrete_result["reactome_results"]
+    wikipathways_df = discrete_result["wikipathways_results"]
+    shared_pathways_df = pd.concat([reactome_df, wikipathways_df])
+
+    source_pathways = get_pathways_for_gene(("HGNC",source_hgnc_id))
+
+
+    source_path_ids = [res.db_id for res in source_pathways]
+    filtered_pathways = shared_pathways_df[shared_pathways_df.curie.isin(source_path_ids)]
+
+    if filtered_pathways.empty:
+        return None
+    else:
+        return filtered_pathways
 
 @autoclient()
 def shared_protein_families_between_gene_sets(target_hgnc_ids, source_hgnc_id, *, client):
@@ -523,8 +552,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
         v.to_csv(os.path.join(output_path, f"{k}_discrete.csv"))
     # Find shared pathways between users gene list and target protein
     
-    shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
+    shared_pathways_df = shared_pathways_between_gene_sets([source_hgnc_id],
                                                                target_hgnc_ids)
+    shared_pathways_result = shared_enriched_pathways(source_hgnc_id, discrete_result)
+
     with open(os.path.join(output_path, "shared_pathways.txt"), "w") as fh:
         fh.write(str(shared_pathways_result))
 
@@ -538,7 +569,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
     pathways_fname = os.path.join(output_path,
                                               "pathways_frequency.png")
-    plot_barchart(stmts_by_protein_filtered_df, shared_pathways_result,
+    plot_barchart(stmts_by_protein_filtered_df, shared_pathways_df,
                        interaction_fname, indra_rel_fname, pathways_fname)
 
     # Determine which proteins of interest are part of the same protien\
@@ -625,4 +656,3 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     
     return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
-
