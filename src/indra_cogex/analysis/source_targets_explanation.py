@@ -201,8 +201,8 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     stmt_html_list: list
         List of filenames for INDRA html pages
     """
-    curs = indra_db_rest.get_curations()
-
+    #curs = indra_db_rest.get_curations()
+    
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
         stmt = stmt_from_json(json.loads(row['stmt_json']))
@@ -212,9 +212,9 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     stmt_html_list = []
     for name, stmts in stmts_by_protein.items():
         # Use HtmlAssembler to get html pages of INDRA statements for each gene
-        stmts = ac.filter_by_curation(stmts, curs)
-        if not stmts:
-            continue
+        #stmts = ac.filter_by_curation(stmts, curs)
+        #if not stmts:
+            #continue
         ha = HtmlAssembler(stmts, title='Statements for %s' % name,
                            db_rest_url='https://db.indra.bio')
         fname = os.path.join(output_path, '%s_statements.html' % name)
@@ -403,7 +403,7 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, discrete_resul
                                             isin(shared_proteins)]
         logger.info("These are the shared upstream bioentities between the"
                     "gene list and source_protein\n" + str(shared_entities))
-
+        shared_entities.reset_index(inplace=True)
     # if there are no shared proteins
     else:
         logger.info("There are no shared upstream bioentities between the "
