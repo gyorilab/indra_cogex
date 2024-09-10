@@ -1,7 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"> 
+    <link 
+        rel="stylesheet" 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    /> 
+    <link
+        rel="stylesheet"
+        href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
+    />
+    <style>   
+
+        /* Right-align table title headers */
+        .title-right {
+            text-align: right;
+        }
+        /* Adjust padding in header cells to accommodate the icons on the left */
+        #resultTabsContent .tab-pane table th {
+            padding-left: 20px; /* Adjust as needed */
+        }
+    </style>
 </head>
 <body>
     <div class="container: 20px;" style="margin-top: 20px; margin-bottom: 20px;">
@@ -73,6 +91,7 @@
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>index</th>
       <th>curie</th>
       <th>name</th>
       <th>p</th>
@@ -83,7 +102,8 @@
   </thead>
   <tbody>
     <tr>
-      <th>92</th>
+      <th>0</th>
+      <td>92</td>
       <td>chebi:33216</td>
       <td>bisphenol A</td>
       <td>2.865804e-11</td>
@@ -92,7 +112,8 @@
       <td>5.852628</td>
     </tr>
     <tr>
-      <th>304</th>
+      <th>1</th>
+      <td>304</td>
       <td>chebi:39867</td>
       <td>valproic acid</td>
       <td>3.926479e-09</td>
@@ -101,7 +122,8 @@
       <td>4.016902</td>
     </tr>
     <tr>
-      <th>358</th>
+      <th>2</th>
+      <td>358</td>
       <td>chebi:16469</td>
       <td>17beta-estradiol</td>
       <td>3.090465e-08</td>
@@ -110,7 +132,8 @@
       <td>3.421911</td>
     </tr>
     <tr>
-      <th>527</th>
+      <th>3</th>
+      <td>527</td>
       <td>hgnc:6551</td>
       <td>LEF1</td>
       <td>1.133621e-07</td>
@@ -119,7 +142,8 @@
       <td>3.033558</td>
     </tr>
     <tr>
-      <th>1600</th>
+      <th>4</th>
+      <td>1600</td>
       <td>chebi:15354</td>
       <td>choline</td>
       <td>5.700242e-07</td>
@@ -128,7 +152,8 @@
       <td>2.532677</td>
     </tr>
     <tr>
-      <th>421</th>
+      <th>5</th>
+      <td>421</td>
       <td>chebi:46024</td>
       <td>trichostatin A</td>
       <td>9.594794e-07</td>
@@ -137,7 +162,8 @@
       <td>2.369232</td>
     </tr>
     <tr>
-      <th>85</th>
+      <th>6</th>
+      <td>85</td>
       <td>chebi:35549</td>
       <td>perfluorooctanoic acid</td>
       <td>2.020702e-06</td>
@@ -146,7 +172,8 @@
       <td>2.083554</td>
     </tr>
     <tr>
-      <th>301</th>
+      <th>7</th>
+      <td>301</td>
       <td>chebi:42588</td>
       <td>4-hydroxyphenyl retinamide</td>
       <td>2.722743e-06</td>
@@ -155,7 +182,8 @@
       <td>2.020996</td>
     </tr>
     <tr>
-      <th>370</th>
+      <th>8</th>
+      <td>370</td>
       <td>chebi:15379</td>
       <td>dioxygen</td>
       <td>3.181622e-06</td>
@@ -164,7 +192,8 @@
       <td>2.011346</td>
     </tr>
     <tr>
-      <th>335</th>
+      <th>9</th>
+      <td>335</td>
       <td>chebi:28748</td>
       <td>doxorubicin</td>
       <td>5.566364e-06</td>
@@ -173,7 +202,8 @@
       <td>1.843057</td>
     </tr>
     <tr>
-      <th>538</th>
+      <th>10</th>
+      <td>538</td>
       <td>chebi:4031</td>
       <td>cyclosporin A</td>
       <td>6.578479e-06</td>
@@ -182,7 +212,8 @@
       <td>1.799930</td>
     </tr>
     <tr>
-      <th>2692</th>
+      <th>11</th>
+      <td>2692</td>
       <td>chebi:17823</td>
       <td>calcitriol</td>
       <td>9.594531e-06</td>
@@ -191,7 +222,8 @@
       <td>1.706303</td>
     </tr>
     <tr>
-      <th>880</th>
+      <th>12</th>
+      <td>880</td>
       <td>hgnc:7611</td>
       <td>MYOD1</td>
       <td>9.269109e-06</td>
@@ -200,7 +232,8 @@
       <td>1.706303</td>
     </tr>
     <tr>
-      <th>123</th>
+      <th>13</th>
+      <td>123</td>
       <td>chebi:15367</td>
       <td>all-trans-retinoic acid</td>
       <td>1.093792e-05</td>
@@ -209,7 +242,8 @@
       <td>1.668880</td>
     </tr>
     <tr>
-      <th>444</th>
+      <th>14</th>
+      <td>444</td>
       <td>chebi:17234</td>
       <td>glucose</td>
       <td>1.281403e-05</td>
@@ -218,7 +252,8 @@
       <td>1.617162</td>
     </tr>
     <tr>
-      <th>98</th>
+      <th>15</th>
+      <td>98</td>
       <td>chebi:29865</td>
       <td>benzo[a]pyrene</td>
       <td>2.483857e-05</td>
@@ -227,7 +262,8 @@
       <td>1.389523</td>
     </tr>
     <tr>
-      <th>2200</th>
+      <th>16</th>
+      <td>2200</td>
       <td>hgnc:3676</td>
       <td>FGF2</td>
       <td>3.093580e-05</td>
@@ -236,7 +272,8 @@
       <td>1.337927</td>
     </tr>
     <tr>
-      <th>217</th>
+      <th>17</th>
+      <td>217</td>
       <td>hgnc:10848</td>
       <td>SHH</td>
       <td>3.465514e-05</td>
@@ -287,5 +324,28 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+   
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.12/c3.min.js"></script>
+
+    <script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+        setTimeout(function() {
+            $('#resultTabsContent .tab-pane table').DataTable();
+        }, 100);
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $($(e.target).attr('href') + ' table').DataTable();
+        });
+    });
+    </script>
 </body>
 </html>
