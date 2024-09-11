@@ -1,6 +1,30 @@
 # -*- coding: utf-8 -*-
 
-"""An app wrapping the query module of indra_cogex."""
+"""An app wrapping the query module of indra_cogex.
+
+The endpoints are created dynamically based on the functions in the following modules:
+- indra_cogex.client.queries
+- indra_cogex.client.subnetwork
+- indra_cogex.analysis.metabolite_analysis
+- indra_cogex.analysis.gene_analysis
+"""
+# todo @prasham
+#  - Add the autoclient decorator to the functions in metabolite_analysis and
+#    gene_analysis. Check how it is done in the queries module and follow that. You
+#    might have to make some change to some of the functions signatures (i.e. change
+#    the order of the arguments) to comply with the autoclient decorator. See the
+#    autoclient defintion for more information.
+#    decorator definition in indra_cogex/client/neo4j_client.py for more information.
+#  - The code generating the API in this file does some assumptions about the functions:
+#    - The docstring need to come directly after the function definition, no print()
+#      or other code should be in between. Otherwise the docstring parsing done in this
+#      file will not work.
+#    - All parameters should have examples in the examples_dict. If a parameter does not
+#      have an example, the code will raise an error so it will tell you if you missed
+#      any. For example, for `discrete_analysis` you need to provide examples for
+#      metabolites, method, alpha, keep_insignificant, minimum_evidence_count,
+#      and minimum_belief.
+
 
 import logging
 from http import HTTPStatus
