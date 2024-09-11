@@ -30,35 +30,48 @@ api = Api(
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 examples_dict = {
-    "tissue": ["UBERON", "UBERON:0001162"],
-    "gene": ["HGNC", "9896"],
-    "go_term": ["GO", "GO:0000978"],
-    "drug": ["CHEBI", "CHEBI:27690"],
-    "drugs": [["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]],
-    "disease": ["MESH", "D007855"],
-    "trial": ["CLINICALTRIALS", "NCT00000114"],
-    "genes": [["HGNC", "1097"], ["HGNC", "6407"]],
-    "pathway": ["WIKIPATHWAYS", "WP5037"],
-    "side_effect": ["UMLS", "C3267206"],
-    "term": ["MESH", "D007855"],
-    "parent": ["MESH", "D007855"],
-    "mesh_term": ["MESH", "D015002"],
-    "pmid_term": ["PUBMED", "34634383"],
-    "paper_term": ["PUBMED", "34634383"],
-    "pmids": ["20861832", "19503834"],
-    "include_child_terms": True,
+    "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
+    "gene": fields.List(fields.String, example=["HGNC", "9896"]),
+    "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
+    "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
+    "drugs": fields.List(
+        fields.List(fields.String),
+        example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
+    ),
+    "disease": fields.List(fields.String, example=["MESH", "D007855"]),
+    "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
+    "genes": fields.List(
+        fields.List(fields.String),
+        example=[["HGNC", "1097"], ["HGNC", "6407"]]
+    ),
+    "pathway": fields.List(fields.String, example=["WIKIPATHWAYS", "WP5037"]),
+    "side_effect": fields.List(fields.String, example=["UMLS", "C3267206"]),
+    "term": fields.List(fields.String, example=["MESH", "D007855"]),
+    "parent": fields.List(fields.String, example=["MESH", "D007855"]),
+    "mesh_term": fields.List(fields.String, example=["MESH", "D015002"]),
+    "pmid_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
+    "paper_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
+    "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
+    "include_child_terms": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
-    "stmt_hash": "12198579805553967",
-    "stmt_hashes": ["12198579805553967", "30651649296901235"],
-    "cell_line": ["CCLE", "BT20_BREAST"],
-    "target": ["HGNC", "6840"],
-    "targets": [["HGNC", "6840"], ["HGNC", "1097"]],
-    "include_indirect": True,
-    "filter_medscan": True,
-    "limit": 30,
-    "evidence_limit": 30,
-    "nodes": [["FPLX", "MEK"], ["FPLX", "ERK"]],
-    "offset": 5,
+    "stmt_hash": fields.String(example="12198579805553967"),
+    "stmt_hashes": fields.List(fields.String, example=["12198579805553967",
+                                                       "30651649296901235"]),
+    "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
+    "target": fields.List(fields.String, example=["HGNC", "6840"]),
+    "targets": fields.List(
+        fields.List(fields.String),
+        example=[["HGNC", "6840"], ["HGNC", "1097"]]
+    ),
+    "include_indirect": fields.Boolean(example=True),
+    "filter_medscan": fields.Boolean(example=True),
+    "limit": fields.Integer(example=30),
+    "evidence_limit": fields.Integer(example=30),
+    "nodes": fields.List(
+        fields.List(fields.String),
+        example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
+    ),
+    "offset": fields.Integer(example=5),
 }
 
 # Parameters to always skip in the examples and in the documentation
@@ -113,7 +126,7 @@ for module, func_name in module_functions:
     query_model = api.model(
         model_name,
         {
-            param_name: fields.List(fields.String, example=examples_dict[param_name])
+            param_name: examples_dict[param_name]
             for param_name in param_names
             if param_name not in SKIP_GLOBAL
             and param_name not in SKIP_ARGUMENTS.get(func_name, [])
