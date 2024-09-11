@@ -11,6 +11,7 @@ from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
+from indra_cogex.analysis import metabolite_analysis, gene_analysis
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
@@ -86,10 +87,17 @@ SKIP_ARGUMENTS = {
 }
 
 # This is the list of functions to be included
-module_functions = [(queries, fn) for fn in queries.__all__] + [
-    (subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]
-]
+# To add a new function, make sure it is part of __all__ in the respective module or is
+# listed explicitly below and properly documented in its docstring as well as having
+# example values for its parameters in the examples_dict above.
+module_functions = (
+    [(queries, fn) for fn in queries.__all__] +
+    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
+    [(metabolite_analysis, fn) for fn in ["discrete_analysis", "enzyme_analysis"]] +
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "discrete_analysis"]]
+)
 
+# Maps function names to the actual functions
 func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
 
 # Create resource for each query function
