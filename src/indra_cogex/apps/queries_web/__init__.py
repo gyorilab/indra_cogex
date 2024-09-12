@@ -71,7 +71,7 @@ examples_dict = {
         fields.List(fields.String),
         example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
     ),
-    "offset": fields.Integer(example=5),
+    "offset": fields.Integer(example=1),
 }
 
 # Parameters to always skip in the examples and in the documentation
