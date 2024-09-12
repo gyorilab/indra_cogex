@@ -1,6 +1,7 @@
 """Metabolite-centric analysis."""
 
-from typing import Dict, List, Mapping, Tuple
+from typing import Dict, Any, List, Mapping, Tuple
+import logging
 import pandas as pd
 from indra.databases import chebi_client
 from indra_cogex.client.enrichment.mla import (
@@ -8,63 +9,95 @@ from indra_cogex.client.enrichment.mla import (
     metabolomics_explanation,
     metabolomics_ora,
 )
+from indra_cogex.client.neo4j_client import Neo4jClient
+from statsmodels.stats.multitest import multipletests
 
 
-def discrete_analysis(client, metabolites: Dict[str, str], method: str, alpha: float,
-                      keep_insignificant: bool, minimum_evidence_count: int,
-                      minimum_belief: float) -> Dict:
-    print(f"Input parameters: alpha={alpha}, keep_insignificant={keep_insignificant}, minimum_evidence_count={minimum_evidence_count}")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    """Perform discrete metabolite set analysis using metabolomics over-representation analysis.
 
-    Parameters
-    ----------
-    client : object
-        The client object for making API calls.
-    metabolites : dict
-        A dictionary of ChEBI IDs to metabolite names.
-    method : str
-        The statistical method for multiple testing correction.
-    alpha : float
-        The significance level.
-    keep_insignificant : bool
-        Whether to keep statistically insignificant results.
-    minimum_evidence_count : int
-        Minimum number of evidence required for analysis.
-    minimum_belief : float
-        Minimum belief score for analysis.
+def discrete_analysis(
+        client: Neo4jClient,
+        metabolites: Dict[str, str],
+        method: str = "bonferroni",
+        alpha: float = 0.05,
+        keep_insignificant: bool = False,
+        minimum_evidence_count: int = 1,
+        minimum_belief: float = 0.5,
+) -> Dict[str, Any]:
+    """
+    Perform discrete metabolite analysis.
+    """
+    logger.info(f"Starting discrete analysis with {len(metabolites)} metabolites")
+    logger.info(
+        f"Parameters: method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}, minimum_evidence_count={minimum_evidence_count}, minimum_belief={minimum_belief}")
 
-    Returns
-    -------
-    dict
-        A dictionary containing results from the analysis."""
-    results = metabolomics_ora(
+    # Extract CHEBI IDs from the metabolites dictionary
+    chebi_ids = list(metabolites.keys())
+
+    # Perform the metabolomics ORA analysis
+    ora_results = metabolomics_ora(
         client=client,
-        chebi_ids=metabolites,
+        chebi_ids=chebi_ids,
         method=method,
         alpha=alpha,
-        keep_insignificant=keep_insignificant,
-        minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
-    print(f"Results from metabolomics_ora: {results}")
 
-    # Filter results based on keep_insignificant, alpha, and minimum_evidence_count
-    filtered_results = {}
-    for key, value in results.items():
+    logger.info(f"Metabolomics ORA returned results shape: {ora_results.shape}")
+
+    if ora_results.empty:
+        logger.warning("Metabolomics ORA returned empty results.")
+        return {"results": {}, "metabolites": metabolites}
+
+    logger.info(f"Columns in ORA results: {ora_results.columns.tolist()}")
+
+    # Ensure required columns are present
+    required_columns = ['curie', 'name', 'p', 'mlp']
+    if not all(col in ora_results.columns for col in required_columns):
+        missing_columns = [col for col in required_columns if col not in ora_results.columns]
+        logger.warning(f"Missing required columns in metabolomics_ora results: {missing_columns}")
+        return {"results": {}, "metabolites": metabolites}
+
+    # Calculate adjusted p-value if not present
+    if 'adjusted_p_value' not in ora_results.columns:
+        logger.info("Calculating adjusted p-values...")
+        if method == "bonferroni":
+            ora_results['adjusted_p_value'] = ora_results['p'] * len(ora_results)
+        elif method == "fdr_bh":
+            _, ora_results['adjusted_p_value'], _, _ = multipletests(ora_results['p'], method='fdr_bh')
+        else:
+            logger.warning(f"Unsupported method '{method}'. Using raw p-values.")
+            ora_results['adjusted_p_value'] = ora_results['p']
+
+    # Process the results
+    results = {}
+    for _, row in ora_results.iterrows():
+        curie = row['curie']
+        value = {
+            'name': row['name'],
+            'p_value': row['p'],
+            'adjusted_p_value': row['adjusted_p_value'],
+            'evidence_count': int(2 ** row['mlp']) if 'mlp' in row else 0
+        }
+
         if (keep_insignificant or value['adjusted_p_value'] <= alpha) and \
-                value.get('evidence_count', 0) >= minimum_evidence_count:
-            filtered_results[key] = value
+                value['evidence_count'] >= minimum_evidence_count:
+            results[curie] = value
 
-    print(f"Filtered results: {filtered_results}")
-
+    logger.info(f"Analysis complete. Found {len(results)} significant results.")
     return {
+        "results": results,
         "metabolites": metabolites,
-        "results": filtered_results
     }
 
 
-def enzyme_analysis(client, ec_code: str, chebi_ids: List[str] = None) -> List:
+def enzyme_analysis(
+        client: Neo4jClient,  # Specify the type of client here
+        ec_code: str,
+        chebi_ids: List[str] = None
+) -> List:
     """Perform enzyme analysis and explanation for given EC code and optional ChEBI IDs.
 
     Parameters
