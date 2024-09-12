@@ -21,72 +21,46 @@ HERE = Path(__file__).parent.resolve()
 
 @autoclient()
 def reverse_causal_reasoning(
-    positive_hgnc_ids: Iterable[str],
-    negative_hgnc_ids: Iterable[str],
-    minimum_size: int = 4,
-    alpha: Optional[float] = None,
-    keep_insignificant: bool = True,
-    *,
-    client: Neo4jClient,
-    minimum_evidence_count: Optional[int] = None,
-    minimum_belief: Optional[float] = None,
+        positive_hgnc_ids: Iterable[str],
+        negative_hgnc_ids: Iterable[str],
+        minimum_size: int = 4,
+        alpha: Optional[float] = None,
+        keep_insignificant: bool = True,
+        *,
+        client: Neo4jClient,
+        minimum_evidence_count: Optional[int] = None,
+        minimum_belief: Optional[float] = None,
 ) -> pd.DataFrame:
-    """Implement the Reverse Causal Reasoning algorithm from
-    :ref:`Catlett, N. L., et al. (2013) <ref-causal-reas-references>`.
+    print(
+        f"Starting reverse causal reasoning with {len(list(positive_hgnc_ids))} positive genes and {len(list(negative_hgnc_ids))} negative genes")
+    print(f"Positive HGNC IDs: {list(positive_hgnc_ids)}")
+    print(f"Negative HGNC IDs: {list(negative_hgnc_ids)}")
+    print(f"Parameters: minimum_size={minimum_size}, alpha={alpha}, keep_insignificant={keep_insignificant}")
+    print(f"Minimum evidence count: {minimum_evidence_count}, Minimum belief: {minimum_belief}")
 
-    Parameters
-    ----------
-    client :
-        A neo4j client
-    positive_hgnc_ids :
-        A list of positive-signed HGNC gene identifiers
-        (e.g., up-regulated genes in a differential gene expression analysis)
-    negative_hgnc_ids :
-        A list of negative-signed HGNC gene identifiers
-        (e.g., down-regulated genes in a differential gene expression analysis)
-    minimum_size :
-        The minimum number of entities marked as downstream
-        of an entity for it to be usable as a hyp
-    alpha :
-        The cutoff for significance. Defaults to 0.05
-    keep_insignificant :
-        If false, removes results with a p value less than alpha.
-    minimum_evidence_count :
-        The minimum number of evidences for a relationship to count it as a regulator.
-        Defaults to 1 (i.e., cutoff not applied).
-    minimum_belief :
-        The minimum belief for a relationship to count it as a regulator.
-        Defaults to 0.0 (i.e., cutoff not applied).
-
-    Returns
-    -------
-    :
-        A pandas DataFrame with results for each entity in the graph database
-
-
-    .. _ref-causal-reas-references:
-
-    References
-    ----------
-    Catlett, N. L., *et al.* (2013): `Reverse causal reasoning: applying qualitative
-    causal knowledge to the interpretation of high-throughput data
-    <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14** (1), 340.
-    """
     if alpha is None:
         alpha = 0.05
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
+
+    print("Getting positive statement sets...")
     database_positive = get_positive_stmt_sets(
         client=client,
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
+    print(f"Number of entities with positive statements: {len(database_positive)}")
+
+    print("Getting negative statement sets...")
     database_negative = get_negative_stmt_sets(
         client=client,
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
+    print(f"Number of entities with negative statements: {len(database_negative)}")
+
     entities = set(database_positive).union(database_negative)
+    print(f"Total number of entities: {len(entities)}")
 
     rows = []
     for entity in entities:
@@ -94,6 +68,7 @@ def reverse_causal_reasoning(
         entity_negative: set[str] = database_negative.get(entity, set())
         if len(entity_positive) + len(entity_negative) < minimum_size:
             continue  # skip this hypothesis
+
         correct, incorrect, ambiguous = 0, 0, 0
         for hgnc_id in positive_hgnc_ids:
             if hgnc_id in entity_positive and hgnc_id in entity_negative:
@@ -127,6 +102,7 @@ def reverse_causal_reasoning(
             res_p, res_ambig_p = None, None
         rows.append((*entity, correct, incorrect, ambiguous, res_p, res_ambig_p))
 
+    print(f"Number of rows before DataFrame creation: {len(rows)}")
     df = pd.DataFrame(
         rows,
         columns=[
@@ -139,8 +115,15 @@ def reverse_causal_reasoning(
             "binom_ambig_pvalue",
         ],
     ).sort_values("binom_pvalue")
+    print(f"DataFrame shape after creation: {df.shape}")
+
     if not keep_insignificant:
         df = df[df["binom_pvalue"] < alpha]
+        print(f"DataFrame shape after removing insignificant results: {df.shape}")
+
+    print(f"Final DataFrame shape: {df.shape}")
+    print(f"Final DataFrame head:\n{df.head()}")
+
     return df
 
 
