@@ -207,7 +207,7 @@ def get_genes_for_go_term(
         get_ontology_child_terms(go_term, client=client) if include_indirect else []
     )
     gene_nodes = {}
-    for term in [go_term] + go_children:
+    for term in [go_term] + [gc.grounding() for gc in go_children]:
         genes = client.get_sources(
             term,
             relation="associated_with",
@@ -217,7 +217,7 @@ def get_genes_for_go_term(
         for gene in genes:
             gene_grnd = gene.grounding()
             if gene_grnd[0] == "HGNC":
-                gene_nodes[gene.grounding()] = gene
+                gene_nodes[gene_grnd] = gene
     return list(gene_nodes.values())
 
 
