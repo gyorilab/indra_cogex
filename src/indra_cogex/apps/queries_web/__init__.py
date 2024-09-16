@@ -13,7 +13,7 @@ The endpoints are created dynamically based on the functions in the following mo
 #    gene_analysis. Check how it is done in the queries module and follow that. You
 #    might have to make some change to some of the functions signatures (i.e. change
 #    the order of the arguments) to comply with the autoclient decorator. See the
-#    autoclient defintion for more information.
+#    autoclient definition for more information.
 #    decorator definition in indra_cogex/client/neo4j_client.py for more information.
 #  - The code generating the API in this file does some assumptions about the functions:
 #    - The docstring need to come directly after the function definition, no print()
@@ -97,6 +97,46 @@ examples_dict = {
         example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
     ),
     "offset": fields.Integer(example=1),
+    # Analysis api
+    # Metabolite analysis examples
+    "metabolite_discrete_analysis": {
+        "metabolites": [{"CHEBI", "CHEBI:12345"}, {"CHEBI", "CHEBI:67890"}],
+        "method": "bonferroni",
+        "alpha": 0.05,
+        "keep_insignificant": False,
+        "minimum_evidence_count": 1,
+        "minimum_belief": 0.5,
+    },
+    "metabolite_enzyme_analysis": {
+        "ec_code": "3.2.1.4",
+        "chebi_ids": ["CHEBI:27690", "CHEBI:114785"],
+    },
+
+    # Gene analysis examples (discrete, signed, continuous)
+    "gene_discrete_analysis": {
+        "genes": [{"HGNC", "1234"}, {"HGNC", "5678"}],
+        "method": "fdr_bh",
+        "alpha": 0.01,
+        "keep_insignificant": False,
+        "minimum_evidence_count": 1,
+        "minimum_belief": 0.7,
+    },
+    "gene_signed_analysis": {
+        "genes": [{"HGNC", "9101"}, {"HGNC", "1121"}],
+        "method": "bonferroni",
+        "alpha": 0.05,
+        "keep_insignificant": True,
+        "minimum_evidence_count": 2,
+        "minimum_belief": 0.6,
+    },
+    "gene_continuous_analysis": {
+        "genes": [{"HGNC", "3141"}, {"HGNC", "4159"}],
+        "method": "fdr_bh",
+        "alpha": 0.01,
+        "keep_insignificant": False,
+        "minimum_evidence_count": 3,
+        "minimum_belief": 0.8,
+    },
 }
 
 # Parameters to always skip in the examples and in the documentation
@@ -118,7 +158,7 @@ module_functions = (
     [(queries, fn) for fn in queries.__all__] +
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
     [(metabolite_analysis, fn) for fn in ["discrete_analysis", "enzyme_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "discrete_analysis"]]
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 
 # Maps function names to the actual functions
