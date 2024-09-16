@@ -200,24 +200,35 @@ def continuous_analysis(
     """
     Perform continuous gene set analysis on gene expression data.
 
-    Args:
-        file_path (Union[str, Path]): Path to the input file containing gene expression data.
-        gene_name_column (str): Name of the column containing gene names.
-        log_fold_change_column (str): Name of the column containing log fold change values.
-        species (str): Species of the gene expression data ('rat', 'mouse', or 'human').
-        permutations (int): Number of permutations for statistical analysis.
-        client (Neo4jClient): The client object for making API calls.
-        alpha (float, optional): The significance level. Defaults to 0.05.
-        keep_insignificant (bool, optional): Whether to keep statistically insignificant
-            results. Defaults to False.
-        source (str, optional): The type of analysis to perform. Defaults to 'go'.
-        minimum_evidence_count (int, optional): Minimum number of evidence required for
-            INDRA analysis. Defaults to 1.
-        minimum_belief (float, optional): Minimum belief score for INDRA analysis.
-            Defaults to 0.
+    Parameters
+    ----------
+    file_path : str or Path
+        Path to the input file containing gene expression data.
+    gene_name_column : str
+        Name of the column containing gene names.
+    log_fold_change_column : str
+        Name of the column containing log fold change values.
+    species : str
+        Species of the gene expression data. Should be one of 'rat', 'mouse', or 'human'.
+    permutations : int
+        Number of permutations for statistical analysis.
+    client : Neo4jClient
+        The client object for making API calls.
+    alpha : float, optional
+        The significance level. Defaults to 0.05.
+    keep_insignificant : bool, optional
+        Whether to keep statistically insignificant results. Defaults to False.
+    source : str, optional
+        The type of analysis to perform. Defaults to 'go'.
+    minimum_evidence_count : int, optional
+        Minimum number of evidence required for INDRA analysis. Defaults to 1.
+    minimum_belief : float, optional
+        Minimum belief score for INDRA analysis. Defaults to 0.
 
-    Returns:
-        Optional[DataFrame]: A DataFrame containing the results of the specified analysis,
+    Returns
+    -------
+    DataFrame or None
+        A DataFrame containing the results of the specified analysis,
         or None if an error occurred.
     """
     file_path = Path(file_path)
