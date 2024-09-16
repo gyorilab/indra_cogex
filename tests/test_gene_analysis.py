@@ -162,10 +162,6 @@ class TestDiscreteAnalysis(unittest.TestCase):
         self.assertNotIn('CURIE:005', significant_results)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class TestSignedAnalysis(unittest.TestCase):
     # Mock client class to simulate the behavior of the actual client
     class MockClient:

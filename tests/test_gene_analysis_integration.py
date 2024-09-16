@@ -44,12 +44,12 @@ print(f"Neo4j Connection URL: {neo4j_url}")
 
 def test_neo4j_connection(neo4j_client: Neo4jClient):
     try:
-        neo4j_url = os.environ.get('INDRA_NEO4J_URL', 'URL not set in environment')
-        print(f"Neo4j URL from environment: {neo4j_url}")
-        print(f"Attempting to connect to Neo4j at: {neo4j_client.get_uri()}")  # Assuming there's a get_uri method
-        result = neo4j_client.query_tx("RETURN 1 as test")
-        assert result == 1, "Failed to execute a simple query"
+        # Add a ping check to verify the connection
+        assert neo4j_client.ping(), "Failed to ping Neo4j database"
+
+        # Print success message if the ping check passes
         print("Successfully connected to Neo4j database")
+
     except Exception as e:
         pytest.fail(f"Failed to connect to Neo4j database: {str(e)}")
 
