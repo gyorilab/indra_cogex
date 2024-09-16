@@ -3,7 +3,7 @@
 """
 Protein Analysis Exploration
 
-Exploring how a set of target protiens relate to a source protein through
+Exploring how a set of target proteins relate to a source protein through
 INDRA statements, exploring pathway membership, determining if any of the
 proteins belong to the same protein family/complex as the target and using
 INDRA discrete gene list analysis results
@@ -87,18 +87,18 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
 
     Parameters
     ----------
-    source_protein: string
+    source_protein : string
         The protein of interest in relation to protien list user enters
 
-    target_proteins: list
+    target_proteins : list
         Contains proteins user enters to analyze in relation to target
 
     Returns
     -------
-    stmts_by_protein_df: Dataframe
+    stmts_by_protein_df : Dataframe
         Unfiltered dataframe that contains all INDRA relationships for
         target protein
-    stmts_by_protein_filtered_df: dataframe
+    stmts_by_protein_filtered_df : dataframe
         Contains INDRA relationships for source protein filtered by
         "target_proteins"
     """
@@ -175,6 +175,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
 
     Parameters
     ----------
+    output_path
     stmts_df : pd.DataFrame
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
@@ -233,7 +234,7 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
 
     Returns
     -------
-    shared_families_df: dataframe
+    shared_families_df : dataframe
         Contains shared protein family complexes for the target proteins and
         the source
     """
@@ -291,14 +292,14 @@ def get_go_terms_for_source(source_hgnc_id):
     """ This method gets the go terms for the source protein
     Parameters
     ----------
-    source_hgnc_id: string
+    source_hgnc_id : string
         HGNC id for the source protein
 
     Returns
     -------
-    source_go_terms: list
+    source_go_terms : list
         Contains the GO terms for source proteins
-    go_nodes: list
+    go_nodes : list
         List of node objects that has information about GO terms for source
     """
     # these are the GO terms for target protein
@@ -311,23 +312,21 @@ def get_go_terms_for_source(source_hgnc_id):
 
 
 def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
-    """Use the indra_upstream csv to get a dataframe that is the
-        intersection of the upstream molecules and the bioentities that target
-        protein has direct INDRA relationships with and the bioentities that
-        target protein has direct INDRA relationships with
+    """Get a dataframe of upstream molecules intersecting with bioentities that target proteins with direct INDRA
+       relationships
 
     Parameters
     ----------
-    stmts_by_protein_df: dataframe
+    stmts_by_protein_df : dataframe
         Contains all bioentities target protien has a direct INDRA relationship
 
     Returns
     -------
-    shared_proteins: list
+    shared_proteins : list
         list of shared bioentities between the indra_upstream results
         and bioenties that have direct INDRA relationships with target protein
 
-    shared_entities: dataframe
+    shared_entities : dataframe
         The filtered the indra_upstream_df using the shared_protiens list
         (can pick whether you want to filter the indra_upstream_df or
         protein_df which contains all bioentities that target protein has a
@@ -356,18 +355,19 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
 
 
 def find_shared_go_terms(source_go_terms, filename):
-    """This method finds the shared go terms between the gene list and target
-        proteins GO terms again the data is downloaded from the discrete gene
-        analysis is as csv file
+    """Finds the shared GO terms between the gene list and the target proteins' GO terms.
+
+       The data is sourced from the CSV file obtained from discrete gene analysis.
+
 
     Parameters
     ----------
-    source_go_terms: list
+    source_go_terms : list
         GO terms for the source proteins
 
     Returns
     -------
-    shared_df: dataframe
+    shared_df : dataframe
         Contains shared bioentities that have the same go terms
         between the GO terms provided from the gene analysis and GO terms
         associated with target protein
@@ -393,7 +393,7 @@ def find_shared_go_terms(source_go_terms, filename):
 
 
 def combine_target_gene_pathways(reactome_filename, wiki_filename):
-    """ This method creates combined dataframe of REACTOME and Wikipathways
+    """This method creates combined dataframe of REACTOME and Wikipathways
     provided by gene analysis for gene list
 
     Returns
@@ -409,10 +409,8 @@ def combine_target_gene_pathways(reactome_filename, wiki_filename):
     return pathways_df
 
 
-def graph_boxplots(shared_go_df,shared_entities, filename):
-    """ This method creates boxplots to visualize p and q values for
-        shared complexes/GO terms and bioentiies
-
+def graph_boxplots(shared_go_df, shared_entities, filename):
+    """ Create boxplots to visualize p and q values
 
     Parameters
     ----------
@@ -427,7 +425,7 @@ def graph_boxplots(shared_go_df,shared_entities, filename):
         protein_df which contains all bioentities that source protein has a
         direct INDRA relationship with).
 
-    filename: string
+    filename : string
         name of the file chart will be downloaded under
     """
 
@@ -455,6 +453,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
     Parameters
     ----------
+    client
+    output_path
     source_hgnc_id : string
         The HGNC id for the source protein
     target_hgnc_ids : list
@@ -548,4 +548,3 @@ def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.sy
     
     return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
                                            client=client)
-
