@@ -3,6 +3,7 @@ from typing import Dict, Union, Optional
 from pathlib import Path
 import pandas as pd
 from pandas import DataFrame
+from indra_cogex.client.neo4j_client import autoclient
 
 from indra.databases import hgnc_client
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -27,16 +28,42 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
+@autoclient()
 def discrete_analysis(
         genes: Dict[str, str],
-        *,
-        client: Neo4jClient,
         method: str = 'fdr_bh',
         alpha: float = 0.05,
         keep_insignificant: bool = False,
         minimum_evidence_count: int = 1,
-        minimum_belief: float = 0
-) -> Optional[DataFrame]:
+        minimum_belief: float = 0,
+        *,
+        client: Neo4jClient
+) -> Optional[pd.DataFrame]:
+    """
+    Perform discrete analysis on the provided genes.
+
+    Parameters
+    ----------
+    genes : dict of str
+        Dictionary of gene identifiers.
+    method : str, optional
+        Statistical method to apply, by default 'fdr_bh'.
+    alpha : float, optional
+        Significance level, by default 0.05.
+    keep_insignificant : bool, optional
+        Whether to retain insignificant results, by default False.
+    minimum_evidence_count : int, optional
+        Minimum number of evidence for inclusion, by default 1.
+    minimum_belief : float, optional
+        Minimum belief score for filtering, by default 0.
+    client : Neo4jClient, optional
+        The Neo4j client, managed automatically by the autoclient decorator.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame containing analysis results, or None if an error occurs.
+    """
     print(f"Starting discrete analysis with {len(genes)} genes")
     print(f"Input genes: {genes}")
     gene_set = set(genes.keys())
@@ -54,15 +81,13 @@ def discrete_analysis(
         ]:
             print(f"Starting {analysis_name} analysis")
             if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
-                print(
-                    f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}")
+                print(f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}")
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant
                 )
             else:  # INDRA analyses
-                print(
-                    f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}, minimum_evidence_count={minimum_evidence_count}, minimum_belief={minimum_belief}")
+                print(f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}, minimum_evidence_count={minimum_evidence_count}, minimum_belief={minimum_belief}")
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant,
@@ -92,16 +117,42 @@ def discrete_analysis(
         return None
 
 
+@autoclient()
 def signed_analysis(
     positive_genes: Dict[str, str],
     negative_genes: Dict[str, str],
-    *,
-    client: Neo4jClient,
     alpha: float = 0.05,
-    keep_insignificant: bool = False,  # We'll ignore this parameter for now
+    keep_insignificant: bool = False,
     minimum_evidence_count: int = 1,
-    minimum_belief: float = 0
-) -> Optional[DataFrame]:
+    minimum_belief: float = 0,
+    *,
+    client: Neo4jClient
+) -> Optional[pd.DataFrame]:
+    """
+    Perform signed analysis on the provided genes using reverse causal reasoning.
+
+    Parameters
+    ----------
+    positive_genes : dict of str
+        Dictionary of positive gene identifiers.
+    negative_genes : dict of str
+        Dictionary of negative gene identifiers.
+    alpha : float, optional
+        Significance level, by default 0.05.
+    keep_insignificant : bool, optional
+        Whether to retain insignificant results, by default False.
+    minimum_evidence_count : int, optional
+        Minimum number of evidence for inclusion, by default 1.
+    minimum_belief : float, optional
+        Minimum belief score for filtering, by default 0.
+    client : Neo4jClient, optional
+        The Neo4j client, managed automatically by the autoclient decorator.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame containing analysis results, or None if an error occurs.
+    """
     print(f"Starting signed analysis with {len(positive_genes)} positive genes and {len(negative_genes)} negative genes")
     print(f"Positive genes: {positive_genes}")
     print(f"Negative genes: {negative_genes}")
@@ -131,19 +182,20 @@ def signed_analysis(
         return None
 
 
+@autoclient()
 def continuous_analysis(
         file_path: Union[str, Path],
         gene_name_column: str,
         log_fold_change_column: str,
         species: str,
         permutations: int,
-        *,
-        client: Neo4jClient,
         alpha: float = 0.05,
         keep_insignificant: bool = False,
         source: str = 'go',
         minimum_evidence_count: int = 1,
-        minimum_belief: float = 0
+        minimum_belief: float = 0,
+        *,
+        client: Neo4jClient
 ) -> Optional[DataFrame]:
     """
     Perform continuous gene set analysis on gene expression data.
