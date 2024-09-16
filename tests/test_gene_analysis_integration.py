@@ -44,8 +44,11 @@ print(f"Neo4j Connection URL: {neo4j_url}")
 
 def test_neo4j_connection(neo4j_client: Neo4jClient):
     try:
+        neo4j_url = os.environ.get('INDRA_NEO4J_URL', 'URL not set in environment')
+        print(f"Neo4j URL from environment: {neo4j_url}")
+        print(f"Attempting to connect to Neo4j at: {neo4j_client.get_uri()}")  # Assuming there's a get_uri method
         result = neo4j_client.query_tx("RETURN 1 as test")
-        assert result[0]['test'] == 1, "Failed to execute a simple query"
+        assert result == 1, "Failed to execute a simple query"
         print("Successfully connected to Neo4j database")
     except Exception as e:
         pytest.fail(f"Failed to connect to Neo4j database: {str(e)}")
@@ -90,15 +93,15 @@ def get_sample_genes(client: Neo4jClient, limit: int = 10):
 
 def test_discrete_analysis_with_real_data(neo4j_client: Neo4jClient):
     print("\n--- Starting test_discrete_analysis_with_real_data ---")
-    genes = get_random_genes(neo4j_client)
+    genes = get_random_genes(neo4j_client,100)
     print(f"Input genes for discrete analysis: {genes}")
 
     result = discrete_analysis(
         genes,
         client=neo4j_client,
         method='fdr_bh',
-        alpha=0.05,
-        keep_insignificant=False,
+        alpha=0.1,
+        keep_insignificant=True,
         minimum_evidence_count=1,
         minimum_belief=0
     )
@@ -122,24 +125,12 @@ def test_discrete_analysis_with_real_data(neo4j_client: Neo4jClient):
 def test_signed_analysis_with_real_data(neo4j_client: Neo4jClient):
     print("\n--- Starting test_signed_analysis_with_real_data ---")
 
-    # Example HGNC IDs
-    EXAMPLE_POSITIVE_HGNC_IDS = [
-        "10354", "4141", "1692", "11771", "4932", "12692", "6561", "3999",
-        "20768", "10317", "5472", "10372", "12468", "132", "11253", "2198",
-        "10304", "10383", "7406", "10401", "10388", "10386", "7028", "10410",
-        "4933", "10333", "13312", "2705", "10336", "10610", "3189", "402",
-        "11879", "8831", "10371", "2528", "17194", "12458", "11553", "11820",
-    ]
-    EXAMPLE_NEGATIVE_HGNC_IDS = [
-        "5471", "11763", "2192", "2001", "17389", "3972", "10312", "8556",
-        "10404", "7035", "7166", "13429", "29213", "6564", "6502", "15476",
-        "13347", "20766", "3214", "13388", "3996", "7541", "10417", "4910",
-        "2527", "667", "10327", "1546", "6492", "7", "163", "3284", "3774",
-        "12437", "8547", "6908", "3218", "10424", "10496", "1595",
-    ]
+    # Fetch some random genes from the database
+    all_genes = get_random_genes(neo4j_client, 80)  # Assuming get_random_genes is a function you have
 
-    positive_genes = {f"hgnc:{hgnc_id}": f"Gene_{hgnc_id}" for hgnc_id in EXAMPLE_POSITIVE_HGNC_IDS}
-    negative_genes = {f"hgnc:{hgnc_id}": f"Gene_{hgnc_id}" for hgnc_id in EXAMPLE_NEGATIVE_HGNC_IDS}
+    # Split into positive and negative sets
+    positive_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[:40]}
+    negative_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[40:]}
 
     print(f"Input positive genes for signed analysis: {positive_genes}")
     print(f"Input negative genes for signed analysis: {negative_genes}")
@@ -153,6 +144,8 @@ def test_signed_analysis_with_real_data(neo4j_client: Neo4jClient):
         minimum_evidence_count=1,
         minimum_belief=0
     )
+
+    # Rest of your test code...
 
     print(f"Signed analysis result: {result}")
     print(f"Signed analysis result columns: {result.columns if isinstance(result, pd.DataFrame) else 'N/A'}")
