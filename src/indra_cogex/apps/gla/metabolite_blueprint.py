@@ -23,6 +23,7 @@ from .fields import (
 )
 from ..utils import render_statements
 
+EXAMPLE_CHEBI_CURIES = ["CHEBI:17234", "CHEBI:16811", "CHEBI:17855"]
 
 __all__ = [
     "metabolite_blueprint",
@@ -76,8 +77,8 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
 metabolites_field = TextAreaField(
     "Metabolites",
     description="Paste your list of CHEBI identifiers, or"
-    ' CURIEs here or click here to use <a href="#" onClick="exampleMetabolites()">an'
-    " example list of metabolites</a>.",
+                ' CURIEs here or click here to use <a href="#" onClick="exampleMetabolites()">an'
+                " example list of metabolites</a>.",
     validators=[DataRequired()],
 )
 
@@ -109,7 +110,7 @@ class DiscreteForm(FlaskForm):
     keep_insignificant = keep_insignificant_field
     submit = SubmitField("Submit")
 
-    def parse_metabolites(self) -> Tuple[Dict[str, str], List[str]]:
+    def parse_metabolites(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
         return parse_metabolites_field(self.metabolites.data)
 
