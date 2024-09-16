@@ -207,8 +207,10 @@ def _get_species_scores(
         df = pd.read_csv(path, **read_csv_kwargs)
 
     if gene_symbol_column_name not in df.columns:
+        logger.error("No column named %s in input data", gene_symbol_column_name)
         raise ValueError(f"No column named {gene_symbol_column_name} in input data")
     if score_column_name not in df.columns:
+        logger.error("No column named %s in input data", score_column_name)
         raise ValueError(f"No column named {score_column_name} in input data")
 
     # Here we map from gene symbol (any species) to HGNC ID using the provided function
