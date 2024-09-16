@@ -21,16 +21,57 @@ HERE = Path(__file__).parent.resolve()
 
 @autoclient()
 def reverse_causal_reasoning(
-        positive_hgnc_ids: Iterable[str],
-        negative_hgnc_ids: Iterable[str],
-        minimum_size: int = 4,
-        alpha: Optional[float] = None,
-        keep_insignificant: bool = True,
-        *,
-        client: Neo4jClient,
-        minimum_evidence_count: Optional[int] = None,
-        minimum_belief: Optional[float] = None,
+    positive_hgnc_ids: Iterable[str],
+    negative_hgnc_ids: Iterable[str],
+    minimum_size: int = 4,
+    alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
 ) -> pd.DataFrame:
+    """Implement the Reverse Causal Reasoning algorithm from
+    :ref:`Catlett, N. L., et al. (2013) <ref-causal-reas-references>`.
+
+    Parameters
+    ----------
+    client :
+        A neo4j client
+    positive_hgnc_ids :
+        A list of positive-signed HGNC gene identifiers
+        (e.g., up-regulated genes in a differential gene expression analysis)
+    negative_hgnc_ids :
+        A list of negative-signed HGNC gene identifiers
+        (e.g., down-regulated genes in a differential gene expression analysis)
+    minimum_size :
+        The minimum number of entities marked as downstream
+        of an entity for it to be usable as a hyp
+    alpha :
+        The cutoff for significance. Defaults to 0.05
+    keep_insignificant :
+        If false, removes results with a p value less than alpha.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to count it as a regulator.
+        Defaults to 1 (i.e., cutoff not applied).
+    minimum_belief :
+        The minimum belief for a relationship to count it as a regulator.
+        Defaults to 0.0 (i.e., cutoff not applied).
+
+    Returns
+    -------
+    :
+        A pandas DataFrame with results for each entity in the graph database
+
+
+    .. _ref-causal-reas-references:
+
+    References
+    ----------
+    Catlett, N. L., *et al.* (2013): `Reverse causal reasoning: applying qualitative
+    causal knowledge to the interpretation of high-throughput data
+    <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14** (1), 340.
+    """
     print(
         f"Starting reverse causal reasoning with {len(list(positive_hgnc_ids))} positive genes and {len(list(negative_hgnc_ids))} negative genes")
     print(f"Positive HGNC IDs: {list(positive_hgnc_ids)}")
