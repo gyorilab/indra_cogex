@@ -17,7 +17,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@autoclient
 def discrete_analysis(
         metabolites: Dict[str, str],
         method: str = "bonferroni",
@@ -53,13 +52,6 @@ def discrete_analysis(
     pd.DataFrame
         DataFrame containing the analysis results.
     """
-    logger.info(f"Starting discrete analysis with {len(metabolites)} metabolites")
-    logger.info(
-        f"Parameters: method={method}, alpha={alpha}, "
-        f"keep_insignificant={keep_insignificant}, "
-        f"minimum_evidence_count={minimum_evidence_count}, "
-        f"minimum_belief={minimum_belief}"
-    )
 
     chebi_ids = list(metabolites.keys())
 
@@ -76,8 +68,6 @@ def discrete_analysis(
         logger.warning("Metabolomics ORA returned empty results.")
         return pd.DataFrame(columns=['curie', 'name', 'p_value', 'adjusted_p_value', 'evidence_count'])
 
-    logger.info(f"Columns in ORA results: {ora_results.columns.tolist()}")
-
     required_columns = ['curie', 'name', 'p', 'mlp']
     if not all(col in ora_results.columns for col in required_columns):
         missing_columns = [col for col in required_columns if col not in ora_results.columns]
@@ -85,7 +75,6 @@ def discrete_analysis(
         return pd.DataFrame(columns=['curie', 'name', 'p_value', 'adjusted_p_value', 'evidence_count'])
 
     if 'adjusted_p_value' not in ora_results.columns:
-        logger.info("Calculating adjusted p-values...")
         if method == "bonferroni":
             ora_results['adjusted_p_value'] = ora_results['p'] * len(ora_results)
         elif method == "fdr_bh":
@@ -102,13 +91,11 @@ def discrete_analysis(
         (ora_results['adjusted_p_value'] <= alpha) &
         (ora_results['evidence_count'] >= minimum_evidence_count) |
         keep_insignificant
-    ]
+        ]
 
-    logger.info(f"Analysis complete. Found {len(ora_results)} significant results.")
     return ora_results[['curie', 'name', 'p', 'adjusted_p_value', 'evidence_count']]
 
 
-@autoclient
 def enzyme_analysis(
         ec_code: str,
         chebi_ids: List[str] = None,
@@ -135,7 +122,6 @@ def enzyme_analysis(
     if chebi_ids is None:
         chebi_ids = []
 
-    logger.info(f"Performing enzyme analysis for EC code: {ec_code} with {len(chebi_ids)} ChEBI IDs.")
     stmts = metabolomics_explanation(client=client, ec_code=ec_code, chebi_ids=chebi_ids)
 
     # Assuming stmts is a list of results, convert it into a DataFrame for consistency
@@ -146,3 +132,64 @@ def enzyme_analysis(
     return pd.DataFrame(stmts, columns=['ec_code', 'explanation'])
 
 
+@autoclient
+def combined_metabolite_analysis(
+        metabolites: Dict[str, str],
+        ec_code: str,
+        method: str = "bonferroni",
+        alpha: float = 0.05,
+        keep_insignificant: bool = False,
+        minimum_evidence_count: int = 1,
+        minimum_belief: float = 0.5,
+        *,
+        client: Neo4jClient  # Client argument moved to the end as a keyword argument
+) -> pd.DataFrame:
+    """
+    Perform combined metabolite and enzyme analysis, returning results as a DataFrame.
+
+    Parameters
+    ----------
+    metabolites : Dict[str, str]
+        Dictionary of metabolite identifiers (CHEBI IDs).
+    ec_code : str
+        The EC code for the enzyme.
+    method : str, optional
+        Method to adjust p-values, default is "bonferroni".
+    alpha : float, optional
+        Significance level, default is 0.05.
+    keep_insignificant : bool, optional
+        Whether to retain insignificant results, default is False.
+    minimum_evidence_count : int, optional
+        Minimum evidence count threshold, default is 1.
+    minimum_belief : float, optional
+        Minimum belief threshold for filtering results, default is 0.5.
+    client : Neo4jClient, optional
+        Neo4j client for database interaction, injected via autoclient.
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined DataFrame containing the results from both analyses.
+    """
+    # Call the discrete analysis function
+    discrete_result = discrete_analysis(
+        metabolites=metabolites,
+        method=method,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+        client=client
+    )
+
+    # Call the enzyme analysis function
+    enzyme_result = enzyme_analysis(
+        ec_code=ec_code,
+        chebi_ids=list(metabolites.keys()),
+        client=client
+    )
+
+    # Combine the results
+    combined_result = pd.concat([discrete_result, enzyme_result], axis=1)  # Assuming column-wise join
+
+    return combined_result
