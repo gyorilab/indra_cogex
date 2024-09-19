@@ -175,7 +175,8 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
 
     Parameters
     ----------
-    output_path
+    output_path : str
+        Path to the directory where the generated HTML files will be saved.
     stmts_df : pd.DataFrame
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
@@ -290,6 +291,7 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
 
 def get_go_terms_for_source(source_hgnc_id):
     """ This method gets the go terms for the source protein
+
     Parameters
     ----------
     source_hgnc_id : string
@@ -317,6 +319,8 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
 
     Parameters
     ----------
+    filename : str
+        Path to the CSV file containing upstream bioentities for gene sets.
     stmts_by_protein_df : dataframe
         Contains all bioentities target protien has a direct INDRA relationship
 
@@ -325,7 +329,6 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
     shared_proteins : list
         list of shared bioentities between the indra_upstream results
         and bioenties that have direct INDRA relationships with target protein
-
     shared_entities : dataframe
         The filtered the indra_upstream_df using the shared_protiens list
         (can pick whether you want to filter the indra_upstream_df or
@@ -359,11 +362,12 @@ def find_shared_go_terms(source_go_terms, filename):
 
        The data is sourced from the CSV file obtained from discrete gene analysis.
 
-
     Parameters
     ----------
     source_go_terms : list
         GO terms for the source proteins
+    filename : str
+        Path to the CSV file containing GO terms for the target proteins
 
     Returns
     -------
@@ -396,6 +400,13 @@ def combine_target_gene_pathways(reactome_filename, wiki_filename):
     """This method creates combined dataframe of REACTOME and Wikipathways
     provided by gene analysis for gene list
 
+    Parameters
+    ----------
+    reactome_filename : str
+        The file path to the CSV file containing the REACTOME pathways data.
+    wiki_filename : str
+        The file path to the CSV file containing the WikiPathways data.
+
     Returns
     -------
     pathways_df : dataframe
@@ -418,13 +429,11 @@ def graph_boxplots(shared_go_df, shared_entities, filename):
         Contains shared bioentities that have the same go terms
         between the GO terms provided from the gene analysis and GO terms
         associated with source protein.
-
     shared_entities : dataframe
         The filtered the indra_upstream_df using the shared_protiens list
         (you can pick whether you want to filter the indra_upstream_df or
         protein_df which contains all bioentities that source protein has a
         direct INDRA relationship with).
-
     filename : string
         name of the file chart will be downloaded under
     """
@@ -453,8 +462,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
 
     Parameters
     ----------
-    client
-    output_path
+    output_path : str
+        Path where output files such as visualizations and CSVs will be saved.
+    client : object
+        The client object used to handle database connections or API interactions.
     source_hgnc_id : string
         The HGNC id for the source protein
     target_hgnc_ids : list
