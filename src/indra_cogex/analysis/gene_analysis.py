@@ -64,8 +64,6 @@ def discrete_analysis(
     pd.DataFrame or None
         A DataFrame containing analysis results, or None if an error occurs.
     """
-    print(f"Starting discrete analysis with {len(genes)} genes")
-    print(f"Input genes: {genes}")
     gene_set = set(genes.keys())
     print(f"Gene set: {gene_set}")
 
@@ -79,22 +77,18 @@ def discrete_analysis(
             ("INDRA Upstream", indra_upstream_ora),
             ("INDRA Downstream", indra_downstream_ora)
         ]:
-            print(f"Starting {analysis_name} analysis")
             if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
-                print(f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}")
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant
                 )
             else:  # INDRA analyses
-                print(f"Executing {analysis_name} query with parameters: gene_ids={gene_set}, method={method}, alpha={alpha}, keep_insignificant={keep_insignificant}, minimum_evidence_count={minimum_evidence_count}, minimum_belief={minimum_belief}")
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant,
                     minimum_evidence_count=minimum_evidence_count,
                     minimum_belief=minimum_belief
                 )
-            print(f"{analysis_name} analysis result: {analysis_result}")
             results[analysis_name] = analysis_result
 
         df_list = []
@@ -102,18 +96,15 @@ def discrete_analysis(
             df = pd.DataFrame(result)
             df['Analysis'] = analysis_name
             df_list.append(df)
-            print(f"{analysis_name} DataFrame shape: {df.shape}")
 
         final_df = pd.concat(df_list, ignore_index=True)
-        print(f"Final DataFrame shape: {final_df.shape}")
-        print(f"Final DataFrame columns: {final_df.columns}")
         print(f"Final DataFrame head:\n{final_df.head()}")
 
+        final_df = pd.concat(df_list, ignore_index=True)
+        logger.info(f"Final DataFrame shape: {final_df.shape}")
         return final_df
     except Exception as e:
-        print(f"An error occurred during discrete analysis: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"An error occurred during discrete analysis: {str(e)}", exc_info=True)
         return None
 
 
@@ -153,9 +144,6 @@ def signed_analysis(
     pd.DataFrame or None
         A DataFrame containing analysis results, or None if an error occurs.
     """
-    print(f"Starting signed analysis with {len(positive_genes)} positive genes and {len(negative_genes)} negative genes")
-    print(f"Positive genes: {positive_genes}")
-    print(f"Negative genes: {negative_genes}")
 
     try:
         results = reverse_causal_reasoning(
@@ -170,15 +158,12 @@ def signed_analysis(
         print(f"Reverse causal reasoning results: {results}")
 
         final_df = pd.DataFrame(results)
-        print(f"Final DataFrame shape: {final_df.shape}")
-        print(f"Final DataFrame columns: {final_df.columns}")
         print(f"Final DataFrame head:\n{final_df.head()}")
 
         return final_df
     except Exception as e:
         print(f"An error occurred during signed analysis: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.exception(e)
         return None
 
 
@@ -237,12 +222,10 @@ def continuous_analysis(
     try:
         df = pd.read_csv(file_path, sep=sep)
     except Exception as e:
-        logger.error(f"Error reading input file: {str(e)}")
-        return None
+        raise ValueError(f"Error reading input file: {str(e)}")
 
     if len(df) < 2:
-        logger.error("Input file contains insufficient data. At least 2 genes are required.")
-        return None
+        raise ValueError("Input file contains insufficient data. At least 2 genes are required.")
 
     score_functions = {
         "rat": get_rat_scores,
@@ -251,20 +234,16 @@ def continuous_analysis(
     }
 
     if species not in score_functions:
-        logger.error(f"Unknown species: {species}")
-        return None
+        raise ValueError(f"Unknown species: {species}")
 
     scores = score_functions[species](df, gene_name_column, log_fold_change_column)
     scores = {k: v for k, v in scores.items() if k is not None}
 
     if len(scores) < 2:
-        logger.error(f"Insufficient valid genes after processing. Got {len(scores)} genes, need at least 2.")
-        return None
+        raise ValueError(f"Insufficient valid genes after processing. Got {len(scores)} genes, need at least 2.")
 
     if source != 'go':
-        logger.error(f"Unsupported source: {source}. Only 'go' is currently supported.")
-        return None
-
+        raise ValueError(f"Unsupported source: {source}. Only 'go' is currently supported.")
     try:
         results = go_gsea(
             client=client,
