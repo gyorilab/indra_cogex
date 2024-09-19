@@ -252,6 +252,4 @@ class TestSignedAnalysis(unittest.TestCase):
         self.assert_results(result, 2, "Test 5: Only negative genes")
 
 
-# Main block to run the tests
-if __name__ == '__main__':
-    unittest.main()
+
