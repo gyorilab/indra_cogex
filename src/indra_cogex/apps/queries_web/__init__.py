@@ -8,22 +8,6 @@ The endpoints are created dynamically based on the functions in the following mo
 - indra_cogex.analysis.metabolite_analysis
 - indra_cogex.analysis.gene_analysis
 """
-# todo @prasham
-#  - Add the autoclient decorator to the functions in metabolite_analysis and
-#    gene_analysis. Check how it is done in the queries module and follow that. You
-#    might have to make some change to some of the functions signatures (i.e. change
-#    the order of the arguments) to comply with the autoclient decorator. See the
-#    autoclient definition for more information.
-#    decorator definition in indra_cogex/client/neo4j_client.py for more information.
-#  - The code generating the API in this file does some assumptions about the functions:
-#    - The docstring need to come directly after the function definition, no print()
-#      or other code should be in between. Otherwise the docstring parsing done in this
-#      file will not work.
-#    - All parameters should have examples in the examples_dict. If a parameter does not
-#      have an example, the code will raise an error so it will tell you if you missed
-#      any. For example, for `discrete_analysis` you need to provide examples for
-#      metabolites, method, alpha, keep_insignificant, minimum_evidence_count,
-#      and minimum_belief.
 
 
 import logging
@@ -157,7 +141,7 @@ SKIP_ARGUMENTS = {
 module_functions = (
     [(queries, fn) for fn in queries.__all__] +
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
-    [(metabolite_analysis, fn) for fn in ["discrete_analysis", "enzyme_analysis"]] +
+    [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
     [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 
