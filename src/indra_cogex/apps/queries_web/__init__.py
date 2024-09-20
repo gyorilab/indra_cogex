@@ -135,6 +135,14 @@ module_functions = (
     [(queries, fn) for fn in queries.__all__] +
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
     [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
+    # Fixme: @Prasham: the continuous_analysis function assumes a file_path that
+    #  come from a file upload, which is not a standard field in Flask-RestX,
+    #  this creates a problem when annotating the function in this file. You could
+    #  try to figure out how to handle it or we change the continuous_analysis function
+    #  to take two lists corresponding to the gene names and the log fold changes
+    #  columns rather than taking a file path, and then the function
+    #  continuous_analysis_route in indra_cogex/apps/gla/gene_blueprint.py can take
+    #  care of the file loading for that endpoint.
     [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis"]]#, "continuous_analysis"]]
 )
 
