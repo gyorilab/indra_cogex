@@ -132,7 +132,7 @@ def enzyme_analysis(
     return pd.DataFrame(stmts, columns=['ec_code', 'explanation'])
 
 
-@autoclient
+@autoclient()
 def combined_metabolite_analysis(
         metabolites: Dict[str, str],
         ec_code: str,
