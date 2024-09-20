@@ -82,56 +82,45 @@ examples_dict = {
     ),
     "offset": fields.Integer(example=1),
     # Analysis api
-    # Metabolite analysis examples
-    "metabolite_discrete_analysis": {
-        "metabolites": [{"CHEBI", "CHEBI:12345"}, {"CHEBI", "CHEBI:67890"}],
-        "method": "bonferroni",
-        "alpha": 0.05,
-        "keep_insignificant": False,
-        "minimum_evidence_count": 1,
-        "minimum_belief": 0.5,
-    },
-    "metabolite_enzyme_analysis": {
-        "ec_code": "3.2.1.4",
-        "chebi_ids": ["CHEBI:27690", "CHEBI:114785"],
-    },
+    # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
+    # examples
+    "metabolites": [["CHEBI", "CHEBI:12345"], ["CHEBI", "CHEBI:67890"]],
+    "method": "bonferroni",
+    "alpha": 0.05,
+    "keep_insignificant": False,
+    "minimum_evidence_count": 2,
+    "minimum_belief": 0.7,
+    "ec_code": "3.2.1.4",
+    "chebi_ids": ["CHEBI:27690", "CHEBI:114785"],
+    "positive_genes": [
+        "HGNC:10354",
+        "HGNC:4141",
+        "HGNC:1692",
+        "HGNC:11771",
+        "HGNC:4932",
+        "HGNC:12692"
+    ],
+    "negative_genes": [
+        "HGNC:5471,"
+        "HGNC:11763,"
+        "HGNC:2192,"
+        "HGNC:2001,"
+        "HGNC:17389,"
+        "HGNC:3972"
+    ]
 
-    # Gene analysis examples (discrete, signed, continuous)
-    "gene_discrete_analysis": {
-        "genes": [{"HGNC", "1234"}, {"HGNC", "5678"}],
-        "method": "fdr_bh",
-        "alpha": 0.01,
-        "keep_insignificant": False,
-        "minimum_evidence_count": 1,
-        "minimum_belief": 0.7,
-    },
-    "gene_signed_analysis": {
-        "genes": [{"HGNC", "9101"}, {"HGNC", "1121"}],
-        "method": "bonferroni",
-        "alpha": 0.05,
-        "keep_insignificant": True,
-        "minimum_evidence_count": 2,
-        "minimum_belief": 0.6,
-    },
-    "gene_continuous_analysis": {
-        "genes": [{"HGNC", "3141"}, {"HGNC", "4159"}],
-        "method": "fdr_bh",
-        "alpha": 0.01,
-        "keep_insignificant": False,
-        "minimum_evidence_count": 3,
-        "minimum_belief": 0.8,
-    },
 }
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix"}
+               "subject_prefix", "object_prefix", "file_path"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
     "get_evidences_for_stmt_hash": {"remove_medscan"},
     "get_evidences_for_stmt_hashes": {"remove_medscan"},
+    "continuous_analysis": {"gene_name_column", "gene_id_column", "log_fold_change_column"},
 }
 
 # This is the list of functions to be included
@@ -142,7 +131,7 @@ module_functions = (
     [(queries, fn) for fn in queries.__all__] +
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
     [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis"]]#, "continuous_analysis"]]
 )
 
 # Maps function names to the actual functions
