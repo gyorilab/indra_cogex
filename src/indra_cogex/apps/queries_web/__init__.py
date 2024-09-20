@@ -84,31 +84,35 @@ examples_dict = {
     # Analysis api
     # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
     # examples
-    "metabolites": [["CHEBI", "CHEBI:12345"], ["CHEBI", "CHEBI:67890"]],
-    "method": "bonferroni",
-    "alpha": 0.05,
-    "keep_insignificant": False,
-    "minimum_evidence_count": 2,
-    "minimum_belief": 0.7,
-    "ec_code": "3.2.1.4",
-    "chebi_ids": ["CHEBI:27690", "CHEBI:114785"],
-    "positive_genes": [
-        "HGNC:10354",
-        "HGNC:4141",
-        "HGNC:1692",
-        "HGNC:11771",
-        "HGNC:4932",
-        "HGNC:12692"
-    ],
-    "negative_genes": [
-        "HGNC:5471,"
-        "HGNC:11763,"
-        "HGNC:2192,"
-        "HGNC:2001,"
-        "HGNC:17389,"
-        "HGNC:3972"
-    ]
-
+    "metabolites": fields.List(
+        fields.List(fields.String),
+        example=[["CHEBI", "CHEBI:12345"], ["CHEBI", "CHEBI:67890"]],
+    ),
+    "method": fields.String(example="bonferroni"),
+    "alpha": fields.Float(example=0.05, min=0, max=1),
+    "keep_insignificant": fields.Boolean(example=False),
+    "minimum_evidence_count":  fields.Integer(example=2),
+    "minimum_belief":  fields.Float(example=0.7, min=0, max=1),
+    "ec_code":  fields.String(example="3.2.1.4"),
+    "chebi_ids": fields.List(fields.String, example=["CHEBI:27690", "CHEBI:114785"]),
+    "positive_genes": fields.List(fields.String,
+                                  example=[
+                                      "HGNC:10354",
+                                      "HGNC:4141",
+                                      "HGNC:1692",
+                                      "HGNC:11771",
+                                      "HGNC:4932",
+                                      "HGNC:12692"
+                                  ]),
+    "negative_genes": fields.List(fields.String,
+            example=[
+                "HGNC:5471",
+                "HGNC:11763",
+                "HGNC:2192",
+                "HGNC:2001",
+                "HGNC:17389",
+                "HGNC:3972"
+            ]),
 }
 
 # Parameters to always skip in the examples and in the documentation
