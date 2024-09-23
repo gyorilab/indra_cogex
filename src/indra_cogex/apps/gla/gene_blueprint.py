@@ -23,6 +23,7 @@ from .fields import (
     minimum_evidence_field,
     permutations_field,
     source_field,
+    species_field,
 )
 
 from indra_cogex.analysis.gene_analysis import (
