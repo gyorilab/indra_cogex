@@ -70,15 +70,14 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
     def test_discrete_analysis(self):
         for alpha in [0.05, 0.1, 0.2, 0.5, 1.0]:
             result = discrete_analysis(
-                self.client,
-                self.test_metabolites,
+                metabolites=self.test_metabolites,
                 method='bonferroni',
                 alpha=alpha,
                 keep_insignificant=True,
                 minimum_evidence_count=1,
-                minimum_belief=0.5
+                minimum_belief=0.5,
+                client=self.client
             )
-
             self.assertIsNotNone(result)
             self.assertIn('results', result)
 
@@ -169,19 +168,66 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
     def test_discrete_analysis_with_real_data(self):
         try:
             result = discrete_analysis(
-                self.client,
-                self.real_metabolites,
+                metabolites=self.test_metabolites,
                 method='bonferroni',
                 alpha=0.05,
-                keep_insignificant=False,
+                keep_insignificant=True,
                 minimum_evidence_count=1,
-                minimum_belief=0.5
+                minimum_belief=0.5,
+                client=self.client
             )
 
-            self.assertIsNotNone(result)
-            self.assertIn('results', result)
-            self.assertIn('metabolites', result)
+            self.assertIsInstance(result, pd.DataFrame)
+            self.assertFalse(result.empty, "Result DataFrame is empty")
+            expected_columns = ['curie', 'name', 'p', 'adjusted_p_value', 'evidence_count']
+            self.assertTrue(all(col in result.columns for col in expected_columns),
+                            f"Result DataFrame is missing expected columns. Columns: {result.columns}")
+
+            logger.info(f"Number of input metabolites: {len(self.real_metabolites)}")
+            logger.info(f"Number of pathways found: {len(result)}")
+            if not result.empty:
+                logger.info("Sample of results:")
+                logger.info(result.head().to_string())
+            else:
+                logger.warning("No significant pathways found.")
 
         except Exception as e:
-            logger.error(f"discrete_analysis raised an exception: {str(e)}", exc_info=True)
-            self.fail(f"discrete_analysis raised an exception: {str(e)}")
+            logger.error(f"discrete_analysis with real data raised an exception: {str(e)}", exc_info=True)
+            self.fail(f"discrete_analysis with real data raised an exception: {str(e)}")
+
+    def test_node_existence(self):
+        enzyme_query = "MATCH (e:BioEntity) WHERE e.id STARTS WITH 'ec-code:' RETURN COUNT(e) as count"
+        metabolite_query = "MATCH (m:BioEntity) WHERE m.id STARTS WITH 'chebi:' RETURN COUNT(m) as count"
+
+        enzyme_count = self.client.query_tx(enzyme_query)[0]['count']
+        metabolite_count = self.client.query_tx(metabolite_query)[0]['count']
+
+        logger.info(f"Enzyme count: {enzyme_count}")
+        logger.info(f"Metabolite count: {metabolite_count}")
+
+        self.assertGreater(enzyme_count, 0, "No enzyme nodes found")
+        self.assertGreater(metabolite_count, 0, "No metabolite nodes found")
+
+    def test_relationship_types(self):
+        query = """
+           MATCH (e:BioEntity)-[r]->(m:BioEntity)
+           WHERE e.id STARTS WITH 'ec-code:' OR m.id STARTS WITH 'chebi:'
+           RETURN DISTINCT type(r) AS relationship_type
+           """
+        result = self.client.query_tx(query)
+        logger.info(f"Relationship types: {result}")
+        self.assertTrue(len(result) > 0, "No relationships found involving enzymes or metabolites")
+
+    def test_sample_nodes(self):
+        enzyme_query = "MATCH (e:BioEntity) WHERE e.id STARTS WITH 'ec-code:' RETURN e LIMIT 1"
+        metabolite_query = "MATCH (m:BioEntity) WHERE m.id STARTS WITH 'chebi:' RETURN m LIMIT 1"
+
+        enzyme = self.client.query_tx(enzyme_query)
+        metabolite = self.client.query_tx(metabolite_query)
+
+        logger.info(f"Sample enzyme node: {enzyme}")
+        logger.info(f"Sample metabolite node: {metabolite}")
+
+
+if __name__ == '__main__':
+    unittest.main()
