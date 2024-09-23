@@ -229,7 +229,7 @@ def signed_analysis_route():
     )
 
 
-@gene_blueprint.route("/continuous", methods=["GET"])
+@gene_blueprint.route("/continuous", methods=["GET", "POST"])
 def continuous_analysis_route():
     """Render the continuous analysis form and handle form submission.
 
