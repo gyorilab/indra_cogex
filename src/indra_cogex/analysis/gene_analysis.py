@@ -1,11 +1,10 @@
 import logging
-from typing import Dict, Union, Optional
-from pathlib import Path
+from typing import Dict, Optional
+
 import pandas as pd
 from pandas import DataFrame
 from indra_cogex.client.neo4j_client import autoclient
 
-from indra.databases import hgnc_client
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
