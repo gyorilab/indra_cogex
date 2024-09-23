@@ -9,7 +9,6 @@ The endpoints are created dynamically based on the functions in the following mo
 - indra_cogex.analysis.gene_analysis
 """
 
-
 import logging
 from http import HTTPStatus
 from inspect import isfunction, signature
@@ -125,6 +124,7 @@ examples_dict = {
     "source": fields.String(example="go"),
 }
 
+
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
                "subject_prefix", "object_prefix", "file_path"}
@@ -141,10 +141,10 @@ SKIP_ARGUMENTS = {
 # listed explicitly below and properly documented in its docstring as well as having
 # example values for its parameters in the examples_dict above.
 module_functions = (
-    [(queries, fn) for fn in queries.__all__] +
-    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
-    [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+        [(queries, fn) for fn in queries.__all__] +
+        [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
+        [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
+        [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 
 # Maps function names to the actual functions
@@ -187,9 +187,10 @@ for module, func_name in module_functions:
             param_name: examples_dict[param_name]
             for param_name in param_names
             if param_name not in SKIP_GLOBAL
-            and param_name not in SKIP_ARGUMENTS.get(func_name, [])
+               and param_name not in SKIP_ARGUMENTS.get(func_name, [])
         },
     )
+
 
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
