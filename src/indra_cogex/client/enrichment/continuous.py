@@ -14,13 +14,10 @@ expression experiments.
 
 from typing import Any, Dict, Optional, Set, Tuple, Union
 from indra.databases import hgnc_client
-from typing import Union, Dict
 from pathlib import Path
 import logging
 import gseapy
 import pandas as pd
-import pyobo
-from indra.databases import hgnc_client
 
 from indra_cogex.client.enrichment.utils import (
     get_entity_to_regulators,
