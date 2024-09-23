@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@autoclient()
 def discrete_analysis(
         metabolites: Dict[str, str],
         method: str = "bonferroni",
@@ -96,6 +97,7 @@ def discrete_analysis(
     return ora_results[['curie', 'name', 'p', 'adjusted_p_value', 'evidence_count']]
 
 
+@autoclient()
 def enzyme_analysis(
         ec_code: str,
         chebi_ids: List[str] = None,
