@@ -169,9 +169,8 @@ def signed_analysis(
 
 @autoclient()
 def continuous_analysis(
-        file_path: Union[str, Path],
-        gene_name_column: str,
-        log_fold_change_column: str,
+        gene_names: str,
+        log_fold_change: str,
         species: str,
         permutations: int,
         alpha: float = 0.05,
@@ -187,11 +186,9 @@ def continuous_analysis(
 
     Parameters
     ----------
-    file_path : str or Path
-        Path to the input file containing gene expression data.
-    gene_name_column : str
+    gene_names : list[str]
         Name of the column containing gene names.
-    log_fold_change_column : str
+    log_fold_change : list[float]
         Name of the column containing log fold change values.
     species : str
         Species of the gene expression data. Should be one of 'rat', 'mouse', or 'human'.
@@ -216,16 +213,6 @@ def continuous_analysis(
         A DataFrame containing the results of the specified analysis,
         or None if an error occurred.
     """
-    file_path = Path(file_path)
-    sep = "," if file_path.suffix.lower() == ".csv" else "\t"
-
-    try:
-        df = pd.read_csv(file_path, sep=sep)
-    except Exception as e:
-        raise ValueError(f"Error reading input file: {str(e)}")
-
-    if len(df) < 2:
-        raise ValueError("Input file contains insufficient data. At least 2 genes are required.")
 
     score_functions = {
         "rat": get_rat_scores,
@@ -236,7 +223,20 @@ def continuous_analysis(
     if species not in score_functions:
         raise ValueError(f"Unknown species: {species}")
 
-    scores = score_functions[species](df, gene_name_column, log_fold_change_column)
+    if len(gene_names) != len(log_fold_change):
+        raise ValueError("Gene names and log fold change values must have the same length.")
+
+    gene_name_column_name = "genes"
+    log_fold_change_column_name = "log_fold_change"
+
+    df = pd.DataFrame({
+        gene_name_column_name: gene_names,
+        log_fold_change_column_name: log_fold_change
+    })
+
+    scores = score_functions[species](
+        df, gene_name_column_name, log_fold_change_column_name
+    )
     scores = {k: v for k, v in scores.items() if k is not None}
 
     if len(scores) < 2:

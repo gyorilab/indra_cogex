@@ -1,11 +1,11 @@
 """Gene-centric blueprint."""
-
+from http import HTTPStatus
 from pathlib import Path
 from typing import Dict, List, Mapping, Tuple
 
 import flask
 import pandas as pd
-from flask import url_for
+from flask import url_for, abort
 from flask_wtf import FlaskForm
 from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField, StringField
@@ -228,7 +228,7 @@ def signed_analysis_route():
     )
 
 
-@gene_blueprint.route("/continuous", methods=["GET", "POST"])
+@gene_blueprint.route("/continuous", methods=["GET"])
 def continuous_analysis_route():
     """Render the continuous analysis form and handle form submission.
 
@@ -238,13 +238,36 @@ def continuous_analysis_route():
         Rendered HTML template."""
     form = ContinuousForm()
     if form.validate_on_submit():
+
+        # Get file path and read the data into a DataFrame
         file_path = form.file.data.filename
+        gene_name_column = form.gene_name_column.data,
+        log_fold_change_column = form.log_fold_change_column.data,
+        file_path = Path(file_path)
+        sep = "," if file_path.suffix.lower() == ".csv" else "\t"
+
+        try:
+            df = pd.read_csv(file_path, sep=sep)
+        except Exception as e:
+            abort(code=HTTPStatus.BAD_REQUEST,
+                  message=f"Error reading input file: {str(e)}")
+
+        if len(df) < 2:
+
+            abort(code=HTTPStatus.BAD_REQUEST,
+                  message="Input file contains insufficient data. At least 2 genes are "
+                          "required.")
+
+        if not {gene_name_column, log_fold_change_column}.issubset(df.columns):
+            abort(code=HTTPStatus.BAD_REQUEST,
+                  message="Gene name and log fold change columns must be present in the "
+                          "input file.")
+
         results = continuous_analysis(
-            file_path,
-            form.gene_name_column.data,
-            form.log_fold_change_column.data,
-            form.species.data,
-            form.permutations.data,
+            gene_names=df[gene_name_column].values,
+            log_fold_change=df[log_fold_change_column].values,
+            species=form.species.data,
+            permutations=form.permutations.data,
             client=client,
             alpha=form.alpha.data,
             keep_insignificant=form.keep_insignificant.data,
