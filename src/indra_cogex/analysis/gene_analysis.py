@@ -245,17 +245,14 @@ def continuous_analysis(
 
     if source != 'go':
         raise ValueError(f"Unsupported source: {source}. Only 'go' is currently supported.")
-    try:
-        results = go_gsea(
-            client=client,
-            scores=scores,
-            permutation_num=permutations,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-            minimum_evidence_count=minimum_evidence_count,
-            minimum_belief=minimum_belief
-        )
-        return pd.DataFrame(results)
-    except Exception as e:
-        logger.error(f"Error in GO GSEA analysis: {str(e)}")
-        return None
+
+    results = go_gsea(
+        client=client,
+        scores=scores,
+        permutation_num=permutations,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief
+    )
+    return pd.DataFrame(results)
