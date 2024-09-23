@@ -3,7 +3,7 @@ import configparser
 import os
 import pandas as pd
 import logging
-from src.indra_cogex.analysis.metabolite_analysis import discrete_analysis, enzyme_analysis, metabolomics_ora
+from src.indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis, enzyme_analysis, metabolomics_ora
 from src.indra_cogex.client.neo4j_client import Neo4jClient
 
 logging.basicConfig(level=logging.INFO)
@@ -69,7 +69,7 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
 
     def test_discrete_analysis(self):
         for alpha in [0.05, 0.1, 0.2, 0.5, 1.0]:
-            result = discrete_analysis(
+            result = metabolite_discrete_analysis(
                 metabolites=self.test_metabolites,
                 method='bonferroni',
                 alpha=alpha,
@@ -167,7 +167,7 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
 
     def test_discrete_analysis_with_real_data(self):
         try:
-            result = discrete_analysis(
+            result = metabolite_discrete_analysis(
                 metabolites=self.test_metabolites,
                 method='bonferroni',
                 alpha=0.05,

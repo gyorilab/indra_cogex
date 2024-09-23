@@ -143,7 +143,7 @@ SKIP_ARGUMENTS = {
 module_functions = (
         [(queries, fn) for fn in queries.__all__] +
         [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
-        [(metabolite_analysis, fn) for fn in ["combined_metabolite_analysis"]] +
+        [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
         [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 

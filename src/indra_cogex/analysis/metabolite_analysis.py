@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @autoclient()
-def discrete_analysis(
+def metabolite_discrete_analysis(
         metabolites: Dict[str, str],
         method: str = "bonferroni",
         alpha: float = 0.05,

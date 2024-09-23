@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
-from src.indra_cogex.analysis.metabolite_analysis import discrete_analysis, enzyme_analysis
+from src.indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis, enzyme_analysis
 
 
 class TestMetaboliteAnalysis(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
                               "evidence_count": 7}
         }
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             self.test_metabolites,
             method='bonferroni',
@@ -53,7 +53,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
                               "evidence_count": 6}
         }
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             self.test_metabolites,
             method='bonferroni',
@@ -78,7 +78,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
                               "evidence_count": 6}
         }
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             self.test_metabolites,
             method='fdr_bh',
@@ -137,7 +137,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
                               "evidence_count": 3}
         }
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             self.test_metabolites,
             method='bonferroni',
@@ -154,7 +154,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
     def test_discrete_analysis_empty_input(self, mock_metabolomics_ora):
         mock_metabolomics_ora.return_value = {}
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             {},
             method='bonferroni',
@@ -178,7 +178,7 @@ class TestMetaboliteAnalysis(unittest.TestCase):
                               "evidence_count": 6}
         }
 
-        result = discrete_analysis(
+        result = metabolite_discrete_analysis(
             self.mock_client,
             self.test_metabolites,
             method='bonferroni',

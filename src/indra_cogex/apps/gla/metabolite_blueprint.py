@@ -12,7 +12,7 @@ from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.proxies import client
-from indra_cogex.analysis.metabolite_analysis import discrete_analysis, enzyme_analysis
+from indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis, enzyme_analysis
 
 from .fields import (
     alpha_field,
@@ -121,7 +121,7 @@ def discrete_analysis_route():
     form = DiscreteForm()
     if form.validate_on_submit():
         metabolite_chebi_ids, errors = form.parse_metabolites()
-        results = discrete_analysis(
+        results = metabolite_discrete_analysis(
             client=client,
             metabolites=metabolite_chebi_ids,
             method=form.correction.data,
