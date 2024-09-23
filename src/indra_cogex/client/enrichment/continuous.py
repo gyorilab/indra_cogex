@@ -60,9 +60,9 @@ def get_rat_scores(
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
         The name of the column with gene symbols.
     score_column_name :
@@ -73,28 +73,13 @@ def get_rat_scores(
     :
         A dictionary of mapped orthologous human gene HGNC IDs to scores.
     """
-
-    def map_rat_to_hgnc(rat_gene: str) -> Union[str, None]:
-        """Map a rat gene symbol to an HGNC ID."""
-        # Custom mapping logic for rat to human
-        hgnc_id = hgnc_client.get_hgnc_id(rat_gene)
-        if hgnc_id:
-            return hgnc_id
-
-        hgnc_id = hgnc_client.get_hgnc_id(rat_gene.upper())
-        if hgnc_id:
-            return hgnc_id
-
-        for i in range(1, 100000):  # Assuming HGNC IDs are within this range
-            hgnc_symbol = hgnc_client.get_hgnc_name(str(i))
-            if hgnc_symbol and hgnc_symbol.lower() == rat_gene.lower():
-                return str(i)
-
-        return None
+    from indra.databases import rgd_client
+    def map_rat_symbol_to_hgnc_id(rat_gene_name: str) -> Union[str, None]:
+        rgd_id = rgd_client.get_id_from_name(rat_gene_name)
+        return hgnc_client.get_hgnc_from_rat(rgd_id)
 
     return _get_species_scores(
-        prefix="rgd",
-        func=map_rat_to_hgnc,
+        func=map_rat_symbol_to_hgnc_id,
         path=path,
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
@@ -117,9 +102,9 @@ def get_mouse_scores(
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
         The name of the column with gene symbols.
     score_column_name :
@@ -128,42 +113,15 @@ def get_mouse_scores(
     Returns
     -------
     :
-        A dictionary of mapped orthologous human gene HGNC IDs to scores.
+        A dictionary of mapped orthologs human gene HGNC IDs to scores.
     """
-
-    def map_mouse_to_hgnc(mouse_gene: str) -> Union[str, None]:
-        """
-        Map a mouse gene symbol to an HGNC ID.
-
-        Parameters
-        ----------
-        mouse_gene : str
-            The mouse gene symbol to be mapped to an HGNC ID.
-
-        Returns
-        -------
-        str or None
-            The HGNC ID corresponding to the mouse gene symbol if found, otherwise None.
-        """
-        # Custom mapping logic for mouse to human
-        hgnc_id = hgnc_client.get_hgnc_id(mouse_gene)
-        if hgnc_id:
-            return hgnc_id
-
-        hgnc_id = hgnc_client.get_hgnc_id(mouse_gene.upper())
-        if hgnc_id:
-            return hgnc_id
-
-        for i in range(1, 100000):  # Assuming HGNC IDs are within this range
-            hgnc_symbol = hgnc_client.get_hgnc_name(str(i))
-            if hgnc_symbol and hgnc_symbol.lower() == mouse_gene.lower():
-                return str(i)
-
-        return None
+    from indra.databases import mgi_client
+    def map_mouse_symbol_to_hgnc_id(mouse_gene_name: str) -> Union[str, None]:
+        mgi_id = mgi_client.get_id_from_name(mouse_gene_name)
+        return hgnc_client.get_hgnc_from_mouse(mgi_id)
 
     return _get_species_scores(
-        prefix="mgi",
-        func=map_mouse_to_hgnc,
+        func=map_mouse_symbol_to_hgnc_id,
         path=path,
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
@@ -182,9 +140,9 @@ def get_human_scores(
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
         The name of the column with gene symbols. If none,
         will try and guess.
@@ -202,6 +160,7 @@ def get_human_scores(
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
         score_column_name=score_column_name,
+        func=hgnc_client.get_current_hgnc_id,
     )
 
 
@@ -211,8 +170,7 @@ def _get_species_scores(
         score_column_name: str,
         read_csv_kwargs: Optional[Dict[str, Any]] = None,
         *,
-        prefix=None,
-        func=None,
+        func,
 ) -> Dict[str, float]:
     """
     Retrieve species-specific scores from gene expression data.
@@ -227,10 +185,8 @@ def _get_species_scores(
         The name of the column containing scores associated with the gene symbols.
     read_csv_kwargs : dict of str to Any, optional
         Additional keyword arguments to pass to `pd.read_csv` when reading from a file.
-    prefix : str, optional
-        Prefix for the column name to be used for mapping gene symbols. Defaults to None.
-    func : callable, optional
-        Function to map gene symbols to IDs. Defaults to None.
+    func : callable
+        Function to map gene symbols to HGNC IDs
 
     Returns
     -------
@@ -240,8 +196,7 @@ def _get_species_scores(
     Raises
     ------
     ValueError
-        If `gene_symbol_column_name` or `score_column_name` are not found in the DataFrame,
-        or if only one of `prefix` or `func` is provided without the other.
+        If `gene_symbol_column_name` or `score_column_name` are not found in the DataFrame.
     """
     if read_csv_kwargs is None:
         read_csv_kwargs = {}
@@ -251,29 +206,18 @@ def _get_species_scores(
     else:
         df = pd.read_csv(path, **read_csv_kwargs)
 
-    logger.debug("Initial DataFrame:\n%s", df.head())
-
     if gene_symbol_column_name not in df.columns:
-        logger.error("No column named %s in input data", gene_symbol_column_name)
         raise ValueError(f"No column named {gene_symbol_column_name} in input data")
     if score_column_name not in df.columns:
-        logger.error("No column named %s in input data", score_column_name)
         raise ValueError(f"No column named {score_column_name} in input data")
 
-    if prefix is not None and func is not None:
-        mapped_gene_symbol_column_name = f"{prefix}_id"
-        df.loc[:, mapped_gene_symbol_column_name] = df[gene_symbol_column_name].map(func)
-        logger.debug("DataFrame after mapping with func:\n%s", df.head())
-        df = df[df[mapped_gene_symbol_column_name].notna()]
-    elif prefix is not None or func is not None:
-        logger.error("If specifying one, must specify both prefix and func")
-        raise ValueError("If specifying one, must specify both prefix and func")
-    else:
-        mapped_gene_symbol_column_name = gene_symbol_column_name
-        func = hgnc_client.get_current_hgnc_id
+    # Here we map from gene symbol (any species) to HGNC ID using the provided function
+    df.loc[:, "hgnc_id"] = df[gene_symbol_column_name].map(func)
 
-    df.loc[:, "hgnc_id"] = df[mapped_gene_symbol_column_name].map(func)
-    logger.debug("DataFrame after mapping to HGNC ID:\n%s", df.head())
+    # Check if there are any rows after mapping
+    if df["hgnc_id"].isna().all():
+        logger.error("No HGNC IDs found in input data")
+        raise ValueError("No HGNC IDs found in input data")
     df = df.set_index("hgnc_id")
     return df[score_column_name].to_dict()
 
