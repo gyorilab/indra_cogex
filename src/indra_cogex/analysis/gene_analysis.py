@@ -220,7 +220,9 @@ def continuous_analysis(
     }
 
     if species not in score_functions:
-        raise ValueError(f"Unknown species: {species}")
+        raise ValueError(
+            f"Unknown species: {species}. Must be one of 'rat', 'mouse', or 'human'."
+        )
 
     if len(gene_names) != len(log_fold_change):
         raise ValueError("Gene names and log fold change values must have the same length.")
