@@ -150,7 +150,8 @@ def discrete_analysis_route():
 @metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
 def enzyme_route(ec_code: str):
     """Render the enzyme page."""
-    user, roles = resolve_auth(dict(request.args))
+    # ToDo: why is login needed here?
+    # user, roles = resolve_auth(dict(request.args))
 
     chebi_ids = request.args.get("q").split(",") if "q" in request.args else None
     _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
