@@ -167,6 +167,9 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
 
     def test_discrete_analysis_with_real_data(self):
         try:
+            print(f"Number of test metabolites: {len(self.test_metabolites)}")
+            print(f"Test metabolites: {self.test_metabolites}")
+
             result = metabolite_discrete_analysis(
                 metabolites=self.test_metabolites,
                 method='bonferroni',
@@ -183,17 +186,22 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
             self.assertTrue(all(col in result.columns for col in expected_columns),
                             f"Result DataFrame is missing expected columns. Columns: {result.columns}")
 
-            logger.info(f"Number of input metabolites: {len(self.real_metabolites)}")
-            logger.info(f"Number of pathways found: {len(result)}")
+            print(f"Number of input metabolites: {len(self.test_metabolites)}")
+            print(f"Number of pathways found: {len(result)}")
             if not result.empty:
-                logger.info("Sample of results:")
-                logger.info(result.head().to_string())
+                print("Sample of results:")
+                print(result.head().to_string())
             else:
-                logger.warning("No significant pathways found.")
+                print("No significant pathways found.")
+
+            print(f"Full result shape: {result.shape}")
+            print(f"Full result columns: {result.columns}")
+            print("First few rows of full result:")
+            print(result.head().to_string())
 
         except Exception as e:
-            logger.error(f"discrete_analysis with real data raised an exception: {str(e)}", exc_info=True)
-            self.fail(f"discrete_analysis with real data raised an exception: {str(e)}")
+            print(f"discrete_analysis with real data raised an exception: {str(e)}")
+            raise  # Re-raise the exception to see the full traceback
 
     def test_node_existence(self):
         enzyme_query = "MATCH (e:BioEntity) WHERE e.id STARTS WITH 'ec-code:' RETURN COUNT(e) as count"
