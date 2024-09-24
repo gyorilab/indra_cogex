@@ -10,7 +10,12 @@ from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
     get_rat_scores,
-    go_gsea
+    go_gsea,
+    wikipathways_gsea,
+    phenotype_gsea,
+    indra_upstream_gsea,
+    indra_downstream_gsea,
+    reactome_gsea
 )
 from indra_cogex.client.enrichment.discrete import (
     go_ora,
@@ -166,9 +171,9 @@ def continuous_analysis(
         log_fold_change: str,
         species: str,
         permutations: int,
+        source: str,
         alpha: float = 0.05,
         keep_insignificant: bool = False,
-        source: str = 'go',
         minimum_evidence_count: int = 1,
         minimum_belief: float = 0,
         *,
@@ -187,14 +192,15 @@ def continuous_analysis(
         Species of the gene expression data. Should be one of 'rat', 'mouse', or 'human'.
     permutations : int
         Number of permutations for statistical analysis.
+    source : str, optional
+        The type of analysis to perform. Should be one of 'go', 'reactome',
+        'wikipathways', 'phenotype', 'indra-upstream', or 'indra-downstream'.
     client : Neo4jClient
         The client object for making API calls.
     alpha : float, optional
         The significance level. Defaults to 0.05.
     keep_insignificant : bool, optional
         Whether to keep statistically insignificant results. Defaults to False.
-    source : str, optional
-        The type of analysis to perform. Defaults to 'go'.
     minimum_evidence_count : int, optional
         Minimum number of evidence required for INDRA analysis. Defaults to 1.
     minimum_belief : float, optional
@@ -213,9 +219,34 @@ def continuous_analysis(
         "human": get_human_scores
     }
 
+    analysis_functions = {
+        "go": go_gsea,
+        "wikipathways": wikipathways_gsea,
+        "reactome": reactome_gsea,
+        "phenotype": phenotype_gsea,
+        "indra-upstream": indra_upstream_gsea,
+        "indra-downstream": indra_downstream_gsea,
+    }
+
+    kwargs = dict(
+        client=client,
+        permutation_num=permutations,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+    )
+    if source in ["indra-upstream", "indra-downstream"]:
+        kwargs["minimum_evidence_count"] = minimum_evidence_count
+        kwargs["minimum_belief"] = minimum_belief
+
     if species not in score_functions:
         raise ValueError(
             f"Unknown species: {species}. Must be one of 'rat', 'mouse', or 'human'."
+        )
+
+    if source not in analysis_functions:
+        raise ValueError(
+            f"Unknown source: {source}. Must be one of 'go', 'reactome', "
+            f"'wikipathways', 'phenotype', 'indra-upstream', or 'indra-downstream'."
         )
 
     if len(gene_names) != len(log_fold_change):
@@ -237,16 +268,9 @@ def continuous_analysis(
     if len(scores) < 2:
         raise ValueError(f"Insufficient valid genes after processing. Got {len(scores)} genes, need at least 2.")
 
-    if source != 'go':
-        raise ValueError(f"Unsupported source: {source}. Only 'go' is currently supported.")
+    kwargs["scores"] = scores
 
-    results = go_gsea(
-        client=client,
-        scores=scores,
-        permutation_num=permutations,
-        alpha=alpha,
-        keep_insignificant=keep_insignificant,
-        minimum_evidence_count=minimum_evidence_count,
-        minimum_belief=minimum_belief
-    )
-    return pd.DataFrame(results)
+    func = analysis_functions[source]
+    result = func(**kwargs)
+
+    return result
