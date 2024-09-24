@@ -148,14 +148,12 @@ def signed_analysis(
             positive_hgnc_ids=positive_genes,
             negative_hgnc_ids=negative_genes,
             alpha=alpha,
-            keep_insignificant=True,  # Always keep all results
+            keep_insignificant=keep_insignificant,
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         )
 
-        final_df = pd.DataFrame(results)
-
-        return final_df
+        return results
     except Exception as e:
         print(f"An error occurred during signed analysis: {str(e)}")
         logger.exception(e)

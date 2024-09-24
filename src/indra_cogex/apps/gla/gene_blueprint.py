@@ -223,14 +223,14 @@ def signed_analysis_route():
             minimum_evidence_count=form.minimum_evidence.data,
             minimum_belief=form.minimum_belief.data
         )
-        results['positive_parsing_errors'] = positive_errors
-        results['negative_parsing_errors'] = negative_errors
 
         return flask.render_template(
             "gene_analysis/signed_results.html",
             positive_genes=positive_genes,
+            positive_errors=positive_errors,
             negative_genes=negative_genes,
-            **results
+            negative_errors=negative_errors,
+            results=results,
         )
     return flask.render_template(
         "gene_analysis/signed_form.html",
