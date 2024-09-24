@@ -100,10 +100,9 @@ def enzyme_analysis(
         ec_code: str,
         chebi_ids: List[str] = None,
         *,
-        client: Neo4jClient  # Client argument moved to the end as a keyword argument
-) -> pd.DataFrame:
-    """
-    Perform enzyme analysis for a given EC code and return results as a DataFrame.
+        client: Neo4jClient
+):
+    """Perform enzyme analysis for a given EC code and return results as a DataFrame.
 
     Parameters
     ----------
@@ -116,17 +115,12 @@ def enzyme_analysis(
 
     Returns
     -------
-    pd.DataFrame
-        DataFrame containing enzyme analysis results.
+    List[indra.statements.Statement]
+        List of INDRA statements representing the analysis results.
     """
     if chebi_ids is None:
         chebi_ids = []
 
     stmts = metabolomics_explanation(client=client, ec_code=ec_code, chebi_ids=chebi_ids)
 
-    # Assuming stmts is a list of results, convert it into a DataFrame for consistency
-    if not stmts:
-        logger.warning(f"No results found for EC code: {ec_code}")
-        return pd.DataFrame(columns=['ec_code', 'explanation'])
-
-    return pd.DataFrame(stmts, columns=['ec_code', 'explanation'])
+    return stmts
