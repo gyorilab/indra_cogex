@@ -32,6 +32,10 @@ from indra_cogex.analysis.gene_analysis import (
     continuous_analysis
 )
 
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.signed import (EXAMPLE_NEGATIVE_HGNC_IDS,
+                                                  EXAMPLE_POSITIVE_HGNC_IDS)
+
 __all__ = ["gene_blueprint"]
 
 gene_blueprint = flask.Blueprint("gla", __name__, url_prefix="/gene")
