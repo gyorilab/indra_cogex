@@ -110,6 +110,7 @@ examples_dict = {
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
     "source": fields.String(example="go"),
+    "indra_path_analysis": fields.Boolean(example=False),
 }
 
 # Parameters to always skip in the examples and in the documentation
