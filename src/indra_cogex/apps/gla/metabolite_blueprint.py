@@ -151,8 +151,7 @@ def discrete_analysis_route():
 @jwt_required(optional=True)
 def enzyme_route(ec_code: str):
     """Render the enzyme page."""
-    # ToDo: why is login needed here?
-    # user, roles = resolve_auth(dict(request.args))
+    # Note: jwt_required is needed here because we're rendering a statement page
 
     chebi_ids = request.args.get("q").split(",") if "q" in request.args else None
     _, identifier = bioregistry.normalize_parsed_curie("eccode", ec_code)
