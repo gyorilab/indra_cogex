@@ -177,12 +177,12 @@ def discretize_analysis():
             errors=errors,
             method=form.correction.data,
             alpha=form.alpha.data,
-            go_results=results["GO"],
-            wikipathways_results=results["WikiPathways"],
-            reactome_results=results["Reactome"],
-            phenotype_results=results["Phenotype"],
-            indra_downstream_results=results["INDRA Downstream"],
-            indra_upstream_results=results["INDRA Upstream"],
+            go_results=results["go"],
+            wikipathways_results=results["wikipathways"],
+            reactome_results=results["reactome"],
+            phenotype_results=results["phenotype"],
+            indra_downstream_results=results["indra-downstream"],
+            indra_upstream_results=results["indra-upstream"],
         )
 
     return flask.render_template(

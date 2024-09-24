@@ -78,15 +78,15 @@ def discrete_analysis(
 
     results = {}
     for analysis_name, analysis_func in [
-        ("GO", go_ora),
-        ("WikiPathways", wikipathways_ora),
-        ("Reactome", reactome_ora),
-        ("Phenotype", phenotype_ora),
-        ("INDRA Upstream", indra_upstream_ora),
-        ("INDRA Downstream", indra_downstream_ora)
+        ("go", go_ora),
+        ("wikipathways", wikipathways_ora),
+        ("reactome", reactome_ora),
+        ("phenotype", phenotype_ora),
+        ("indra-upstream", indra_upstream_ora),
+        ("indra-downstream", indra_downstream_ora)
     ]:
         # Run non-INDRA analysis
-        if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
+        if analysis_name in {"go", "wikipathways", "reactome", "phenotype"}:
             analysis_result = analysis_func(
                 client=client, gene_ids=gene_set, method=method, alpha=alpha,
                 keep_insignificant=keep_insignificant
