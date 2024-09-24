@@ -32,7 +32,7 @@ def metabolite_discrete_analysis(
     Parameters
     ----------
     metabolites : Dict[str, str]
-        Dictionary of metabolite identifiers (CHEBI IDs).
+        Dictionary of metabolite identifiers (CHEBI IDs) of the form {chebi_id: name}.
     method : str, optional
         Method to adjust p-values, default is "bonferroni".
     alpha : float, optional
@@ -65,34 +65,7 @@ def metabolite_discrete_analysis(
         minimum_belief=minimum_belief,
     )
 
-    if ora_results.empty:
-        logger.warning("Metabolomics ORA returned empty results.")
-        return pd.DataFrame(columns=['curie', 'name', 'p_value', 'adjusted_p_value', 'evidence_count'])
-
-    required_columns = ['curie', 'name', 'p', 'mlp']
-    if not all(col in ora_results.columns for col in required_columns):
-        missing_columns = [col for col in required_columns if col not in ora_results.columns]
-        raise ValueError(f"Missing required columns in metabolomics_ora results: {missing_columns}")
-    if 'adjusted_p_value' not in ora_results.columns:
-        if method == "bonferroni":
-            ora_results['adjusted_p_value'] = ora_results['p'] * len(ora_results)
-        elif method == "fdr_bh":
-            _, ora_results['adjusted_p_value'], _, _ = multipletests(ora_results['p'], method='fdr_bh')
-        else:
-            logger.warning(f"Unsupported method '{method}'. Using raw p-values.")
-            ora_results['adjusted_p_value'] = ora_results['p']
-
-    # Process and filter the results
-    ora_results['evidence_count'] = ora_results['mlp'].apply(
-        lambda mlp: int(2 ** mlp) if 'mlp' in ora_results.columns else 0
-    )
-    ora_results = ora_results[
-        (ora_results['adjusted_p_value'] <= alpha) &
-        (ora_results['evidence_count'] >= minimum_evidence_count) |
-        keep_insignificant
-        ]
-
-    return ora_results[['curie', 'name', 'p', 'adjusted_p_value', 'evidence_count']]
+    return ora_results
 
 
 @autoclient()
