@@ -27,6 +27,7 @@ __all__ = [
     "phenotype_ora",
     "indra_downstream_ora",
     "indra_upstream_ora",
+    "EXAMPLE_GENE_IDS",
 ]
 
 # fmt: off
