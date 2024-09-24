@@ -1,13 +1,10 @@
-import pytest
 import pandas as pd
-from typing import Dict
 
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,
     EXAMPLE_NEGATIVE_HGNC_IDS
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
 
 
