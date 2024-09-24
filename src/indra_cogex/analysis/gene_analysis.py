@@ -114,8 +114,8 @@ def discrete_analysis(
 
 @autoclient()
 def signed_analysis(
-    positive_genes: Dict[str, str],
-    negative_genes: Dict[str, str],
+    positive_genes: List[str],
+    negative_genes: List[str],
     alpha: float = 0.05,
     keep_insignificant: bool = False,
     minimum_evidence_count: int = 1,
@@ -123,15 +123,14 @@ def signed_analysis(
     *,
     client: Neo4jClient
 ) -> Optional[pd.DataFrame]:
-    """
-    Perform signed analysis on the provided genes using reverse causal reasoning.
+    """Perform signed analysis using reverse causal reasoning
 
     Parameters
     ----------
-    positive_genes : dict of str
-        Dictionary of positive gene identifiers.
-    negative_genes : dict of str
-        Dictionary of negative gene identifiers.
+    positive_genes : List[str]
+        List of positive gene identifiers.
+    negative_genes : List[str]
+        List of negative gene identifiers.
     alpha : float, optional
         Significance level, by default 0.05.
     keep_insignificant : bool, optional
@@ -148,23 +147,28 @@ def signed_analysis(
     pd.DataFrame or None
         A DataFrame containing analysis results, or None if an error occurs.
     """
-
-    try:
-        results = reverse_causal_reasoning(
-            client=client,
-            positive_hgnc_ids=positive_genes,
-            negative_hgnc_ids=negative_genes,
-            alpha=alpha,
-            keep_insignificant=keep_insignificant,
-            minimum_evidence_count=minimum_evidence_count,
-            minimum_belief=minimum_belief,
+    positive_gene_set, postitive_erros = parse_gene_list(positive_genes)
+    negative_gene_set, negative_errors = parse_gene_list(negative_genes)
+    if postitive_erros:
+        logger.warning(
+            f"Failed to parse the following positive gene identifiers: {', '.join(postitive_erros)}"
+        )
+    if negative_errors:
+        logger.warning(
+            f"Failed to parse the following negative gene identifiers: {', '.join(negative_errors)}"
         )
 
-        return results
-    except Exception as e:
-        print(f"An error occurred during signed analysis: {str(e)}")
-        logger.exception(e)
-        return None
+    results = reverse_causal_reasoning(
+        client=client,
+        positive_hgnc_ids=positive_gene_set,
+        negative_hgnc_ids=negative_gene_set,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+    )
+
+    return results
 
 
 @autoclient()
