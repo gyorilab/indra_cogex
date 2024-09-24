@@ -1,28 +1,54 @@
 import pytest
 import pandas as pd
 from typing import Dict
+
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
 
 
+def test_discrete_analysis_with_real_data():
+    # Tests example settings from frontend
+    alpha = 0.05
     result = discrete_analysis(
-        genes,
-        client=neo4j_client,
-        method='fdr_bh',
-        alpha=0.1,
-        keep_insignificant=True,
+        EXAMPLE_GENE_IDS,
+        method='fdr_bh',  # Family-wise Correction with Benjamini/Hochberg
+        alpha=alpha,
+        keep_insignificant=False,
         minimum_evidence_count=1,
-        minimum_belief=0
+        minimum_belief=0.0,
+        indra_path_analysis=False,
     )
 
-    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
-    if result.empty:
-        pytest.skip("Result DataFrame is empty, skipping further assertions")
-    assert "Analysis" in result.columns, "Result should have an 'Analysis' column"
-    assert "p" in result.columns, "Result should have a 'p' column"
-    expected_analyses = {"GO", "WikiPathways", "Reactome", "Phenotype", "INDRA Upstream", "INDRA Downstream"}
-    assert not set(result['Analysis'].unique()).isdisjoint(expected_analyses), \
-        "Result should contain at least one expected analysis type"
+    expected_analyses = {
+        "go",
+        "wikipathways",
+        "reactome",
+        "phenotype",
+        "indra-upstream",
+        "indra-downstream",
+    }
+
+    assert expected_analyses == set(result.keys()), "Result should have all expected analyses"
+
+    # We don't run the INDRA analysis by default
+    assert result["indra-upstream"] is None, "INDRA Upstream analysis should be None"
+    assert result["indra-downstream"] is None, "INDRA Downstream analysis should be None"
+
+    # Check that there are results and that all results are within the 0.05
+    # significance level, since we're filtering out insignificant results with alpha=0.05
+    for analysis_name, analysis_result in result.items():
+        if analysis_result is None:
+            assert analysis_name in ["indra-upstream", "indra-downstream"], \
+                "Only INDRA analyses should be None"
+        else:
+            assert not analysis_result.empty, f"{analysis_name} result should not be empty"
+            # Check p-values
+            assert all(analysis_result["p"] <= alpha), \
+                f"{analysis_name} should have all p-values <= 0.05"
+            # Check corrected p-values (q)
+            assert all(analysis_result["q"] <= alpha), \
+                f"{analysis_name} should have all corrected p-values (q) <= 0.05"
 
 
 def test_signed_analysis_with_real_data(neo4j_client: Neo4jClient):
