@@ -6,7 +6,6 @@ import logging
 from src.indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis, enzyme_analysis, metabolomics_ora
 from src.indra_cogex.client.neo4j_client import Neo4jClient
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -149,26 +148,18 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
         self.skipTest("No suitable enzyme-metabolite pairs found for any tested EC code")
 
     def test_metabolomics_ora(self):
-        try:
-            chebi_ids = list(self.real_metabolites.keys())
-            result = metabolomics_ora(
-                client=self.client,
-                chebi_ids=chebi_ids,
-                method='bonferroni',
-                alpha=0.05,
-                minimum_belief=0.5
-            )
+        chebi_ids = list(self.real_metabolites.keys())
+        result = metabolomics_ora(
+            client=self.client,
+            chebi_ids=chebi_ids,
+            method='bonferroni',
+            alpha=0.05,
+            minimum_belief=0.5
+        )
 
-            self.assertIsInstance(result, pd.DataFrame)
-
-        except Exception as e:
-            logger.error(f"metabolomics_ora raised an exception: {str(e)}", exc_info=True)
-            self.fail(f"metabolomics_ora raised an exception: {str(e)}")
+        self.assertIsInstance(result, pd.DataFrame)
 
     def test_discrete_analysis_with_real_data(self):
-        try:
-            print(f"Number of test metabolites: {len(self.test_metabolites)}")
-            print(f"Test metabolites: {self.test_metabolites}")
 
             result = metabolite_discrete_analysis(
                 metabolites=self.test_metabolites,
@@ -185,23 +176,6 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
             expected_columns = ['curie', 'name', 'p', 'adjusted_p_value', 'evidence_count']
             self.assertTrue(all(col in result.columns for col in expected_columns),
                             f"Result DataFrame is missing expected columns. Columns: {result.columns}")
-
-            print(f"Number of input metabolites: {len(self.test_metabolites)}")
-            print(f"Number of pathways found: {len(result)}")
-            if not result.empty:
-                print("Sample of results:")
-                print(result.head().to_string())
-            else:
-                print("No significant pathways found.")
-
-            print(f"Full result shape: {result.shape}")
-            print(f"Full result columns: {result.columns}")
-            print("First few rows of full result:")
-            print(result.head().to_string())
-
-        except Exception as e:
-            print(f"discrete_analysis with real data raised an exception: {str(e)}")
-            raise  # Re-raise the exception to see the full traceback
 
     def test_node_existence(self):
         enzyme_query = "MATCH (e:BioEntity) WHERE e.id STARTS WITH 'ec-code:' RETURN COUNT(e) as count"
@@ -223,18 +197,7 @@ class TestMetaboliteAnalysisIntegration(unittest.TestCase):
            RETURN DISTINCT type(r) AS relationship_type
            """
         result = self.client.query_tx(query)
-        logger.info(f"Relationship types: {result}")
         self.assertTrue(len(result) > 0, "No relationships found involving enzymes or metabolites")
-
-    def test_sample_nodes(self):
-        enzyme_query = "MATCH (e:BioEntity) WHERE e.id STARTS WITH 'ec-code:' RETURN e LIMIT 1"
-        metabolite_query = "MATCH (m:BioEntity) WHERE m.id STARTS WITH 'chebi:' RETURN m LIMIT 1"
-
-        enzyme = self.client.query_tx(enzyme_query)
-        metabolite = self.client.query_tx(metabolite_query)
-
-        logger.info(f"Sample enzyme node: {enzyme}")
-        logger.info(f"Sample metabolite node: {metabolite}")
 
 
 if __name__ == '__main__':
