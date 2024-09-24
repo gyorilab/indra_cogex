@@ -60,6 +60,8 @@ def metabolite_discrete_analysis(
         chebi_ids=chebi_ids,
         method=method,
         alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
 
