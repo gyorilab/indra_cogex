@@ -153,7 +153,7 @@ class ContinuousForm(FlaskForm):
 
 @gene_blueprint.route("/discrete", methods=["GET", "POST"])
 def discretize_analysis():
-    """Render the discrete analysis page and handle form submission.
+    """Render the discrete gene analysis page and handle form submission.
 
     Returns
     -------
@@ -172,7 +172,6 @@ def discretize_analysis():
             minimum_belief=form.minimum_belief.data,
             indra_path_analysis=form.indra_path_analysis.data  # Include this line
         )
-        results['parsing_errors'] = errors
 
         if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
             downloads = Path.home().joinpath("Downloads")
@@ -185,7 +184,15 @@ def discretize_analysis():
         return flask.render_template(
             "gene_analysis/discrete_results.html",
             genes=genes,
-            **results
+            errors=errors,
+            method=form.correction.data,
+            alpha=form.alpha.data,
+            go_results=results["GO"],
+            wikipathways_results=results["WikiPathways"],
+            reactome_results=results["Reactome"],
+            phenotype_results=results["Phenotype"],
+            indra_downstream_results=results["INDRA Downstream"],
+            indra_upstream_results=results["INDRA Upstream"],
         )
 
     return flask.render_template(

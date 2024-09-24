@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import pandas as pd
 from pandas import DataFrame
@@ -38,7 +38,7 @@ def discrete_analysis(
         indra_path_analysis: bool = False,
         *,
         client: Neo4jClient
-) -> Optional[pd.DataFrame]:
+) -> Dict[str, Union[pd.DataFrame, None]]:
     """
     Perform discrete analysis on the provided genes.
 
@@ -63,8 +63,9 @@ def discrete_analysis(
 
     Returns
     -------
-    pd.DataFrame or None
-        A DataFrame containing analysis results, or None if an error occurs.
+    Dict[str, pd.DataFrame | None]
+        A dict with results per analysis type in the form of a DataFrame or None
+        if an error occurs or no results are found.
     """
     gene_set = set(genes.keys())
 
@@ -98,14 +99,7 @@ def discrete_analysis(
 
             results[analysis_name] = analysis_result
 
-        df_list = []
-        for analysis_name, result in results.items():
-            df = pd.DataFrame(result)
-            df['Analysis'] = analysis_name
-            df_list.append(df)
-
-        final_df = pd.concat(df_list, ignore_index=True)
-        return final_df
+        return results
     except Exception as e:
         logger.error(f"An error occurred during discrete analysis: {str(e)}", exc_info=True)
         return None
