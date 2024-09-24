@@ -7,7 +7,7 @@ from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
 
 
-def test_discrete_analysis_with_real_data():
+def test_discrete_analysis_frontend_defaults():
     # Tests example settings from frontend
     alpha = 0.05
     result = discrete_analysis(
@@ -51,8 +51,6 @@ def test_discrete_analysis_with_real_data():
                 f"{analysis_name} should have all corrected p-values (q) <= 0.05"
 
 
-def test_signed_analysis_with_real_data(neo4j_client: Neo4jClient):
-    all_genes = get_random_genes(neo4j_client, 80)
 def test_discrete_analysis_function_defaults():
     result = discrete_analysis(EXAMPLE_GENE_IDS)
     expected_analyses = {
@@ -66,9 +64,6 @@ def test_discrete_analysis_function_defaults():
     assert expected_analyses == set(
         result.keys()), "Result should have all expected analyses"
 
-    # Split into positive and negative sets
-    positive_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[:40]}
-    negative_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[40:]}
     # Check that there are result dataframes or None
     for analysis_name, analysis_result in result.items():
         assert analysis_result is None or not analysis_result.empty, \
