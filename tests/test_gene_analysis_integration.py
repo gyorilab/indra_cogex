@@ -53,6 +53,18 @@ def test_discrete_analysis_with_real_data():
 
 def test_signed_analysis_with_real_data(neo4j_client: Neo4jClient):
     all_genes = get_random_genes(neo4j_client, 80)
+def test_discrete_analysis_function_defaults():
+    result = discrete_analysis(EXAMPLE_GENE_IDS)
+    expected_analyses = {
+        "go",
+        "wikipathways",
+        "reactome",
+        "phenotype",
+        "indra-upstream",
+        "indra-downstream",
+    }
+    assert expected_analyses == set(
+        result.keys()), "Result should have all expected analyses"
 
     # Split into positive and negative sets
     positive_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[:40]}
