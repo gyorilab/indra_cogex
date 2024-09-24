@@ -70,7 +70,7 @@
                 <td>{% if name %}{{ name }}{% endif %}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
-                <td><a href="{{ url_for("mla.enzyme", ec_code=ec_code, q=",".join(metabolites)) }}"><i class="fas fa-external-link-alt"></i></a></td>
+                <td><a href="{{ url_for("mla.enzyme_route", ec_code=ec_code, q=",".join(metabolites)) }}"><i class="fas fa-external-link-alt"></i></a></td>
             </tr>
         {% endfor %}
         </tbody>
