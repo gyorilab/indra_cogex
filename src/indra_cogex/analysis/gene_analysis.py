@@ -76,40 +76,36 @@ def discrete_analysis(
     """
     gene_set = parse_gene_list(genes)
 
-    try:
-        results = {}
-        for analysis_name, analysis_func in [
-            ("GO", go_ora),
-            ("WikiPathways", wikipathways_ora),
-            ("Reactome", reactome_ora),
-            ("Phenotype", phenotype_ora),
-            ("INDRA Upstream", indra_upstream_ora),
-            ("INDRA Downstream", indra_downstream_ora)
-        ]:
-            # Run non-INDRA analysis
-            if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
+    results = {}
+    for analysis_name, analysis_func in [
+        ("GO", go_ora),
+        ("WikiPathways", wikipathways_ora),
+        ("Reactome", reactome_ora),
+        ("Phenotype", phenotype_ora),
+        ("INDRA Upstream", indra_upstream_ora),
+        ("INDRA Downstream", indra_downstream_ora)
+    ]:
+        # Run non-INDRA analysis
+        if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
+            analysis_result = analysis_func(
+                client=client, gene_ids=gene_set, method=method, alpha=alpha,
+                keep_insignificant=keep_insignificant
+            )
+        else:
+            # Run INDRA analysis if enabled
+            if indra_path_analysis:
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
-                    keep_insignificant=keep_insignificant
+                    keep_insignificant=keep_insignificant,
+                    minimum_evidence_count=minimum_evidence_count,
+                    minimum_belief=minimum_belief
                 )
             else:
-                # Run INDRA analysis if enabled
-                if indra_path_analysis:
-                    analysis_result = analysis_func(
-                        client=client, gene_ids=gene_set, method=method, alpha=alpha,
-                        keep_insignificant=keep_insignificant,
-                        minimum_evidence_count=minimum_evidence_count,
-                        minimum_belief=minimum_belief
-                    )
-                else:
-                    analysis_result = None
+                analysis_result = None
 
-            results[analysis_name] = analysis_result
+        results[analysis_name] = analysis_result
 
-        return results
-    except Exception as e:
-        logger.error(f"An error occurred during discrete analysis: {str(e)}", exc_info=True)
-        return None
+    return results
 
 
 @autoclient()
