@@ -3,65 +3,7 @@ import pandas as pd
 from typing import Dict
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
-from indra.config import get_config
 
-# Get the Neo4j URL using INDRA's config reader
-INDRA_NEO4J_URL = get_config("INDRA_NEO4J_URL")
-print(f"Neo4j Connection URL: {INDRA_NEO4J_URL}")
-
-
-@pytest.fixture(scope="module")
-def neo4j_client() -> Neo4jClient:
-    client = Neo4jClient()
-
-    # Set timeout if possible
-    if hasattr(client, 'set_timeout'):
-        client.set_timeout(60)
-    elif hasattr(client, 'driver') and hasattr(client.driver, 'set_timeout'):
-        client.driver.set_timeout(60)
-
-    return client
-
-
-def test_neo4j_connection(neo4j_client: Neo4jClient):
-    try:
-        # Verify the connection
-        assert neo4j_client.ping(), "Failed to ping Neo4j database"
-    except Exception as e:
-        pytest.fail(f"Failed to connect to Neo4j database: {str(e)}")
-
-
-def get_random_genes(client: Neo4jClient, n: int = 10) -> Dict[str, str]:
-    query = f"""
-    MATCH (b:BioEntity)
-    WHERE b.type = 'human_gene_protein'
-    RETURN b.id, b.name
-    LIMIT {n}
-    """
-    results = client.query_tx(query)
-    genes = {row[0]: row[1] for row in results if len(row) == 2}
-    return genes
-
-
-def test_get_random_genes(neo4j_client: Neo4jClient):
-    genes = get_random_genes(neo4j_client, 5)
-    assert len(genes) > 0, "Should retrieve at least one gene"
-    assert all(key.startswith('hgnc:') for key in genes.keys()), "All gene IDs should start with 'hgnc:'"
-
-
-def get_sample_genes(client: Neo4jClient, limit: int = 10):
-    query = """
-    MATCH (g:BioEntity)
-    WHERE g.type = 'human_gene_protein'
-    RETURN g.id, g.name, g.type
-    LIMIT $limit
-    """
-    results = client.query_tx(query, limit=limit)
-    return results
-
-
-def test_discrete_analysis_with_real_data(neo4j_client: Neo4jClient):
-    genes = get_random_genes(neo4j_client, 100)
 
     result = discrete_analysis(
         genes,
