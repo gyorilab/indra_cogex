@@ -250,19 +250,23 @@ def continuous_analysis_route():
         try:
             df = pd.read_csv(file_path, sep=sep)
         except Exception as e:
-            abort(code=HTTPStatus.BAD_REQUEST,
-                  message=f"Error reading input file: {str(e)}")
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                f"Error reading input file: {str(e)}"
+            )
 
         if len(df) < 2:
 
-            abort(code=HTTPStatus.BAD_REQUEST,
-                  message="Input file contains insufficient data. At least 2 genes are "
-                          "required.")
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                "Input file contains insufficient data. At least 2 genes are required."
+            )
 
         if not {gene_name_column, log_fold_change_column}.issubset(df.columns):
-            abort(code=HTTPStatus.BAD_REQUEST,
-                  message="Gene name and log fold change columns must be present in the "
-                          "input file.")
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                "Gene name and log fold change columns must be present in the input file."
+            )
 
         results = continuous_analysis(
             gene_names=df[gene_name_column].values,
