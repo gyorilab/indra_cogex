@@ -7,7 +7,6 @@ import flask
 from flask import request
 from flask_wtf import FlaskForm
 from indra.databases import chebi_client
-from indralab_auth_tools.auth import resolve_auth
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
