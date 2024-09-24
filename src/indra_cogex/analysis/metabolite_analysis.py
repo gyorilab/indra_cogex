@@ -8,7 +8,6 @@ from indra_cogex.client.enrichment.mla import (
     metabolomics_ora,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient
-from statsmodels.stats.multitest import multipletests
 from indra_cogex.client.neo4j_client import autoclient
 
 logging.basicConfig(level=logging.INFO)
