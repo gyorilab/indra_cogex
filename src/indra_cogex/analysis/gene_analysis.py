@@ -35,6 +35,7 @@ def discrete_analysis(
         keep_insignificant: bool = False,
         minimum_evidence_count: int = 1,
         minimum_belief: float = 0,
+        indra_path_analysis: bool = False,
         *,
         client: Neo4jClient
 ) -> Optional[pd.DataFrame]:
@@ -55,6 +56,8 @@ def discrete_analysis(
         Minimum number of evidence for inclusion, by default 1.
     minimum_belief : float, optional
         Minimum belief score for filtering, by default 0.
+    indra_path_analysis : bool, optional
+        Whether to perform INDRA pathway analysis, by default False.
     client : Neo4jClient, optional
         The Neo4j client, managed automatically by the autoclient decorator.
 
@@ -75,18 +78,24 @@ def discrete_analysis(
             ("INDRA Upstream", indra_upstream_ora),
             ("INDRA Downstream", indra_downstream_ora)
         ]:
+            # Run non-INDRA analysis
             if analysis_name in ["GO", "WikiPathways", "Reactome", "Phenotype"]:
                 analysis_result = analysis_func(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant
                 )
-            else:  # INDRA analyses
-                analysis_result = analysis_func(
-                    client=client, gene_ids=gene_set, method=method, alpha=alpha,
-                    keep_insignificant=keep_insignificant,
-                    minimum_evidence_count=minimum_evidence_count,
-                    minimum_belief=minimum_belief
-                )
+            else:
+                # Run INDRA analysis if enabled
+                if indra_path_analysis:
+                    analysis_result = analysis_func(
+                        client=client, gene_ids=gene_set, method=method, alpha=alpha,
+                        keep_insignificant=keep_insignificant,
+                        minimum_evidence_count=minimum_evidence_count,
+                        minimum_belief=minimum_belief
+                    )
+                else:
+                    analysis_result = None
+
             results[analysis_name] = analysis_result
 
         df_list = []
