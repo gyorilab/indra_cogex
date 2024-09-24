@@ -153,7 +153,7 @@ def discretize_analysis():
     if form.validate_on_submit():
         genes, errors = form.parse_genes()
         results = discrete_analysis(
-            genes,
+            list(genes),
             client=client,
             method=form.correction.data,
             alpha=form.alpha.data,
@@ -205,8 +205,8 @@ def signed_analysis_route():
         positive_genes, positive_errors = form.parse_positive_genes()
         negative_genes, negative_errors = form.parse_negative_genes()
         results = signed_analysis(
-            positive_genes,
-            negative_genes,
+            list(positive_genes),
+            list(negative_genes),
             client=client,
             alpha=form.alpha.data,
             keep_insignificant=form.keep_insignificant.data,
