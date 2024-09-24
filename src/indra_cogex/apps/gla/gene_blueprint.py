@@ -242,8 +242,8 @@ def continuous_analysis_route():
 
         # Get file path and read the data into a DataFrame
         file_path = form.file.data.filename
-        gene_name_column = form.gene_name_column.data,
-        log_fold_change_column = form.log_fold_change_column.data,
+        gene_name_column = form.gene_name_column.data
+        log_fold_change_column = form.log_fold_change_column.data
         file_path = Path(file_path)
         sep = "," if file_path.suffix.lower() == ".csv" else "\t"
 
