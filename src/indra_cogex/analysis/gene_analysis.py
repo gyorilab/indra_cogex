@@ -1,8 +1,10 @@
 import logging
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Tuple, List, Iterable
 
 import pandas as pd
 from pandas import DataFrame
+
+from indra.databases import hgnc_client
 from indra_cogex.client.neo4j_client import autoclient
 
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -34,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 @autoclient()
 def discrete_analysis(
-        genes: Dict[str, str],
+        genes: List[str],
         method: str = 'fdr_bh',
         alpha: float = 0.05,
         keep_insignificant: bool = False,
@@ -49,8 +51,8 @@ def discrete_analysis(
 
     Parameters
     ----------
-    genes : dict of str
-        Dictionary of gene identifiers.
+    genes : List[str]
+        A list of gene identifiers. Can be HGNC symbols or identifiers.
     method : str, optional
         Statistical method to apply, by default 'fdr_bh'.
     alpha : float, optional
@@ -72,7 +74,7 @@ def discrete_analysis(
         A dict with results per analysis type in the form of a DataFrame or None
         if an error occurs or no results are found.
     """
-    gene_set = set(genes.keys())
+    gene_set = parse_genes_field(genes)
 
     try:
         results = {}
@@ -274,3 +276,22 @@ def continuous_analysis(
     result = func(**kwargs)
 
     return result
+
+
+def parse_genes_field(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
+    """Parse gene list"""
+    hgnc_ids = []
+    errors = []
+    for entry in gene_list:
+        if entry.lower().startswith("hgnc:"):
+            hgnc_ids.append(entry.lower().replace("hgnc:", "", 1))
+        elif entry.isnumeric():
+            hgnc_ids.append(entry)
+        else:  # probably a symbol
+            hgnc_id = hgnc_client.get_current_hgnc_id(entry)
+            if hgnc_id:
+                hgnc_ids.append(hgnc_id)
+            else:
+                errors.append(entry)
+    genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
+    return genes, errors

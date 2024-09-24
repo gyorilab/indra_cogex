@@ -1,13 +1,12 @@
 """Gene-centric blueprint."""
 from http import HTTPStatus
 from pathlib import Path
-from typing import Dict, List, Mapping, Tuple
+from typing import List, Mapping, Tuple
 
 import flask
 import pandas as pd
 from flask import url_for, abort
 from flask_wtf import FlaskForm
-from indra.databases import hgnc_client
 from wtforms import BooleanField, SubmitField, TextAreaField, StringField
 from wtforms.validators import DataRequired
 
@@ -29,7 +28,7 @@ from .fields import (
 from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
     signed_analysis,
-    continuous_analysis
+    continuous_analysis, parse_genes_field
 )
 
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
@@ -61,31 +60,6 @@ negative_genes_field = TextAreaField(
 )
 
 
-def parse_genes_field(s: str) -> Tuple[Dict[str, str], List[str]]:
-    """Parse a gene field string."""
-    records = {
-        record.strip().strip('"').strip("'").strip()
-        for line in s.strip().lstrip("[").rstrip("]").split()
-        if line
-        for record in line.strip().split(",")
-        if record.strip()
-    }
-    hgnc_ids = []
-    errors = []
-    for entry in records:
-        if entry.lower().startswith("hgnc:"):
-            hgnc_ids.append(entry.lower().replace("hgnc:", "", 1))
-        elif entry.isnumeric():
-            hgnc_ids.append(entry)
-        else:  # probably a symbol
-            hgnc_id = hgnc_client.get_current_hgnc_id(entry)
-            if hgnc_id:
-                hgnc_ids.append(hgnc_id)
-            else:
-                errors.append(entry)
-    genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
-    return genes, errors
-
 class DiscreteForm(FlaskForm):
     """A form for discrete gene set enrichment analysis."""
 
@@ -102,7 +76,15 @@ class DiscreteForm(FlaskForm):
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
-        return parse_genes_field(self.genes.data)
+        field_data = self.genes.data
+        records = {
+            record.strip().strip('"').strip("'").strip()
+            for line in field_data.strip().lstrip("[").rstrip("]").split()
+            if line
+            for record in line.strip().split(",")
+            if record.strip()
+        }
+        return parse_genes_field(records)
 
 
 class SignedForm(FlaskForm):
