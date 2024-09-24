@@ -46,10 +46,10 @@ __all__ = [
 
 
 def get_rat_scores(
-        path: Union[Path, str, pd.DataFrame],
-        gene_symbol_column_name: str,
-        score_column_name: str,
-        read_csv_kwargs: Optional[Dict[str, Any]] = None,
+    path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with rat measurements.
 
@@ -88,10 +88,10 @@ def get_rat_scores(
 
 
 def get_mouse_scores(
-        path: Union[Path, str, pd.DataFrame],
-        gene_symbol_column_name: str,
-        score_column_name: str,
-        read_csv_kwargs: Optional[Dict[str, Any]] = None,
+    path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with mouse measurements.
 
@@ -130,10 +130,10 @@ def get_mouse_scores(
 
 
 def get_human_scores(
-        path: Union[Path, str, pd.DataFrame],
-        gene_symbol_column_name: str,
-        score_column_name: str,
-        read_csv_kwargs: Optional[Dict[str, Any]] = None,
+    path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, float]:
     """Load a differential gene expression file with human measurements.
 
@@ -165,12 +165,12 @@ def get_human_scores(
 
 
 def _get_species_scores(
-        path: Union[Path, str, pd.DataFrame],
-        gene_symbol_column_name: str,
-        score_column_name: str,
-        read_csv_kwargs: Optional[Dict[str, Any]] = None,
-        *,
-        func,
+    path: Union[Path, str, pd.DataFrame],
+    gene_symbol_column_name: str,
+    score_column_name: str,
+    read_csv_kwargs: Optional[Dict[str, Any]] = None,
+    *,
+    func,
 ) -> Dict[str, float]:
     """
     Retrieve species-specific scores from gene expression data.
@@ -226,11 +226,11 @@ def _get_species_scores(
 
 @autoclient()
 def wikipathways_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with WikiPathways gene sets.
 
@@ -262,11 +262,11 @@ def wikipathways_gsea(
 
 @autoclient()
 def reactome_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with Reactome gene sets.
 
@@ -298,11 +298,11 @@ def reactome_gsea(
 
 @autoclient()
 def phenotype_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with HPO phenotype gene sets.
 
@@ -334,11 +334,11 @@ def phenotype_gsea(
 
 @autoclient()
 def go_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA with gene sets for each Gene Ontology term.
 
@@ -370,13 +370,13 @@ def go_gsea(
 
 @autoclient()
 def indra_upstream_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        minimum_evidence_count: Optional[int] = None,
-        minimum_belief: Optional[float] = None,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
     of human genes that it regulates.
@@ -419,13 +419,13 @@ def indra_upstream_gsea(
 
 @autoclient()
 def indra_downstream_gsea(
-        scores: Dict[str, float],
-        directory: Union[None, Path, str] = None,
-        *,
-        client: Neo4jClient,
-        minimum_evidence_count: Optional[int] = None,
-        minimum_belief: Optional[float] = None,
-        **kwargs,
+    scores: Dict[str, float],
+    directory: Union[None, Path, str] = None,
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA for each entry in the INDRA database and the set
     of human genes that are upstream regulators of it.
@@ -479,12 +479,12 @@ GSEA_RETURN_COLUMNS = [
 
 
 def gsea(
-        scores: Dict[str, float],
-        gene_sets: Dict[Tuple[str, str], Set[str]],
-        directory: Union[None, Path, str] = None,
-        alpha: Optional[float] = None,
-        keep_insignificant: bool = True,
-        **kwargs,
+    scores: Dict[str, float],
+    gene_sets: Dict[Tuple[str, str], Set[str]],
+    directory: Union[None, Path, str] = None,
+    alpha: Optional[float] = None,
+    keep_insignificant: bool = True,
+    **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA on pre-ranked data.
 
