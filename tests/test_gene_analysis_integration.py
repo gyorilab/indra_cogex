@@ -69,6 +69,10 @@ def test_discrete_analysis_function_defaults():
     # Split into positive and negative sets
     positive_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[:40]}
     negative_genes = {gene_id: gene_name for gene_id, gene_name in list(all_genes.items())[40:]}
+    # Check that there are result dataframes or None
+    for analysis_name, analysis_result in result.items():
+        assert analysis_result is None or not analysis_result.empty, \
+            "Result should not be empty or None"
 
     result = signed_analysis(
         positive_genes,
