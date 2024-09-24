@@ -3,6 +3,10 @@ import pandas as pd
 from typing import Dict
 
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.signed import (
+    EXAMPLE_POSITIVE_HGNC_IDS,
+    EXAMPLE_NEGATIVE_HGNC_IDS
+)
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
 
@@ -69,20 +73,33 @@ def test_discrete_analysis_function_defaults():
         assert analysis_result is None or not analysis_result.empty, \
             "Result should not be empty or None"
 
+
+def test_signed_analysis_frontend_defaults():
+    # Test example settings from frontend
+    alpha = 0.05
     result = signed_analysis(
-        positive_genes,
-        negative_genes,
-        client=neo4j_client,
-        alpha=0.05,
+        EXAMPLE_POSITIVE_HGNC_IDS,
+        EXAMPLE_NEGATIVE_HGNC_IDS,
+        alpha=alpha,
         keep_insignificant=False,
         minimum_evidence_count=1,
         minimum_belief=0
     )
 
+    assert result is not None, "Result should not be None"
     assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
-    if result.empty:
-        pytest.skip("Result DataFrame is empty, skipping further assertions")
-    expected_columns = {"curie", "name", "correct", "incorrect", "ambiguous", "binom_pvalue"}
-    assert not expected_columns.isdisjoint(
-        result.columns), f"Result should have at least one of these columns: {expected_columns}"
+    assert not result.empty, "Result should not be empty"
+    assert (result["binom_pvalue"] <= alpha).all(), "All p-values should be <= 0.05"
+
+
+def test_signed_analysis_function_defaults():
+    # Test defaults from function
+    result = signed_analysis(
+        EXAMPLE_POSITIVE_HGNC_IDS,
+        EXAMPLE_NEGATIVE_HGNC_IDS,
+    )
+
+    assert result is not None, "Result should not be None"
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
 
