@@ -64,7 +64,6 @@ def discrete_analysis(
         A DataFrame containing analysis results, or None if an error occurs.
     """
     gene_set = set(genes.keys())
-    print(f"Gene set: {gene_set}")
 
     try:
         results = {}
@@ -97,10 +96,6 @@ def discrete_analysis(
             df_list.append(df)
 
         final_df = pd.concat(df_list, ignore_index=True)
-        print(f"Final DataFrame head:\n{final_df.head()}")
-
-        final_df = pd.concat(df_list, ignore_index=True)
-        logger.info(f"Final DataFrame shape: {final_df.shape}")
         return final_df
     except Exception as e:
         logger.error(f"An error occurred during discrete analysis: {str(e)}", exc_info=True)
@@ -154,10 +149,8 @@ def signed_analysis(
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
         )
-        print(f"Reverse causal reasoning results: {results}")
 
         final_df = pd.DataFrame(results)
-        print(f"Final DataFrame head:\n{final_df.head()}")
 
         return final_df
     except Exception as e:
