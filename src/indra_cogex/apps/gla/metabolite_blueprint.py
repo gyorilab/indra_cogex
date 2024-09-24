@@ -5,6 +5,7 @@ from typing import Dict, List, Mapping, Tuple
 import bioregistry
 import flask
 from flask import request
+from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
@@ -147,6 +148,7 @@ def discrete_analysis_route():
 
 
 @metabolite_blueprint.route("/enzyme/<ec_code>", methods=["GET"])
+@jwt_required(optional=True)
 def enzyme_route(ec_code: str):
     """Render the enzyme page."""
     # ToDo: why is login needed here?
