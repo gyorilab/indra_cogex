@@ -467,7 +467,7 @@ def indra_downstream_gsea(
 
 
 GSEA_RETURN_COLUMNS = [
-    "term",
+    "Term",
     "Name",
     "ES",
     "NES",
@@ -531,12 +531,11 @@ def gsea(
         outdir=directory,
         **kwargs,
     )
-    res.res2d.index.name = "term"
     # Full column list as of gseapy 1.1.2:
     # Name, Term, ES, NES, NOM p-val, FDR q-val, FWER p-val, Tag %, Gene %,
     # Lead_genes
     rv = res.res2d.reset_index()
-    rv["name"] = rv["term"].map(curie_to_name)
+    rv["Name"] = rv["Term"].map(curie_to_name)
     rv["matched_size"] = rv['Tag %'].apply(lambda s: s.split('/')[0])
     rv["geneset_size"] = rv['Tag %'].apply(lambda s: s.split('/')[1])
     rv = rv[GSEA_RETURN_COLUMNS]
