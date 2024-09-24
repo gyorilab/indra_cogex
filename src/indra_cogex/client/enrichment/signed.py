@@ -72,36 +72,23 @@ def reverse_causal_reasoning(
     causal knowledge to the interpretation of high-throughput data
     <https://doi.org/10.1186/1471-2105-14-340>`_. BMC Bioinformatics, **14** (1), 340.
     """
-    print(
-        f"Starting reverse causal reasoning with {len(list(positive_hgnc_ids))} positive genes and {len(list(negative_hgnc_ids))} negative genes")
-    print(f"Positive HGNC IDs: {list(positive_hgnc_ids)}")
-    print(f"Negative HGNC IDs: {list(negative_hgnc_ids)}")
-    print(f"Parameters: minimum_size={minimum_size}, alpha={alpha}, keep_insignificant={keep_insignificant}")
-    print(f"Minimum evidence count: {minimum_evidence_count}, Minimum belief: {minimum_belief}")
-
     if alpha is None:
         alpha = 0.05
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
 
-    print("Getting positive statement sets...")
     database_positive = get_positive_stmt_sets(
         client=client,
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
-    print(f"Number of entities with positive statements: {len(database_positive)}")
-
-    print("Getting negative statement sets...")
     database_negative = get_negative_stmt_sets(
         client=client,
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
-    print(f"Number of entities with negative statements: {len(database_negative)}")
 
     entities = set(database_positive).union(database_negative)
-    print(f"Total number of entities: {len(entities)}")
 
     rows = []
     for entity in entities:
@@ -143,7 +130,6 @@ def reverse_causal_reasoning(
             res_p, res_ambig_p = None, None
         rows.append((*entity, correct, incorrect, ambiguous, res_p, res_ambig_p))
 
-    print(f"Number of rows before DataFrame creation: {len(rows)}")
     df = pd.DataFrame(
         rows,
         columns=[
@@ -156,14 +142,9 @@ def reverse_causal_reasoning(
             "binom_ambig_pvalue",
         ],
     ).sort_values("binom_pvalue")
-    print(f"DataFrame shape after creation: {df.shape}")
 
     if not keep_insignificant:
         df = df[df["binom_pvalue"] < alpha]
-        print(f"DataFrame shape after removing insignificant results: {df.shape}")
-
-    print(f"Final DataFrame shape: {df.shape}")
-    print(f"Final DataFrame head:\n{df.head()}")
 
     return df
 
