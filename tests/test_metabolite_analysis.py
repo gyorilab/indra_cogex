@@ -189,7 +189,3 @@ class TestMetaboliteAnalysis(unittest.TestCase):
         )
 
         self.assertEqual(len(result['results']), 0)
-
-
-if __name__ == '__main__':
-    unittest.main()
