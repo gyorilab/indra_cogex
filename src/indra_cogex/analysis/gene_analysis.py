@@ -74,7 +74,11 @@ def discrete_analysis(
         A dict with results per analysis type in the form of a DataFrame or None
         if an error occurs or no results are found.
     """
-    gene_set = parse_gene_list(genes)
+    gene_set, errors = parse_gene_list(genes)
+    if errors:
+        logger.warning(
+            f"Failed to parse the following gene identifiers: {', '.join(errors)}"
+        )
 
     results = {}
     for analysis_name, analysis_func in [
