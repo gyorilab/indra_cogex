@@ -1,11 +1,9 @@
 """Metabolite-centric analysis."""
 
-from typing import Dict, List, Mapping, Tuple
+from typing import Dict, List
 import logging
 import pandas as pd
-from indra.databases import chebi_client
 from indra_cogex.client.enrichment.mla import (
-    EXAMPLE_CHEBI_CURIES,
     metabolomics_explanation,
     metabolomics_ora,
 )
@@ -72,9 +70,7 @@ def metabolite_discrete_analysis(
     required_columns = ['curie', 'name', 'p', 'mlp']
     if not all(col in ora_results.columns for col in required_columns):
         missing_columns = [col for col in required_columns if col not in ora_results.columns]
-        logger.warning(f"Missing required columns in metabolomics_ora results: {missing_columns}")
-        return pd.DataFrame(columns=['curie', 'name', 'p_value', 'adjusted_p_value', 'evidence_count'])
-
+        raise ValueError(f"Missing required columns in metabolomics_ora results: {missing_columns}")
     if 'adjusted_p_value' not in ora_results.columns:
         if method == "bonferroni":
             ora_results['adjusted_p_value'] = ora_results['p'] * len(ora_results)
