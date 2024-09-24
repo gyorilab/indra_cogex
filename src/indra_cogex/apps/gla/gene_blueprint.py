@@ -1,7 +1,7 @@
 """Gene-centric blueprint."""
 from http import HTTPStatus
 from pathlib import Path
-from typing import List, Mapping, Tuple
+from typing import List, Mapping, Tuple, Set
 
 import flask
 import pandas as pd
@@ -28,7 +28,8 @@ from .fields import (
 from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
     signed_analysis,
-    continuous_analysis, parse_genes_field
+    continuous_analysis,
+    parse_gene_list,
 )
 
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
@@ -60,6 +61,18 @@ negative_genes_field = TextAreaField(
 )
 
 
+def parse_text_field(field_data: str) -> Set[str]:
+    """Parse the gene field data."""
+    records = {
+        record.strip().strip('"').strip("'").strip()
+        for line in field_data.strip().lstrip("[").rstrip("]").split()
+        if line
+        for record in line.strip().split(",")
+        if record.strip()
+    }
+    return records
+
+
 class DiscreteForm(FlaskForm):
     """A form for discrete gene set enrichment analysis."""
 
@@ -76,15 +89,8 @@ class DiscreteForm(FlaskForm):
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
-        field_data = self.genes.data
-        records = {
-            record.strip().strip('"').strip("'").strip()
-            for line in field_data.strip().lstrip("[").rstrip("]").split()
-            if line
-            for record in line.strip().split(",")
-            if record.strip()
-        }
-        return parse_genes_field(records)
+        gene_set = parse_text_field(self.genes.data)
+        return parse_gene_list(gene_set)
 
 
 class SignedForm(FlaskForm):
@@ -101,11 +107,13 @@ class SignedForm(FlaskForm):
 
     def parse_positive_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
-        return parse_genes_field(self.positive_genes.data)
+        gene_set = parse_text_field(self.positive_genes.data)
+        return parse_gene_list(gene_set)
 
     def parse_negative_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
-        return parse_genes_field(self.negative_genes.data)
+        gene_set = parse_text_field(self.negative_genes.data)
+        return parse_gene_list(gene_set)
 
 
 class ContinuousForm(FlaskForm):

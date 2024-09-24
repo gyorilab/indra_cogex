@@ -74,7 +74,7 @@ def discrete_analysis(
         A dict with results per analysis type in the form of a DataFrame or None
         if an error occurs or no results are found.
     """
-    gene_set = parse_genes_field(genes)
+    gene_set = parse_gene_list(genes)
 
     try:
         results = {}
@@ -278,7 +278,7 @@ def continuous_analysis(
     return result
 
 
-def parse_genes_field(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
+def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
     """Parse gene list"""
     hgnc_ids = []
     errors = []
