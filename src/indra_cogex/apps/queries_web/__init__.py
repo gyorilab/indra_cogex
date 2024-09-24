@@ -37,20 +37,20 @@ api = Api(
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
+from flask_restx import fields
+
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
     "gene": fields.List(fields.String, example=["HGNC", "9896"]),
     "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
     "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
-    "drugs": fields.List(
-        fields.List(fields.String),
-        example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
+    "drugs": fields.Raw(
+        example={"CHEBI:27690": "Drug 1", "CHEBI:114785": "Drug 2"}
     ),
     "disease": fields.List(fields.String, example=["MESH", "D007855"]),
     "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
-    "genes": fields.List(
-        fields.List(fields.String),
-        example=[["HGNC", "1097"], ["HGNC", "6407"]]
+    "genes": fields.Raw(
+        example={"hgnc:1000": "BCL5", "hgnc:100": "ASIC1"}
     ),
     "pathway": fields.List(fields.String, example=["WIKIPATHWAYS", "WP5037"]),
     "side_effect": fields.List(fields.String, example=["UMLS", "C3267206"]),
@@ -61,15 +61,12 @@ examples_dict = {
     "paper_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
     "include_child_terms": fields.Boolean(example=True),
-    # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
-    "stmt_hashes": fields.List(fields.String, example=["12198579805553967",
-                                                       "30651649296901235"]),
+    "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
-    "targets": fields.List(
-        fields.List(fields.String),
-        example=[["HGNC", "6840"], ["HGNC", "1097"]]
+    "targets": fields.Raw(
+        example={"HGNC:6840": "Target 1", "HGNC:1097": "Target 2"}
     ),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
@@ -80,50 +77,40 @@ examples_dict = {
         example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
     ),
     "offset": fields.Integer(example=1),
-    # Analysis api
-    # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
-    # examples
-    "metabolites": fields.List(
-        fields.List(fields.String),
-        example=[["CHEBI", "CHEBI:12345"], ["CHEBI", "CHEBI:67890"]],
+
+    # Analysis API
+    "metabolites": fields.Raw(
+        example={"CHEBI:12345": "Metabolite 1", "CHEBI:67890": "Metabolite 2"}
     ),
     "method": fields.String(example="bonferroni"),
     "alpha": fields.Float(example=0.05, min=0, max=1),
     "keep_insignificant": fields.Boolean(example=False),
-    "minimum_evidence_count":  fields.Integer(example=2),
-    "minimum_belief":  fields.Float(example=0.7, min=0, max=1),
-    "ec_code":  fields.String(example="3.2.1.4"),
-    "chebi_ids": fields.List(fields.String, example=["CHEBI:27690", "CHEBI:114785"]),
-    "positive_genes": fields.List(fields.String,
-                                  example=[
-                                      "HGNC:10354",
-                                      "HGNC:4141",
-                                      "HGNC:1692",
-                                      "HGNC:11771",
-                                      "HGNC:4932",
-                                      "HGNC:12692"
-                                  ]),
-    "negative_genes": fields.List(
-        fields.String,
-        example=[
-            "HGNC:5471",
-            "HGNC:11763",
-            "HGNC:2192",
-            "HGNC:2001",
-            "HGNC:17389",
-            "HGNC:3972"
-        ]
+    "minimum_evidence_count": fields.Integer(example=2),
+    "minimum_belief": fields.Float(example=0.7, min=0, max=1),
+    "ec_code": fields.String(example="3.2.1.4"),
+    "chebi_ids": fields.Raw(
+        example={"CHEBI:27690": "Chemical 1", "CHEBI:114785": "Chemical 2"}
     ),
-    "gene_names": fields.List(
-        fields.String,
-        example=["BRCA1", "TP53", "EGFR"]
+    "positive_genes": fields.Raw(
+        example={
+            "HGNC:10354": "Gene A",
+            "HGNC:4141": "Gene B",
+            "HGNC:1692": "Gene C"
+        }
     ),
+    "negative_genes": fields.Raw(
+        example={
+            "HGNC:5471": "Gene X",
+            "HGNC:11763": "Gene Y",
+            "HGNC:2192": "Gene Z"
+        }
+    ),
+    "gene_names": fields.List(fields.String, example=["BRCA1", "TP53", "EGFR"]),
     "log_fold_change": fields.List(fields.Float, example=[1.5, -0.8, 2.1]),
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
     "source": fields.String(example="go"),
 }
-
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
