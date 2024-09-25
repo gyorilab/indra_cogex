@@ -5,7 +5,11 @@ from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,
     EXAMPLE_NEGATIVE_HGNC_IDS
 )
-from indra_cogex.analysis.gene_analysis import discrete_analysis, signed_analysis
+from indra_cogex.analysis.gene_analysis import (
+    discrete_analysis,
+    signed_analysis,
+    continuous_analysis
+)
 
 
 def test_discrete_analysis_frontend_defaults():
@@ -100,3 +104,40 @@ def test_signed_analysis_function_defaults():
     assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
     assert not result.empty, "Result should not be empty"
 
+
+def test_continuous_analysis_with_frontend_defaults():
+    test_data_df = pd.read_csv('./gene_analysis_data.csv')
+    alpha = 0.05
+
+    result = continuous_analysis(
+        gene_names=test_data_df['gene_name'].values,
+        log_fold_change=test_data_df['log2FoldChange'].values,
+        species="human",
+        permutations=100,
+        source="go",
+        alpha=alpha,
+        keep_insignificant=False,
+        minimum_evidence_count=1,
+        minimum_belief=0.0
+    )
+
+    assert result is not None, "Result should not be None"
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
+    assert (result["NOM p-val"] <= alpha).all(), "All corrected p-values should be <= 0.05"
+
+
+def test_continuous_analysis_with_function_defaults():
+    test_data_df = pd.read_csv('./gene_analysis_data.csv')
+
+    result = continuous_analysis(
+        gene_names=test_data_df['gene_name'].values,
+        log_fold_change=test_data_df['log2FoldChange'].values,
+        species="human",
+        permutations=100,
+        source="go"
+    )
+
+    assert result is not None, "Result should not be None"
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
