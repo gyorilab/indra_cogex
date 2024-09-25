@@ -33,27 +33,22 @@ def test_discrete_analysis_frontend_defaults():
         "wikipathways",
         "reactome",
         "phenotype",
-        "indra-upstream",
-        "indra-downstream",
     }
 
     assert expected_analyses == set(result.keys()), "Result should have all expected analyses"
 
     # We don't run the INDRA analysis by default
-    assert result["indra-upstream"] is None, "INDRA Upstream analysis should be None"
-    assert result["indra-downstream"] is None, "INDRA Downstream analysis should be None"
+    assert "indra-upstream" not in result, "INDRA Upstream analysis should not be in result"
+    assert "indra-downstream" not in result, "INDRA Downstream analysis should not be in result"
 
     # Check that there are results and that all results are within the 0.05
     # significance level, since we're filtering out insignificant results with alpha=0.05
     for analysis_name, analysis_result in result.items():
-        if analysis_result is None:
-            assert analysis_name in ["indra-upstream", "indra-downstream"], \
-                "Only INDRA analyses should be None"
-        else:
-            assert not analysis_result.empty, f"{analysis_name} result should not be empty"
-            # Check p-values
-            assert all(analysis_result["p"] <= alpha), \
-                f"{analysis_name} should have all p-values <= 0.05"
+        assert analysis_result is not None, f"{analysis_name} result should not be None"
+        assert not analysis_result.empty, f"{analysis_name} result should not be empty"
+        # Check p-values
+        assert all(analysis_result["p"] <= alpha), \
+            f"{analysis_name} should have all p-values <= 0.05"
 
 
 def test_discrete_analysis_function_defaults():
@@ -63,16 +58,13 @@ def test_discrete_analysis_function_defaults():
         "wikipathways",
         "reactome",
         "phenotype",
-        "indra-upstream",
-        "indra-downstream",
     }
-    assert expected_analyses == set(
-        result.keys()), "Result should have all expected analyses"
+    assert expected_analyses == set(result.keys()), "Result should have all expected analyses"
 
     # Check that there are result dataframes or None
     for analysis_name, analysis_result in result.items():
-        assert analysis_result is None or not analysis_result.empty, \
-            "Result should not be empty or None"
+        assert analysis_result is not None, "Result should not be None"
+        assert not analysis_result.empty, "Result should not be empty"
 
 
 def test_signed_analysis_frontend_defaults():
