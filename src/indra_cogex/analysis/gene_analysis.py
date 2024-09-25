@@ -173,8 +173,8 @@ def signed_analysis(
 
 @autoclient()
 def continuous_analysis(
-        gene_names: str,
-        log_fold_change: str,
+        gene_names: List[str],
+        log_fold_change: List[str],
         species: str,
         permutations: int,
         source: str,
@@ -184,7 +184,7 @@ def continuous_analysis(
         minimum_belief: float = 0,
         *,
         client: Neo4jClient
-) -> Optional[DataFrame]:
+) -> pd.DataFrame:
     """
     Perform continuous gene set analysis on gene expression data.
 
@@ -215,8 +215,7 @@ def continuous_analysis(
     Returns
     -------
     DataFrame or None
-        A DataFrame containing the results of the specified analysis,
-        or None if an error occurred.
+        A DataFrame containing the results of the specified analysis.
     """
 
     score_functions = {
