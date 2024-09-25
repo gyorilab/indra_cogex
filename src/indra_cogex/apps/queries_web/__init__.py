@@ -54,13 +54,15 @@ examples_dict = {
     "gene": fields.List(fields.String, example=["HGNC", "9896"]),
     "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
     "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
-    "drugs": fields.Raw(
-        example={"CHEBI:27690": "Drug 1", "CHEBI:114785": "Drug 2"}
+    "drugs": fields.List(
+        fields.List(fields.String),
+        example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
     ),
     "disease": fields.List(fields.String, example=["MESH", "D007855"]),
     "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
-    "genes": fields.Raw(
-        example={"hgnc:1000": "BCL5", "hgnc:100": "ASIC1"}
+    "genes": fields.List(
+        fields.List(fields.String),
+        example=[["HGNC", "1097"], ["HGNC", "6407"]]
     ),
     "pathway": fields.List(fields.String, example=["WIKIPATHWAYS", "WP5037"]),
     "side_effect": fields.List(fields.String, example=["UMLS", "C3267206"]),
@@ -71,12 +73,14 @@ examples_dict = {
     "paper_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
     "include_child_terms": fields.Boolean(example=True),
+    # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
-    "targets": fields.Raw(
-        example={"HGNC:6840": "Target 1", "HGNC:1097": "Target 2"}
+    "targets": fields.List(
+        fields.List(fields.String),
+        example=[["HGNC", "6840"], ["HGNC", "1097"]]
     ),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
