@@ -18,6 +18,7 @@ from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
@@ -100,6 +101,8 @@ examples_dict = {
     "chebi_ids": fields.Raw(
         example={"CHEBI:27690": "Chemical 1", "CHEBI:114785": "Chemical 2"}
     ),
+    # Example for /gene/discrete
+    "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
     "positive_genes": fields.Raw(
         example={
             "HGNC:10354": "Gene A",
