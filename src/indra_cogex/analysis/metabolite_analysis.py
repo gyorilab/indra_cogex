@@ -34,7 +34,8 @@ def metabolite_discrete_analysis(
     metabolites : List[str]
         List of metabolite identifiers (CHEBI IDs or CHEBI names).
     method : str, optional
-        Method to adjust p-values, default is "bonferroni".
+        Method to adjust p-values, default is family-wise correction with
+        Benjamini/Hochberg.
     alpha : float, optional
         Significance level, default is 0.05.
     keep_insignificant : bool, optional
@@ -42,7 +43,7 @@ def metabolite_discrete_analysis(
     minimum_evidence_count : int, optional
         Minimum evidence count threshold, default is 1.
     minimum_belief : float, optional
-        Minimum belief threshold for filtering results, default is 0.5.
+        Minimum belief threshold for filtering results, default is 0.
     client : Neo4jClient, optional
         Neo4j client for database interaction, injected via autoclient.
 
