@@ -1,8 +1,10 @@
 """Metabolite-centric analysis."""
 
-from typing import Dict, List
+from typing import Dict, List, Tuple, Iterable
 import logging
 import pandas as pd
+
+from indra.databases import chebi_client
 from indra_cogex.client.enrichment.mla import (
     metabolomics_explanation,
     metabolomics_ora,
@@ -96,3 +98,26 @@ def enzyme_analysis(
     stmts = metabolomics_explanation(client=client, ec_code=ec_code, chebi_ids=chebi_ids)
 
     return stmts
+
+def parse_metabolites(metabolites: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
+    """Parse metabolite identifiers to a list of CHEBI IDs."""
+    chebi_ids = []
+    errors = []
+    for entry in metabolites:
+        if entry.isnumeric():
+            chebi_ids.append(entry)
+        elif entry.lower().startswith("chebi:chebi:"):
+            chebi_ids.append(entry.lower().replace("chebi:chebi:", "", 1))
+        elif entry.lower().startswith("chebi:"):
+            chebi_ids.append(entry.lower().replace("chebi:", "", 1))
+        else:  # probably a name, do our best
+            chebi_id = chebi_client.get_chebi_id_from_name(entry)
+            if chebi_id:
+                chebi_ids.append(chebi_id)
+            else:
+                errors.append(entry)
+    metabolites = {
+        chebi_id: chebi_client.get_chebi_name_from_id(chebi_id)
+        for chebi_id in chebi_ids
+    }
+    return metabolites, errors

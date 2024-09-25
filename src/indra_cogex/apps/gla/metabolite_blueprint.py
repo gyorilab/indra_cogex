@@ -7,12 +7,15 @@ import flask
 from flask import request
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
-from indra.databases import chebi_client
 from wtforms import SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.proxies import client
-from indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis, enzyme_analysis
+from indra_cogex.analysis.metabolite_analysis import (
+    metabolite_discrete_analysis,
+    enzyme_analysis,
+    parse_metabolites,
+)
 
 from .fields import (
     alpha_field,
@@ -20,6 +23,7 @@ from .fields import (
     keep_insignificant_field,
     minimum_belief_field,
     minimum_evidence_field,
+    parse_text_field,
 )
 from ..utils import render_statements
 
@@ -45,33 +49,8 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
     Tuple[Dict[str, str], List[str]]
         A tuple containing a dictionary of ChEBI IDs to metabolite names,
         and a list of any metabolite identifiers that couldn't be parsed."""
-    records = {
-        record.strip().strip('"').strip("'").strip()
-        for line in s.strip().lstrip("[").rstrip("]").split()
-        if line
-        for record in line.strip().split(",")
-        if record.strip()
-    }
-    chebi_ids = []
-    errors = []
-    for entry in records:
-        if entry.isnumeric():
-            chebi_ids.append(entry)
-        elif entry.lower().startswith("chebi:chebi:"):
-            chebi_ids.append(entry.lower().replace("chebi:chebi:", "", 1))
-        elif entry.lower().startswith("chebi:"):
-            chebi_ids.append(entry.lower().replace("chebi:", "", 1))
-        else:  # probably a name, do our best
-            chebi_id = chebi_client.get_chebi_id_from_name(entry)
-            if chebi_id:
-                chebi_ids.append(chebi_id)
-            else:
-                errors.append(entry)
-    metabolites = {
-        chebi_id: chebi_client.get_chebi_name_from_id(chebi_id)
-        for chebi_id in chebi_ids
-    }
-    return metabolites, errors
+    records = parse_text_field(s)
+    return parse_metabolites(records)
 
 
 metabolites_field = TextAreaField(
