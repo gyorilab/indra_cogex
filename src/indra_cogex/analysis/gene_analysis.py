@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Optional, Union, Tuple, List, Iterable
 
 import pandas as pd
-from pandas import DataFrame
 
 from indra.databases import hgnc_client
 from indra_cogex.client.neo4j_client import autoclient
