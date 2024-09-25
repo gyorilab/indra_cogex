@@ -37,8 +37,6 @@ api = Api(
 
 query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
-from flask_restx import fields
-
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
     "gene": fields.List(fields.String, example=["HGNC", "9896"]),
