@@ -20,6 +20,7 @@ from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
 from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
@@ -93,32 +94,19 @@ examples_dict = {
     ),
     "offset": fields.Integer(example=1),
     # Analysis API
+    # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
     "metabolites": fields.List(fields.String, example=EXAMPLE_CHEBI_CURIES),
-    "method": fields.String(example="bonferroni"),
+    "method": fields.String(example="fdr_bh"),
     "alpha": fields.Float(example=0.05, min=0, max=1),
     "keep_insignificant": fields.Boolean(example=False),
     "minimum_evidence_count": fields.Integer(example=2),
     "minimum_belief": fields.Float(example=0.7, min=0, max=1),
     "ec_code": fields.String(example="3.2.1.4"),
-    "chebi_ids": fields.Raw(
-        example={"CHEBI:27690": "Chemical 1", "CHEBI:114785": "Chemical 2"}
-    ),
     # Example for /gene/discrete
     "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
-    "positive_genes": fields.Raw(
-        example={
-            "HGNC:10354": "Gene A",
-            "HGNC:4141": "Gene B",
-            "HGNC:1692": "Gene C"
-        }
-    ),
-    "negative_genes": fields.Raw(
-        example={
-            "HGNC:5471": "Gene X",
-            "HGNC:11763": "Gene Y",
-            "HGNC:2192": "Gene Z"
-        }
-    ),
+    # Examples for positive_genes and negative_genes for /gene/signed
+    "positive_genes": fields.List(fields.String,example=EXAMPLE_POSITIVE_HGNC_IDS),
+    "negative_genes": fields.List(fields.String,example=EXAMPLE_NEGATIVE_HGNC_IDS),
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
