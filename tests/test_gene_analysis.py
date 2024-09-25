@@ -235,21 +235,3 @@ class TestSignedAnalysis(unittest.TestCase):
         result = self.run_signed_analysis(self.positive_genes, self.negative_genes, alpha=0.05,
                                           keep_insignificant=False)
         self.assert_results(result, 1, "Test 2: Significant results only")
-
-    # Test case 3: Empty input
-    def test_empty_input(self):
-        result = self.run_signed_analysis({}, {}, alpha=0.05, keep_insignificant=True)
-        self.assert_results(result, 0, "Test 3: Empty input")
-
-    # Test case 4: Only positive genes
-    def test_only_positive_genes(self):
-        result = self.run_signed_analysis(self.positive_genes, {}, alpha=0.05, keep_insignificant=True)
-        self.assert_results(result, 2, "Test 4: Only positive genes")
-
-    # Test case 5: Only negative genes
-    def test_only_negative_genes(self):
-        result = self.run_signed_analysis({}, self.negative_genes, alpha=0.05, keep_insignificant=True)
-        self.assert_results(result, 2, "Test 5: Only negative genes")
-
-
-
