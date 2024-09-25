@@ -10,8 +10,19 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField, TextAreaField, StringField
 from wtforms.validators import DataRequired
 
+from indra_cogex.analysis.gene_analysis import (
+    discrete_analysis,
+    signed_analysis,
+    continuous_analysis,
+    parse_gene_list,
+)
 from indra_cogex.apps.constants import INDRA_COGEX_WEB_LOCAL
 from indra_cogex.apps.proxies import client
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.signed import (
+    EXAMPLE_NEGATIVE_HGNC_IDS,
+    EXAMPLE_POSITIVE_HGNC_IDS
+)
 from .fields import (
     alpha_field,
     correction_field,
@@ -24,17 +35,6 @@ from .fields import (
     source_field,
     species_field, parse_text_field,
 )
-
-from indra_cogex.analysis.gene_analysis import (
-    discrete_analysis,
-    signed_analysis,
-    continuous_analysis,
-    parse_gene_list,
-)
-
-from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
-from indra_cogex.client.enrichment.signed import (EXAMPLE_NEGATIVE_HGNC_IDS,
-                                                  EXAMPLE_POSITIVE_HGNC_IDS)
 
 __all__ = ["gene_blueprint"]
 
@@ -148,7 +148,7 @@ def discretize_analysis():
             keep_insignificant=form.keep_insignificant.data,
             minimum_evidence_count=form.minimum_evidence.data,
             minimum_belief=form.minimum_belief.data,
-            indra_path_analysis=form.indra_path_analysis.data  # Include this line
+            indra_path_analysis=form.indra_path_analysis.data
         )
 
         if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
