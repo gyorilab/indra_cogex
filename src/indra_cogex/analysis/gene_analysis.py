@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 @autoclient()
 def discrete_analysis(
-        genes: List[str],
+        gene_list: List[str],
         method: str = 'fdr_bh',
         alpha: float = 0.05,
         keep_insignificant: bool = False,
@@ -50,7 +50,7 @@ def discrete_analysis(
 
     Parameters
     ----------
-    genes : List[str]
+    gene_list : List[str]
         A list of gene identifiers. Can be HGNC symbols or identifiers.
     method : str, optional
         Statistical method to apply, by default 'fdr_bh'.
@@ -73,7 +73,7 @@ def discrete_analysis(
         A dict with results per analysis type in the form of a DataFrame or None
         if an error occurs or no results are found.
     """
-    gene_set, errors = parse_gene_list(genes)
+    gene_set, errors = parse_gene_list(gene_list)
     if errors:
         logger.warning(
             f"Failed to parse the following gene identifiers: {', '.join(errors)}"
