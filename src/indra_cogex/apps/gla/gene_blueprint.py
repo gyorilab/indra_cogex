@@ -169,8 +169,8 @@ def discretize_analysis():
             wikipathways_results=results["wikipathways"],
             reactome_results=results["reactome"],
             phenotype_results=results["phenotype"],
-            indra_downstream_results=results["indra-downstream"],
-            indra_upstream_results=results["indra-upstream"],
+            indra_downstream_results=results.get("indra-downstream"),
+            indra_upstream_results=results.get("indra-upstream"),
         )
 
     return flask.render_template(

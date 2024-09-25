@@ -104,7 +104,7 @@ def discrete_analysis(
                     minimum_belief=minimum_belief
                 )
             else:
-                analysis_result = None
+                continue
 
         results[analysis_name] = analysis_result
 
