@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 @autoclient()
 def metabolite_discrete_analysis(
-        metabolites: Dict[str, str],
         method: str = "bonferroni",
+        metabolites: List[str],
         alpha: float = 0.05,
         keep_insignificant: bool = False,
         minimum_evidence_count: int = 1,
@@ -32,8 +32,8 @@ def metabolite_discrete_analysis(
 
     Parameters
     ----------
-    metabolites : Dict[str, str]
-        Dictionary of metabolite identifiers (CHEBI IDs) of the form {chebi_id: name}.
+    metabolites : List[str]
+        List of metabolite identifiers (CHEBI IDs or CHEBI names).
     method : str, optional
         Method to adjust p-values, default is "bonferroni".
     alpha : float, optional
@@ -52,8 +52,9 @@ def metabolite_discrete_analysis(
     pd.DataFrame
         DataFrame containing the analysis results.
     """
-
-    chebi_ids = list(metabolites.keys())
+    chebi_ids, errors = parse_metabolites(metabolites)
+    if errors:
+        logger.warning(f"Could not parse the following metabolites: {errors}")
 
     # Perform the metabolomics ORA analysis
     ora_results = metabolomics_ora(
