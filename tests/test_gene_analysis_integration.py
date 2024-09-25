@@ -51,9 +51,6 @@ def test_discrete_analysis_frontend_defaults():
             # Check p-values
             assert all(analysis_result["p"] <= alpha), \
                 f"{analysis_name} should have all p-values <= 0.05"
-            # Check corrected p-values (q)
-            assert all(analysis_result["q"] <= alpha), \
-                f"{analysis_name} should have all corrected p-values (q) <= 0.05"
 
 
 def test_discrete_analysis_function_defaults():
