@@ -34,6 +34,6 @@ jobs:
         run:
           tox -e py
         env:
-          INDRA_NEO4J_URL: ${{ secrets.INDRA_NEO4J_URL }}
+          INDRA_NEO4J_URL: "bolt://indra-cogex-lb-1eac1a3f066c0e52.elb.us-east-1.amazonaws.com:7687"
           INDRA_NEO4J_USER: ${{ secrets.INDRA_NEO4J_USER }}
           INDRA_NEO4J_PASSWORD: ${{ secrets.INDRA_NEO4J_PASSWORD }}
