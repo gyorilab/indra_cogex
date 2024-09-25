@@ -13,6 +13,7 @@ from typing import (
     Set,
 )
 
+import pandas as pd
 from docstring_parser import parse
 from indra.statements import Agent, Evidence, Statement
 
@@ -89,6 +90,9 @@ def process_result(result) -> Any:
     elif isinstance(result, (dict, Mapping, Counter)):
         res_dict = dict(result)
         return {k: process_result(v) for k, v in res_dict.items()}
+    # DataFrames
+    elif isinstance(result, pd.DataFrame):
+        return result.to_dict(orient="records")
     # Any iterable query
     elif isinstance(result, (Iterable, list, set)):
         list_res = list(result)
