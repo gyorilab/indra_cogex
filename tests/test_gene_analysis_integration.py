@@ -1,5 +1,6 @@
 import pandas as pd
 
+from indra_cogex.apps.gla.metabolite_blueprint import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,
@@ -10,6 +11,7 @@ from indra_cogex.analysis.gene_analysis import (
     signed_analysis,
     continuous_analysis
 )
+from indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis
 
 
 def test_discrete_analysis_frontend_defaults():
@@ -134,6 +136,31 @@ def test_continuous_analysis_with_function_defaults():
         permutations=100,
         source="go"
     )
+
+    assert result is not None, "Result should not be None"
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
+
+
+def test_metabolite_analysis_frontend_defaults():
+    alpha = 0.05
+    result = metabolite_discrete_analysis(
+        metabolites=EXAMPLE_CHEBI_CURIES,
+        method="fdr_bh",
+        alpha=alpha,
+        keep_insignificant=False,
+        minimum_evidence_count=1,
+        minimum_belief=0.0
+    )
+
+    assert result is not None, "Result should not be None"
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
+    assert (result["q"] <= alpha).all(), "All q-values should be <= 0.05"
+
+
+def test_metabolite_analysis_function_defaults():
+    result = metabolite_discrete_analysis(EXAMPLE_CHEBI_CURIES)
 
     assert result is not None, "Result should not be None"
     assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
