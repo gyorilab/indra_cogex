@@ -16,6 +16,7 @@ from indra_cogex.analysis.metabolite_analysis import (
     enzyme_analysis,
     parse_metabolites,
 )
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 
 from .fields import (
     alpha_field,
@@ -26,8 +27,6 @@ from .fields import (
     parse_text_field,
 )
 from ..utils import render_statements
-
-EXAMPLE_CHEBI_CURIES = ["CHEBI:17234", "CHEBI:16811", "CHEBI:17855"]
 
 __all__ = [
     "metabolite_blueprint",

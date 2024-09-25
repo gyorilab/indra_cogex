@@ -1,6 +1,6 @@
 import pandas as pd
 
-from indra_cogex.apps.gla.metabolite_blueprint import EXAMPLE_CHEBI_CURIES
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,

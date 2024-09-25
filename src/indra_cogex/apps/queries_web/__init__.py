@@ -18,6 +18,7 @@ from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
 
@@ -91,11 +92,8 @@ examples_dict = {
         example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
     ),
     "offset": fields.Integer(example=1),
-
     # Analysis API
-    "metabolites": fields.Raw(
-        example={"CHEBI:12345": "Metabolite 1", "CHEBI:67890": "Metabolite 2"}
-    ),
+    "metabolites": fields.List(fields.String, example=EXAMPLE_CHEBI_CURIES),
     "method": fields.String(example="bonferroni"),
     "alpha": fields.Float(example=0.05, min=0, max=1),
     "keep_insignificant": fields.Boolean(example=False),
