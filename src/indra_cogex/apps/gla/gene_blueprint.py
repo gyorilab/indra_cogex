@@ -1,7 +1,7 @@
 """Gene-centric blueprint."""
 from http import HTTPStatus
 from pathlib import Path
-from typing import List, Mapping, Tuple, Set
+from typing import List, Mapping, Tuple
 
 import flask
 import pandas as pd
@@ -22,7 +22,7 @@ from .fields import (
     minimum_evidence_field,
     permutations_field,
     source_field,
-    species_field,
+    species_field, parse_text_field,
 )
 
 from indra_cogex.analysis.gene_analysis import (
@@ -59,18 +59,6 @@ negative_genes_field = TextAreaField(
     " example list</a> related to prostate cancer.",
     validators=[DataRequired()],
 )
-
-
-def parse_text_field(field_data: str) -> Set[str]:
-    """Parse the gene field data."""
-    records = {
-        record.strip().strip('"').strip("'").strip()
-        for line in field_data.strip().lstrip("[").rstrip("]").split()
-        if line
-        for record in line.strip().split(",")
-        if record.strip()
-    }
-    return records
 
 
 class DiscreteForm(FlaskForm):

@@ -1,4 +1,5 @@
 """Reusable fields for the INDRA CoGEx analysis application."""
+from typing import Set
 
 from wtforms import BooleanField, FileField, FloatField, IntegerField, RadioField
 from wtforms.validators import DataRequired
@@ -71,3 +72,15 @@ permutations_field = IntegerField(
     validators=[DataRequired()],
     description="The number of permutations used with GSEA",
 )
+
+
+def parse_text_field(field_data: str) -> Set[str]:
+    """Parse a text field for data"""
+    records = {
+        record.strip().strip('"').strip("'").strip()
+        for line in field_data.strip().lstrip("[").rstrip("]").split()
+        if line
+        for record in line.strip().split(",")
+        if record.strip()
+    }
+    return records
