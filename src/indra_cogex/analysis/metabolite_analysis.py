@@ -18,17 +18,16 @@ logger = logging.getLogger(__name__)
 
 @autoclient()
 def metabolite_discrete_analysis(
-        method: str = "bonferroni",
         metabolites: List[str],
+        method: str = "fdr_bh",
         alpha: float = 0.05,
         keep_insignificant: bool = False,
         minimum_evidence_count: int = 1,
-        minimum_belief: float = 0.5,
+        minimum_belief: float = 0.0,
         *,
         client: Neo4jClient  # Client argument moved to the end as a keyword argument
 ) -> pd.DataFrame:
-    """
-    Perform discrete metabolite analysis and return results as a DataFrame.
+    """Perform discrete metabolite analysis and return results as a DataFrame
 
     Parameters
     ----------
@@ -50,7 +49,7 @@ def metabolite_discrete_analysis(
     Returns
     -------
     pd.DataFrame
-        DataFrame containing the analysis results.
+        A DataFrame containing the analysis results.
     """
     chebi_ids, errors = parse_metabolites(metabolites)
     if errors:
