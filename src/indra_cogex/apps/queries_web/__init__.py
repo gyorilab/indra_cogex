@@ -8,7 +8,7 @@ The endpoints are created dynamically based on the functions in the following mo
 - indra_cogex.analysis.metabolite_analysis
 - indra_cogex.analysis.gene_analysis
 """
-
+import csv
 import logging
 from http import HTTPStatus
 from inspect import isfunction, signature
@@ -28,6 +28,16 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+def get_example_data():
+    """Get example data for gene continuous analysis."""
+    reader = csv.reader(gene_continuous_analysis_example_data.open())
+    _ = next(reader)  # Skip header
+    names, log_fold_changes = zip(*reader)
+    return names, [float(n) for n in log_fold_changes]
+
+continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
 
 
 api = Api(
@@ -104,8 +114,8 @@ examples_dict = {
             "HGNC:2192": "Gene Z"
         }
     ),
-    "gene_names": fields.List(fields.String, example=["BRCA1", "TP53", "EGFR"]),
-    "log_fold_change": fields.List(fields.Float, example=[1.5, -0.8, 2.1]),
+    "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
+    "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
     "source": fields.String(example="go"),
