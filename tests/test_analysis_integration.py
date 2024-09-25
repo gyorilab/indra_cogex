@@ -12,6 +12,7 @@ from indra_cogex.analysis.gene_analysis import (
     continuous_analysis
 )
 from indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis
+from indra_cogex.analysis import gene_continuous_analysis_example_data
 
 
 def test_discrete_analysis_frontend_defaults():
@@ -105,7 +106,7 @@ def test_signed_analysis_function_defaults():
 
 
 def test_continuous_analysis_with_frontend_defaults():
-    test_data_df = pd.read_csv('./gene_analysis_data.csv')
+    test_data_df = pd.read_csv(gene_continuous_analysis_example_data)
     alpha = 0.05
 
     result = continuous_analysis(
@@ -127,7 +128,7 @@ def test_continuous_analysis_with_frontend_defaults():
 
 
 def test_continuous_analysis_with_function_defaults():
-    test_data_df = pd.read_csv('./gene_analysis_data.csv')
+    test_data_df = pd.read_csv(gene_continuous_analysis_example_data)
 
     result = continuous_analysis(
         gene_names=test_data_df['gene_name'].values,

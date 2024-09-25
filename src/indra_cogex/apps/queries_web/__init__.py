@@ -18,7 +18,7 @@ from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
-from indra_cogex.analysis import metabolite_analysis, gene_analysis
+from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
@@ -28,6 +28,7 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
 
 api = Api(
     title="INDRA CoGEx Query API",
