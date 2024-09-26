@@ -1,18 +1,22 @@
 import pandas as pd
 
-from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
-from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
-from indra_cogex.client.enrichment.signed import (
-    EXAMPLE_POSITIVE_HGNC_IDS,
-    EXAMPLE_NEGATIVE_HGNC_IDS
-)
+from indra.statements import Statement
+from indra_cogex.analysis import gene_continuous_analysis_example_data
 from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
     signed_analysis,
     continuous_analysis
 )
-from indra_cogex.analysis.metabolite_analysis import metabolite_discrete_analysis
-from indra_cogex.analysis import gene_continuous_analysis_example_data
+from indra_cogex.analysis.metabolite_analysis import (
+    metabolite_discrete_analysis,
+    enzyme_analysis
+)
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
+from indra_cogex.client.enrichment.signed import (
+    EXAMPLE_POSITIVE_HGNC_IDS,
+    EXAMPLE_NEGATIVE_HGNC_IDS
+)
 
 
 def test_discrete_analysis_frontend_defaults():
@@ -158,3 +162,10 @@ def test_metabolite_analysis_function_defaults():
     assert result is not None, "Result should not be None"
     assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
     assert not result.empty, "Result should not be empty"
+
+
+def test_enzyme_analysis():
+    res = enzyme_analysis(ec_code="1.1.1.1")
+    assert isinstance(res, list), "Result should be a list"
+    assert all(isinstance(s, Statement) for s in res), "All results should be INDRA Statements"
+    assert len(res) > 0, "Result should not be empty"
