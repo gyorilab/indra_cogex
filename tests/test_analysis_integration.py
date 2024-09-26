@@ -55,6 +55,40 @@ def test_discrete_analysis_frontend_defaults():
             f"{analysis_name} should have all p-values <= 0.05"
 
 
+def test_discrete_analysis_with_indra():
+    # Tests example settings from frontend
+    alpha = 0.05
+    result = discrete_analysis(
+        EXAMPLE_GENE_IDS,
+        method='fdr_bh',  # Family-wise Correction with Benjamini/Hochberg
+        alpha=alpha,
+        keep_insignificant=False,
+        minimum_evidence_count=2,
+        minimum_belief=0.7,
+        indra_path_analysis=True,
+    )
+
+    expected_analyses = {
+        "go",
+        "wikipathways",
+        "reactome",
+        "phenotype",
+        "indra-upstream",
+        "indra-downstream",
+    }
+
+    assert expected_analyses == set(result.keys()), "Result should have all expected analyses"
+
+    # Check that there are results and that all results are within the 0.05
+    # significance level, since we're filtering out insignificant results with alpha=0.05
+    for analysis_name, analysis_result in result.items():
+        assert analysis_result is not None, f"{analysis_name} result should not be None"
+        assert not analysis_result.empty, f"{analysis_name} result should not be empty"
+        # Check p-values
+        assert all(analysis_result["p"] <= alpha), \
+            f"{analysis_name} should have all p-values <= 0.05"
+
+
 def test_discrete_analysis_function_defaults():
     result = discrete_analysis(EXAMPLE_GENE_IDS)
     expected_analyses = {
