@@ -4,9 +4,7 @@ from typing import Dict, Optional, Union, Tuple, List, Iterable
 import pandas as pd
 
 from indra.databases import hgnc_client
-from indra_cogex.client.neo4j_client import autoclient
-
-from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.neo4j_client import autoclient, Neo4jClient
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
     get_mouse_scores,
@@ -28,8 +26,6 @@ from indra_cogex.client.enrichment.discrete import (
 )
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 

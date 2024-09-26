@@ -9,10 +9,8 @@ from indra_cogex.client.enrichment.mla import (
     metabolomics_explanation,
     metabolomics_ora,
 )
-from indra_cogex.client.neo4j_client import Neo4jClient
-from indra_cogex.client.neo4j_client import autoclient
+from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
