@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from indra.statements import Statement
 from indra_cogex.analysis import gene_continuous_analysis_example_data
@@ -19,6 +20,7 @@ from indra_cogex.client.enrichment.signed import (
 )
 
 
+@pytest.mark.nonpublic
 def test_discrete_analysis_frontend_defaults():
     # Tests example settings from frontend
     alpha = 0.05
@@ -55,6 +57,7 @@ def test_discrete_analysis_frontend_defaults():
             f"{analysis_name} should have all p-values <= 0.05"
 
 
+@pytest.mark.nonpublic
 def test_discrete_analysis_with_indra():
     # Tests example settings from frontend
     alpha = 0.05
@@ -89,6 +92,7 @@ def test_discrete_analysis_with_indra():
             f"{analysis_name} should have all p-values <= 0.05"
 
 
+@pytest.mark.nonpublic
 def test_discrete_analysis_function_defaults():
     result = discrete_analysis(EXAMPLE_GENE_IDS)
     expected_analyses = {
@@ -105,6 +109,7 @@ def test_discrete_analysis_function_defaults():
         assert not analysis_result.empty, "Result should not be empty"
 
 
+@pytest.mark.nonpublic
 def test_signed_analysis_frontend_defaults():
     # Test example settings from frontend
     alpha = 0.05
@@ -123,6 +128,7 @@ def test_signed_analysis_frontend_defaults():
     assert (result["binom_pvalue"] <= alpha).all(), "All p-values should be <= 0.05"
 
 
+@pytest.mark.nonpublic
 def test_signed_analysis_function_defaults():
     # Test defaults from function
     result = signed_analysis(
@@ -135,6 +141,7 @@ def test_signed_analysis_function_defaults():
     assert not result.empty, "Result should not be empty"
 
 
+@pytest.mark.nonpublic
 def test_continuous_analysis_with_frontend_defaults():
     test_data_df = pd.read_csv(gene_continuous_analysis_example_data)
     alpha = 0.05
@@ -157,6 +164,7 @@ def test_continuous_analysis_with_frontend_defaults():
     assert (result["NOM p-val"] <= alpha).all(), "All corrected p-values should be <= 0.05"
 
 
+@pytest.mark.nonpublic
 def test_continuous_analysis_with_function_defaults():
     test_data_df = pd.read_csv(gene_continuous_analysis_example_data)
 
@@ -173,6 +181,7 @@ def test_continuous_analysis_with_function_defaults():
     assert not result.empty, "Result should not be empty"
 
 
+@pytest.mark.nonpublic
 def test_metabolite_analysis_frontend_defaults():
     alpha = 0.05
     result = metabolite_discrete_analysis(
@@ -190,6 +199,7 @@ def test_metabolite_analysis_frontend_defaults():
     assert (result["q"] <= alpha).all(), "All q-values should be <= 0.05"
 
 
+@pytest.mark.nonpublic
 def test_metabolite_analysis_function_defaults():
     result = metabolite_discrete_analysis(EXAMPLE_CHEBI_CURIES)
 
@@ -198,6 +208,7 @@ def test_metabolite_analysis_function_defaults():
     assert not result.empty, "Result should not be empty"
 
 
+@pytest.mark.nonpublic
 def test_enzyme_analysis():
     res = enzyme_analysis(ec_code="1.1.1.1")
     assert isinstance(res, list), "Result should be a list"
