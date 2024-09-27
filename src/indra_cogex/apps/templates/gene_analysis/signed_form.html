@@ -3,6 +3,7 @@
 {% block title %}Signed Gene Set Analysis{% endblock %}
 
 {% block scripts %}
+{{ super() }}
     <script>
         function exampleGenes() {
             document.getElementById('{{ form.positive_genes.name }}').value = "{{ example_positive_hgnc_ids }}";
