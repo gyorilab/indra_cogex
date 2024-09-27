@@ -114,7 +114,7 @@ class DiscreteForm(FlaskForm):
     keep_insignificant = keep_insignificant_field
     if INDRA_COGEX_WEB_LOCAL:
         local_download = BooleanField("local_download")
-    submit = SubmitField("Submit")
+    submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
@@ -131,7 +131,7 @@ class SignedForm(FlaskForm):
     alpha = alpha_field
     # correction = correction_field
     keep_insignificant = keep_insignificant_field
-    submit = SubmitField("Submit")
+    submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
     def parse_positive_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
@@ -165,7 +165,7 @@ class ContinuousForm(FlaskForm):
     source = source_field
     minimum_evidence = minimum_evidence_field
     minimum_belief = minimum_belief_field
-    submit = SubmitField("Submit")
+    submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
     def get_scores(self) -> Dict[str, float]:
         """Get scores dictionary."""
