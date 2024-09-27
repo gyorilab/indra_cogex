@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Protein Analysis Exploration
+This module implements analysis of mechanisms connecting a source with a set of
+downstream targets to construct possible explanations from the INDRA CoGEx
+knowledge graph.
 
-Exploring how a set of target proteins relate to a source protein through
-INDRA statements, exploring pathway membership, determining if any of the
-proteins belong to the same protein family/complex as the target and using
-INDRA discrete gene list analysis results
+Possible explanations considered include INDRA statements, pathway membership,
+determining if any of the proteins belong to the same protein family/complex
+as the target, and using gene set enrichment on intermediates between
+the source and the target.
 """
 import itertools
 import os
