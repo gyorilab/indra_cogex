@@ -83,7 +83,7 @@ class DiscreteForm(FlaskForm):
     alpha = alpha_field
     correction = correction_field
     keep_insignificant = keep_insignificant_field
-    submit = SubmitField("Submit", render_kw={"id": "metabolite-submit-btn"})
+    submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
     def parse_metabolites(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
