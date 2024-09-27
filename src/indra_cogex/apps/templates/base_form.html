@@ -6,9 +6,7 @@
         <p class="lead">
             {% block lead %}{% endblock %}
         </p>
-        <form id="main-form" method="POST">
-            {{ wtf.render_form(form) }}
-        </form>
+        {{ wtf.render_form(form, method="POST", id="main-form") }}
     </div>
 {% endblock %}
 {% block scripts %}
