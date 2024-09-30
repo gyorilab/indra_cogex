@@ -41,8 +41,7 @@ def discrete_analysis(
         *,
         client: Neo4jClient
 ) -> Dict[str, Union[pd.DataFrame, None]]:
-    """
-    Perform discrete analysis on the provided genes.
+    """Perform discrete analysis on the provided genes.
 
     Parameters
     ----------
@@ -180,8 +179,7 @@ def continuous_analysis(
         *,
         client: Neo4jClient
 ) -> pd.DataFrame:
-    """
-    Perform continuous gene set analysis on gene expression data.
+    """Perform continuous gene set analysis on gene expression data.
 
     Parameters
     ----------
