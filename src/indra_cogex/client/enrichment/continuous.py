@@ -172,8 +172,7 @@ def _get_species_scores(
     *,
     func,
 ) -> Dict[str, float]:
-    """
-    Retrieve species-specific scores from gene expression data.
+    """Retrieve species-specific scores from gene expression data.
 
     Parameters
     ----------
