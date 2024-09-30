@@ -76,7 +76,6 @@ def reverse_causal_reasoning(
         alpha = 0.05
     positive_hgnc_ids = set(positive_hgnc_ids)
     negative_hgnc_ids = set(negative_hgnc_ids)
-
     database_positive = get_positive_stmt_sets(
         client=client,
         minimum_belief=minimum_belief,
@@ -87,7 +86,6 @@ def reverse_causal_reasoning(
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
-
     entities = set(database_positive).union(database_negative)
 
     rows = []
@@ -96,7 +94,6 @@ def reverse_causal_reasoning(
         entity_negative: set[str] = database_negative.get(entity, set())
         if len(entity_positive) + len(entity_negative) < minimum_size:
             continue  # skip this hypothesis
-
         correct, incorrect, ambiguous = 0, 0, 0
         for hgnc_id in positive_hgnc_ids:
             if hgnc_id in entity_positive and hgnc_id in entity_negative:
@@ -142,10 +139,8 @@ def reverse_causal_reasoning(
             "binom_ambig_pvalue",
         ],
     ).sort_values("binom_pvalue")
-
     if not keep_insignificant:
         df = df[df["binom_pvalue"] < alpha]
-
     return df
 
 
