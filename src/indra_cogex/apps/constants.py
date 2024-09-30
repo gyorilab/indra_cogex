@@ -76,16 +76,23 @@ if not SOURCE_BADGES_CSS.exists():
 LOCAL_VUE: Union[str, bool] = get_config("LOCAL_VUE") or False
 
 # Set up indralab-vue Vue components, either from local build or from S3
-VUE_DEPLOYMENT = get_config("VUE_DEPLOYMENT") or "latest"
-VUE_BASE = f"https://bigmech.s3.amazonaws.com/indra-db/indralabvue-{VUE_DEPLOYMENT}/"
+VUE_URL_ROOT = (get_config("VUE_URL_ROOT") or "").rstrip("/")
 VUE_JS = "IndralabVue.umd.min.js"
 VUE_CSS = "IndralabVue.css"
 if LOCAL_VUE:
     VUE_SRC_JS: Union[bool, str] = False
     VUE_SRC_CSS: Union[bool, str] = False
 else:
-    VUE_SRC_JS = f"{VUE_BASE}{VUE_JS}"
-    VUE_SRC_CSS = f"{VUE_BASE}{VUE_CSS}"
+    if not VUE_URL_ROOT:
+        logger.warning(
+            "VUE_URL_ROOT not set in environment. Statement Vue components will "
+            "not be available in the web app."
+        )
+        VUE_SRC_JS = False
+        VUE_SRC_CSS = False
+    else:
+        VUE_SRC_JS = f"{VUE_URL_ROOT}/{VUE_JS}"
+        VUE_SRC_CSS = f"{VUE_URL_ROOT}/{VUE_CSS}"
 
 # Pusher parameters
 pusher_app_id = get_config("CLARE_PUSHER_APP_ID")
