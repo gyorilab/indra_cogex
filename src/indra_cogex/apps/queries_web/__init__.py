@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""An app wrapping the query module of indra_cogex.
+"""An app wrapping the several modules of indra_cogex.
 
 The endpoints are created dynamically based on the functions in the following modules:
 - indra_cogex.client.queries
