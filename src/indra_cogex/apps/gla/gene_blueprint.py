@@ -89,7 +89,6 @@ class SignedForm(FlaskForm):
     minimum_evidence = minimum_evidence_field
     minimum_belief = minimum_belief_field
     alpha = alpha_field
-    # correction = correction_field
     keep_insignificant = keep_insignificant_field
     submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
 
