@@ -150,7 +150,7 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
 
 
 def plot_stmts_by_type(stmts_df, fname):
-    """Visualize frequency of interaction types among protiens that have direct
+    """Visualize frequency of interaction types among proteins that have direct
        INDRA relationship to source
 
     Parameters
@@ -225,7 +225,7 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
 
 @autoclient()
 def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
-    """ Determine if any gene in gene list isa/partof the source protein
+    """Determine if any gene in gene list isa/partof the source protein
     Parameters
     ----------
     target_hgnc_ids : list
@@ -290,7 +290,7 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
 
 
 def get_go_terms_for_source(source_hgnc_id):
-    """ This method gets the go terms for the source protein
+    """This method gets the go terms for the source protein
 
     Parameters
     ----------
@@ -421,7 +421,7 @@ def combine_target_gene_pathways(reactome_filename, wiki_filename):
 
 
 def graph_boxplots(shared_go_df, shared_entities, filename):
-    """ Create boxplots to visualize p and q values
+    """Create boxplots to visualize p and q values
 
     Parameters
     ----------
