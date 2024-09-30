@@ -25,6 +25,7 @@ __all__ = [
     "EXAMPLE_CHEBI_IDS",
     "EXAMPLE_CHEBI_CURIES",
     "metabolomics_ora",
+    "metabolomics_explanation",
 ]
 
 

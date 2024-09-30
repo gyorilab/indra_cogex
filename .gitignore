@@ -132,3 +132,4 @@ import.report
 .idea
 .idea/*
 .DS_Store
+src/indra_cogex/apps/static/source_badges.css

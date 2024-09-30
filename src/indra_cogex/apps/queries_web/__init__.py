@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
 
-"""An app wrapping the query module of indra_cogex."""
+"""An app wrapping the several modules of indra_cogex.
 
+The endpoints are created dynamically based on the functions in the following modules:
+- indra_cogex.client.queries
+- indra_cogex.client.subnetwork
+- indra_cogex.analysis.metabolite_analysis
+- indra_cogex.analysis.gene_analysis
+"""
+import csv
 import logging
 from http import HTTPStatus
 from inspect import isfunction, signature
@@ -11,6 +18,10 @@ from flask_restx import Api, Resource, abort, fields
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
+from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
@@ -20,6 +31,17 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+def get_example_data():
+    """Get example data for gene continuous analysis."""
+    reader = csv.reader(gene_continuous_analysis_example_data.open())
+    _ = next(reader)  # Skip header
+    names, log_fold_changes = zip(*reader)
+    return names, [float(n) for n in log_fold_changes]
+
+continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
+
 
 api = Api(
     title="INDRA CoGEx Query API",
@@ -55,8 +77,7 @@ examples_dict = {
     "include_child_terms": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
-    "stmt_hashes": fields.List(fields.String, example=["12198579805553967",
-                                                       "30651649296901235"]),
+    "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
@@ -72,11 +93,31 @@ examples_dict = {
         example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
     ),
     "offset": fields.Integer(example=1),
+    # Analysis API
+    # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
+    "metabolites": fields.List(fields.String, example=EXAMPLE_CHEBI_CURIES),
+    "method": fields.String(example="fdr_bh"),
+    "alpha": fields.Float(example=0.05, min=0, max=1),
+    "keep_insignificant": fields.Boolean(example=False),
+    "minimum_evidence_count": fields.Integer(example=2),
+    "minimum_belief": fields.Float(example=0.7, min=0, max=1),
+    "ec_code": fields.String(example="3.2.1.4"),
+    # Example for /gene/discrete
+    "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
+    # Examples for positive_genes and negative_genes for /gene/signed
+    "positive_genes": fields.List(fields.String,example=EXAMPLE_POSITIVE_HGNC_IDS),
+    "negative_genes": fields.List(fields.String,example=EXAMPLE_NEGATIVE_HGNC_IDS),
+    "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
+    "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
+    "species": fields.String(example="human"),
+    "permutations": fields.Integer(example=100),
+    "source": fields.String(example="go"),
+    "indra_path_analysis": fields.Boolean(example=False),
 }
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix"}
+               "subject_prefix", "object_prefix", "file_path"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
@@ -86,10 +127,17 @@ SKIP_ARGUMENTS = {
 }
 
 # This is the list of functions to be included
-module_functions = [(queries, fn) for fn in queries.__all__] + [
-    (subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]
-]
+# To add a new function, make sure it is part of __all__ in the respective module or is
+# listed explicitly below and properly documented in its docstring as well as having
+# example values for its parameters in the examples_dict above.
+module_functions = (
+        [(queries, fn) for fn in queries.__all__] +
+        [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
+        [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
+        [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+)
 
+# Maps function names to the actual functions
 func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
 
 # Create resource for each query function
@@ -129,9 +177,10 @@ for module, func_name in module_functions:
             param_name: examples_dict[param_name]
             for param_name in param_names
             if param_name not in SKIP_GLOBAL
-            and param_name not in SKIP_ARGUMENTS.get(func_name, [])
+               and param_name not in SKIP_ARGUMENTS.get(func_name, [])
         },
     )
+
 
     @query_ns.expect(query_model)
     @query_ns.route(f"/{func_name}", doc={"summary": short_doc})

@@ -11,13 +11,13 @@ expression experiments.
     ``pip install gseapy``.
 """
 
-from pathlib import Path
-from typing import Any, Dict, Optional, Set, Tuple, Union
 
+from typing import Any, Dict, Optional, Set, Tuple, Union
+from indra.databases import hgnc_client
+from pathlib import Path
+import logging
 import gseapy
 import pandas as pd
-import pyobo
-from indra.databases import hgnc_client
 
 from indra_cogex.client.enrichment.utils import (
     get_entity_to_regulators,
@@ -28,6 +28,8 @@ from indra_cogex.client.enrichment.utils import (
     get_wikipathways,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "get_rat_scores",
@@ -52,31 +54,32 @@ def get_rat_scores(
     """Load a differential gene expression file with rat measurements.
 
     This function extracts the RGD gene symbols, maps them
-    to RGD identifiers, uses PyOBO to map orthologs to HGNC,
+    to RGD identifiers, uses a custom mapping to orthologs to HGNC,
     then returns the HGNC gene and scores as a dictionary.
 
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
-        The name of the column with gene symbols. If none,
-        will try and guess.
+        The name of the column with gene symbols.
     score_column_name :
-        The name of the column with scores. If none, will try
-        and guess.
+        The name of the column with scores.
 
     Returns
     -------
     :
-        A dictionary of mapped orthologus human gene HGNC IDs to
-        scores.
+        A dictionary of mapped orthologous human gene HGNC IDs to scores.
     """
+    from indra.databases import rgd_client
+    def map_rat_symbol_to_hgnc_id(rat_gene_name: str) -> Union[str, None]:
+        rgd_id = rgd_client.get_id_from_name(rat_gene_name)
+        return hgnc_client.get_hgnc_from_rat(rgd_id)
+
     return _get_species_scores(
-        prefix="rgd",
-        func=hgnc_client.get_hgnc_from_rat,
+        func=map_rat_symbol_to_hgnc_id,
         path=path,
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
@@ -93,31 +96,32 @@ def get_mouse_scores(
     """Load a differential gene expression file with mouse measurements.
 
     This function extracts the MGI gene symbols, maps them
-    to MGI identifiers, uses PyOBO to map orthologs to HGNC,
+    to MGI identifiers, uses a custom mapping to orthologs to HGNC,
     then returns the HGNC gene and scores as a dictionary.
 
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
-        The name of the column with gene symbols. If none,
-        will try and guess.
+        The name of the column with gene symbols.
     score_column_name :
-        The name of the column with scores. If none, will try
-        and guess.
+        The name of the column with scores.
 
     Returns
     -------
     :
-        A dictionary of mapped orthologus human gene HGNC IDs to
-        scores.
+        A dictionary of mapped orthologs human gene HGNC IDs to scores.
     """
+    from indra.databases import mgi_client
+    def map_mouse_symbol_to_hgnc_id(mouse_gene_name: str) -> Union[str, None]:
+        mgi_id = mgi_client.get_id_from_name(mouse_gene_name)
+        return hgnc_client.get_hgnc_from_mouse(mgi_id)
+
     return _get_species_scores(
-        prefix="mgi",
-        func=hgnc_client.get_hgnc_from_mouse,
+        func=map_mouse_symbol_to_hgnc_id,
         path=path,
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
@@ -136,9 +140,9 @@ def get_human_scores(
     Parameters
     ----------
     path :
-        Path to the file to read with :func:`pandas.read_csv`.
+        Path to the file to read with :func:`pandas.read_csv` or a DataFrame.
     read_csv_kwargs :
-        Keyword arguments to pass to :func:`pandas.read_csv`
+        Keyword arguments to pass to :func:`pandas.read_csv` if path is a file path.
     gene_symbol_column_name :
         The name of the column with gene symbols. If none,
         will try and guess.
@@ -156,6 +160,7 @@ def get_human_scores(
         read_csv_kwargs=read_csv_kwargs,
         gene_symbol_column_name=gene_symbol_column_name,
         score_column_name=score_column_name,
+        func=hgnc_client.get_current_hgnc_id,
     )
 
 
@@ -165,32 +170,55 @@ def _get_species_scores(
     score_column_name: str,
     read_csv_kwargs: Optional[Dict[str, Any]] = None,
     *,
-    prefix=None,
-    func=None,
+    func,
 ) -> Dict[str, float]:
+    """Retrieve species-specific scores from gene expression data.
+
+    Parameters
+    ----------
+    path : Path, str or pd.DataFrame
+        Path to the input file or a DataFrame containing the gene expression data.
+    gene_symbol_column_name : str
+        The name of the column containing gene symbols.
+    score_column_name : str
+        The name of the column containing scores associated with the gene symbols.
+    read_csv_kwargs : dict of str to Any, optional
+        Additional keyword arguments to pass to `pd.read_csv` when reading from a file.
+    func : callable
+        Function to map gene symbols to HGNC IDs
+
+    Returns
+    -------
+    dict of str to float
+        A dictionary where the keys are HGNC IDs and the values are the associated scores.
+
+    Raises
+    ------
+    ValueError
+        If `gene_symbol_column_name` or `score_column_name` are not found in the DataFrame.
+    """
+    if read_csv_kwargs is None:
+        read_csv_kwargs = {}
+
     if isinstance(path, pd.DataFrame):
         df = path
     else:
-        df = pd.read_csv(path, **(read_csv_kwargs or {}))
+        df = pd.read_csv(path, **read_csv_kwargs)
+
     if gene_symbol_column_name not in df.columns:
-        raise ValueError(f"no column named {gene_symbol_column_name} in input data")
+        logger.error("No column named %s in input data", gene_symbol_column_name)
+        raise ValueError(f"No column named {gene_symbol_column_name} in input data")
     if score_column_name not in df.columns:
-        raise ValueError(f"no column named {score_column_name} in input data")
+        logger.error("No column named %s in input data", score_column_name)
+        raise ValueError(f"No column named {score_column_name} in input data")
 
-    if prefix is not None and func is not None:
-        mapped_gene_symbol_column_name = f"{prefix}_id"
-        df[mapped_gene_symbol_column_name] = df[gene_symbol_column_name].map(
-            pyobo.get_name_id_mapping(prefix)
-        )
-        df = df[df[mapped_gene_symbol_column_name].notna()]
-    elif prefix is not None or func is not None:
-        raise ValueError("If specifying one, must specify both of prefix and func")
-    else:
-        # If no prefix is given, assume columns are human.
-        mapped_gene_symbol_column_name = gene_symbol_column_name
-        func = hgnc_client.get_current_hgnc_id
+    # Here we map from gene symbol (any species) to HGNC ID using the provided function
+    df.loc[:, "hgnc_id"] = df[gene_symbol_column_name].map(func)
 
-    df["hgnc_id"] = df[mapped_gene_symbol_column_name].map(func)
+    # Check if there are any rows after mapping
+    if df["hgnc_id"].isna().all():
+        logger.error("No HGNC IDs found in input data")
+        raise ValueError("No HGNC IDs found in input data")
     df = df.set_index("hgnc_id")
     return df[score_column_name].to_dict()
 
@@ -438,7 +466,7 @@ def indra_downstream_gsea(
 
 
 GSEA_RETURN_COLUMNS = [
-    "term",
+    "Term",
     "Name",
     "ES",
     "NES",
@@ -502,12 +530,11 @@ def gsea(
         outdir=directory,
         **kwargs,
     )
-    res.res2d.index.name = "term"
     # Full column list as of gseapy 1.1.2:
     # Name, Term, ES, NES, NOM p-val, FDR q-val, FWER p-val, Tag %, Gene %,
     # Lead_genes
     rv = res.res2d.reset_index()
-    rv["name"] = rv["term"].map(curie_to_name)
+    rv["Name"] = rv["Term"].map(curie_to_name)
     rv["matched_size"] = rv['Tag %'].apply(lambda s: s.split('/')[0])
     rv["geneset_size"] = rv['Tag %'].apply(lambda s: s.split('/')[1])
     rv = rv[GSEA_RETURN_COLUMNS]
