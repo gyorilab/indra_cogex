@@ -309,7 +309,8 @@ def _render_evidence_counts(
         pa_hashes = remove_curated_pa_hashes(pa_hashes, curations=curations)
         total_uncurated_statements = len(pa_hashes)
         logger.debug(
-            f"filtered to {total_uncurated_statements:,} statements ({len(pa_hashes) - total_uncurated_statements:,} were removed)"
+            f"filtered to {total_uncurated_statements:,} statements ({len(pa_hashes) - total_uncurated_statements:,} "
+            f"were removed)"
         )
     pa_hashes = pa_hashes[: proxies.limit]
 
@@ -610,13 +611,14 @@ def paper():
 
 
 def _curate_paper(
-        prefix: str,
-        identifier: str,
-        filter_curated: bool = True,
-        curations: Optional[List[Mapping[str, Any]]] = None,
+    prefix: str,
+    identifier: str,
+    filter_curated: bool = True,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+    include_db_evidence: bool = False,
 ) -> Response:
     stmts, evidence_counts = get_stmts_for_paper(
-        (prefix, identifier), return_evidence_counts=True
+        (prefix, identifier), return_evidence_counts=True, include_db_evidence=include_db_evidence
     )
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -637,6 +639,7 @@ def _curate_paper(
         prefix=prefix,
         identifier=identifier,
         filter_curated=filter_curated,
+        include_db_evidence=include_db_evidence,
     )
 
 
