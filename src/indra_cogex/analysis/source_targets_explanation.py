@@ -97,8 +97,8 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     client: autoclient
     source_ns: str
         Ids entered are HGNC ids
-    target_protiens: list
-        Optional parameter to enter target proteins, defualt is none
+    target_proteins: list
+        Optional parameter to enter target proteins, default is none
 
     Returns
     -------
@@ -109,7 +109,7 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
         Contains INDRA relationships for source proteins filtered by
         target_proteins
     """
-    # Get indra_rel objects for protiens that have a direct INDRA relationship
+    # Get indra_rel objects for proteins that have a direct INDRA relationship
     # with the source protein
     res = client.get_target_relations(
         source=(source_ns, source_id),
@@ -225,7 +225,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     return stmt_html_list
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
-    """Find shared pathways between list of target genes and source protien
+    """Find shared pathways between list of target genes and source protein
 
     Parameters
     ----------
@@ -236,7 +236,7 @@ def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
 
     Returns
     -------
-    shared_pathways_list : list
+    shared_pathways_list : pd.DataFrame
         Nested list of Relation objects describing the pathways shared for
         a given pair of genes.
     """
@@ -423,6 +423,8 @@ def shared_goterms_between_gene_sets(source_go_terms, discrete_result):
     ----------
     source_go_terms : list
         GO terms for the source proteins
+    discrete_result : dict
+        Dictionary of gene enrichment results
 
     Returns
     -------
@@ -477,17 +479,17 @@ def combine_target_gene_pathways(reactome_filename, wiki_filename):
 
 def graph_boxplots(shared_go_df,shared_entities, filename):
     """ This method creates boxplots to visualize p and q values for
-        shared complexes/GO terms and bioentiies
+        shared complexes/GO terms and bioentities
 
     Parameters
     ----------
-    shared_complexes_df : pd.DataFrame
+    shared_go_df : pd.DataFrame
         Contains shared bioentities that have the same go terms
         between the GO terms provided from the gene analysis and GO terms
         associated with source protein.
 
     shared_entities : pd.DataFrame
-        The filtered the indra_upstream_df using the shared_protiens list
+        The filtered the indra_upstream_df using the shared_proteins list
         (you can pick whether you want to filter the indra_upstream_df or
         protein_df which contains all bioentities that source protein has a
         direct INDRA relationship with).
@@ -528,7 +530,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     ----------
     output_path : str
         Path where output files such as visualizations and CSVs will be saved.
-    client : object
+    client : Neo4jClient
         The client object used to handle database connections or API interactions.
     source_hgnc_id : str
         The HGNC id for the source protein
