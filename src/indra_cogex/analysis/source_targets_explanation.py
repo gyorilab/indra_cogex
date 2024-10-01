@@ -407,6 +407,7 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, discrete_resul
         shared_entities.reset_index(inplace=True)
     # if there are no shared proteins
     else:
+        shared_entities = None
         logger.info("There are no shared upstream bioentities between the "
                     "targets and the source")
 
