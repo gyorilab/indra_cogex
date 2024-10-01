@@ -271,8 +271,8 @@ def shared_enriched_pathways(source_hgnc_id, discrete_result):
     None.
 
     """
-    reactome_df = discrete_result["reactome_results"]
-    wikipathways_df = discrete_result["wikipathways_results"]
+    reactome_df = discrete_result["reactome"]
+    wikipathways_df = discrete_result["wikipathways"]
     shared_pathways_df = pd.concat([reactome_df, wikipathways_df])
 
     source_pathways = get_pathways_for_gene(("HGNC",source_hgnc_id))
@@ -392,7 +392,7 @@ def shared_upstream_bioentities_from_targets(stmts_by_protein_df, discrete_resul
         direct INDRA relationship with)
     """
     # load csv into dataframe
-    indra_upstream_df = discrete_result["indra_upstream_results"]
+    indra_upstream_df = discrete_result["indra-upstream"]
 
     # list that are shared entities between indra_upstream for gene set and
     # proteins that have a direct INDRA relationship with target protein
@@ -435,7 +435,7 @@ fstmt        Contains shared bioentities that have the same go terms
     """
 
     # loads data fron csv file
-    go_terms_df = discrete_result["go_results"]
+    go_terms_df = discrete_result["go"]
 
     # gets list of shared go terms between protein list and target protien
     shared_go = list((set(go_terms_df["curie"].values).
