@@ -8,6 +8,7 @@ import flask
 from flask import Response, abort, redirect, render_template, url_for
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
+from flask import request
 from indra.statements import Statement
 from wtforms import BooleanField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
@@ -66,7 +67,7 @@ class GeneOntologyForm(FlaskForm):
         "Gene Ontology Term",
         validators=[DataRequired()],
         description="Choose a gene ontology term to curate (e.g., "
-        '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
+                    '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
     submit = SubmitField("Submit")
 
@@ -76,16 +77,19 @@ def gene_ontology():
     """A home page for GO curation."""
     form = GeneOntologyForm()
     if form.is_submitted():
-        return redirect(url_for(f".{curate_go.__name__}", term=form.term.data))
+        include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
+        return redirect(url_for(f".{curate_go.__name__}", term=form.term.data, include_db_evidence=include_db_evidence))
     return render_template("curation/go_form.html", form=form)
 
 
 @curator_blueprint.route("/go/<term>", methods=["GET"])
 @jwt_required(optional=True)
 def curate_go(term: str):
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     stmts = indra_subnetwork_go(
         go_term=("GO", term),
         client=client,
+        include_db_evidence=include_db_evidence,
     )
     return _enrich_render_statements(
         stmts,
@@ -97,15 +101,17 @@ def curate_go(term: str):
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
         """,
+        include_db_evidence=include_db_evidence,
     )
 
 
 def _enrich_render_statements(
-    stmts: List[Statement],
-    title: str,
-    description: str,
-    curations: Optional[List[Mapping[str, Any]]] = None,
-    no_stmts_message: Optional[str] = None,
+        stmts: List[Statement],
+        title: str,
+        description: str,
+        curations: Optional[List[Mapping[str, Any]]] = None,
+        no_stmts_message: Optional[str] = None,
+        include_db_evidence: bool = False,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -119,6 +125,7 @@ def _enrich_render_statements(
         [stmt.get_hash() for stmt in stmts],
         evidence_limit=10,
         return_evidence_counts=True,
+        include_db_evidence=include_db_evidence,
     )
     evidence_lookup_time = time.time() - start_time
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
@@ -129,7 +136,8 @@ def _enrich_render_statements(
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
         description=description,
-        no_stmts_message=no_stmts_message
+        no_stmts_message=no_stmts_message,
+        include_db_evidence=include_db_evidence
         # no limit necessary here since it was already applied above
     )
 
@@ -166,8 +174,9 @@ MESH_CURATION_SUBSETS = {
 @jwt_required(optional=True)
 def curate_mesh(term: str, subset: Optional[str] = None):
     """Curate all statements for papers with a given MeSH annotation."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     if subset is None:
-        return _curate_mesh_helper(term=term)
+        return _curate_mesh_helper(term=term, include_db_evidence=include_db_evidence)
     elif subset not in MESH_CURATION_SUBSETS:
         return abort(
             400,
@@ -176,16 +185,20 @@ def curate_mesh(term: str, subset: Optional[str] = None):
     else:
         subject_prefix, object_prefix = MESH_CURATION_SUBSETS[subset]
         return _curate_mesh_helper(
-            term=term, subject_prefix=subject_prefix, object_prefix=object_prefix
+            term=term,
+            subject_prefix=subject_prefix,
+            object_prefix=object_prefix,
+            include_db_evidence=include_db_evidence
         )
 
 
 def _curate_mesh_helper(
-    term: str,
-    subject_prefix: Optional[str] = None,
-    object_prefix: Optional[str] = None,
-    filter_curated: bool = True,
-    curations: Optional[List[Mapping[str, Any]]] = None,
+        term: str,
+        subject_prefix: Optional[str] = None,
+        object_prefix: Optional[str] = None,
+        filter_curated: bool = True,
+        curations: Optional[List[Mapping[str, Any]]] = None,
+        include_db_evidence: bool = False
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
@@ -202,6 +215,7 @@ def _curate_mesh_helper(
         evidence_limit=10,
         subject_prefix=subject_prefix,
         object_prefix=object_prefix,
+        include_db_evidence=include_db_evidence
     )
     evidence_lookup_time = time.time() - start_time
 
@@ -223,17 +237,21 @@ def _curate_mesh_helper(
             been curated are filtered out such that only novel, potentially
             interesting statements are displayed. {EVIDENCE_TEXT}
         """,
+        include_db_evidence=include_db_evidence
     )
 
 
 def _render_func(
-    func: Callable[..., Mapping[int, Mapping[str, int]]],
-    *,
-    title: str,
-    description: str,
-    func_kwargs: Optional[Mapping[str, Any]] = None,
-    **kwargs,
+        func: Callable[..., Mapping[int, Mapping[str, int]]],
+        *,
+        title: str,
+        description: str,
+        func_kwargs: Optional[Mapping[str, Any]] = None,
+        **kwargs,
 ) -> Response:
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
+    func_kwargs = func_kwargs or {}
+    func_kwargs['include_db_evidence'] = include_db_evidence
     """Render the evidence counts generated by a function call.
 
     Parameters
@@ -267,15 +285,17 @@ def _render_func(
         stmt_hash_to_source_counts,
         title=title,
         description=description,
+        include_db_evidence=include_db_evidence,
         **kwargs,
     )
 
 
 def _render_evidence_counts(
-    stmt_hash_to_source_counts: Mapping[int, Mapping[str, int]],
-    title: str,
-    filter_curated: bool = True,
-    description: Optional[str] = None,
+        stmt_hash_to_source_counts: Mapping[int, Mapping[str, int]],
+        title: str,
+        filter_curated: bool = True,
+        description: Optional[str] = None,
+        include_db_evidence: bool = False,
 ) -> Response:
     curations = curation_cache.get_curation_cache()
     logger.debug(f"loaded {len(curations):,} curations")
@@ -294,7 +314,8 @@ def _render_evidence_counts(
     pa_hashes = pa_hashes[: proxies.limit]
 
     start_time = time.time()
-    stmts = get_stmts_for_stmt_hashes(pa_hashes, evidence_limit=10, client=client)
+    stmts = get_stmts_for_stmt_hashes(pa_hashes, evidence_limit=10, client=client,
+                                      include_db_evidence=include_db_evidence)
     evidence_lookup_time = time.time() - start_time
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
 
@@ -306,6 +327,7 @@ def _render_evidence_counts(
         curations=curations,
         description=description,
         source_counts_dict=stmt_hash_to_source_counts,
+        include_db_evidence=include_db_evidence,
         # no limit necessary here since it was already applied above
     )
 
@@ -314,6 +336,7 @@ def _render_evidence_counts(
 @jwt_required(optional=True)
 def ppi():
     """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_ppi_source_counts,
         title="PPI Curator",
@@ -325,6 +348,7 @@ def ppi():
             {_database_text("BioGRID, SIGNOR, and Pathway Commons")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -332,6 +356,7 @@ def ppi():
 @jwt_required(optional=True)
 def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_goa_source_counts,
         title="GO Annotation Curator",
@@ -344,6 +369,7 @@ def goa():
             potentially interesting statements are displayed. 
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -366,6 +392,7 @@ def conflicts():
 @jwt_required(optional=True)
 def tf():
     """Curate transcription factors."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_tf_statements,
         title="Transcription Factor Curator",
@@ -376,6 +403,7 @@ def tf():
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -383,6 +411,7 @@ def tf():
 @jwt_required(optional=True)
 def kinase():
     """Curate kinases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_kinase_statements,
         title="Kinase Curator",
@@ -393,6 +422,7 @@ def kinase():
             {_database_text("PhosphoSitePlus")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -400,6 +430,7 @@ def kinase():
 @jwt_required(optional=True)
 def phosphatase():
     """Curate phosphatases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_phosphatase_statements,
         title="Phosphatase Curator",
@@ -410,6 +441,7 @@ def phosphatase():
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -417,6 +449,7 @@ def phosphatase():
 @jwt_required(optional=True)
 def deubiquitinase():
     """Curate deubiquitinases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_dub_statements,
         title="Deubiquitinase Curator",
@@ -427,6 +460,7 @@ def deubiquitinase():
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -434,6 +468,7 @@ def deubiquitinase():
 @jwt_required(optional=True)
 def mirna():
     """Curate miRNAs."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     return _render_func(
         get_mirna_statements,
         title="miRNA Curator",
@@ -444,6 +479,7 @@ def mirna():
             {_database_text("miRTarBase")}
             {EVIDENCE_TEXT}
         """,
+        func_kwargs={'include_db_evidence': include_db_evidence},
     )
 
 
@@ -452,10 +488,11 @@ def mirna():
 @jwt_required(optional=True)
 def disprot(object_prefix: Optional[str] = None):
     """Curate intrensically disordered proteins."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     assert object_prefix in {None, "hgnc", "go", "chebi"}
     return _render_func(
         get_disprot_statements,
-        func_kwargs=dict(object_prefix=object_prefix),
+        func_kwargs=dict(object_prefix=object_prefix, include_db_evidence=include_db_evidence),
         title="DisProt Curator",
         description=f"""\
             The DisProt curator identifies INDRA statements using INDRA
@@ -476,14 +513,17 @@ def modulator():
 @jwt_required(optional=True)
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     if prefix in {"pubmed", "pmc", "doi", "trid"}:
-        return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated)
+        return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated,
+                             include_db_evidence=include_db_evidence)
     if prefix in {"hgnc"}:
         return _render_func(
             get_entity_source_counts,
             func_kwargs=dict(
                 prefix=prefix,
                 identifier=identifier,
+                include_db_evidence=include_db_evidence,
             ),
             title="Entity Curator",
             description=f"""\
@@ -570,10 +610,10 @@ def paper():
 
 
 def _curate_paper(
-    prefix: str,
-    identifier: str,
-    filter_curated: bool = True,
-    curations: Optional[List[Mapping[str, Any]]] = None,
+        prefix: str,
+        identifier: str,
+        filter_curated: bool = True,
+        curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> Response:
     stmts, evidence_counts = get_stmts_for_paper(
         (prefix, identifier), return_evidence_counts=True
@@ -642,7 +682,8 @@ def subnetwork():
         for prefix, identifier in nodes
     )
 
-    stmts = indra_subnetwork(nodes=nodes, client=client)
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
+    stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
     return _enrich_render_statements(
         stmts,
         title="Subnetwork Curator",
@@ -655,6 +696,7 @@ def subnetwork():
         {nodes_html}
         """,
         no_stmts_message="No statements found for the given nodes.",
+        include_db_evidence=include_db_evidence
     )
 
 
@@ -662,19 +704,21 @@ def subnetwork():
 @jwt_required(optional=True)
 def curate_statement(stmt_hash: int):
     """Curate all evidences for the statement."""
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     start_time = time.time()
     enriched_stmts, evidence_counts = get_stmts_for_stmt_hashes(
         [stmt_hash],
         evidence_limit=10,
         return_evidence_counts=True,
+        include_db_evidence=include_db_evidence
     )
     evidence_lookup_time = time.time() - start_time
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
-    # TODO either auto-expand or use a slightly different template
     return render_statements(
         enriched_stmts,
         title=f"Statement Curator: {stmt_hash}",
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         description="Curate evidences from a single statement",
+        include_db_evidence=include_db_evidence
     )
