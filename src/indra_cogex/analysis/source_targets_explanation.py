@@ -546,9 +546,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
     # Get INDRA statements for protiens that have direct INDRA rel
     stmts_html_list = assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
     
-    hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id)
-                for hgnc_id in target_hgnc_ids}
-    discrete_result = discrete_analysis(hgnc_map, client=client)
+    discrete_result = discrete_analysis(target_hgnc_ids, client=client)
     for k, v in discrete_result.items():
         # The values here are data frames
         v.to_csv(os.path.join(output_path, f"{k}_discrete.csv"))
