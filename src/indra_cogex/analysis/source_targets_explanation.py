@@ -15,6 +15,7 @@ import os
 import json
 import logging
 from collections import defaultdict
+import markupsafe
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -201,7 +202,7 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     stmt_html_list: list
         List of filenames for INDRA html pages
     """
-    #curs = indra_db_rest.get_curations()
+    curs = indra_db_rest.get_curations()
     
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
@@ -212,9 +213,9 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
     stmt_html_list = []
     for name, stmts in stmts_by_protein.items():
         # Use HtmlAssembler to get html pages of INDRA statements for each gene
-        #stmts = ac.filter_by_curation(stmts, curs)
-        #if not stmts:
-            #continue
+        stmts = ac.filter_by_curation(stmts, curs)
+        if not stmts:
+            continue
         ha = HtmlAssembler(stmts, title='Statements for %s' % name,
                            db_rest_url='https://db.indra.bio')
         fname = os.path.join(output_path, '%s_statements.html' % name)
@@ -425,7 +426,7 @@ def shared_goterms_between_gene_sets(source_go_terms, discrete_result):
     Returns
     -------
     shared_df: pd.DataFrame
-        Contains shared bioentities that have the same go terms
+fstmt        Contains shared bioentities that have the same go terms
         between the GO terms provided from the gene analysis and GO terms
         associated with target protein
     """
@@ -611,9 +612,14 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
         shared_go_html = shared_go_df.to_html(classes='table table-striped table-sm')
     else:
         shared_go_html = "There are no shared go terms between gene sets"
+    
+    stmt_content = []
+    for stmt_html_filename in stmts_html_list:
+        with open(stmt_html_filename, 'r') as f:
+            stmt_html_content = f.read()
+            stmt_content.append(stmt_html_content)
 
-    result = {"staments_by_protein_filtered":stmt_df_html, 
-              "indra_stmt_htmls": stmts_html_list, 
+    result = {"staments_by_protein_filtered":stmt_df_html,
               "interaction_chart":interaction_fname, 
               "indra_rel_chart": indra_rel_fname, 
               "pathways_chart":pathways_fname,
@@ -621,8 +627,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path
               "upstream_entities":upstream_entities_html,
               "shared_pathways": shared_pathways_html,
               "shared_go_terms": shared_go_html,
-              "stats_boxplot": go_graph_fname}
-
+              "stats_boxplot": go_graph_fname,
+              "indra_stmt_html_contents": [markupsafe.Markup(html) for html in stmt_content]
+              }
+    
     return result
 
 @autoclient()
