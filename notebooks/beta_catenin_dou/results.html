@@ -116,14 +116,56 @@
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -134,19 +176,25 @@
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -1090,7 +1138,7 @@
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-461bece9-bab5-4e5a-8d78-0c5627387635_group">
+        <div class="group-shown" id="tl-36475449-6c5c-43fe-9277-c5b2efeb3056_group">
 
     
 
@@ -1104,8 +1152,8 @@
       
 
               <div class="row group_heading"
-                   onclick="toggler('594f3be5-3169-4c22-a8ff-836c929177b4');"
-                   id="594f3be5-3169-4c22-a8ff-836c929177b4_heading">
+                   onclick="toggler('53c93047-d93a-425a-b012-dbb7341bd232');"
+                   id="53c93047-d93a-425a-b012-dbb7341bd232_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -1227,7 +1275,7 @@
   
                 </div>
               </div>
-              <div class="row group" id="594f3be5-3169-4c22-a8ff-836c929177b4_group">
+              <div class="row group" id="53c93047-d93a-425a-b012-dbb7341bd232_group">
 
       
 
@@ -1239,8 +1287,8 @@
 
                     <a name="-3956928808920876"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--3956928808920876' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--3956928808920876_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--3956928808920876' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--3956928808920876_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -1370,7 +1418,7 @@
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--3956928808920876_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--3956928808920876_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-3956928808920876">
@@ -39951,8 +39999,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="29618800379845708"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-29618800379845708' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-29618800379845708_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-29618800379845708' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-29618800379845708_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:9005' target='_blank'>PITX2</a>.
@@ -40052,7 +40100,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-29618800379845708_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-29618800379845708_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-1"
                              data-stmt_hash="29618800379845708">
@@ -40936,8 +40984,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="6957036990254327"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-6957036990254327' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-6957036990254327_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-6957036990254327' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-6957036990254327_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:11634' target='_blank'>TCF4</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -41037,7 +41085,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-6957036990254327_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-6957036990254327_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-2"
                              data-stmt_hash="6957036990254327">
@@ -41797,8 +41845,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="2264178095591350"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-2264178095591350' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-2264178095591350_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-2264178095591350' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-2264178095591350_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/fplx:Wnt' target='_blank'>Wnt</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -41898,7 +41946,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-2264178095591350_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-2264178095591350_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-3"
                              data-stmt_hash="2264178095591350">
@@ -42659,8 +42707,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="2692654667567618"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-2692654667567618' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-2692654667567618_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-2692654667567618' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-2692654667567618_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/fplx:TCF_LEF' target='_blank'>TCF_LEF</a>.
@@ -42760,7 +42808,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-2692654667567618_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-2692654667567618_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-4"
                              data-stmt_hash="2692654667567618">
@@ -43334,8 +43382,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="13988771661306103"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-13988771661306103' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-13988771661306103_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-13988771661306103' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-13988771661306103_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:3703' target='_blank'>FHL2</a>.
@@ -43435,7 +43483,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-13988771661306103_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-13988771661306103_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-5"
                              data-stmt_hash="13988771661306103">
@@ -44009,8 +44057,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-17608802640300192"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--17608802640300192' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--17608802640300192_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--17608802640300192' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--17608802640300192_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:11621' target='_blank'>HNF1A</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -44110,7 +44158,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--17608802640300192_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--17608802640300192_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-6"
                              data-stmt_hash="-17608802640300192">
@@ -44560,8 +44608,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-19126068635528570"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--19126068635528570' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--19126068635528570_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--19126068635528570' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--19126068635528570_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:15983' target='_blank'>WNT3A</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -44661,7 +44709,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--19126068635528570_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--19126068635528570_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-7"
                              data-stmt_hash="-19126068635528570">
@@ -44987,8 +45035,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-11822116816072987"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--11822116816072987' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--11822116816072987_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--11822116816072987' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--11822116816072987_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:14929' target='_blank'>SIRT1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -45088,7 +45136,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--11822116816072987_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--11822116816072987_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-8"
                              data-stmt_hash="-11822116816072987">
@@ -45352,8 +45400,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="24669673375422319"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-24669673375422319' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-24669673375422319_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-24669673375422319' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-24669673375422319_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:11810' target='_blank'>KLF10</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -45453,7 +45501,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-24669673375422319_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-24669673375422319_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-9"
                              data-stmt_hash="24669673375422319">
@@ -45655,8 +45703,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-31992473524411751"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--31992473524411751' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--31992473524411751_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--31992473524411751' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--31992473524411751_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:24305' target='_blank'>NCAPD2</a>.
@@ -45756,7 +45804,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--31992473524411751_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--31992473524411751_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-10"
                              data-stmt_hash="-31992473524411751">
@@ -45958,8 +46006,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="27756433940953801"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-27756433940953801' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-27756433940953801_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-27756433940953801' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-27756433940953801_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:11641' target='_blank'>TCF7L2</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -46059,7 +46107,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-27756433940953801_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-27756433940953801_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-11"
                              data-stmt_hash="27756433940953801">
@@ -46199,8 +46247,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="27318541668906003"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-27318541668906003' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-27318541668906003_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-27318541668906003' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-27318541668906003_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:4617' target='_blank'>GSK3B</a>.
@@ -46300,7 +46348,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-27318541668906003_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-27318541668906003_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-12"
                              data-stmt_hash="27318541668906003">
@@ -46440,8 +46488,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="22316626476000593"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-22316626476000593' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-22316626476000593_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-22316626476000593' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-22316626476000593_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:10472' target='_blank'>RUNX2</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -46541,7 +46589,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-22316626476000593_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-22316626476000593_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-13"
                              data-stmt_hash="22316626476000593">
@@ -46681,8 +46729,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-9589549602574229"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--9589549602574229' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9589549602574229_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--9589549602574229' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9589549602574229_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:11639' target='_blank'>TCF7</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -46782,7 +46830,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9589549602574229_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9589549602574229_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-14"
                              data-stmt_hash="-9589549602574229">
@@ -46922,8 +46970,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-34330103323056865"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--34330103323056865' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--34330103323056865_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--34330103323056865' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--34330103323056865_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:29608' target='_blank'>MTDH</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -47023,7 +47071,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--34330103323056865_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--34330103323056865_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-15"
                              data-stmt_hash="-34330103323056865">
@@ -47162,8 +47210,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-32591290229375559"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--32591290229375559' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--32591290229375559_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--32591290229375559' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--32591290229375559_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:11837' target='_blank'>TLE1</a>.
@@ -47263,7 +47311,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--32591290229375559_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--32591290229375559_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-16"
                              data-stmt_hash="-32591290229375559">
@@ -47403,8 +47451,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-31348629510864397"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--31348629510864397' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--31348629510864397_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--31348629510864397' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--31348629510864397_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:11633' target='_blank'>TCF3</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -47504,7 +47552,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--31348629510864397_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--31348629510864397_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-17"
                              data-stmt_hash="-31348629510864397">
@@ -47644,8 +47692,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-23739666623344803"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--23739666623344803' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--23739666623344803_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--23739666623344803' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--23739666623344803_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:7105' target='_blank'>MITF</a>.
@@ -47745,7 +47793,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--23739666623344803_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--23739666623344803_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-18"
                              data-stmt_hash="-23739666623344803">
@@ -47885,8 +47933,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-19243497291280737"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--19243497291280737' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--19243497291280737_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--19243497291280737' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--19243497291280737_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6770' target='_blank'>SMAD4</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -47986,7 +48034,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--19243497291280737_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--19243497291280737_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-19"
                              data-stmt_hash="-19243497291280737">
@@ -48126,8 +48174,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-14661076775394056"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--14661076775394056' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--14661076775394056_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--14661076775394056' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--14661076775394056_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:12679' target='_blank'>VDR</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -48227,7 +48275,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--14661076775394056_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--14661076775394056_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-20"
                              data-stmt_hash="-14661076775394056">
@@ -48367,8 +48415,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="16584705468148029"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-16584705468148029' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16584705468148029_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-16584705468148029' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16584705468148029_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           Phosphorylated <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -48468,7 +48516,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16584705468148029_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16584705468148029_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-21"
                              data-stmt_hash="16584705468148029">
@@ -48546,8 +48594,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="9526097030816088"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-9526097030816088' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-9526097030816088_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-9526097030816088' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-9526097030816088_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/fplx:GST' target='_blank'>GST</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -48647,7 +48695,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-9526097030816088_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-9526097030816088_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-22"
                              data-stmt_hash="9526097030816088">
@@ -48725,8 +48773,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="480162846331168"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-480162846331168' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-480162846331168_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-480162846331168' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-480162846331168_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:15788' target='_blank'>LGALS12</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -48826,7 +48874,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-480162846331168_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-480162846331168_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-23"
                              data-stmt_hash="480162846331168">
@@ -48904,8 +48952,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="4496376453965882"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-4496376453965882' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-4496376453965882_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-4496376453965882' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-4496376453965882_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:11769' target='_blank'>TGFB3</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -49005,7 +49053,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-4496376453965882_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-4496376453965882_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-24"
                              data-stmt_hash="4496376453965882">
@@ -49083,8 +49131,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="3396709214872261"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-3396709214872261' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-3396709214872261_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-3396709214872261' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-3396709214872261_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:7981' target='_blank'>NR4A2</a>.
@@ -49184,7 +49232,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-3396709214872261_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-3396709214872261_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-25"
                              data-stmt_hash="3396709214872261">
@@ -49262,8 +49310,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="31768936644658663"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-31768936644658663' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-31768936644658663_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-31768936644658663' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-31768936644658663_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:4141' target='_blank'>GAPDH</a>.
@@ -49363,7 +49411,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-31768936644658663_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-31768936644658663_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-26"
                              data-stmt_hash="31768936644658663">
@@ -49441,8 +49489,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="28646030935457285"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-28646030935457285' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-28646030935457285_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-28646030935457285' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-28646030935457285_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/fplx:Cohesin' target='_blank'>Cohesin</a>.
@@ -49542,7 +49590,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-28646030935457285_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-28646030935457285_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-27"
                              data-stmt_hash="28646030935457285">
@@ -49620,8 +49668,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="25838858521969308"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-25838858521969308' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-25838858521969308_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-25838858521969308' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-25838858521969308_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:9580' target='_blank'>PSTPIP1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -49721,7 +49769,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-25838858521969308_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-25838858521969308_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-28"
                              data-stmt_hash="25838858521969308">
@@ -49799,8 +49847,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="21982697371175926"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-21982697371175926' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-21982697371175926_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-21982697371175926' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-21982697371175926_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:3373' target='_blank'>EP300</a>.
@@ -49900,7 +49948,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-21982697371175926_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-21982697371175926_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-29"
                              data-stmt_hash="21982697371175926">
@@ -49978,8 +50026,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="21298447956750950"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-21298447956750950' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-21298447956750950_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-21298447956750950' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-21298447956750950_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:5024' target='_blank'>HNF4A</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -50079,7 +50127,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-21298447956750950_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-21298447956750950_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-30"
                              data-stmt_hash="21298447956750950">
@@ -50157,8 +50205,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="19737899353137844"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-19737899353137844' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-19737899353137844_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-19737899353137844' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-19737899353137844_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/fplx:SMAD2_3' target='_blank'>SMAD2_3</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -50258,7 +50306,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-19737899353137844_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-19737899353137844_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-31"
                              data-stmt_hash="19737899353137844">
@@ -50336,8 +50384,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="16751790197568473"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-16751790197568473' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16751790197568473_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-16751790197568473' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16751790197568473_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:17635' target='_blank'>CD274</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -50437,7 +50485,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16751790197568473_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16751790197568473_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-32"
                              data-stmt_hash="16751790197568473">
@@ -50515,8 +50563,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="16737116795661387"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-16737116795661387' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16737116795661387_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-16737116795661387' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16737116795661387_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:11905' target='_blank'>TNFRSF10B</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -50616,7 +50664,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-16737116795661387_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-16737116795661387_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-33"
                              data-stmt_hash="16737116795661387">
@@ -50694,8 +50742,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="15792438666115609"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-15792438666115609' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-15792438666115609_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-15792438666115609' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-15792438666115609_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/fplx:AXIN' target='_blank'>AXIN</a>.
@@ -50795,7 +50843,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-15792438666115609_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-15792438666115609_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-34"
                              data-stmt_hash="15792438666115609">
@@ -50873,8 +50921,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="15252857050938813"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-15252857050938813' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-15252857050938813_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-15252857050938813' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-15252857050938813_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:1748' target='_blank'>CDH1</a>.
@@ -50974,7 +51022,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-15252857050938813_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-15252857050938813_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-35"
                              data-stmt_hash="15252857050938813">
@@ -51053,8 +51101,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="11961579137538770"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-11961579137538770' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-11961579137538770_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-11961579137538770' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-11961579137538770_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:583' target='_blank'>APC</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -51154,7 +51202,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-11961579137538770_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-11961579137538770_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-36"
                              data-stmt_hash="11961579137538770">
@@ -51232,8 +51280,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="11484432151305999"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-11484432151305999' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-11484432151305999_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-11484432151305999' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-11484432151305999_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:4602' target='_blank'>CXCL1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -51333,7 +51381,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-11484432151305999_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-11484432151305999_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-37"
                              data-stmt_hash="11484432151305999">
@@ -51411,8 +51459,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="10029578924294300"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4-10029578924294300' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-10029578924294300_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232-10029578924294300' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-10029578924294300_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:18241' target='_blank'>PRMT6</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -51512,7 +51560,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4-10029578924294300_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232-10029578924294300_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-38"
                              data-stmt_hash="10029578924294300">
@@ -51590,8 +51638,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-9484087371380806"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--9484087371380806' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9484087371380806_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--9484087371380806' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9484087371380806_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/uniprot:P70062' target='_blank'>Tcf7l1-a</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -51691,7 +51739,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9484087371380806_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9484087371380806_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-39"
                              data-stmt_hash="-9484087371380806">
@@ -51769,8 +51817,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-9053086901454015"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--9053086901454015' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9053086901454015_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--9053086901454015' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9053086901454015_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:9801' target='_blank'>RAC1</a>.
@@ -51870,7 +51918,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--9053086901454015_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--9053086901454015_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-40"
                              data-stmt_hash="-9053086901454015">
@@ -51948,8 +51996,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-604299704594394"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--604299704594394' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--604299704594394_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--604299704594394' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--604299704594394_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:11529' target='_blank'>EPCAM</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -52049,7 +52097,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--604299704594394_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--604299704594394_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-41"
                              data-stmt_hash="-604299704594394">
@@ -52127,8 +52175,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-4096361839257048"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--4096361839257048' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--4096361839257048_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--4096361839257048' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--4096361839257048_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:644' target='_blank'>AR</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -52228,7 +52276,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--4096361839257048_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--4096361839257048_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-42"
                              data-stmt_hash="-4096361839257048">
@@ -52306,8 +52354,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-32402969844342653"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--32402969844342653' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--32402969844342653_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--32402969844342653' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--32402969844342653_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> and <a href='https://identifiers.org/hgnc:6773' target='_blank'>SMAD7</a>.
@@ -52407,7 +52455,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--32402969844342653_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--32402969844342653_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-43"
                              data-stmt_hash="-32402969844342653">
@@ -52485,8 +52533,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-29823017347952231"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--29823017347952231' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--29823017347952231_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--29823017347952231' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--29823017347952231_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6207' target='_blank'>JUP</a>.
@@ -52586,7 +52634,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--29823017347952231_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--29823017347952231_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-44"
                              data-stmt_hash="-29823017347952231">
@@ -52664,8 +52712,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-24635667139960288"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--24635667139960288' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--24635667139960288_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--24635667139960288' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--24635667139960288_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/uniprot:Q25132' target='_blank'>LHX3</a>.
@@ -52765,7 +52813,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--24635667139960288_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--24635667139960288_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-45"
                              data-stmt_hash="-24635667139960288">
@@ -52843,8 +52891,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-1945394382643553"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--1945394382643553' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--1945394382643553_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--1945394382643553' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--1945394382643553_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2908' target='_blank'>DLL1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -52944,7 +52992,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--1945394382643553_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--1945394382643553_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-46"
                              data-stmt_hash="-1945394382643553">
@@ -53022,8 +53070,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-1799841953764187"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--1799841953764187' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--1799841953764187_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--1799841953764187' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--1799841953764187_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:4912' target='_blank'>HINT1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -53123,7 +53171,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--1799841953764187_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--1799841953764187_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-47"
                              data-stmt_hash="-1799841953764187">
@@ -53201,8 +53249,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-16614276956979940"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '594f3be5-3169-4c22-a8ff-836c929177b4--16614276956979940' )"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--16614276956979940_heading">
+                         onclick="toggler( '53c93047-d93a-425a-b012-dbb7341bd232--16614276956979940' )"
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--16614276956979940_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:2892' target='_blank'>DKK2</a> and <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -53302,7 +53350,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="594f3be5-3169-4c22-a8ff-836c929177b4--16614276956979940_group">
+                         id="53c93047-d93a-425a-b012-dbb7341bd232--16614276956979940_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-48"
                              data-stmt_hash="-16614276956979940">
@@ -53390,8 +53438,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('f928967b-3df4-41ff-9422-d48ea48cb253');"
-                   id="f928967b-3df4-41ff-9422-d48ea48cb253_heading">
+                   onclick="toggler('4072138c-c677-47bd-8bce-3f97770d55ba');"
+                   id="4072138c-c677-47bd-8bce-3f97770d55ba_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -53498,7 +53546,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="f928967b-3df4-41ff-9422-d48ea48cb253_group">
+              <div class="row group" id="4072138c-c677-47bd-8bce-3f97770d55ba_group">
 
       
 
@@ -53510,8 +53558,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="3476285540477525"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253-3476285540477525' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-3476285540477525_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba-3476285540477525' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-3476285540477525_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -53621,7 +53669,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-3476285540477525_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-3476285540477525_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-0"
                              data-stmt_hash="3476285540477525">
@@ -59899,8 +59947,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-33869334428894787"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253--33869334428894787' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--33869334428894787_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba--33869334428894787' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--33869334428894787_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           Transcriptionally active <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -60000,7 +60048,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--33869334428894787_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--33869334428894787_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-1"
                              data-stmt_hash="-33869334428894787">
@@ -60140,8 +60188,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-28168670139526755"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253--28168670139526755' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--28168670139526755_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba--28168670139526755' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--28168670139526755_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to LEF1 activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -60241,7 +60289,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--28168670139526755_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--28168670139526755_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-2"
                              data-stmt_hash="-28168670139526755">
@@ -60381,8 +60429,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="3502824333174167"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253-3502824333174167' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-3502824333174167_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba-3502824333174167' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-3502824333174167_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>-S37A activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -60482,7 +60530,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-3502824333174167_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-3502824333174167_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-3"
                              data-stmt_hash="3502824333174167">
@@ -60560,8 +60608,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="18481722808515866"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253-18481722808515866' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-18481722808515866_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba-18481722808515866' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-18481722808515866_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to PITX2 activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -60661,7 +60709,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-18481722808515866_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-18481722808515866_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-4"
                              data-stmt_hash="18481722808515866">
@@ -60739,8 +60787,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="14257305887366432"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253-14257305887366432' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-14257305887366432_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba-14257305887366432' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-14257305887366432_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to TCF4 activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -60840,7 +60888,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253-14257305887366432_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba-14257305887366432_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-5"
                              data-stmt_hash="14257305887366432">
@@ -60918,8 +60966,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-1646881445262652"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f928967b-3df4-41ff-9422-d48ea48cb253--1646881445262652' )"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--1646881445262652_heading">
+                         onclick="toggler( '4072138c-c677-47bd-8bce-3f97770d55ba--1646881445262652' )"
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--1646881445262652_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to its activates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -61019,7 +61067,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f928967b-3df4-41ff-9422-d48ea48cb253--1646881445262652_group">
+                         id="4072138c-c677-47bd-8bce-3f97770d55ba--1646881445262652_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-6"
                              data-stmt_hash="-1646881445262652">
@@ -61107,8 +61155,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b');"
-                   id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b_heading">
+                   onclick="toggler('7ab58aa7-3eb8-4230-9a8e-7d0b19f05564');"
+                   id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -61205,7 +61253,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b_group">
+              <div class="row group" id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564_group">
 
       
 
@@ -61217,8 +61265,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="24073872996465754"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24073872996465754' )"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24073872996465754_heading">
+                         onclick="toggler( '7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24073872996465754' )"
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24073872996465754_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -61323,7 +61371,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24073872996465754_group">
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24073872996465754_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-0"
                              data-stmt_hash="24073872996465754">
@@ -62517,8 +62565,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-18122722326450403"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--18122722326450403' )"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--18122722326450403_heading">
+                         onclick="toggler( '7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--18122722326450403' )"
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--18122722326450403_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           Modified <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -62618,7 +62666,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--18122722326450403_group">
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--18122722326450403_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-1"
                              data-stmt_hash="-18122722326450403">
@@ -62758,8 +62806,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="24305422461670616"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24305422461670616' )"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24305422461670616_heading">
+                         onclick="toggler( '7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24305422461670616' )"
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24305422461670616_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of sumoylated <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -62859,7 +62907,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-24305422461670616_group">
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-24305422461670616_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-2"
                              data-stmt_hash="24305422461670616">
@@ -62937,8 +62985,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="10214529737267247"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-10214529737267247' )"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-10214529737267247_heading">
+                         onclick="toggler( '7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-10214529737267247' )"
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-10214529737267247_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to LEF1 increases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -63038,7 +63086,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b-10214529737267247_group">
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564-10214529737267247_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-3"
                              data-stmt_hash="10214529737267247">
@@ -63116,8 +63164,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-20562209741866189"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--20562209741866189' )"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--20562209741866189_heading">
+                         onclick="toggler( '7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--20562209741866189' )"
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--20562209741866189_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to PITX2 increases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -63217,7 +63265,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2d5a5634-9c5c-4f94-aa70-e6ae3ad42d9b--20562209741866189_group">
+                         id="7ab58aa7-3eb8-4230-9a8e-7d0b19f05564--20562209741866189_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-4"
                              data-stmt_hash="-20562209741866189">
@@ -63305,8 +63353,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('4d105bea-f764-4e07-902a-57e223900eb5');"
-                   id="4d105bea-f764-4e07-902a-57e223900eb5_heading">
+                   onclick="toggler('d3121b18-985f-4085-8283-997c13f08d29');"
+                   id="d3121b18-985f-4085-8283-997c13f08d29_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> inhibits <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -63408,7 +63456,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="4d105bea-f764-4e07-902a-57e223900eb5_group">
+              <div class="row group" id="d3121b18-985f-4085-8283-997c13f08d29_group">
 
       
 
@@ -63420,8 +63468,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-28871778998254830"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '4d105bea-f764-4e07-902a-57e223900eb5--28871778998254830' )"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5--28871778998254830_heading">
+                         onclick="toggler( 'd3121b18-985f-4085-8283-997c13f08d29--28871778998254830' )"
+                         id="d3121b18-985f-4085-8283-997c13f08d29--28871778998254830_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> inhibits <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -63531,7 +63579,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5--28871778998254830_group">
+                         id="d3121b18-985f-4085-8283-997c13f08d29--28871778998254830_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-3-0"
                              data-stmt_hash="-28871778998254830">
@@ -64291,8 +64339,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="33550122620305779"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '4d105bea-f764-4e07-902a-57e223900eb5-33550122620305779' )"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5-33550122620305779_heading">
+                         onclick="toggler( 'd3121b18-985f-4085-8283-997c13f08d29-33550122620305779' )"
+                         id="d3121b18-985f-4085-8283-997c13f08d29-33550122620305779_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to TOB1 inhibits <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -64392,7 +64440,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5-33550122620305779_group">
+                         id="d3121b18-985f-4085-8283-997c13f08d29-33550122620305779_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-3-1"
                              data-stmt_hash="33550122620305779">
@@ -64470,8 +64518,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-30764479391051259"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '4d105bea-f764-4e07-902a-57e223900eb5--30764479391051259' )"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5--30764479391051259_heading">
+                         onclick="toggler( 'd3121b18-985f-4085-8283-997c13f08d29--30764479391051259' )"
+                         id="d3121b18-985f-4085-8283-997c13f08d29--30764479391051259_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> bound to LEF1 inhibits <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -64571,7 +64619,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="4d105bea-f764-4e07-902a-57e223900eb5--30764479391051259_group">
+                         id="d3121b18-985f-4085-8283-997c13f08d29--30764479391051259_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-3-2"
                              data-stmt_hash="-30764479391051259">
@@ -64659,8 +64707,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('77e96123-e25b-4ead-9ae1-7917396eb1cd');"
-                   id="77e96123-e25b-4ead-9ae1-7917396eb1cd_heading">
+                   onclick="toggler('7db4cbcb-9ac6-4e76-a779-6169b770d398');"
+                   id="7db4cbcb-9ac6-4e76-a779-6169b770d398_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -64752,7 +64800,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="77e96123-e25b-4ead-9ae1-7917396eb1cd_group">
+              <div class="row group" id="7db4cbcb-9ac6-4e76-a779-6169b770d398_group">
 
       
 
@@ -64764,8 +64812,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="35939315667740067"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '77e96123-e25b-4ead-9ae1-7917396eb1cd-35939315667740067' )"
-                         id="77e96123-e25b-4ead-9ae1-7917396eb1cd-35939315667740067_heading">
+                         onclick="toggler( '7db4cbcb-9ac6-4e76-a779-6169b770d398-35939315667740067' )"
+                         id="7db4cbcb-9ac6-4e76-a779-6169b770d398-35939315667740067_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -64865,7 +64913,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="77e96123-e25b-4ead-9ae1-7917396eb1cd-35939315667740067_group">
+                         id="7db4cbcb-9ac6-4e76-a779-6169b770d398-35939315667740067_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-4-0"
                              data-stmt_hash="35939315667740067">
@@ -65191,8 +65239,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-28812488204681615"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '77e96123-e25b-4ead-9ae1-7917396eb1cd--28812488204681615' )"
-                         id="77e96123-e25b-4ead-9ae1-7917396eb1cd--28812488204681615_heading">
+                         onclick="toggler( '7db4cbcb-9ac6-4e76-a779-6169b770d398--28812488204681615' )"
+                         id="7db4cbcb-9ac6-4e76-a779-6169b770d398--28812488204681615_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           Modified <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -65292,7 +65340,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="77e96123-e25b-4ead-9ae1-7917396eb1cd--28812488204681615_group">
+                         id="7db4cbcb-9ac6-4e76-a779-6169b770d398--28812488204681615_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-4-1"
                              data-stmt_hash="-28812488204681615">
@@ -65380,8 +65428,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('f9cbebd4-26d7-421f-956b-2c9009239031');"
-                   id="f9cbebd4-26d7-421f-956b-2c9009239031_heading">
+                   onclick="toggler('a1db7b97-7f63-44cd-8a14-298f066edc7e');"
+                   id="a1db7b97-7f63-44cd-8a14-298f066edc7e_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> acetylates <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.</h5>
                 </div>
@@ -65473,7 +65521,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="f9cbebd4-26d7-421f-956b-2c9009239031_group">
+              <div class="row group" id="a1db7b97-7f63-44cd-8a14-298f066edc7e_group">
 
       
 
@@ -65485,8 +65533,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="18687563873101264"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f9cbebd4-26d7-421f-956b-2c9009239031-18687563873101264' )"
-                         id="f9cbebd4-26d7-421f-956b-2c9009239031-18687563873101264_heading">
+                         onclick="toggler( 'a1db7b97-7f63-44cd-8a14-298f066edc7e-18687563873101264' )"
+                         id="a1db7b97-7f63-44cd-8a14-298f066edc7e-18687563873101264_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> leads to the acetylation of <a href='https://identifiers.org/hgnc:6551' target='_blank'>LEF1</a>.
@@ -65586,7 +65634,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f9cbebd4-26d7-421f-956b-2c9009239031-18687563873101264_group">
+                         id="a1db7b97-7f63-44cd-8a14-298f066edc7e-18687563873101264_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-5-0"
                              data-stmt_hash="18687563873101264">
@@ -65746,14 +65794,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -65764,19 +65854,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -66720,7 +66816,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-802cb5b0-5357-4372-9273-8b804981321a_group">
+        <div class="group-shown" id="tl-e093be93-9508-422c-a9e7-275c41b24616_group">
 
     
 
@@ -66733,7 +66829,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="c67d0cb8-ee24-4561-b432-56d49fa6b9b5_group">
+              <div class="row group-shown" id="aa2ebe13-906c-449b-bd5e-1328e897f154_group">
 
       
 
@@ -66745,8 +66841,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="16789706344284407"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'c67d0cb8-ee24-4561-b432-56d49fa6b9b5-16789706344284407' )"
-                         id="c67d0cb8-ee24-4561-b432-56d49fa6b9b5-16789706344284407_heading">
+                         onclick="toggler( 'aa2ebe13-906c-449b-bd5e-1328e897f154-16789706344284407' )"
+                         id="aa2ebe13-906c-449b-bd5e-1328e897f154-16789706344284407_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:3559' target='_blank'>FABP4</a>.
@@ -66846,7 +66942,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="c67d0cb8-ee24-4561-b432-56d49fa6b9b5-16789706344284407_group">
+                         id="aa2ebe13-906c-449b-bd5e-1328e897f154-16789706344284407_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="16789706344284407">
@@ -67006,14 +67102,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -67024,19 +67162,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -67980,7 +68124,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-1c128d6d-fa27-45c7-a605-eaf9339282a2_group">
+        <div class="group-shown" id="tl-8b17116c-000e-4cfa-b482-9097bdbc4e01_group">
 
     
 
@@ -67994,8 +68138,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('44b8ea90-76e7-4762-a562-87c944529628');"
-                   id="44b8ea90-76e7-4762-a562-87c944529628_heading">
+                   onclick="toggler('dc21a9c1-1151-4e27-9c36-bbcab8685ed5');"
+                   id="dc21a9c1-1151-4e27-9c36-bbcab8685ed5_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
                 </div>
@@ -68087,7 +68231,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="44b8ea90-76e7-4762-a562-87c944529628_group">
+              <div class="row group" id="dc21a9c1-1151-4e27-9c36-bbcab8685ed5_group">
 
       
 
@@ -68099,8 +68243,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="33728523169869412"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '44b8ea90-76e7-4762-a562-87c944529628-33728523169869412' )"
-                         id="44b8ea90-76e7-4762-a562-87c944529628-33728523169869412_heading">
+                         onclick="toggler( 'dc21a9c1-1151-4e27-9c36-bbcab8685ed5-33728523169869412' )"
+                         id="dc21a9c1-1151-4e27-9c36-bbcab8685ed5-33728523169869412_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
@@ -68200,7 +68344,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="44b8ea90-76e7-4762-a562-87c944529628-33728523169869412_group">
+                         id="dc21a9c1-1151-4e27-9c36-bbcab8685ed5-33728523169869412_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="33728523169869412">
@@ -68660,8 +68804,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('e382c4a7-7515-496e-9810-130b8977afa5');"
-                   id="e382c4a7-7515-496e-9810-130b8977afa5_heading">
+                   onclick="toggler('d683e468-9e2c-4bfc-be49-bfdbd85a565f');"
+                   id="d683e468-9e2c-4bfc-be49-bfdbd85a565f_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
                 </div>
@@ -68758,7 +68902,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="e382c4a7-7515-496e-9810-130b8977afa5_group">
+              <div class="row group" id="d683e468-9e2c-4bfc-be49-bfdbd85a565f_group">
 
       
 
@@ -68770,8 +68914,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="33347782181673413"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'e382c4a7-7515-496e-9810-130b8977afa5-33347782181673413' )"
-                         id="e382c4a7-7515-496e-9810-130b8977afa5-33347782181673413_heading">
+                         onclick="toggler( 'd683e468-9e2c-4bfc-be49-bfdbd85a565f-33347782181673413' )"
+                         id="d683e468-9e2c-4bfc-be49-bfdbd85a565f-33347782181673413_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -68876,7 +69020,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="e382c4a7-7515-496e-9810-130b8977afa5-33347782181673413_group">
+                         id="d683e468-9e2c-4bfc-be49-bfdbd85a565f-33347782181673413_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-0"
                              data-stmt_hash="33347782181673413">
@@ -69150,8 +69294,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('0511e6ea-1a75-4b5b-8957-7c3ab37294c3');"
-                   id="0511e6ea-1a75-4b5b-8957-7c3ab37294c3_heading">
+                   onclick="toggler('968f0435-9946-413c-97df-f08a4e2d28ea');"
+                   id="968f0435-9946-413c-97df-f08a4e2d28ea_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
                 </div>
@@ -69248,7 +69392,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="0511e6ea-1a75-4b5b-8957-7c3ab37294c3_group">
+              <div class="row group" id="968f0435-9946-413c-97df-f08a4e2d28ea_group">
 
       
 
@@ -69260,8 +69404,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-32358899428670312"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '0511e6ea-1a75-4b5b-8957-7c3ab37294c3--32358899428670312' )"
-                         id="0511e6ea-1a75-4b5b-8957-7c3ab37294c3--32358899428670312_heading">
+                         onclick="toggler( '968f0435-9946-413c-97df-f08a4e2d28ea--32358899428670312' )"
+                         id="968f0435-9946-413c-97df-f08a4e2d28ea--32358899428670312_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
@@ -69366,7 +69510,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="0511e6ea-1a75-4b5b-8957-7c3ab37294c3--32358899428670312_group">
+                         id="968f0435-9946-413c-97df-f08a4e2d28ea--32358899428670312_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-0"
                              data-stmt_hash="-32358899428670312">
@@ -69516,8 +69660,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('f54c619d-7826-4510-aefc-c31b6fb1e929');"
-                   id="f54c619d-7826-4510-aefc-c31b6fb1e929_heading">
+                   onclick="toggler('8e794050-44ec-4794-9c8b-b56f2a7f42a2');"
+                   id="8e794050-44ec-4794-9c8b-b56f2a7f42a2_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
                 </div>
@@ -69604,7 +69748,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="f54c619d-7826-4510-aefc-c31b6fb1e929_group">
+              <div class="row group" id="8e794050-44ec-4794-9c8b-b56f2a7f42a2_group">
 
       
 
@@ -69616,8 +69760,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="34747166071998815"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f54c619d-7826-4510-aefc-c31b6fb1e929-34747166071998815' )"
-                         id="f54c619d-7826-4510-aefc-c31b6fb1e929-34747166071998815_heading">
+                         onclick="toggler( '8e794050-44ec-4794-9c8b-b56f2a7f42a2-34747166071998815' )"
+                         id="8e794050-44ec-4794-9c8b-b56f2a7f42a2-34747166071998815_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
@@ -69712,7 +69856,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f54c619d-7826-4510-aefc-c31b6fb1e929-34747166071998815_group">
+                         id="8e794050-44ec-4794-9c8b-b56f2a7f42a2-34747166071998815_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-3-0"
                              data-stmt_hash="34747166071998815">
@@ -69810,14 +69954,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -69828,19 +70014,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -70784,7 +70976,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-c9e727a6-9ea8-477c-ab48-c5a403737202_group">
+        <div class="group-shown" id="tl-51f3029a-0d78-4ad6-86af-6079adc22112_group">
 
     
 
@@ -70798,8 +70990,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('f2320b23-0221-483f-9ef4-2e6770f291a0');"
-                   id="f2320b23-0221-483f-9ef4-2e6770f291a0_heading">
+                   onclick="toggler('9a06b110-a92d-4e10-ad3b-668be7db2340');"
+                   id="9a06b110-a92d-4e10-ad3b-668be7db2340_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.</h5>
                 </div>
@@ -70891,7 +71083,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="f2320b23-0221-483f-9ef4-2e6770f291a0_group">
+              <div class="row group" id="9a06b110-a92d-4e10-ad3b-668be7db2340_group">
 
       
 
@@ -70903,8 +71095,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-15050519431558438"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f2320b23-0221-483f-9ef4-2e6770f291a0--15050519431558438' )"
-                         id="f2320b23-0221-483f-9ef4-2e6770f291a0--15050519431558438_heading">
+                         onclick="toggler( '9a06b110-a92d-4e10-ad3b-668be7db2340--15050519431558438' )"
+                         id="9a06b110-a92d-4e10-ad3b-668be7db2340--15050519431558438_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -71004,7 +71196,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f2320b23-0221-483f-9ef4-2e6770f291a0--15050519431558438_group">
+                         id="9a06b110-a92d-4e10-ad3b-668be7db2340--15050519431558438_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-15050519431558438">
@@ -71154,8 +71346,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('3ed3cb60-5e0f-409f-891c-10626ac67513');"
-                   id="3ed3cb60-5e0f-409f-891c-10626ac67513_heading">
+                   onclick="toggler('eb0d6147-6f81-4f4b-bf63-95ae866ce1e6');"
+                   id="eb0d6147-6f81-4f4b-bf63-95ae866ce1e6_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> inhibits <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.</h5>
                 </div>
@@ -71247,7 +71439,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="3ed3cb60-5e0f-409f-891c-10626ac67513_group">
+              <div class="row group" id="eb0d6147-6f81-4f4b-bf63-95ae866ce1e6_group">
 
       
 
@@ -71259,8 +71451,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-24103415494435748"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '3ed3cb60-5e0f-409f-891c-10626ac67513--24103415494435748' )"
-                         id="3ed3cb60-5e0f-409f-891c-10626ac67513--24103415494435748_heading">
+                         onclick="toggler( 'eb0d6147-6f81-4f4b-bf63-95ae866ce1e6--24103415494435748' )"
+                         id="eb0d6147-6f81-4f4b-bf63-95ae866ce1e6--24103415494435748_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> inhibits <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.
@@ -71360,7 +71552,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="3ed3cb60-5e0f-409f-891c-10626ac67513--24103415494435748_group">
+                         id="eb0d6147-6f81-4f4b-bf63-95ae866ce1e6--24103415494435748_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-1-0"
                              data-stmt_hash="-24103415494435748">
@@ -71448,8 +71640,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('405e67b9-8d96-421e-ba40-8c6050a3176d');"
-                   id="405e67b9-8d96-421e-ba40-8c6050a3176d_heading">
+                   onclick="toggler('f1fd1359-7560-4ecd-ba4c-c27fab4b11a1');"
+                   id="f1fd1359-7560-4ecd-ba4c-c27fab4b11a1_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.</h5>
                 </div>
@@ -71541,7 +71733,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="405e67b9-8d96-421e-ba40-8c6050a3176d_group">
+              <div class="row group" id="f1fd1359-7560-4ecd-ba4c-c27fab4b11a1_group">
 
       
 
@@ -71553,8 +71745,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-6000276963605229"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '405e67b9-8d96-421e-ba40-8c6050a3176d--6000276963605229' )"
-                         id="405e67b9-8d96-421e-ba40-8c6050a3176d--6000276963605229_heading">
+                         onclick="toggler( 'f1fd1359-7560-4ecd-ba4c-c27fab4b11a1--6000276963605229' )"
+                         id="f1fd1359-7560-4ecd-ba4c-c27fab4b11a1--6000276963605229_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.
@@ -71654,7 +71846,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="405e67b9-8d96-421e-ba40-8c6050a3176d--6000276963605229_group">
+                         id="f1fd1359-7560-4ecd-ba4c-c27fab4b11a1--6000276963605229_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-2-0"
                              data-stmt_hash="-6000276963605229">
@@ -71742,8 +71934,8 @@ nuclear expression of β-catenin ( xref )."
       
 
               <div class="row group_heading"
-                   onclick="toggler('f923023a-3926-4b49-8f38-e8703054a6f7');"
-                   id="f923023a-3926-4b49-8f38-e8703054a6f7_heading">
+                   onclick="toggler('60aef1c6-2f76-461c-ac0f-bcf16412ec79');"
+                   id="60aef1c6-2f76-461c-ac0f-bcf16412ec79_heading">
                 <div class="col-auto text-left nvp">
                     <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.</h5>
                 </div>
@@ -71835,7 +72027,7 @@ nuclear expression of β-catenin ( xref )."
   
                 </div>
               </div>
-              <div class="row group" id="f923023a-3926-4b49-8f38-e8703054a6f7_group">
+              <div class="row group" id="60aef1c6-2f76-461c-ac0f-bcf16412ec79_group">
 
       
 
@@ -71847,8 +72039,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="33155590684018632"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'f923023a-3926-4b49-8f38-e8703054a6f7-33155590684018632' )"
-                         id="f923023a-3926-4b49-8f38-e8703054a6f7-33155590684018632_heading">
+                         onclick="toggler( '60aef1c6-2f76-461c-ac0f-bcf16412ec79-33155590684018632' )"
+                         id="60aef1c6-2f76-461c-ac0f-bcf16412ec79-33155590684018632_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:27106' target='_blank'>NOTUM</a>.
@@ -71948,7 +72140,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="f923023a-3926-4b49-8f38-e8703054a6f7-33155590684018632_group">
+                         id="60aef1c6-2f76-461c-ac0f-bcf16412ec79-33155590684018632_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-3-0"
                              data-stmt_hash="33155590684018632">
@@ -72108,14 +72300,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -72126,19 +72360,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -73082,7 +73322,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-2298366f-65d5-497c-9758-8ebf1fa25dc0_group">
+        <div class="group-shown" id="tl-60b32457-4fb6-46b0-85c7-a70d19c3856c_group">
 
     
 
@@ -73095,7 +73335,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="d56b8f40-c92c-4c61-9d92-ad41de029144_group">
+              <div class="row group-shown" id="2f5d75c7-5004-4e2c-bacb-f1d9b038626f_group">
 
       
 
@@ -73107,8 +73347,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-25651917648409213"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'd56b8f40-c92c-4c61-9d92-ad41de029144--25651917648409213' )"
-                         id="d56b8f40-c92c-4c61-9d92-ad41de029144--25651917648409213_heading">
+                         onclick="toggler( '2f5d75c7-5004-4e2c-bacb-f1d9b038626f--25651917648409213' )"
+                         id="2f5d75c7-5004-4e2c-bacb-f1d9b038626f--25651917648409213_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2510' target='_blank'>CTNNA2</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -73213,7 +73453,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="d56b8f40-c92c-4c61-9d92-ad41de029144--25651917648409213_group">
+                         id="2f5d75c7-5004-4e2c-bacb-f1d9b038626f--25651917648409213_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-25651917648409213">
@@ -73559,14 +73799,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -73577,19 +73859,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -74533,7 +74821,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-efd87913-dd35-44a8-b01b-ed0ca02f9086_group">
+        <div class="group-shown" id="tl-5bd3c11d-774b-44cb-9edc-8374a18c1ba0_group">
 
     
 
@@ -74546,7 +74834,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="416d9dfc-c19a-4b19-b7ff-d66d8bab7986_group">
+              <div class="row group-shown" id="fbef6169-32aa-479d-8b2f-42dc6298f589_group">
 
       
 
@@ -74558,8 +74846,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="10497479086139712"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '416d9dfc-c19a-4b19-b7ff-d66d8bab7986-10497479086139712' )"
-                         id="416d9dfc-c19a-4b19-b7ff-d66d8bab7986-10497479086139712_heading">
+                         onclick="toggler( 'fbef6169-32aa-479d-8b2f-42dc6298f589-10497479086139712' )"
+                         id="fbef6169-32aa-479d-8b2f-42dc6298f589-10497479086139712_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           Modified <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:17855' target='_blank'>GLCE</a>.
@@ -74659,7 +74947,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="416d9dfc-c19a-4b19-b7ff-d66d8bab7986-10497479086139712_group">
+                         id="fbef6169-32aa-479d-8b2f-42dc6298f589-10497479086139712_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="10497479086139712">
@@ -74798,8 +75086,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-22162766749797540"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '416d9dfc-c19a-4b19-b7ff-d66d8bab7986--22162766749797540' )"
-                         id="416d9dfc-c19a-4b19-b7ff-d66d8bab7986--22162766749797540_heading">
+                         onclick="toggler( 'fbef6169-32aa-479d-8b2f-42dc6298f589--22162766749797540' )"
+                         id="fbef6169-32aa-479d-8b2f-42dc6298f589--22162766749797540_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:17855' target='_blank'>GLCE</a>.
@@ -74894,7 +75182,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="416d9dfc-c19a-4b19-b7ff-d66d8bab7986--22162766749797540_group">
+                         id="fbef6169-32aa-479d-8b2f-42dc6298f589--22162766749797540_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-1"
                              data-stmt_hash="-22162766749797540">
@@ -74992,14 +75280,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -75010,19 +75340,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -75966,7 +76302,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-85944c43-714f-4dec-a155-7929884ea943_group">
+        <div class="group-shown" id="tl-eb0b27c6-a5ee-4929-8633-023b416ed026_group">
 
     
 
@@ -75979,7 +76315,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="870e76d7-1d77-4281-9187-6624d7677cbb_group">
+              <div class="row group-shown" id="72f030dd-6325-4900-884e-fb5a6d5ce36f_group">
 
       
 
@@ -75991,8 +76327,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-32846980916166454"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '870e76d7-1d77-4281-9187-6624d7677cbb--32846980916166454' )"
-                         id="870e76d7-1d77-4281-9187-6624d7677cbb--32846980916166454_heading">
+                         onclick="toggler( '72f030dd-6325-4900-884e-fb5a6d5ce36f--32846980916166454' )"
+                         id="72f030dd-6325-4900-884e-fb5a6d5ce36f--32846980916166454_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:17810' target='_blank'>AMOT</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -76092,7 +76428,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="870e76d7-1d77-4281-9187-6624d7677cbb--32846980916166454_group">
+                         id="72f030dd-6325-4900-884e-fb5a6d5ce36f--32846980916166454_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-32846980916166454">
@@ -76252,14 +76588,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -76270,19 +76648,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -77226,7 +77610,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-656a70e4-52c8-4705-9b71-57770d596ba8_group">
+        <div class="group-shown" id="tl-9676de00-2537-4a6d-9789-b8739330383c_group">
 
     
 
@@ -77239,7 +77623,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="cf2ad8d3-f3c7-4068-9c31-cd99ebf4c6fe_group">
+              <div class="row group-shown" id="31a7ec2e-970c-46d8-9fda-5584d8f3fd1d_group">
 
       
 
@@ -77251,8 +77635,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-7151070618082654"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( 'cf2ad8d3-f3c7-4068-9c31-cd99ebf4c6fe--7151070618082654' )"
-                         id="cf2ad8d3-f3c7-4068-9c31-cd99ebf4c6fe--7151070618082654_heading">
+                         onclick="toggler( '31a7ec2e-970c-46d8-9fda-5584d8f3fd1d--7151070618082654' )"
+                         id="31a7ec2e-970c-46d8-9fda-5584d8f3fd1d--7151070618082654_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:15718' target='_blank'>APCDD1</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
@@ -77362,7 +77746,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="cf2ad8d3-f3c7-4068-9c31-cd99ebf4c6fe--7151070618082654_group">
+                         id="31a7ec2e-970c-46d8-9fda-5584d8f3fd1d--7151070618082654_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-7151070618082654">
@@ -77770,14 +78154,56 @@ nuclear expression of β-catenin ( xref )."
           padding-right: 1em;
         }
 
-        .left {
-          width: 20em;
-          left: 0;
+        /* The footer */
+        .footer {
+            position: fixed;   /* Make sure the footer is always visible at the bottom */
+            bottom: 0;         /* Stick it to the bottom of the page */
+            left: 0;
+            right: 20em;
+            color: #606060;
+            text-align: left;
+            padding: 0.5em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            height: 65;
+        }
+
+        .footer h4, .footer p, .footer a {
+            font-size: 9pt;
+            line-height: 1.3;
+            margin: 0;  /* Reduces vertical spacing */
+        }
+
+        .side-info-block {
+            padding: 0em 8px 0em 8px;
+            margin-bottom: 0;
+        }
+
+        /* Footer links */
+        .il-nav-link {
+            display: block;
+            margin: 5px 0;
+            color: #256DC5;   /* Blue color */
+            text-decoration: none;
+        }
+
+        .il-nav-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        #about-this-project p, #about-this-project a {
+            font-size: 9pt;
+            margin-bottom: 0;
         }
 
         .right {
-          width: 20em;
-          right: 0;
+            width: 20em;                /* Sidebar width */
+            right: 0;
+            position: fixed;            /* Make sure the sidebar stays on the right */
+            top: 0;
+            bottom: 0;
+            background-color: #fff;      /* White background */
+            overflow-y: auto;            /* Allow scrolling if content overflows */
         }
 
         /* The navigation menu links */
@@ -77788,19 +78214,25 @@ nuclear expression of β-catenin ( xref )."
         }
 
         .side-info h4 {
-          font-size: 14pt;
+          font-size: 10pt;
           display: block;
           text-decoration: none;
+          margin-bottom: 0;
         }
 
-        .side-info-block {
-          padding: 1em 8px 1em 16px;
+        #sources-explanation {
+            font-size: 10pt;
         }
 
         .source-desc {
           border-radius: 4px;
-          padding: 0.25em 0.5em 0.25em 0.5em;
-          margin: 4px;
+          padding: 0em 0em;
+          font-size: 0.6em;
+          margin: 1px;
+        }
+
+        h3.bg-white {
+          font-size: 13pt;
         }
 
         
@@ -78744,7 +79176,7 @@ nuclear expression of β-catenin ( xref )."
 
     <div class="row">
       <div class="col">
-        <div class="group-shown" id="tl-bb5aa485-3758-44d2-8b75-7463ccea96a8_group">
+        <div class="group-shown" id="tl-cfa21196-b35c-4736-8796-24b5864a4bac_group">
 
     
 
@@ -78757,7 +79189,7 @@ nuclear expression of β-catenin ( xref )."
 
       
 
-              <div class="row group-shown" id="2f94ebf9-15bc-42b4-9ecd-74349d023dbe_group">
+              <div class="row group-shown" id="095103ec-b2b4-4b68-bb82-994ff149d402_group">
 
       
 
@@ -78769,8 +79201,8 @@ nuclear expression of β-catenin ( xref )."
 
                     <a name="-32527223223244217"></a>
                     <div class="row statement group_heading"
-                         onclick="toggler( '2f94ebf9-15bc-42b4-9ecd-74349d023dbe--32527223223244217' )"
-                         id="2f94ebf9-15bc-42b4-9ecd-74349d023dbe--32527223223244217_heading">
+                         onclick="toggler( '095103ec-b2b4-4b68-bb82-994ff149d402--32527223223244217' )"
+                         id="095103ec-b2b4-4b68-bb82-994ff149d402--32527223223244217_heading">
                       <div class="col-auto text-left nvp">
                         <h5>
                           <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:1452' target='_blank'>CALML3</a>.
@@ -78870,7 +79302,7 @@ nuclear expression of β-catenin ( xref )."
                       </div>
                     </div>  <!-- end statement heading row -->
                     <div class="row group"
-                         id="2f94ebf9-15bc-42b4-9ecd-74349d023dbe--32527223223244217_group">
+                         id="095103ec-b2b4-4b68-bb82-994ff149d402--32527223223244217_group">
                       <div class="col">
                         <div class="container bars" id="stmt-0-0-0"
                              data-stmt_hash="-32527223223244217">
@@ -78971,10 +79403,10 @@ nuclear expression of β-catenin ( xref )."
                     <h2> Bar Charts</h2>
                         <div class="row">
                             <div class="col-md-4">
-                                <img src="analysis_results/interaction_barchart.png" width="400" height="400" alt="Interaction Chart">
+                                <img src="analysis_test/interaction_barchart.png" width="400" height="400" alt="Interaction Chart">
                             </div>
                             <div class="col-md-4">
-                                <img src="analysis_results/indra_relationship_frequency.png" width="400" height="400" alt="INDRA Relations Chart">
+                                <img src="analysis_test/indra_relationship_frequency.png" width="400" height="400" alt="INDRA Relations Chart">
                             </div>
                         </div>
                 </div>
@@ -79110,21 +79542,21 @@ nuclear expression of β-catenin ( xref )."
     </tr>
     <tr>
       <th>11</th>
-      <td>2692</td>
-      <td>chebi:17823</td>
-      <td>calcitriol</td>
-      <td>9.594531e-06</td>
-      <td>5.017976</td>
-      <td>0.019665</td>
-      <td>1.706303</td>
-    </tr>
-    <tr>
-      <th>12</th>
       <td>880</td>
       <td>hgnc:7611</td>
       <td>MYOD1</td>
       <td>9.269109e-06</td>
       <td>5.032962</td>
+      <td>0.019665</td>
+      <td>1.706303</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>2692</td>
+      <td>chebi:17823</td>
+      <td>calcitriol</td>
+      <td>9.594531e-06</td>
+      <td>5.017976</td>
       <td>0.019665</td>
       <td>1.706303</td>
     </tr>
@@ -79181,13 +79613,13 @@ nuclear expression of β-catenin ( xref )."
   </tbody>
 </table>
                     <h2>Boxplots for Shared Go Terms and Bioentities</h2>
-                    <img src="analysis_results/shared_go_terms.png" alt="Stats Boxplot">
+                    <img src="analysis_test/shared_go_terms.png" alt="Stats Boxplot">
                 </div>
                 <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
                     <h2>Shared Pathways Between Source and Enriched Targets Set</h2>
                     There are no shared pathways
                     <h2>Bar Chart for Frequency of Shared Pathways by Protein</h2>
-                    <img src="analysis_results/pathways_frequency.png" width="400" height="400" alt="Pathways Chart">
+                    <img src="analysis_test/pathways_frequency.png" width="400" height="400" alt="Pathways Chart">
                 </div>
                 <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
                     <h2>Shared Go Terms Between Gene Sets</h2>
