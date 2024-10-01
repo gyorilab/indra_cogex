@@ -42,9 +42,10 @@
             <div class="tab-content", id="resultTabsContent">
                 <div class="tab-pane fade show active" id="evidences" role="tabpanel">
                     <h2>INDRA Statements with Evidences</h2>
-                    {% for stmt_html_filename in result['indra_stmt_htmls'] %}
-                    <iframe src="{{ stmt_html_filename }}" width="800" height="500"></iframe>
+                    {% for html_page in result['indra_stmt_html_contents'] %}
+                        {{ html_page | safe }}
                     {% endfor %}
+
                     <h2> Bar Charts</h2>
                         <div class="row">
                             <div class="col-md-4">
