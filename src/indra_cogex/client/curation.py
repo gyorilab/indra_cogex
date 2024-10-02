@@ -104,7 +104,7 @@ def get_curation_df(stmts: Iterable[Statement], include_db_evidence: bool = Fals
     # Sort by the most central edges
     df = df.sort_values("centralities", ascending=False)
 
-    # If several evidences from the same statement, dont need
+    # If several evidences from the same statement, don't need
     # to have the hash multiple times
     df = df.drop_duplicates("stmt_hash")
     return df
@@ -335,7 +335,7 @@ def get_dub_statements(
         limit: Optional[int] = None,
         include_db_evidence: bool = False
 ) -> Mapping[int, Mapping[str, int]]:
-    """Get deubiquitinase statements."""
+    """Get ubiquitousness statements."""
     return _help(
         sources=_get_dub_curies(),
         stmt_types=DUB_STMT_TYPES,
