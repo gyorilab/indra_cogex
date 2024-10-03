@@ -186,7 +186,8 @@ def signed_analysis_route():
     Returns
     -------
     str
-        Rendered HTML template."""
+        Rendered HTML template.
+    """
     form = SignedForm()
     if form.validate_on_submit():
         positive_genes, positive_errors = form.parse_positive_genes()
@@ -215,7 +216,6 @@ def signed_analysis_route():
         example_positive_hgnc_ids=", ".join(EXAMPLE_POSITIVE_HGNC_IDS),
         example_negative_hgnc_ids=", ".join(EXAMPLE_NEGATIVE_HGNC_IDS),
     )
-
 
 @gene_blueprint.route("/continuous", methods=["GET", "POST"])
 def continuous_analysis_route():
