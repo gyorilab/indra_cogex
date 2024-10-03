@@ -69,6 +69,7 @@ class GeneOntologyForm(FlaskForm):
         description="Choose a gene ontology term to curate (e.g., "
                     '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
+    include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
 
@@ -150,6 +151,7 @@ class MeshDiseaseForm(FlaskForm):
         validators=[DataRequired()],
         description='Choose a MeSH disease to curate (e.g., <a href="./D006009">D006009</a> for Pompe Disease)',
     )
+    include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
 
@@ -558,6 +560,7 @@ class PaperForm(FlaskForm):
         default=True,
         description="Do not show evidences that have been previously curated",
     )
+    include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
     def get_term(self) -> Tuple[str, str]:
@@ -651,6 +654,7 @@ class NodesForm(FlaskForm):
         validators=[DataRequired()],
         description="Please enter INDRA-flavored CURIEs separated by commas or new lines.",
     )
+    include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
     def get_nodes(self) -> List[Tuple[str, str]]:
