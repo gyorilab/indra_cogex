@@ -42,6 +42,11 @@
             <div class="tab-content", id="resultTabsContent">
                 <div class="tab-pane fade show active" id="evidences" role="tabpanel">
                     <h2>INDRA Statements with Evidences</h2>
+                    <p>
+                        INDRA was used to automatically assemble a comprehensive set of statements with evidences to detail the 
+                        interactions between the source and target proteins by extracting information from scientific literature and 
+                        curated databases.
+                    </p>
                     {% for html_page in result['indra_stmt_html_contents'] %}
                         {{ html_page | safe }}
                     {% endfor %}
@@ -58,22 +63,41 @@
                 </div>
                 <div class="tab-pane fade" id="sharedfamilies" role="tabpanel">
                     <h2>Shared Families</h2>
+                    <p>
+                        Shared protein families are derived using cypher queries to assess the hierarchical relationships 
+                        within the INDRA knowledge base, specifically examining "isa" and "partof" relationships to determine 
+                        protein family complexes between the source and target proteins. 
+                    </p>
                     {{ result['shared_families'] | safe }}
                 </div>
                 <div class="tab-pane fade" id="upstream" role="tabpanel">
                     <h2>Shared Upstream Bioentities from Target Proteins</h2>
+                    <p>
+                        Shared upstream bioentites explore the intersections between the upstream bioentities of the target proteins 
+                        and the bioentities that the target proteins have a direct INDRA relationship with. 
+                    </p>
                     {{ result['upstream_entities'] | safe }}
                     <h2>Boxplots for Shared Go Terms and Bioentities</h2>
                     <img src="{{ result['stats_boxplot'] }}" alt="Stats Boxplot">
                 </div>
                 <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
                     <h2>Shared Pathways Between Source and Enriched Targets Set</h2>
+                    <p>
+                        The shared pathways analysis determines the shared Reactome and WikiPathways between the source and 
+                        target proteins to reveal potential functional overlaps and shared biological processes through pathway 
+                        membership. 
+                    </p>
                     {{ result['shared_pathways'] | safe }}
                     <h2>Bar Chart for Frequency of Shared Pathways by Protein</h2>
                     <img src="{{ result['pathways_chart'] }}" width="400" height="400" alt="Pathways Chart">
                 </div>
                 <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
                     <h2>Shared Go Terms Between Gene Sets</h2>
+                    <p>
+                        The shared GO terms analysis utlizes Gene Ontology (GO) terms associated with the source and target
+                         proteins by finding the intersection of GO terms to explore commonalities in molecular functions, 
+                         biological processes, or cellular locations. 
+                    </p>
                     {{ result['shared_go_terms'] | safe }}
                 </div>
             </div>
