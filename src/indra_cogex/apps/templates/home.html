@@ -109,7 +109,7 @@
                         Reasoning algorithm.
                     </p>
                 </div>
-                {{ start_button('gla.signed_analysis', '/gene/signed') }}
+                {{ start_button('gla.signed_analysis_route', '/gene/signed') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
@@ -120,7 +120,7 @@
                         Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
                     </p>
                 </div>
-                {{ start_button('gla.continuous_analysis', '/gene/continuous') }}
+                {{ start_button('gla.continuous_analysis_route', '/gene/continuous') }}
             </div>
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
@@ -131,7 +131,7 @@
                         Perform metabolite set enrichment analysis using INDRA CoGEx.
                     </p>
                 </div>
-                {{ start_button('mla.discrete_analysis', '/metabolite/discrete') }}
+                {{ start_button('mla.discrete_analysis_route', '/metabolite/discrete') }}
             </div>
         </div>
 
