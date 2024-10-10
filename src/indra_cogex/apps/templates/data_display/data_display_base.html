@@ -6,9 +6,14 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
     <!-- Indralab-vue, for access to <statement> component and its child components -->
-    <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
-    <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
-          rel="stylesheet">
+    {% if LOCAL_VUE %}
+        <script src="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
+        <link href="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}" rel="stylesheet">
+    {% else %}
+        <script src="{{ VUE_SRC_JS }}"></script>
+        <link href="{{ VUE_SRC_CSS }}" rel="stylesheet">
+    {% endif %}
+
 
     <!-- Source badge CSS -->
     <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
@@ -99,6 +104,7 @@
                         :badges="st_obj.badges"
                         :loadable="true"
                         :sources_left_of_badges="true"
+                        :include-db-evidence="include_db_evidence"
                 ></statement>
             </div>
             {% if footer %}
@@ -135,7 +141,11 @@
                             badges: {{ badges|safe }}
                         },
                     {% endfor %}
-                ]
+                ],
+                include_db_evidence: {{ include_db_evidence|tojson }}
+            },
+            mounted() {
+                console.log('Statements:', this.stmts);
             }
         });
     </script>
