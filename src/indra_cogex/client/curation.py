@@ -259,6 +259,7 @@ def get_tf_statements(
         limit: Optional[int] = None,
         include_db_evidence: bool = False
 ) -> Mapping[int, Mapping[str, int]]:
+    logger.info(f"get_tf_statements called with include_db_evidence={include_db_evidence}")
     """Get transcription factor increase amount / decrease amount."""
     return _help(
         sources=TF_CURIES,
@@ -267,6 +268,8 @@ def get_tf_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
+    logger.info(f"get_tf_statements returning {len(result)} statements")
+    return result
 
 
 KINASE_CURIES = _get_symbol_curies(kinases)
@@ -411,6 +414,7 @@ def _help(
         object_prefix: Optional[str] = None,
         include_db_evidence: bool = False,
 ) -> Mapping[int, Mapping[str, int]]:
+    logger.info(f"_help called with include_db_evidence={include_db_evidence}")
     """
     Get relations that are:
 
@@ -437,7 +441,10 @@ def _help(
             RETURN r.stmt_hash, r.source_counts
             {_limit_line(limit)}
         """
-    return client.query_dict_value_json(query)
+    logger.info(f"_help query: {query}")
+    result = client.query_dict_value_json(query)
+    logger.info(f"_help returning {len(result)} statements")
+    return result
 
 
 @autoclient()
