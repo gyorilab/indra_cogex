@@ -139,6 +139,7 @@ def render_statements(
     logger.info("Template rendered successfully")
     return response
 
+
 def format_stmts(
         stmts: Iterable[Statement],
         evidence_counts: Optional[Mapping[int, int]] = None,
