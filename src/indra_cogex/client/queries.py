@@ -1063,11 +1063,17 @@ def get_stmts_for_stmt_hashes(
     return_evidence_counts: bool = False,
     subject_prefix: Optional[str] = None,
     object_prefix: Optional[str] = None,
+    include_db_evidence: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements for the given statement hashes.
 
     Parameters
     ----------
+    object_prefix
+    return_evidence_counts
+    subject_prefix
+    include_db_evidence : bool
+        If True, include statements with database evidence. If False, exclude them.
     client :
         The Neo4j client.
     stmt_hashes :
@@ -1095,13 +1101,16 @@ def get_stmts_for_stmt_hashes(
     else:
         object_constraint = ""
 
+    db_evidence_constraint = "" if include_db_evidence else "AND NOT r.has_database_evidence"
+
     stmts_query = f"""\
-        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-        WHERE
-            r.stmt_hash IN $stmt_hashes
-            {subject_constraint}
-            {object_constraint}
-        RETURN p
+            MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+            WHERE
+                r.stmt_hash IN $stmt_hashes
+                {subject_constraint}
+                {object_constraint}
+                {db_evidence_constraint}
+            RETURN p
     """
     logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
