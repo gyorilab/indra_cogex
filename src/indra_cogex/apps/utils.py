@@ -31,7 +31,7 @@ StmtRow = Tuple[str, str, str, str, str, str]
 
 
 def count_curations(
-    curations: Curations, stmts_by_hash: Dict[int, Statement]
+        curations: Curations, stmts_by_hash: Dict[int, Statement]
 ) -> Dict[int, Dict[str, DefaultDict[str, int]]]:
     """Count curations for each statement.
 
@@ -75,18 +75,22 @@ def count_curations(
 
 
 def render_statements(
-    stmts: List[Statement],
-    evidence_counts: Optional[Mapping[int, int]] = None,
-    evidence_lookup_time: Optional[float] = None,
-    limit: Optional[int] = None,
-    curations: Optional[List[Mapping[str, Any]]] = None,
-    source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
-    **kwargs,
-) -> Response:
+        stmts: List[Statement],
+        evidence_counts: Optional[Mapping[int, int]] = None,
+        evidence_lookup_time: Optional[float] = None,
+        limit: Optional[int] = None,
+        curations: Optional[List[Mapping[str, Any]]] = None,
+        source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
+        include_db_evidence=False, **kwargs,
+) -> str:
     """Render INDRA statements.
 
     Parameters
     ----------
+    limit
+    evidence_lookup_time
+    curations
+    include_db_evidence
     stmts:
 
     evidence_counts:
@@ -94,8 +98,12 @@ def render_statements(
     source_counts_dict :
         Mapping from statement hash to dictionaries of source name to source counts
     """
+    logger.info(f"render_statements called with {len(stmts)} statements")
+    logger.info(f"Additional kwargs: {kwargs}")
+
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
+    logger.info(f"User email resolved: {user_email}, remove_medscan: {remove_medscan}")
 
     start_time = time.time()
     formatted_stmts = format_stmts(
@@ -107,14 +115,17 @@ def render_statements(
         source_counts_per_hash=source_counts_dict,
     )
     end_time = time.time() - start_time
+    logger.info(f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds")
 
     if evidence_lookup_time:
         footer = f"Got evidences in {evidence_lookup_time:.2f} seconds. "
     else:
         footer = ""
     footer += f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds."
+    logger.info("Preparing to render template")
+    logger.info(f"VUE_SRC_JS: {VUE_SRC_JS}, VUE_SRC_CSS: {VUE_SRC_CSS}")
 
-    return render_template(
+    response = render_template(
         "data_display/data_display_base.html",
         stmts=formatted_stmts,
         user_email=user_email,
@@ -122,17 +133,19 @@ def render_statements(
         vue_src_js=VUE_SRC_JS,
         vue_src_css=VUE_SRC_CSS,
         sources_dict=sources_dict,
+        include_db_evidence=include_db_evidence,
         **kwargs,
     )
-
+    logger.info("Template rendered successfully")
+    return response
 
 def format_stmts(
-    stmts: Iterable[Statement],
-    evidence_counts: Optional[Mapping[int, int]] = None,
-    limit: Optional[int] = None,
-    curations: Curations = None,
-    remove_medscan: bool = True,
-    source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
+        stmts: Iterable[Statement],
+        evidence_counts: Optional[Mapping[int, int]] = None,
+        limit: Optional[int] = None,
+        curations: Curations = None,
+        remove_medscan: bool = True,
+        source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
     """Format the statements in the way that Patrick's Vue.js components expect.
 
@@ -220,13 +233,13 @@ def format_stmts(
 
 
 def _stmt_to_row(
-    stmt: Statement,
-    *,
-    cur_dict,
-    cur_counts,
-    remove_medscan: bool = True,
-    source_counts: Dict[str, int] = None,
-    include_belief_badge: bool = False,
+        stmt: Statement,
+        *,
+        cur_dict,
+        cur_counts,
+        remove_medscan: bool = True,
+        source_counts: Dict[str, int] = None,
+        include_belief_badge: bool = False,
 ) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
@@ -318,7 +331,7 @@ def resolve_email():
 
 
 def get_curated_pa_hashes(
-    curations: Optional[List[Mapping[str, Any]]] = None, only_correct: bool = True
+        curations: Optional[List[Mapping[str, Any]]] = None, only_correct: bool = True
 ) -> Mapping[int, Set[int]]:
     """Get a mapping from statement hashes to evidence hashes."""
     if curations is None:
@@ -331,8 +344,8 @@ def get_curated_pa_hashes(
 
 
 def remove_curated_pa_hashes(
-    pa_hashes: Iterable[int],
-    curations: Optional[List[Mapping[str, Any]]] = None,
+        pa_hashes: Iterable[int],
+        curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[int]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
@@ -340,8 +353,8 @@ def remove_curated_pa_hashes(
 
 
 def remove_curated_statements(
-    statements: Iterable[Statement],
-    curations: Optional[List[Mapping[str, Any]]] = None,
+        statements: Iterable[Statement],
+        curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[Statement]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
@@ -353,8 +366,8 @@ def remove_curated_statements(
 
 
 def remove_curated_evidences(
-    statements: List[Statement],
-    curations: Optional[List[Mapping[str, Any]]] = None,
+        statements: List[Statement],
+        curations: Optional[List[Mapping[str, Any]]] = None,
 ) -> List[Statement]:
     """Remove evidences that are already curated, and if none remain, remove the statement."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations, only_correct=False)
