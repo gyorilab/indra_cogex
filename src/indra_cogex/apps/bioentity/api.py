@@ -14,8 +14,12 @@ uniprot_ids_model : flask_restx.Model
     Model for a list of UniProt IDs.
 hgnc_ids_model : flask_restx.Model
     Model for a list of HGNC IDs.
-genes_model : flask_restx.Model
-    Model for a list of gene names.
+kinase_genes_model : flask_restx.Model
+    Model for a list of kinase gene names.
+phosphatase_genes_model : flask_restx.Model
+    Model for a list of phosphatase gene names.
+transcription_factor_genes_model : flask_restx.Model
+    Model for a list of transcription factor gene names.
 
 Resources:
 ----------
@@ -49,8 +53,14 @@ uniprot_ids_model = bioentity_ns.model('get_hgnc_ids_from_uniprot_ids_model', {
 hgnc_ids_model = bioentity_ns.model('get_hgnc_names_from_hgnc_ids_model', {
     'hgnc_ids': fields.List(fields.String, required=True, description='List of HGNC IDs', example=['2092'])
 })
-genes_model = bioentity_ns.model('get_is_biomolecule_model', {
-    'genes': fields.List(fields.String, required=True, description='List of gene names', example=['CLTC'])
+kinase_genes_model = bioentity_ns.model('get_is_kinase_model', {
+    'genes': fields.List(fields.String, required=True, description='List of gene names', example=['CHEK1'])
+})
+phosphatase_genes_model = bioentity_ns.model('get_is_phosphatase_model', {
+    'genes': fields.List(fields.String, required=True, description='List of gene names', example=['MTM1'])
+})
+transcription_factor_genes_model = bioentity_ns.model('get_is_transcription_factor_model', {
+    'genes': fields.List(fields.String, required=True, description='List of gene names', example=['STAT1'])
 })
 
 
@@ -147,7 +157,7 @@ class HgncNamesFromHgncIds(Resource):
         return mapping
 
 
-@bioentity_ns.expect(genes_model)
+@bioentity_ns.expect(kinase_genes_model)
 @bioentity_ns.route("/is_kinase")
 class CheckIfKinase(Resource):
     """
@@ -178,7 +188,7 @@ class CheckIfKinase(Resource):
         return mapping
 
 
-@bioentity_ns.expect(genes_model)
+@bioentity_ns.expect(phosphatase_genes_model)
 @bioentity_ns.route("/is_phosphatase")
 class CheckIfPhosphatase(Resource):
     """
@@ -208,7 +218,7 @@ class CheckIfPhosphatase(Resource):
         return mapping
 
 
-@bioentity_ns.expect(genes_model)
+@bioentity_ns.expect(transcription_factor_genes_model)
 @bioentity_ns.route("/is_transcription_factor")
 class CheckIfTranscriptionFactor(Resource):
     """
