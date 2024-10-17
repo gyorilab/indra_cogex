@@ -10,8 +10,8 @@
         <script src="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
         <link href="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}" rel="stylesheet">
     {% else %}
-        <script src="{{ VUE_SRC_JS }}"></script>
-        <link href="{{ VUE_SRC_CSS }}" rel="stylesheet">
+        <script src="{{ vue_src_js }}"></script>
+        <link href="{{ vue_src_css }}" rel="stylesheet">
     {% endif %}
 
 
@@ -144,9 +144,6 @@
                 ],
                 include_db_evidence: {{ include_db_evidence|tojson }}
             },
-            mounted() {
-                console.log('Statements:', this.stmts);
-            }
         });
     </script>
 {% endblock %}
