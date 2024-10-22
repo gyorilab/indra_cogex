@@ -81,16 +81,21 @@ def render_statements(
         limit: Optional[int] = None,
         curations: Optional[List[Mapping[str, Any]]] = None,
         source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
-        include_db_evidence=False, **kwargs,
+        include_db_evidence=True,
+        is_proteocentric=False,
+        exclude_db_evidence=False,
+        **kwargs,
 ) -> str:
     """Render INDRA statements.
 
     Parameters
     ----------
+    is_proteocentric
     limit
     evidence_lookup_time
     curations
     include_db_evidence
+    exclude_db_evidence
     stmts:
 
     evidence_counts:
@@ -134,6 +139,8 @@ def render_statements(
         vue_src_css=VUE_SRC_CSS,
         sources_dict=sources_dict,
         include_db_evidence=include_db_evidence,
+        is_proteocentric=is_proteocentric,
+        exclude_db_evidence=exclude_db_evidence,
         **kwargs,
     )
     logger.info("Template rendered successfully")
