@@ -1079,7 +1079,7 @@ def get_stmts_for_stmt_hashes(
     return_evidence_counts: bool = False,
     subject_prefix: Optional[str] = None,
     object_prefix: Optional[str] = None,
-    include_db_evidence: bool = False,
+    include_db_evidence: bool = True,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements for the given statement hashes.
 
