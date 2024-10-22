@@ -23,7 +23,7 @@ __all__ = [
 
 @autoclient()
 def indra_subnetwork_relations(
-        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = False
+        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -92,7 +92,7 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = False
+        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Statement]:
     logger.info(f"indra_subnetwork called with {len(nodes)} nodes, include_db_evidence={include_db_evidence}")
     """Return the INDRA Statement subnetwork induced by the given nodes.
@@ -292,7 +292,7 @@ def indra_subnetwork_go(
         mediated: bool = False,
         upstream_controllers: bool = False,
         downstream_targets: bool = False,
-        include_db_evidence: bool = False,
+        include_db_evidence: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
