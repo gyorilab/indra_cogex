@@ -9,22 +9,23 @@ from flask import Flask
 from flask_bootstrap import Bootstrap4
 from indralab_auth_tools.auth import auth, config_auth
 
-from indra_cogex.apps.chat_page import chat_blueprint
 from indra_cogex.apps.constants import (
     INDRA_COGEX_EXTENSION,
-    STATEMENT_CURATION_CACHE,
     STATIC_DIR,
     TEMPLATES_DIR,
+    STATEMENT_CURATION_CACHE,
 )
-from indra_cogex.apps.curation_cache import CurationCache
+from indra_cogex.apps.chat_page import chat_blueprint
 from indra_cogex.apps.curator import curator_blueprint
+from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.rest_api import api
-from indra_cogex.client.enrichment.utils import build_caches
 from indra_cogex.client.neo4j_client import Neo4jClient
+from indra_cogex.client.enrichment.utils import build_caches
+
 
 logger = logging.getLogger(__name__)
 
