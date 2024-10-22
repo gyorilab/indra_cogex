@@ -64,13 +64,13 @@ def _get_curated_statement_hashes() -> Set[int]:
     return {curation["pa_hash"] for curation in curation_list}
 
 
-def get_prioritized_stmt_hashes(stmts: Iterable[Statement], include_db_evidence: bool = False) -> List[int]:
+def get_prioritized_stmt_hashes(stmts: Iterable[Statement], include_db_evidence: bool = True) -> List[int]:
     """Get prioritized hashes of statements to curate."""
     df = get_curation_df(stmts, include_db_evidence)
     return list(df["stmt_hash"])
 
 
-def get_curation_df(stmts: Iterable[Statement], include_db_evidence: bool = False) -> pd.DataFrame:
+def get_curation_df(stmts: Iterable[Statement], include_db_evidence: bool = True) -> pd.DataFrame:
     """Generate a curation dataframe from INDRA statements."""
     assembler = IndraNetAssembler(list(stmts))
 
@@ -170,7 +170,7 @@ def get_ppi_source_counts(
         *,
         client: Neo4jClient,
         minimum_evidences: int = 20,
-        include_db_evidence: bool = False,
+        include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-gene relationships.
 
@@ -211,7 +211,7 @@ def get_goa_source_counts(
         *,
         client: Neo4jClient,
         minimum_evidences: int = 10,
-        include_db_evidence: bool = False,
+        include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-GO annotations..
 
@@ -227,6 +227,7 @@ def get_goa_source_counts(
     :
         A list of INDRA statement hashes prioritized for curation
     """
+    logger.info(f"get_goa_source_counts called with include_db_evidence={include_db_evidence}")
     query = f"""\
             MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
             WHERE
@@ -237,8 +238,15 @@ def get_goa_source_counts(
                 {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
             RETURN r.stmt_hash, r.source_counts
         """
-    return client.query_dict_value_json(query)
+    logger.info(f"Executing GOA query: {query}")
+    result = client.query_dict_value_json(query)
 
+    logger.info(f"GOA query returned {len(result)} total statements")
+    if result:
+        sample_key = next(iter(result))
+        logger.info(f"Sample GOA result structure for hash {sample_key}: {result[sample_key]}")
+
+    return result
 
 def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
     return sorted(
@@ -257,7 +265,7 @@ def get_tf_statements(
         *,
         client: Neo4jClient,
         limit: Optional[int] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     logger.info(f"get_tf_statements called with include_db_evidence={include_db_evidence}")
     """Get transcription factor increase amount / decrease amount."""
@@ -285,7 +293,7 @@ def get_kinase_statements(
         *,
         client: Neo4jClient,
         limit: Optional[int] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get kinase statements."""
     return _help(
@@ -306,7 +314,7 @@ def get_phosphatase_statements(
         *,
         client: Neo4jClient,
         limit: Optional[int] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get phosphatase statements."""
     return _help(
@@ -336,7 +344,7 @@ def get_dub_statements(
         *,
         client: Neo4jClient,
         limit: Optional[int] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get ubiquitousness statements."""
     return _help(
@@ -365,9 +373,13 @@ def get_mirna_statements(
         *,
         client: Neo4jClient,
         limit: Optional[int] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get miRNA statements."""
+    logger.info(f"get_mirna_statements called with include_db_evidence={include_db_evidence}")
+    logger.info(f"MIRNA_CURIES length: {len(MIRNA_CURIES)}")
+    logger.info(f"MIRNA_STMT_TYPES: {[t.__name__ for t in MIRNA_STMT_TYPES]}")
+
     return _help(
         sources=MIRNA_CURIES,
         stmt_types=MIRNA_STMT_TYPES,
@@ -375,6 +387,8 @@ def get_mirna_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
+    logger.info(f"get_mirna_statements returning {len(result)} statements")
+    return result
 
 
 DISPROT_CURIES = _make_curies(ensure_disprot())
@@ -391,7 +405,7 @@ def get_disprot_statements(
         client: Neo4jClient,
         limit: Optional[int] = None,
         object_prefix: Optional[str] = None,
-        include_db_evidence: bool = False
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get statements about disordered proteins."""
     return _help(
@@ -412,7 +426,7 @@ def _help(
         limit: Optional[int] = None,
         minimum_evidences: int = 3,
         object_prefix: Optional[str] = None,
-        include_db_evidence: bool = False,
+        include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     logger.info(f"_help called with include_db_evidence={include_db_evidence}")
     """
@@ -443,18 +457,34 @@ def _help(
         """
     logger.info(f"_help query: {query}")
     result = client.query_dict_value_json(query)
-    logger.info(f"_help returning {len(result)} statements")
+    # Log the structure and content of the result
+    logger.info(f"Result type: {type(result)}")
+    logger.info(f"Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+    logger.info(
+        f"Result sample: {dict(list(result.items())[:1]) if isinstance(result, dict) else 'No sample available'}")
+
+    # Log total number of results
+    if isinstance(result, dict):
+        logger.info(f"Total results: {len(result)}")
+
+        # Try to count database evidence
+        try:
+            db_evidence_items = [v for v in result.values() if isinstance(v, dict) and v.get('has_database_evidence')]
+            logger.info(f"Results with database evidence: {len(db_evidence_items)}")
+        except Exception as e:
+            logger.info(f"Could not calculate database evidence count: {e}")
+
     return result
 
 
 @autoclient()
 def get_entity_source_counts(
-    prefix: str,
-    identifier: str,
-    *,
-    client: Neo4jClient,
-    limit: Optional[int] = None,
-    include_db_evidence: bool = False
+        prefix: str,
+        identifier: str,
+        *,
+        client: Neo4jClient,
+        limit: Optional[int] = None,
+        include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
