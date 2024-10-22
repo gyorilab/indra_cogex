@@ -14,7 +14,6 @@
         <link href="{{ vue_src_css }}" rel="stylesheet">
     {% endif %}
 
-
     <!-- Source badge CSS -->
     <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
 
@@ -71,7 +70,6 @@
         {% if stmts|length == 0 %}
             <div class="card-body">
                 {% if filter_curated %}
-                    {# The statements were filtered, so allow for revealing rest #}
                     <p class="card-text">
                         There are no statements left to be curated!
                     </p>
@@ -91,10 +89,19 @@
                     <p class="card-text">{{ description | safe }}</p>
                 </div>
             {% endif %}
+            {% if is_proteocentric %}
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="exclude_db_evidence"
+                           v-model="exclude_db_evidence" @change="updateExcludeDbEvidence">
+                    <label class="form-check-label" for="exclude_db_evidence">Exclude database evidence</label>
+                </div>
+            </div>
+            {% endif %}
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in this.$data.stmts"
+                        v-for="st_obj in stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -104,7 +111,7 @@
                         :badges="st_obj.badges"
                         :loadable="true"
                         :sources_left_of_badges="true"
-                        :include-db-evidence="include_db_evidence"
+                        :include-db-evidence="!exclude_db_evidence"
                 ></statement>
             </div>
             {% if footer %}
@@ -142,8 +149,17 @@
                         },
                     {% endfor %}
                 ],
-                include_db_evidence: {{ include_db_evidence|tojson }}
+                include_db_evidence: {{ include_db_evidence|default(false)|tojson }},
+                exclude_db_evidence: {{ exclude_db_evidence|default(false)|tojson }},
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
             },
+            methods: {
+                updateExcludeDbEvidence() {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('exclude_db_evidence', this.exclude_db_evidence);
+                    window.location.href = currentUrl.toString();
+                }
+            }
         });
     </script>
 {% endblock %}
