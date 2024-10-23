@@ -227,26 +227,32 @@ def get_goa_source_counts(
     :
         A list of INDRA statement hashes prioritized for curation
     """
-    logger.info(f"get_goa_source_counts called with include_db_evidence={include_db_evidence}")
     query = f"""\
             MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
             WHERE
-                NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
-                and a.id STARTS WITH 'hgnc'
-                and b.id STARTS WITH 'go'
-                and r.evidence_count > {minimum_evidences}
+                NOT (a)-[:associated_with]->(b)
+                AND a.id STARTS WITH 'hgnc'
+                AND b.id STARTS WITH 'go'
+                AND r.evidence_count > {minimum_evidences}
                 {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
+                AND NOT r.medscan_only
             RETURN r.stmt_hash, r.source_counts
+            ORDER BY r.has_database_evidence DESC, r.evidence_count DESC
+            LIMIT 25
         """
-    logger.info(f"Executing GOA query: {query}")
-    result = client.query_dict_value_json(query)
 
-    logger.info(f"GOA query returned {len(result)} total statements")
+    logger.info(f"Executing GOA query with include_db_evidence={include_db_evidence}")
+    result = client.query_dict_value_json(query)
+    logger.info(f"Query returned {len(result)} statements")
+
+    # Log info about database evidence statements
     if result:
-        sample_key = next(iter(result))
-        logger.info(f"Sample GOA result structure for hash {sample_key}: {result[sample_key]}")
+        for hash_val, source_counts in result.items():
+            logger.info(f"\nStatement {hash_val}:")
+            logger.info(f"Sources: {source_counts}")
 
     return result
+
 
 def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
     return sorted(
@@ -451,8 +457,9 @@ def _help(
                 {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
                 AND NOT r.medscan_only
                 AND a.id <> b.id
-                AND r.evidence_count > {minimum_evidences}
-            RETURN r.stmt_hash, r.source_counts
+                AND r.evidence_count > {minimum_evidences} 
+                AND EXISTS(r.source_counts)
+            RETURN r.stmt_hash, r.source_counts 
             {_limit_line(limit)}
         """
     logger.info(f"_help query: {query}")
