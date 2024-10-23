@@ -274,12 +274,12 @@ def _stmt_to_row(
     else:
         sources = source_counts
 
+    # Calculate the total evidence as the sum of each of the sources' evidences
+    total_evidence = sum(sources.values())
+
     # Remove medscan from the sources count
     if remove_medscan and "medscan" in sources:
         del sources["medscan"]
-
-    # Calculate the total evidence as the sum of each of the sources' evidences
-    total_evidence = sum(sources.values())
 
     badges = [
         {
