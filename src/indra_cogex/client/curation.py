@@ -119,11 +119,13 @@ def get_go_curation_hashes(
         mediated: bool = False,
         upstream_controllers: bool = False,
         downstream_targets: bool = False,
+        include_db_evidence: bool = True,
 ) -> List[int]:
     """Get prioritized statement hashes to curate for a given GO term.
 
     Parameters
     ----------
+    include_db_evidence
     go_term :
         The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
@@ -153,6 +155,7 @@ def get_go_curation_hashes(
         mediated=mediated,
         upstream_controllers=upstream_controllers,
         downstream_targets=downstream_targets,
+        include_db_evidence=include_db_evidence,
     )
     return get_prioritized_stmt_hashes(stmts)
 
