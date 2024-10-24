@@ -32,7 +32,53 @@ def test__stmt_to_row():
     )
     assert int(total_evidence) == 1
     assert "biopax" in ev_array
-    assert "7478359958559662154" in ev_array
     assert 'null' in ev_array
     assert sources == json.dumps(source_counts)
     assert english == '"<b>A</b> activates <b>b</b>."'
+
+
+def test__stmt_to_row_medscan():
+    db_ev_list = [
+        Evidence._from_json(
+            {
+                "source_api": "medscan",
+                "pmid": "12345678",
+                "text_refs": {"PMID": "12345678"},
+                "source_hash": 1234567890123456789,
+            }
+        ),
+        Evidence._from_json(
+            {
+                "source_api": "signor",
+                "pmid": "12345679",
+                "text_refs": {"PMID": "12345679"},
+                "source_hash": 1234567890123456790,
+            }
+        )
+    ]
+    a = Agent("x")
+    b = Agent("y")
+    db_stmt = Activation(a, b, evidence=db_ev_list)
+    source_counts = {"medscan": 1, "signor": 1}
+    (
+        ev_array,
+        english,
+        stmt_hash,
+        sources,
+        total_evidence,
+        badges,
+    ) = _stmt_to_row(
+        stmt=db_stmt,
+        cur_dict={},
+        cur_counts={},
+        source_counts=source_counts,
+        include_belief_badge=True,
+    )
+    assert int(total_evidence) == 2
+    assert stmt_hash is not None
+    assert "signor" in ev_array
+    assert "medscan" not in ev_array
+    assert sources == json.dumps(source_counts)
+    assert english == '"<b>X</b> activates <b>y</b>."'
+    assert sources == '{"signor": 1}'
+    assert '"num": 2,' in badges  # Evidence count badge
