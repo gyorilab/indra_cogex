@@ -71,6 +71,7 @@ examples_dict = {
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
     "rel_type": fields.String(example="Phosphorylation"),
     "agent_name": fields.String(example="MEK"),
+    "stmt_source": fields.String(example="reach"),
     "agent_role": fields.String(example="subject"),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
