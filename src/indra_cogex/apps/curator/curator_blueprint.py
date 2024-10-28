@@ -122,7 +122,7 @@ def _enrich_render_statements(
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
-    stmts = remove_curated_statements(stmts, curations=curations)
+    stmts = remove_curated_statements(stmts, curations=curations, include_db_evidence=include_db_evidence)
     stmts = stmts[: proxies.limit]
 
     logger.info(f"Enriching {len(stmts)} statements")
