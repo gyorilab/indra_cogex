@@ -69,6 +69,9 @@ examples_dict = {
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
+    "rel_type": fields.String(example="Phosphorylation"),
+    "agent_name": fields.String(example="MEK"),
+    "agent_role": fields.String(example="subject"),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
