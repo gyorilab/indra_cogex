@@ -326,13 +326,14 @@ def indra_subnetwork_go(
         client=client, go_term=go_term, include_indirect=include_indirect
     )
     nodes = {g.grounding() for g in genes}
-    rv = indra_subnetwork(client=client, nodes=nodes)
+    rv = indra_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence)
     if mediated:
-        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes))
+        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     if upstream_controllers:
-        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes))
+        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     if downstream_targets:
-        rv.extend(indra_shared_downstream_subnetwork(client=client, nodes=nodes))
+        rv.extend(
+            indra_shared_downstream_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
     logger.info(f"Final subnetwork contains {len(rv)} statements")
