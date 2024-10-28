@@ -363,6 +363,7 @@ def remove_curated_pa_hashes(
 def remove_curated_statements(
         statements: Iterable[Statement],
         curations: Optional[List[Mapping[str, Any]]] = None,
+        include_db_evidence: bool = False,
 ) -> List[Statement]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
@@ -370,6 +371,7 @@ def remove_curated_statements(
         statement
         for statement in statements
         if statement.get_hash() not in curated_pa_hashes
+        or (include_db_evidence and any(ev.source_api != 'User' for ev in statement.evidence))
     ]
 
 
