@@ -998,7 +998,6 @@ def get_stmts_for_pmids(
 
 
 def _stmts_from_results(client, result, **kwargs) -> List[Statement]:
-    print(result)
     evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
