@@ -103,12 +103,9 @@ def render_statements(
     source_counts_dict :
         Mapping from statement hash to dictionaries of source name to source counts
     """
-    logger.info(f"render_statements called with {len(stmts)} statements")
-    logger.info(f"Additional kwargs: {kwargs}")
 
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
-    logger.info(f"User email resolved: {user_email}, remove_medscan: {remove_medscan}")
 
     start_time = time.time()
     formatted_stmts = format_stmts(
@@ -127,8 +124,6 @@ def render_statements(
     else:
         footer = ""
     footer += f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds."
-    logger.info("Preparing to render template")
-    logger.info(f"VUE_SRC_JS: {VUE_SRC_JS}, VUE_SRC_CSS: {VUE_SRC_CSS}")
 
     response = render_template(
         "data_display/data_display_base.html",
