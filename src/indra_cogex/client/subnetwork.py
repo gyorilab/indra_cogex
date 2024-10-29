@@ -49,7 +49,6 @@ def indra_subnetwork_relations(
                AND n1.id <> n2.id
                {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
                RETURN p"""
-    logger.info(f"Executing query: {query}")
     return client.query_relations(query)
 
 
@@ -94,7 +93,6 @@ def indra_subnetwork_meta(
 def indra_subnetwork(
         nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Statement]:
-    logger.info(f"indra_subnetwork called with {len(nodes)} nodes, include_db_evidence={include_db_evidence}")
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
     Parameters
@@ -321,7 +319,6 @@ def indra_subnetwork_go(
     :
         The INDRA statement subnetwork induced by GO term.
     """
-    logger.info(f"indra_subnetwork_go called with go_term={go_term}, include_db_evidence={include_db_evidence}")
     genes = get_genes_for_go_term(
         client=client, go_term=go_term, include_indirect=include_indirect
     )
@@ -336,5 +333,4 @@ def indra_subnetwork_go(
             indra_shared_downstream_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
-    logger.info(f"Final subnetwork contains {len(rv)} statements")
     return rv
