@@ -91,13 +91,11 @@ def gene_ontology():
 @jwt_required(optional=True)
 def curate_go(term: str):
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
-    logger.info(f"GO route called with term={term}, include_db_evidence={include_db_evidence}")
     stmts = indra_subnetwork_go(
         go_term=("GO", term),
         client=client,
         include_db_evidence=include_db_evidence,
     )
-    logger.info(f"GO route: indra_subnetwork_go returned {len(stmts)} statements")
     return _enrich_render_statements(
         stmts,
         title=f"GO Curator: {term}",
@@ -383,8 +381,6 @@ def goa():
     """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
     include_db_evidence = not exclude_db_evidence
-    logger.info(
-        f"GOA route called with exclude_db_evidence={exclude_db_evidence}, include_db_evidence={include_db_evidence}")
 
     return _render_func(
         get_goa_source_counts,
@@ -425,7 +421,6 @@ def tf():
     """Curate transcription factors."""
     exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
     include_db_evidence = not exclude_db_evidence
-    logger.info(f"TF route called with include_db_evidence={include_db_evidence}")
     return _render_func(
         get_tf_statements,
         title="Transcription Factor Curator",
@@ -514,10 +509,6 @@ def mirna():
     """Curate miRNAs."""
     exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
     include_db_evidence = not exclude_db_evidence
-    logger.info(
-        f"miRNA route called with exclude_db_evidence={exclude_db_evidence}, include_db_evidence={include_db_evidence}")
-    logger.info(f"MIRNA_CURIES first 5: {MIRNA_CURIES[:5]}")
-    logger.info(f"MIRNA_STMT_TYPES: {[t.__name__ for t in MIRNA_STMT_TYPES]}")
 
     return _render_func(
         get_mirna_statements,
@@ -719,12 +710,13 @@ class NodesForm(FlaskForm):
 
 
 @curator_blueprint.route("/subnetwork", methods=["GET", "POST"])
+@curator_blueprint.route("/subnetwork/<include_db_evidence>", methods=["GET"])
 @jwt_required(optional=True)
-def subnetwork():
+def subnetwork(include_db_evidence: Optional[str] = None):
     """Get all statements induced by the nodes."""
     form = NodesForm()
 
-    if form.validate_on_submit():  # Handle form submission
+    if request.method == "POST" and form.validate_on_submit():
         nodes = form.get_nodes()
         print(f"Processed nodes: {nodes}")
 
@@ -732,35 +724,38 @@ def subnetwork():
             flask.flash("Cannot query more than 30 nodes.")
             return render_template("curation/node_form.html", form=form)
 
-        include_db_evidence = form.include_db_evidence.data
-        logger.info(f"Subnetwork query: nodes={nodes}, include_db_evidence={include_db_evidence}")
+        include_db_evidence = str(form.include_db_evidence.data).lower()
+        return redirect(url_for(f".{subnetwork.__name__}", include_db_evidence=include_db_evidence))
 
-        nodes_html = " ".join(
-            f"""\
-            <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
-                {prefix}:{identifier}
-            </a>"""
-            for prefix, identifier in nodes
-        )
+    # If GET request or form is not valid, render the form
+    if include_db_evidence is None:
+        include_db_evidence = request.args.get('include_db_evidence', 'false').lower()
 
-        stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
-        return _enrich_render_statements(
-            stmts,
-            title="Subnetwork Curator",
-            description=f"""\
-            The subnetwork curator shows statements between the following nodes.
-            {_database_text("Pathway Commons")}
-            {EVIDENCE_TEXT}
-            </p>
-            <p>
-            {nodes_html}
-            """,
-            no_stmts_message="No statements found for the given nodes.",
-            include_db_evidence=include_db_evidence
-        )
+    logger.info(f"Subnetwork query: include_db_evidence={include_db_evidence}")
 
-    # If form is not submitted or not valid, render the form
-    return render_template("curation/node_form.html", form=form)
+    nodes_html = " ".join(
+        f"""\
+        <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
+            {prefix}:{identifier}
+        </a>"""
+        for prefix, identifier in []
+    )
+
+    stmts = indra_subnetwork(nodes=[], client=client, include_db_evidence=include_db_evidence == 'true')
+    return _enrich_render_statements(
+        stmts,
+        title="Subnetwork Curator",
+        description=f"""\
+        The subnetwork curator shows statements between the following nodes.
+        {_database_text("Pathway Commons")}
+        {EVIDENCE_TEXT}
+        </p>
+        <p>
+        {nodes_html}
+        """,
+        no_stmts_message="No statements found for the given nodes.",
+        include_db_evidence=include_db_evidence == 'true'
+    )
 
 
 @curator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
