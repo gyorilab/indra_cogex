@@ -244,15 +244,7 @@ def get_goa_source_counts(
             LIMIT 25
         """
 
-    logger.info(f"Executing GOA query with include_db_evidence={include_db_evidence}")
     result = client.query_dict_value_json(query)
-    logger.info(f"Query returned {len(result)} statements")
-
-    # Log info about database evidence statements
-    if result:
-        for hash_val, source_counts in result.items():
-            logger.info(f"\nStatement {hash_val}:")
-            logger.info(f"Sources: {source_counts}")
 
     return result
 
@@ -276,7 +268,6 @@ def get_tf_statements(
         limit: Optional[int] = None,
         include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
-    logger.info(f"get_tf_statements called with include_db_evidence={include_db_evidence}")
     """Get transcription factor increase amount / decrease amount."""
     return _help(
         sources=TF_CURIES,
@@ -285,7 +276,6 @@ def get_tf_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
-    logger.info(f"get_tf_statements returning {len(result)} statements")
     return result
 
 
@@ -385,9 +375,6 @@ def get_mirna_statements(
         include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get miRNA statements."""
-    logger.info(f"get_mirna_statements called with include_db_evidence={include_db_evidence}")
-    logger.info(f"MIRNA_CURIES length: {len(MIRNA_CURIES)}")
-    logger.info(f"MIRNA_STMT_TYPES: {[t.__name__ for t in MIRNA_STMT_TYPES]}")
 
     return _help(
         sources=MIRNA_CURIES,
@@ -396,7 +383,6 @@ def get_mirna_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
-    logger.info(f"get_mirna_statements returning {len(result)} statements")
     return result
 
 
@@ -437,7 +423,6 @@ def _help(
         object_prefix: Optional[str] = None,
         include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
-    logger.info(f"_help called with include_db_evidence={include_db_evidence}")
     """
     Get relations that are:
 
@@ -465,19 +450,13 @@ def _help(
             RETURN r.stmt_hash, r.source_counts 
             {_limit_line(limit)}
         """
-    logger.info(f"_help query: {query}")
     result = client.query_dict_value_json(query)
-    # Log the structure and content of the result
-    logger.info(f"Result type: {type(result)}")
-    logger.info(f"Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
-    logger.info(
-        f"Result sample: {dict(list(result.items())[:1]) if isinstance(result, dict) else 'No sample available'}")
 
     # Log total number of results
     if isinstance(result, dict):
         logger.info(f"Total results: {len(result)}")
 
-        # Try to count database evidence
+        # Count database evidence
         try:
             db_evidence_items = [v for v in result.values() if isinstance(v, dict) and v.get('has_database_evidence')]
             logger.info(f"Results with database evidence: {len(db_evidence_items)}")
