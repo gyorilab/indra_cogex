@@ -45,6 +45,10 @@ __all__ = [
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
+    "get_statements_mix",
+    "get_stmts_for_agent_type",
+    "get_stmts_for_source",
+    "get_stmts_for_rel_type",
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
@@ -1140,6 +1144,246 @@ def get_stmts_for_stmt_hashes(
     }
     return rv, evidence_counts
 
+@autoclient()
+def get_statements_mix(
+    *,
+    rel_type: Optional[str] = None,
+    stmt_source: Optional[str] = None,
+    agent_name: Optional[str] = None,
+    agent_role: Optional[str] = None,
+    limit: Optional[int] = 10,
+    client: Neo4jClient,
+    evidence_limit: Optional[int] = None
+) -> List[Statement]:
+    """Return the statements based on optional constraints on relationship type
+    Parameters
+    ----------
+    rel_type : Optional[str], default: None
+        The relationship type to query for (e.g., "Phosphorylation").
+    stmt_source : Optional[str], default: None
+        The source to query for (e.g., "reach").
+    agent_name : Optional[str], default: None
+        The name of the agent to filter by (e.g., "EGFR").
+    agent_role : Optional[str], default: None
+        The role of the agent in the interaction, either "subject" or "object".
+    limit : Optional[int], default: 10
+
+    client : Neo4jClient
+
+    evidence_limit : Optional[int], default: None
+
+    Returns
+    -------
+    List[Statement]
+        A list of statements filtered by the provided constraints.
+    """
+
+    if agent_name and agent_role:
+        if agent_role.lower() == "subject":
+            match_clause = f"(a:BioEntity {{name: $agent_name}})-[r:indra_rel"
+            match_direction = "]->(b:BioEntity)"
+        elif agent_role.lower() == "object":
+            match_clause = f"(a:BioEntity)-[r:indra_rel"
+            match_direction = f"->(b:BioEntity {{name: $agent_name}})"
+        else:
+            raise ValueError("agent_role must be 'subject' or 'object'")
+    else:
+        match_clause = "(a:BioEntity)-[r:indra_rel"
+        match_direction = "]->(b:BioEntity)"
+
+    rel_constraints = []
+    if rel_type:
+        rel_constraints.append("stmt_type: $rel_type")
+
+    if rel_constraints:
+        match_clause += " {" + ", ".join(rel_constraints) + "}"
+
+    query = f"MATCH p = {match_clause}{match_direction}"
+
+    where_clauses = []
+    if stmt_source:
+        where_clauses.append(f'r.source_counts CONTAINS \'"{stmt_source}":\'')
+    if where_clauses:
+        query += " WHERE " + " AND ".join(where_clauses)
+
+    query += " RETURN p LIMIT $limit"
+
+    params = {
+        "agent_name": agent_name,
+        "rel_type": rel_type,
+        "limit": limit
+    }
+
+    logger.info(f"Running query with constraints: rel_type={rel_type}, "
+                f"source={stmt_source}, agent_name={agent_name}, "
+                f"agent_role={agent_role}, limit={limit}")
+    rels = client.query_relations(query, **params)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
+
+    if evidence_limit:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+
+    return stmts
+
+@autoclient()
+def get_stmts_for_agent_type(
+    agent_name: str,
+    agent_role: str,
+    limit: Optional[int] = 10,
+    *,
+    client: Neo4jClient,
+    evidence_limit: Optional[int] = None
+) -> List[Statement]:
+    """Return the statements for a given agent based on its role
+
+    Parameters
+    ----------
+    agent_name : str
+        The name of the agent (e.g.,"MEK").
+    agent_role : str
+        The role of the agent in the interaction, either "subject" or "object".
+    limit : Optional[int], default: 10
+
+    client : Neo4jClient
+
+    evidence_limit : Optional[int], default: None
+
+    Returns
+    -------
+    List[Statement]
+        A list of statements where the given agent acts as the subject or object.
+    """
+
+    # Construct the query based on the role of the agent
+    if agent_role.lower() == "subject":
+        query = """
+        MATCH p = (a:BioEntity {name: $agent_name})-[r:indra_rel]->(b:BioEntity)
+        RETURN p LIMIT $limit
+        """
+    elif agent_role.lower() == "object":
+        query = """
+        MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity {name: $agent_name})
+        RETURN p LIMIT $limit
+        """
+    else:
+        raise ValueError("agent_role must be 'subject' or 'object'")
+
+    params = {
+        "agent_name": agent_name,
+        "limit": limit
+    }
+
+    logger.info(f"Getting statements for agent '{agent_name}' as '{agent_role}' with limit {limit}")
+    rels = client.query_relations(query, **params)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
+    if evidence_limit:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+    return stmts
+
+@autoclient()
+def get_stmts_for_source(
+        stmt_source: str,
+        limit: Optional[int] = 10,
+        *,
+        client: Neo4jClient,
+        evidence_limit: Optional[int] = None
+) -> List[Statement]:
+    """Return the statements for the given source.
+
+    Parameters
+    ----------
+    stmt_source : str
+        The source to query for (e.g., "reach").
+    limit : Optional[int], default: 10
+        The maximum number of statements to return.
+    client : Neo4jClient
+
+    evidence_limit : Optional[int], default: None
+
+    Returns
+    -------
+    List[Statement]
+        A list of statements filtered by the given source.
+    """
+    query = """
+    MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+    WHERE r.source_counts CONTAINS '"' + $source + '":'
+    RETURN p LIMIT $limit
+    """
+
+    params = {
+        "source": stmt_source,
+        "limit": limit
+    }
+
+    logger.info(f"Getting statements for source '{stmt_source}' with limit {limit}")
+    rels = client.query_relations(query, **params)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
+    if evidence_limit:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+    return stmts
+
+
+@autoclient()
+def get_stmts_for_rel_type(
+        rel_type: str,
+        limit: Optional[int] = 10,
+        *,
+        client: Neo4jClient,
+        evidence_limit: Optional[int] = None
+) -> List[Statement]:
+    """Return the statements for the given relationship type.
+
+    Parameters
+    ----------
+    rel_type : str
+        The relationship type to query for (e.g., "Phosphorylation").
+    limit : Optional[int], default: 10
+
+    client : Neo4jClient
+
+    evidence_limit : Optional[int], default: None
+
+    Returns
+    -------
+    List[Statement]
+        A list of statements filtered by the given relationship type.
+    """
+
+    query = """
+    MATCH p = (a:BioEntity)-[r:indra_rel {stmt_type: $rel_type}]->(b:BioEntity)
+    RETURN p LIMIT $limit
+    """
+
+    params = {
+        "rel_type": rel_type,
+        "limit": limit
+    }
+
+    logger.info(
+        f"Getting statements for relationship type '{rel_type}' with limit {limit}")
+    rels = client.query_relations(query, **params)
+    stmts = indra_stmts_from_relations(rels, deduplicate=True)
+    if evidence_limit:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+
+    return stmts
 
 @autoclient()
 def enrich_statements(
