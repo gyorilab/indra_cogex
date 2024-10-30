@@ -1120,13 +1120,13 @@ def get_stmts_for_stmt_hashes(
     db_evidence_constraint = "" if include_db_evidence else "AND NOT r.has_database_evidence"
 
     stmts_query = f"""\
-            MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-            WHERE
-                r.stmt_hash IN $stmt_hashes
-                {subject_constraint}
-                {object_constraint}
-                {db_evidence_constraint}
-            RETURN p
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE
+            r.stmt_hash IN $stmt_hashes
+            {subject_constraint}
+            {object_constraint}
+            {db_evidence_constraint}
+        RETURN p
     """
     logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)

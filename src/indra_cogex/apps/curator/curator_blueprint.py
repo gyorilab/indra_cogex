@@ -69,7 +69,7 @@ class GeneOntologyForm(FlaskForm):
         "Gene Ontology Term",
         validators=[DataRequired()],
         description="Choose a gene ontology term to curate (e.g., "
-                    '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
+        '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
@@ -111,12 +111,12 @@ def curate_go(term: str):
 
 
 def _enrich_render_statements(
-        stmts: List[Statement],
-        title: str,
-        description: str,
-        curations: Optional[List[Mapping[str, Any]]] = None,
-        no_stmts_message: Optional[str] = None,
-        include_db_evidence: bool = False,
+    stmts: List[Statement],
+    title: str,
+    description: str,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+    no_stmts_message: Optional[str] = None,
+    include_db_evidence: bool = False,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -202,12 +202,12 @@ def curate_mesh(term: str, subset: Optional[str] = None):
 
 
 def _curate_mesh_helper(
-        term: str,
-        subject_prefix: Optional[str] = None,
-        object_prefix: Optional[str] = None,
-        filter_curated: bool = True,
-        curations: Optional[List[Mapping[str, Any]]] = None,
-        include_db_evidence: bool = False
+    term: str,
+    subject_prefix: Optional[str] = None,
+    object_prefix: Optional[str] = None,
+    filter_curated: bool = True,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+    include_db_evidence: bool = False
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
@@ -251,13 +251,13 @@ def _curate_mesh_helper(
 
 
 def _render_func(
-        func: Callable[..., Mapping[int, Mapping[str, int]]],
-        *,
-        title: str,
-        description: str,
-        func_kwargs: Optional[Mapping[str, Any]] = None,
-        is_proteocentric=False,
-        **kwargs,
+    func: Callable[..., Mapping[int, Mapping[str, int]]],
+    *,
+    title: str,
+    description: str,
+    func_kwargs: Optional[Mapping[str, Any]] = None,
+    is_proteocentric=False,
+    **kwargs,
 ) -> Response:
     exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
     include_db_evidence = not exclude_db_evidence if is_proteocentric else True
@@ -306,13 +306,13 @@ def _render_func(
 
 
 def _render_evidence_counts(
-        stmt_hash_to_source_counts: Mapping[int, Mapping[str, int]],
-        title: str,
-        filter_curated: bool = True,
-        description: Optional[str] = None,
-        include_db_evidence: bool = True,
-        is_proteocentric=False,
-        exclude_db_evidence=False,
+    stmt_hash_to_source_counts: Mapping[int, Mapping[str, int]],
+    title: str,
+    filter_curated: bool = True,
+    description: Optional[str] = None,
+    include_db_evidence: bool = True,
+    is_proteocentric=False,
+    exclude_db_evidence=False,
 ) -> Response:
     curations = curation_cache.get_curation_cache()
     logger.debug(f"loaded {len(curations):,} curations")
@@ -653,11 +653,11 @@ def paper():
 
 
 def _curate_paper(
-        prefix: str,
-        identifier: str,
-        filter_curated: bool = True,
-        curations: Optional[List[Mapping[str, Any]]] = None,
-        include_db_evidence: bool = False,
+    prefix: str,
+    identifier: str,
+    filter_curated: bool = True,
+    curations: Optional[List[Mapping[str, Any]]] = None,
+    include_db_evidence: bool = False,
 ) -> Response:
     stmts, evidence_counts = get_stmts_for_paper(
         (prefix, identifier), return_evidence_counts=True, include_db_evidence=include_db_evidence
