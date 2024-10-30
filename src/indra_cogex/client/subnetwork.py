@@ -23,7 +23,7 @@ __all__ = [
 
 @autoclient()
 def indra_subnetwork_relations(
-        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -44,17 +44,17 @@ def indra_subnetwork_relations(
     """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
     query = f"""MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-               WHERE n1.id IN [{nodes_str}]
-               AND n2.id IN [{nodes_str}]
-               AND n1.id <> n2.id
-               {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
-               RETURN p"""
+           WHERE n1.id IN [{nodes_str}]
+           AND n2.id IN [{nodes_str}]
+           AND n1.id <> n2.id
+           {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
+           RETURN p"""
     return client.query_relations(query)
 
 
 @autoclient()
 def indra_subnetwork_meta(
-        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
 ) -> List[List[Any]]:
     """Return the subnetwork induced by the given nodes as a list of metadata
     on relations.
@@ -91,7 +91,7 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-        nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
@@ -116,9 +116,9 @@ def indra_subnetwork(
 
 @autoclient()
 def indra_mediated_subnetwork(
-        nodes: Iterable[Tuple[str, str]],
-        *,
-        client: Neo4jClient,
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced pairs of statements
     between the given nodes.
@@ -145,9 +145,9 @@ def indra_mediated_subnetwork(
 
 @autoclient()
 def indra_shared_downstream_subnetwork(
-        nodes: Iterable[Tuple[str, str]],
-        *,
-        client: Neo4jClient,
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by shared downstream targets
     of nodes in the query.
@@ -174,9 +174,9 @@ def indra_shared_downstream_subnetwork(
 
 @autoclient()
 def indra_shared_upstream_subnetwork(
-        nodes: Iterable[Tuple[str, str]],
-        *,
-        client: Neo4jClient,
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by shared upstream controllers
     of nodes in the query.
@@ -202,11 +202,11 @@ def indra_shared_upstream_subnetwork(
 
 
 def get_two_step_subnetwork(
-        *,
-        nodes: Iterable[Tuple[str, str]],
-        client: Neo4jClient,
-        first_forward: bool = True,
-        second_forward: bool = True,
+    *,
+    nodes: Iterable[Tuple[str, str]],
+    client: Neo4jClient,
+    first_forward: bool = True,
+    second_forward: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by paths of length
     two between nodes A and B in a query with intermediate nodes X such
@@ -255,10 +255,10 @@ def _paths_to_stmts(*, client: Neo4jClient, query: str) -> List[Statement]:
 
 @autoclient()
 def indra_subnetwork_tissue(
-        nodes: List[Tuple[str, str]],
-        tissue: Tuple[str, str],
-        *,
-        client: Neo4jClient,
+    nodes: List[Tuple[str, str]],
+    tissue: Tuple[str, str],
+    *,
+    client: Neo4jClient,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes and expressed in the given tissue.
 
@@ -283,14 +283,14 @@ def indra_subnetwork_tissue(
 
 @autoclient()
 def indra_subnetwork_go(
-        go_term: Tuple[str, str],
-        *,
-        client: Neo4jClient,
-        include_indirect: bool = False,
-        mediated: bool = False,
-        upstream_controllers: bool = False,
-        downstream_targets: bool = False,
-        include_db_evidence: bool = True,
+    go_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+    mediated: bool = False,
+    upstream_controllers: bool = False,
+    downstream_targets: bool = False,
+    include_db_evidence: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given GO term.
 

@@ -112,14 +112,14 @@ def get_curation_df(stmts: Iterable[Statement], include_db_evidence: bool = True
 
 @autoclient()
 def get_go_curation_hashes(
-        go_term: Tuple[str, str],
-        *,
-        client: Neo4jClient,
-        include_indirect: bool = False,
-        mediated: bool = False,
-        upstream_controllers: bool = False,
-        downstream_targets: bool = False,
-        include_db_evidence: bool = True,
+    go_term: Tuple[str, str],
+    *,
+    client: Neo4jClient,
+    include_indirect: bool = False,
+    mediated: bool = False,
+    upstream_controllers: bool = False,
+    downstream_targets: bool = False,
+    include_db_evidence: bool = True,
 ) -> List[int]:
     """Get prioritized statement hashes to curate for a given GO term.
 
@@ -170,10 +170,10 @@ def _limit_line(limit: Optional[int] = None) -> str:
 
 @autoclient()
 def get_ppi_source_counts(
-        *,
-        client: Neo4jClient,
-        minimum_evidences: int = 20,
-        include_db_evidence: bool = True,
+    *,
+    client: Neo4jClient,
+    minimum_evidences: int = 20,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-gene relationships.
 
@@ -196,25 +196,25 @@ def get_ppi_source_counts(
         A list of INDRA statement hashes prioritized for curation
     """
     query = f"""\
-            MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-            WHERE
-                a.id STARTS WITH 'hgnc'
-                AND b.id STARTS WITH 'hgnc'
-                AND r.stmt_type = 'Complex'
-                AND a.id < b.id
-                {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
-                AND r.evidence_count > {minimum_evidences}
-            RETURN r.stmt_hash, r.source_counts
-        """
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE
+            a.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH 'hgnc'
+            AND r.stmt_type = 'Complex'
+            AND a.id < b.id
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
+            AND r.evidence_count > {minimum_evidences}
+        RETURN r.stmt_hash, r.source_counts
+    """
     return client.query_dict_value_json(query)
 
 
 @autoclient()
 def get_goa_source_counts(
-        *,
-        client: Neo4jClient,
-        minimum_evidences: int = 10,
-        include_db_evidence: bool = True,
+    *,
+    client: Neo4jClient,
+    minimum_evidences: int = 10,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-GO annotations..
 
@@ -231,18 +231,18 @@ def get_goa_source_counts(
         A list of INDRA statement hashes prioritized for curation
     """
     query = f"""\
-            MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-            WHERE
-                NOT (a)-[:associated_with]->(b)
-                AND a.id STARTS WITH 'hgnc'
-                AND b.id STARTS WITH 'go'
-                AND r.evidence_count > {minimum_evidences}
-                {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
-                AND NOT r.medscan_only
-            RETURN r.stmt_hash, r.source_counts
-            ORDER BY r.has_database_evidence DESC, r.evidence_count DESC
-            LIMIT 25
-        """
+        MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE
+            NOT (a)-[:associated_with]->(b)
+            AND a.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH 'go'
+            AND r.evidence_count > {minimum_evidences}
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
+            AND NOT r.medscan_only
+        RETURN r.stmt_hash, r.source_counts
+        ORDER BY r.has_database_evidence DESC, r.evidence_count DESC
+        LIMIT 25
+    """
 
     result = client.query_dict_value_json(query)
 
@@ -263,10 +263,10 @@ TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 
 @autoclient()
 def get_tf_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get transcription factor increase amount / decrease amount."""
     return _help(
@@ -289,10 +289,10 @@ KINASE_STMT_TYPES = [
 
 @autoclient()
 def get_kinase_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get kinase statements."""
     return _help(
@@ -310,10 +310,10 @@ PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
 
 @autoclient()
 def get_phosphatase_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get phosphatase statements."""
     return _help(
@@ -340,10 +340,10 @@ DUB_STMT_TYPES = [Deubiquitination]
 
 @autoclient()
 def get_dub_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get ubiquitousness statements."""
     return _help(
@@ -369,10 +369,10 @@ MIRNA_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 
 @autoclient()
 def get_mirna_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get miRNA statements."""
 
@@ -396,11 +396,11 @@ DISPROT_STMT_TYPES = {
 
 @autoclient()
 def get_disprot_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        object_prefix: Optional[str] = None,
-        include_db_evidence: bool = True
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    object_prefix: Optional[str] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get statements about disordered proteins."""
     return _help(
@@ -414,14 +414,14 @@ def get_disprot_statements(
 
 
 def _help(
-        *,
-        sources: List[str],
-        stmt_types: List[Type[Statement]],
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        minimum_evidences: int = 3,
-        object_prefix: Optional[str] = None,
-        include_db_evidence: bool = True,
+    *,
+    sources: List[str],
+    stmt_types: List[Type[Statement]],
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    minimum_evidences: int = 3,
+    object_prefix: Optional[str] = None,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """
     Get relations that are:
@@ -437,19 +437,19 @@ def _help(
     if object_prefix is None:
         object_prefix = "hgnc"
     query = f"""\
-            MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-            WHERE
-                a.id in {sources!r}
-                AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
-                AND b.id STARTS WITH '{object_prefix}'
-                {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
-                AND NOT r.medscan_only
-                AND a.id <> b.id
-                AND r.evidence_count > {minimum_evidences} 
-                AND EXISTS(r.source_counts)
-            RETURN r.stmt_hash, r.source_counts 
-            {_limit_line(limit)}
-        """
+        MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+        WHERE
+            a.id in {sources!r}
+            AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
+            AND b.id STARTS WITH '{object_prefix}'
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
+            AND NOT r.medscan_only
+            AND a.id <> b.id
+            AND r.evidence_count > {minimum_evidences} 
+            AND EXISTS(r.source_counts)
+        RETURN r.stmt_hash, r.source_counts 
+        {_limit_line(limit)}
+    """
     result = client.query_dict_value_json(query)
 
     # Log total number of results
@@ -468,12 +468,12 @@ def _help(
 
 @autoclient()
 def get_entity_source_counts(
-        prefix: str,
-        identifier: str,
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        include_db_evidence: bool = True
+    prefix: str,
+    identifier: str,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
@@ -490,11 +490,11 @@ def get_entity_source_counts(
 
 @autoclient()
 def get_conflicting_statements(
-        *,
-        client: Neo4jClient,
-        limit: Optional[int] = None,
-        positive_stmt_type: Type[Statement] = Activation,
-        negative_stmt_type: Type[Statement] = Inhibition,
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    positive_stmt_type: Type[Statement] = Activation,
+    negative_stmt_type: Type[Statement] = Inhibition,
 ):
     """Get statements that conflict in activation/inhibition.
 
