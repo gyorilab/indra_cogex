@@ -1184,7 +1184,7 @@ def get_statements_mix(
             match_direction = "]->(b:BioEntity)"
         elif agent_role.lower() == "object":
             match_clause = f"(a:BioEntity)-[r:indra_rel"
-            match_direction = f"->(b:BioEntity {{name: $agent_name}})"
+            match_direction = f"]->(b:BioEntity {{name: $agent_name}})"
         else:
             raise ValueError("agent_role must be 'subject' or 'object'")
     else:
