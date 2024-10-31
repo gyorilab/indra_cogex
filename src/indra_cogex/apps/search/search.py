@@ -26,7 +26,6 @@ def search():
         agent_role = form.agent_role.data
         source_type = form.source_type.data
         rel_type = form.rel_type.data
-        print(agent_name)
         statements = get_statements_mix(
             agent_name=agent_name,
             agent_role=agent_role,
