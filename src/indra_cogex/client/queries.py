@@ -1221,7 +1221,7 @@ def get_statements_mix(
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1282,7 +1282,7 @@ def get_stmts_for_agent_type(
     logger.info(f"Getting statements for agent '{agent_name}' as '{agent_role}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1330,7 +1330,7 @@ def get_stmts_for_source(
     logger.info(f"Getting statements for source '{stmt_source}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1380,7 +1380,7 @@ def get_stmts_for_rel_type(
         f"Getting statements for relationship type '{rel_type}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
