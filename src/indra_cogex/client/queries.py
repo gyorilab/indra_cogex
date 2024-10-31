@@ -1167,10 +1167,11 @@ def get_statements_mix(
     agent_role : Optional[str], default: None
         The role of the agent in the interaction, either "subject" or "object".
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
@@ -1247,10 +1248,11 @@ def get_stmts_for_agent_type(
     agent_role : str
         The role of the agent in the interaction, either "subject" or "object".
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
@@ -1305,8 +1307,9 @@ def get_stmts_for_source(
     limit : Optional[int], default: 10
         The maximum number of statements to return.
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
@@ -1351,10 +1354,11 @@ def get_stmts_for_rel_type(
     rel_type : str
         The relationship type to query for (e.g., "Phosphorylation").
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
