@@ -1272,14 +1272,17 @@ def get_stmts_for_agent_type(
         RETURN p LIMIT $limit
         """
     else:
-        raise ValueError("agent_role must be 'subject' or 'object'")
+        query = """
+        MATCH p = (a:BioEntity {name: $agent_name})-[r:indra_rel]-(b:BioEntity)
+        RETURN p LIMIT $limit
+        """
 
     params = {
         "agent_name": agent_name,
         "limit": limit
     }
 
-    logger.info(f"Getting statements for agent '{agent_name}' as '{agent_role}' with limit {limit}")
+    logger.info(f"Getting statements for agent '{agent_name}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
     if evidence_limit and evidence_limit > 1:
