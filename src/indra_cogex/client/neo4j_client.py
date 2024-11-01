@@ -1151,6 +1151,7 @@ def do_cypher_tx(
 ) -> List[List]:
     # 'parameters' and '**kwparameters' of tx.run are ultimately merged at query
     # run-time
+
     # Execute the query
     result = tx.run(query, parameters=query_params)
     # Return the result
