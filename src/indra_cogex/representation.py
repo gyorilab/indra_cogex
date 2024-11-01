@@ -278,7 +278,7 @@ def norm_id(db_ns, db_id) -> str:
             "namespace_embedded"
         )
         if ns_embedded:
-            identifiers_id = identifiers_id[len(identifiers_ns) + 1 :]
+            identifiers_id = identifiers_id[len(identifiers_ns) + 1:]
     return f"{identifiers_ns}:{identifiers_id}"
 
 
@@ -474,36 +474,53 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
     )
 
 
-def indra_stmts_from_relations(rels: Iterable[Relation],
-                               deduplicate: bool = True) -> List[Statement]:
-    """Convert a list of relations to INDRA Statements.
+def indra_stmts_from_relations(
+    rels: Iterable[Relation],
+    deduplicate: bool = True,
+    include_db_evidence: bool = True
+) -> List[Statement]:
+    """
+    Convert a list of relations to INDRA Statements.
 
     Any relations that aren't representing an INDRA Statement are skipped.
 
     Parameters
     ----------
-    rels :
+    rels : Iterable[Relation]
         A list of Relations.
-    deduplicate :
+    deduplicate : bool, optional
         If True, only unique statements are returned. In some cases
         e.g., for Complexes, there are multiple relations for one statement
         and this option can be used to return only one of these redundant
         statements. Default: True
+    include_db_evidence : bool, optional
+        If True, include statements with database evidence. If False,
+        exclude statements that only have database evidence. Default: True
 
     Returns
     -------
-    :
+    List[Statement]
         A list of INDRA Statements.
     """
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
-    # Beliefs are not set correctly in the JSON so we fix them here
+
+    # Beliefs are not set correctly in the JSON, so we fix them here
     beliefs = [rel.data["belief"] for rel in rels]
     for stmt, belief in zip(stmts, beliefs):
         stmt.belief = belief
+
+    # Filter statements based on include_db_evidence
+    if not include_db_evidence:
+        stmts = [
+            stmt for stmt in stmts
+            if any(ev.source_api != 'database' for ev in stmt.evidence)
+        ]
+
     if deduplicate:
         # We do it this way to not change the order of the statements
         stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
+
     return stmts
 
 
