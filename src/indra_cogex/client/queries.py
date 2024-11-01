@@ -1146,22 +1146,23 @@ def get_stmts_for_stmt_hashes(
 
 @autoclient()
 def get_statements_mix(
-    *,
-    rel_types: Optional[Union[str, List[str]]] = None,
-    stmt_source: Optional[str] = None,
-    agent_name: Optional[str] = None,
-    agent_role: Optional[str] = None,
-    limit: Optional[int] = 10,
-    client: Neo4jClient,
-    evidence_limit: Optional[int] = None
+        *,
+        rel_types: Optional[Union[str, List[str]]] = None,
+        stmt_sources: Optional[Union[str, List[str]]] = None,
+        agent_name: Optional[str] = None,
+        agent_role: Optional[str] = None,
+        limit: Optional[int] = 10,
+        client: Neo4jClient,
+        evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements based on optional constraints on relationship type
+    """Return the statements based on optional constraints on relationship type and source(s).
+
     Parameters
     ----------
-    rel_types : Optional[str], default: None
-        The relationship type to query for (e.g., "Phosphorylation").
-    stmt_source : Optional[str], default: None
-        The source to query for (e.g., "reach").
+    rel_types : Optional[Union[str, List[str]]], default: None
+        The relationship type(s) to query for (e.g., "Phosphorylation" or ["Phosphorylation", "Activation"]).
+    stmt_sources : Optional[Union[str, List[str]]], default: None
+        The source(s) to query for (e.g., "reach" or ["reach", "sparser"]).
     agent_name : Optional[str], default: None
         The name of the agent to filter by (e.g., "EGFR").
     agent_role : Optional[str], default: None
@@ -1193,16 +1194,20 @@ def get_statements_mix(
         match_clause = f"(a:BioEntity)-[r:indra_rel"
         match_direction = "]-(b:BioEntity)"
 
-    match_clause += "}" + match_direction
-
+    match_clause += match_direction
     where_clauses = []
     if rel_types:
-        if isinstance(rel_types, list):
-            where_clauses.append("r.stmt_type IN $rel_types")
-        else:
-            where_clauses.append("r.stmt_type = $rel_types")
-    if stmt_source:
-        where_clauses.append(f'r.source_counts CONTAINS \'"{stmt_source}":\'')
+        if isinstance(rel_types, str):
+            rel_types = [rel_types]
+        where_clauses.append("r.stmt_type IN $rel_types")
+    if stmt_sources:
+        if isinstance(stmt_sources, str):
+            stmt_sources = [stmt_sources]
+        source_conditions = " OR ".join(
+            [f'r.source_counts CONTAINS \'"{source}":\'' for source in
+             stmt_sources])
+        where_clauses.append(f"({source_conditions})")
+
     if where_clauses:
         match_clause += " WHERE " + " AND ".join(where_clauses)
 
@@ -1215,7 +1220,7 @@ def get_statements_mix(
     }
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
-                f"source={stmt_source}, agent_name={agent_name}, "
+                f"source={stmt_sources}, agent_name={agent_name}, "
                 f"agent_role={agent_role}, limit={limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
@@ -1294,18 +1299,18 @@ def get_stmts_for_agent_type(
 
 @autoclient()
 def get_stmts_for_source(
-        stmt_source: str,
+        stmt_sources: Union[str, List[str]],
         limit: Optional[int] = 10,
         *,
         client: Neo4jClient,
         evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements for the given source.
+    """Return the statements for the given source(s).
 
     Parameters
     ----------
-    stmt_source : str
-        The source to query for (e.g., "reach").
+    stmt_sources : Union[str, List[str]]
+        The source or list of sources to query for (e.g., "reach" or ["reach", "sparser"]).
     limit : Optional[int], default: 10
         The maximum number of statements to return.
     client : Neo4jClient
@@ -1316,20 +1321,27 @@ def get_stmts_for_source(
     Returns
     -------
     List[Statement]
-        A list of statements filtered by the given source.
+        A list of statements filtered by the given sources.
     """
-    query = """
+    if isinstance(stmt_sources, str):
+        stmt_sources = [stmt_sources]
+
+    source_conditions = " OR ".join(
+        [f'r.source_counts CONTAINS \'"{source}":\'' for source in stmt_sources]
+    )
+
+    query = f"""
     MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-    WHERE r.source_counts CONTAINS '"' + $source + '":'
+    WHERE {source_conditions}
     RETURN p LIMIT $limit
     """
 
     params = {
-        "source": stmt_source,
         "limit": limit
     }
 
-    logger.info(f"Getting statements for source '{stmt_source}' with limit {limit}")
+    logger.info(
+        f"Getting statements for sources '{stmt_sources}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
     if evidence_limit and evidence_limit > 1:

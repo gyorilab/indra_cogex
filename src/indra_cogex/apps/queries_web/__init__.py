@@ -73,6 +73,7 @@ examples_dict = {
     "rel_types": fields.List(fields.String, example=["Phosphorylation", "Activation"]),
     "agent_name": fields.String(example="MEK"),
     "stmt_source": fields.String(example="reach"),
+    "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "agent_role": fields.String(example="subject"),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
