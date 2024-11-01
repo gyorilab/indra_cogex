@@ -276,7 +276,6 @@ def get_tf_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
-    return result
 
 
 KINASE_CURIES = _get_symbol_curies(kinases)
@@ -345,7 +344,7 @@ def get_dub_statements(
     limit: Optional[int] = None,
     include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
-    """Get ubiquitousness statements."""
+    """Get deubiquitinase statements."""
     return _help(
         sources=_get_dub_curies(),
         stmt_types=DUB_STMT_TYPES,
@@ -383,7 +382,6 @@ def get_mirna_statements(
         limit=limit,
         include_db_evidence=include_db_evidence,
     )
-    return result
 
 
 DISPROT_CURIES = _make_curies(ensure_disprot())
@@ -451,17 +449,6 @@ def _help(
         {_limit_line(limit)}
     """
     result = client.query_dict_value_json(query)
-
-    # Log total number of results
-    if isinstance(result, dict):
-        logger.info(f"Total results: {len(result)}")
-
-        # Count database evidence
-        try:
-            db_evidence_items = [v for v in result.values() if isinstance(v, dict) and v.get('has_database_evidence')]
-            logger.info(f"Results with database evidence: {len(db_evidence_items)}")
-        except Exception as e:
-            logger.info(f"Could not calculate database evidence count: {e}")
 
     return result
 
