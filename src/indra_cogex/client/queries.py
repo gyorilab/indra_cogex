@@ -48,7 +48,7 @@ __all__ = [
     "get_statements_mix",
     "get_stmts_for_agent_type",
     "get_stmts_for_source",
-    "get_stmts_for_rel_type",
+    "get_stmts_for_rel_types",
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
@@ -1146,31 +1146,33 @@ def get_stmts_for_stmt_hashes(
 
 @autoclient()
 def get_statements_mix(
-    *,
-    rel_type: Optional[str] = None,
-    stmt_source: Optional[str] = None,
-    agent_name: Optional[str] = None,
-    agent_role: Optional[str] = None,
-    limit: Optional[int] = 10,
-    client: Neo4jClient,
-    evidence_limit: Optional[int] = None
+        *,
+        rel_types: Optional[Union[str, List[str]]] = None,
+        stmt_sources: Optional[Union[str, List[str]]] = None,
+        agent_name: Optional[str] = None,
+        agent_role: Optional[str] = None,
+        limit: Optional[int] = 10,
+        client: Neo4jClient,
+        evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements based on optional constraints on relationship type
+    """Return the statements based on optional constraints on relationship type and source(s).
+
     Parameters
     ----------
-    rel_type : Optional[str], default: None
-        The relationship type to query for (e.g., "Phosphorylation").
-    stmt_source : Optional[str], default: None
-        The source to query for (e.g., "reach").
+    rel_types : Optional[Union[str, List[str]]], default: None
+        The relationship type(s) to query for (e.g., "Phosphorylation" or ["Phosphorylation", "Activation"]).
+    stmt_sources : Optional[Union[str, List[str]]], default: None
+        The source(s) to query for (e.g., "reach" or ["reach", "sparser"]).
     agent_name : Optional[str], default: None
         The name of the agent to filter by (e.g., "EGFR").
     agent_role : Optional[str], default: None
         The role of the agent in the interaction, either "subject" or "object".
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
@@ -1185,42 +1187,45 @@ def get_statements_mix(
         elif agent_role.lower() == "object":
             match_clause = f"(a:BioEntity)-[r:indra_rel"
             match_direction = f"]->(b:BioEntity {{name: $agent_name}})"
-        else:
-            raise ValueError("agent_role must be 'subject' or 'object'")
+    elif agent_name:
+        match_clause = f"(a:BioEntity {{name: $agent_name}})-[r:indra_rel"
+        match_direction = "]-(b:BioEntity)"
     else:
-        match_clause = "(a:BioEntity)-[r:indra_rel"
-        match_direction = "]->(b:BioEntity)"
+        match_clause = f"(a:BioEntity)-[r:indra_rel"
+        match_direction = "]-(b:BioEntity)"
 
-    rel_constraints = []
-    if rel_type:
-        rel_constraints.append("stmt_type: $rel_type")
-
-    if rel_constraints:
-        match_clause += " {" + ", ".join(rel_constraints) + "}"
-
-    query = f"MATCH p = {match_clause}{match_direction}"
-
+    match_clause += match_direction
     where_clauses = []
-    if stmt_source:
-        where_clauses.append(f'r.source_counts CONTAINS \'"{stmt_source}":\'')
-    if where_clauses:
-        query += " WHERE " + " AND ".join(where_clauses)
+    if rel_types:
+        if isinstance(rel_types, str):
+            rel_types = [rel_types]
+        where_clauses.append("r.stmt_type IN $rel_types")
+    if stmt_sources:
+        if isinstance(stmt_sources, str):
+            stmt_sources = [stmt_sources]
+        source_conditions = " OR ".join(
+            [f'r.source_counts CONTAINS \'"{source}":\'' for source in
+             stmt_sources])
+        where_clauses.append(f"({source_conditions})")
 
-    query += " RETURN p LIMIT $limit"
+    if where_clauses:
+        match_clause += " WHERE " + " AND ".join(where_clauses)
+
+    query = f"MATCH p = {match_clause} RETURN p LIMIT $limit"
 
     params = {
         "agent_name": agent_name,
-        "rel_type": rel_type,
+        "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
         "limit": limit
     }
 
-    logger.info(f"Running query with constraints: rel_type={rel_type}, "
-                f"source={stmt_source}, agent_name={agent_name}, "
+    logger.info(f"Running query with constraints: rel_type={rel_types}, "
+                f"source={stmt_sources}, agent_name={agent_name}, "
                 f"agent_role={agent_role}, limit={limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1247,10 +1252,11 @@ def get_stmts_for_agent_type(
     agent_role : str
         The role of the agent in the interaction, either "subject" or "object".
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
@@ -1270,17 +1276,20 @@ def get_stmts_for_agent_type(
         RETURN p LIMIT $limit
         """
     else:
-        raise ValueError("agent_role must be 'subject' or 'object'")
+        query = """
+        MATCH p = (a:BioEntity {name: $agent_name})-[r:indra_rel]-(b:BioEntity)
+        RETURN p LIMIT $limit
+        """
 
     params = {
         "agent_name": agent_name,
         "limit": limit
     }
 
-    logger.info(f"Getting statements for agent '{agent_name}' as '{agent_role}' with limit {limit}")
+    logger.info(f"Getting statements for agent '{agent_name}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1290,44 +1299,52 @@ def get_stmts_for_agent_type(
 
 @autoclient()
 def get_stmts_for_source(
-        stmt_source: str,
+        stmt_sources: Union[str, List[str]],
         limit: Optional[int] = 10,
         *,
         client: Neo4jClient,
         evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements for the given source.
+    """Return the statements for the given source(s).
 
     Parameters
     ----------
-    stmt_source : str
-        The source to query for (e.g., "reach").
+    stmt_sources : Union[str, List[str]]
+        The source or list of sources to query for (e.g., "reach" or ["reach", "sparser"]).
     limit : Optional[int], default: 10
         The maximum number of statements to return.
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
     List[Statement]
-        A list of statements filtered by the given source.
+        A list of statements filtered by the given sources.
     """
-    query = """
+    if isinstance(stmt_sources, str):
+        stmt_sources = [stmt_sources]
+
+    source_conditions = " OR ".join(
+        [f'r.source_counts CONTAINS \'"{source}":\'' for source in stmt_sources]
+    )
+
+    query = f"""
     MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
-    WHERE r.source_counts CONTAINS '"' + $source + '":'
+    WHERE {source_conditions}
     RETURN p LIMIT $limit
     """
 
     params = {
-        "source": stmt_source,
         "limit": limit
     }
 
-    logger.info(f"Getting statements for source '{stmt_source}' with limit {limit}")
+    logger.info(
+        f"Getting statements for sources '{stmt_sources}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
@@ -1337,46 +1354,50 @@ def get_stmts_for_source(
 
 
 @autoclient()
-def get_stmts_for_rel_type(
-        rel_type: str,
+def get_stmts_for_rel_types(
+        rel_types: Union[str, List[str]],
         limit: Optional[int] = 10,
         *,
         client: Neo4jClient,
         evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements for the given relationship type.
+    """Return the statements for the given relationship types.
 
     Parameters
     ----------
-    rel_type : str
-        The relationship type to query for (e.g., "Phosphorylation").
+    rel_types : Union[str, List[str]]
+        The relationship types to query for (e.g., ["Phosphorylation", "Activation"]).
     limit : Optional[int], default: 10
-
+        The maximum number of statements returned.
     client : Neo4jClient
-
+        The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
+        The optional limit for the number of evidence entries per statement.
 
     Returns
     -------
     List[Statement]
-        A list of statements filtered by the given relationship type.
+        A list of statements filtered by the given relationship types.
     """
+    if isinstance(rel_types, str):
+        rel_types = [rel_types]
 
     query = """
-    MATCH p = (a:BioEntity)-[r:indra_rel {stmt_type: $rel_type}]->(b:BioEntity)
+    MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+    WHERE r.stmt_type IN $rel_types
     RETURN p LIMIT $limit
     """
 
     params = {
-        "rel_type": rel_type,
+        "rel_types": rel_types,
         "limit": limit
     }
 
     logger.info(
-        f"Getting statements for relationship type '{rel_type}' with limit {limit}")
+        f"Getting statements for relationship types '{rel_types}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
-    if evidence_limit:
+    if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
