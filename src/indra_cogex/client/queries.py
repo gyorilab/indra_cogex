@@ -1153,8 +1153,9 @@ def get_statements_mix(
         agent_role: Optional[str] = None,
         limit: Optional[int] = 10,
         client: Neo4jClient,
-        evidence_limit: Optional[int] = None
-) -> List[Statement]:
+        evidence_limit: Optional[int] = None,
+        return_evidence_counts: bool = False,
+) ->Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
     Parameters
@@ -1231,8 +1232,14 @@ def get_statements_mix(
             client=client,
             evidence_limit=evidence_limit,
         )
+    if not return_evidence_counts:
+        return stmts
+    evidence_counts = {
+        stmt.get_hash(): rel.data["evidence_count"]
+        for rel, stmt in zip(rels, stmts)
+    }
 
-    return stmts
+    return stmts, evidence_counts
 
 @autoclient()
 def get_stmts_for_agent_type(
