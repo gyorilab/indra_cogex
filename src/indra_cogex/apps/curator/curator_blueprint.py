@@ -25,8 +25,6 @@ from indra_cogex.client.curation import (
     get_phosphatase_statements,
     get_ppi_source_counts,
     get_tf_statements,
-    MIRNA_CURIES,
-    MIRNA_STMT_TYPES
 )
 from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes
 
@@ -69,7 +67,7 @@ class GeneOntologyForm(FlaskForm):
         "Gene Ontology Term",
         validators=[DataRequired()],
         description="Choose a gene ontology term to curate (e.g., "
-        '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
+                    '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
@@ -207,7 +205,7 @@ def _curate_mesh_helper(
     object_prefix: Optional[str] = None,
     filter_curated: bool = True,
     curations: Optional[List[Mapping[str, Any]]] = None,
-    include_db_evidence: bool = False
+    include_db_evidence: bool = False,
 ) -> Response:
     if curations is None:
         logger.info("Getting curations")
@@ -220,11 +218,10 @@ def _curate_mesh_helper(
         mesh_term=("MESH", term),
         include_child_terms=True,
         client=client,
-        return_evidence_counts=True,
         evidence_limit=10,
         subject_prefix=subject_prefix,
         object_prefix=object_prefix,
-        include_db_evidence=include_db_evidence
+        include_db_evidence=include_db_evidence,
     )
     evidence_lookup_time = time.time() - start_time
 
@@ -320,6 +317,7 @@ def _render_evidence_counts(
         stmt_hash: sum(source_counts.values())
         for stmt_hash, source_counts in stmt_hash_to_source_counts.items()
     }
+
     # Prepare prioritized statement hash list sorted by decreasing evidence count
     pa_hashes = sorted(evidence_counts, key=evidence_counts.get, reverse=True)
     if filter_curated:
@@ -659,17 +657,17 @@ def _curate_paper(
     curations: Optional[List[Mapping[str, Any]]] = None,
     include_db_evidence: bool = False,
 ) -> Response:
-    stmts, evidence_counts = get_stmts_for_paper(
-        (prefix, identifier), return_evidence_counts=True, include_db_evidence=include_db_evidence
+    stmts = get_stmts_for_paper(
+        (prefix, identifier), include_db_evidence=include_db_evidence,
     )
     if curations is None:
         curations = curation_cache.get_curation_cache()
     if filter_curated:
-        stmts = remove_curated_evidences(stmts, curations=curations)
+        stmts = remove_curated_statements(stmts, curations=curations, include_db_evidence=include_db_evidence)
+
     return render_statements(
         stmts,
         title=f"Publication Curator: {prefix}:{identifier}",
-        evidence_counts=evidence_counts,
         limit=proxies.limit,
         curations=curations,
         description=f"""
@@ -710,13 +708,12 @@ class NodesForm(FlaskForm):
 
 
 @curator_blueprint.route("/subnetwork", methods=["GET", "POST"])
-@curator_blueprint.route("/subnetwork/<include_db_evidence>", methods=["GET"])
 @jwt_required(optional=True)
-def subnetwork(include_db_evidence: Optional[str] = None):
+def subnetwork():
     """Get all statements induced by the nodes."""
     form = NodesForm()
 
-    if request.method == "POST" and form.validate_on_submit():
+    if form.validate_on_submit():  # Handle form submission
         nodes = form.get_nodes()
         print(f"Processed nodes: {nodes}")
 
@@ -724,38 +721,45 @@ def subnetwork(include_db_evidence: Optional[str] = None):
             flask.flash("Cannot query more than 30 nodes.")
             return render_template("curation/node_form.html", form=form)
 
-        include_db_evidence = str(form.include_db_evidence.data).lower()
-        return redirect(url_for(f".{subnetwork.__name__}", include_db_evidence=include_db_evidence))
+        include_db_evidence = form.include_db_evidence.data
+        # Redirect to the same route with query parameters
+        return redirect(url_for('.subnetwork',
+                                nodes=','.join([f"{prefix}:{identifier}" for prefix, identifier in nodes]),
+                                include_db_evidence=str(include_db_evidence).lower()))
 
-    # If GET request or form is not valid, render the form
-    if include_db_evidence is None:
-        include_db_evidence = request.args.get('include_db_evidence', 'false').lower()
+    # If it's a GET request or form is not valid
+    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
+    nodes = [tuple(node.split(':')) for node in request.args.get('nodes', '').split(',') if node]
 
-    logger.info(f"Subnetwork query: include_db_evidence={include_db_evidence}")
+    if nodes:  # If nodes are provided in the URL, process them
 
-    nodes_html = " ".join(
-        f"""\
-        <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
-            {prefix}:{identifier}
-        </a>"""
-        for prefix, identifier in []
-    )
+        nodes_html = " ".join(
+            f"""\
+            <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
+                {prefix}:{identifier}
+            </a>"""
+            for prefix, identifier in nodes
+        )
 
-    stmts = indra_subnetwork(nodes=[], client=client, include_db_evidence=include_db_evidence == 'true')
-    return _enrich_render_statements(
-        stmts,
-        title="Subnetwork Curator",
-        description=f"""\
-        The subnetwork curator shows statements between the following nodes.
-        {_database_text("Pathway Commons")}
-        {EVIDENCE_TEXT}
-        </p>
-        <p>
-        {nodes_html}
-        """,
-        no_stmts_message="No statements found for the given nodes.",
-        include_db_evidence=include_db_evidence == 'true'
-    )
+        stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
+        return _enrich_render_statements(
+            stmts,
+            title="Subnetwork Curator",
+            description=f"""\
+            The subnetwork curator shows statements between the following nodes.
+            {_database_text("Pathway Commons")}
+            {EVIDENCE_TEXT}
+            </p>
+            <p>
+            {nodes_html}
+            """,
+            no_stmts_message="No statements found for the given nodes.",
+            include_db_evidence=include_db_evidence
+        )
+
+    # If no nodes provided, just render the form
+    form.include_db_evidence.data = include_db_evidence  # Set the checkbox state based on URL parameter
+    return render_template("curation/node_form.html", form=form)
 
 
 @curator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
