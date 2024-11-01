@@ -44,11 +44,11 @@ def indra_subnetwork_relations(
     """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
     query = f"""MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-           WHERE n1.id IN [{nodes_str}]
-           AND n2.id IN [{nodes_str}]
-           AND n1.id <> n2.id
-           {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
-           RETURN p"""
+               WHERE n1.id IN [{nodes_str}]
+               AND n2.id IN [{nodes_str}]
+               AND n1.id <> n2.id
+               {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
+               RETURN p"""
     return client.query_relations(query)
 
 
@@ -91,7 +91,7 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
