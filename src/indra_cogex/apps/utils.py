@@ -14,6 +14,7 @@ from typing import (
     Set,
     Tuple,
     cast,
+    Union,
 )
 
 from flask import Response, render_template, request
@@ -103,6 +104,7 @@ def render_statements(
     source_counts_dict :
         Mapping from statement hash to dictionaries of source name to source counts
     """
+
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
 
@@ -136,6 +138,7 @@ def render_statements(
         exclude_db_evidence=exclude_db_evidence,
         **kwargs,
     )
+    logger.info("Template rendered successfully")
     return response
 
 
@@ -143,7 +146,7 @@ def format_stmts(
     stmts: Iterable[Statement],
     evidence_counts: Optional[Mapping[int, int]] = None,
     limit: Optional[int] = None,
-    curations: Curations = None,
+    curations: Optional[List[Mapping[str, Any]]] = None,
     remove_medscan: bool = True,
     source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
@@ -191,13 +194,34 @@ def format_stmts(
         total_evidence, badges).
     """
     if evidence_counts is None:
-        evidence_counts = {stmt.get_hash(): len(stmt.evidence) for stmt in stmts}
+        evidence_counts = {}
+        for stmt in stmts:
+            if isinstance(stmt, list):
+                # Assuming the hash is the first element and evidence is the second
+                stmt_hash, evidence = stmt[0], stmt[1]
+                evidence_counts[stmt_hash] = len(evidence)
+            else:
+                evidence_counts[stmt.get_hash()] = len(stmt.evidence)
+    else:
+        logger.info("Using provided evidence_counts")
+        logger.debug(f"format_stmts input evidence_counts: {evidence_counts}")
     # Make sure statements are sorted by highest evidence counts first
-    stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
+    logger.info("Sorting statements by evidence count in descending order")
+    if all(isinstance(stmt, list) for stmt in stmts):
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s[0]], reverse=True)
+    else:
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
+    logger.debug(f"format_stmts sorted stmts: {stmts}")
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
         curations = curation_cache.get_curations(pa_hash=list(all_pa_hashes))
+    elif isinstance(curations, list):
+        # If curations is already a list, we assume it's in the correct format
+        pass
+    else:
+        # Assuming curations is a Curations object with a get_hash method
+        curations = curations.get_curations(pa_hash=list(all_pa_hashes))
 
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
@@ -217,18 +241,29 @@ def format_stmts(
 
     stmt_rows = []
     for stmt in stmts:
-        row = _stmt_to_row(
-            stmt,
-            cur_dict=cur_dict,
-            cur_counts=cur_counts,
-            remove_medscan=remove_medscan,
-            source_counts=source_counts_per_hash.get(stmt.get_hash())
-            if source_counts_per_hash
-            else None,
-        )
+        if isinstance(stmt, list):
+            stmt_hash, evidence = stmt[0], stmt[1]
+            row = _stmt_to_row(
+                stmt_hash,
+                evidence=evidence,
+                cur_dict=cur_dict,
+                cur_counts=cur_counts,
+                remove_medscan=remove_medscan,
+                source_counts=source_counts_per_hash.get(stmt_hash) if source_counts_per_hash else None,
+            )
+        else:
+            row = _stmt_to_row(
+                stmt,
+                cur_dict=cur_dict,
+                cur_counts=cur_counts,
+                remove_medscan=remove_medscan,
+                source_counts=source_counts_per_hash.get(stmt.get_hash()) if source_counts_per_hash else None,
+            )
         if row is not None:
             stmt_rows.append(row)
 
+    logger.info(f"format_stmts returning {len(stmt_rows)} statement rows")
+    logger.debug(f"format_stmts output stmt_rows: {stmt_rows}")
     return stmt_rows[:limit] if limit else stmt_rows
 
 
@@ -353,18 +388,25 @@ def remove_curated_pa_hashes(
 
 
 def remove_curated_statements(
-    statements: Iterable[Statement],
+    statements: Iterable[Union[Statement, List]],
     curations: Optional[List[Mapping[str, Any]]] = None,
     include_db_evidence: bool = False,
-) -> List[Statement]:
+) -> List[Union[Statement, List]]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
-    return [
-        statement
-        for statement in statements
-        if statement.get_hash() not in curated_pa_hashes
-        or (include_db_evidence and any(ev.source_api != 'User' for ev in statement.evidence))
-    ]
+
+    def should_keep(stmt):
+        if isinstance(stmt, list):
+            # Assuming the first element is the hash and the second is the evidence
+            stmt_hash, evidence = stmt[0], stmt[1]
+            return (stmt_hash not in curated_pa_hashes or
+                    (include_db_evidence and any(ev.get('source_api', '') != 'User' for ev in evidence)))
+        else:
+            return (stmt.get_hash() not in curated_pa_hashes or
+                    (include_db_evidence and any(ev.source_api != 'User' for ev in stmt.evidence)))
+
+    kept_statements = [stmt for stmt in statements if should_keep(stmt)]
+    return kept_statements
 
 
 def remove_curated_evidences(
