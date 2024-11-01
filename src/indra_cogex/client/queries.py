@@ -906,7 +906,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    paper_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+    paper_term: Tuple[str, str], *, client: Neo4jClient, include_db_evidence: bool = False, **kwargs,
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -916,24 +916,19 @@ def get_stmts_for_paper(
         The Neo4j client.
     paper_term :
         The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
+    include_db_evidence:
+        Whether to include statements with database evidence.
 
     Returns
     -------
     :
         The statements for the given PubMed ID.
     """
-    # Todo: Investigate if it's possible to do this in one query like
-    # MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "pubmed:14898026"})
-    # MATCH (:BioEntity)-[r:indra_rel {stmt_hash: e.stmt_hash}]->(:BioEntity)
-    # RETURN r, e
-
-    # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
-    #  stmt type
-
     parameter, publication_props = generate_paper_clause(paper_term)
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
+        WHERE {("true" if include_db_evidence else "NOT e.has_database_evidence OR e.has_database_evidence IS NULL")}
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, paper_parameter=parameter)
@@ -991,12 +986,16 @@ def get_stmts_for_mesh(
     include_child_terms: bool = True,
     *,
     client: Neo4jClient,
+    evidence_limit: int = 10,
+    include_db_evidence: bool = True,
     **kwargs,
-) -> Iterable[Statement]:
+) -> Union[Tuple[List[Statement], Mapping[int, int]], Tuple[List[Statement], None]]:
     """Return the statements with evidence for the given MESH ID.
 
     Parameters
     ----------
+    include_db_evidence
+    evidence_limit
     client :
         The Neo4j client.
     mesh_term :
@@ -1014,12 +1013,15 @@ def get_stmts_for_mesh(
     """
     evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
     hashes = list(evidence_map.keys())
-    return get_stmts_for_stmt_hashes(
+    stmts = get_stmts_for_stmt_hashes(
         hashes,
         evidence_map=evidence_map,
         client=client,
+        evidence_limit=evidence_limit,
+        include_db_evidence=include_db_evidence,
         **kwargs,
     )
+    return stmts
 
 
 @autoclient()
@@ -1112,7 +1114,7 @@ def get_stmts_for_stmt_hashes(
             {db_evidence_constraint}
         RETURN p
     """
-    logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
+    logger.info(f"get_stmts_for_stmt_hashes executing query with {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
@@ -1125,7 +1127,6 @@ def get_stmts_for_stmt_hashes(
             evidence_map=evidence_map,
             evidence_limit=evidence_limit,
         )
-
     if not return_evidence_counts:
         return rv
     evidence_counts = {
@@ -1424,8 +1425,8 @@ def get_edge_counter(*, client: Neo4jClient) -> Counter:
                 f"MATCH ()-[r:{relation}]->() RETURN count(*)", squeeze=True
             )[0]
             for relation in client.query_tx(
-                "call db.relationshipTypes();", squeeze=True
-            )
+            "call db.relationshipTypes();", squeeze=True
+        )
         }
     )
 
