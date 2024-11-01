@@ -48,7 +48,7 @@ __all__ = [
     "get_statements_mix",
     "get_stmts_for_agent_type",
     "get_stmts_for_source",
-    "get_stmts_for_rel_type",
+    "get_stmts_for_rel_types",
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
@@ -1147,7 +1147,7 @@ def get_stmts_for_stmt_hashes(
 @autoclient()
 def get_statements_mix(
     *,
-    rel_type: Optional[str] = None,
+    rel_types: Optional[Union[str, List[str]]] = None,
     stmt_source: Optional[str] = None,
     agent_name: Optional[str] = None,
     agent_role: Optional[str] = None,
@@ -1158,7 +1158,7 @@ def get_statements_mix(
     """Return the statements based on optional constraints on relationship type
     Parameters
     ----------
-    rel_type : Optional[str], default: None
+    rel_types : Optional[str], default: None
         The relationship type to query for (e.g., "Phosphorylation").
     stmt_source : Optional[str], default: None
         The source to query for (e.g., "reach").
@@ -1193,31 +1193,28 @@ def get_statements_mix(
         match_clause = f"(a:BioEntity)-[r:indra_rel"
         match_direction = "]-(b:BioEntity)"
 
-
-    rel_constraints = []
-    if rel_type:
-        rel_constraints.append("stmt_type: $rel_type")
-
-    if rel_constraints:
-        match_clause += " {" + ", ".join(rel_constraints) + "}"
-
-    query = f"MATCH p = {match_clause}{match_direction}"
+    match_clause += "}" + match_direction
 
     where_clauses = []
+    if rel_types:
+        if isinstance(rel_types, list):
+            where_clauses.append("r.stmt_type IN $rel_types")
+        else:
+            where_clauses.append("r.stmt_type = $rel_types")
     if stmt_source:
         where_clauses.append(f'r.source_counts CONTAINS \'"{stmt_source}":\'')
     if where_clauses:
-        query += " WHERE " + " AND ".join(where_clauses)
+        match_clause += " WHERE " + " AND ".join(where_clauses)
 
-    query += " RETURN p LIMIT $limit"
+    query = f"MATCH p = {match_clause} RETURN p LIMIT $limit"
 
     params = {
         "agent_name": agent_name,
-        "rel_type": rel_type,
+        "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
         "limit": limit
     }
 
-    logger.info(f"Running query with constraints: rel_type={rel_type}, "
+    logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_source}, agent_name={agent_name}, "
                 f"agent_role={agent_role}, limit={limit}")
     rels = client.query_relations(query, **params)
@@ -1345,21 +1342,21 @@ def get_stmts_for_source(
 
 
 @autoclient()
-def get_stmts_for_rel_type(
-        rel_type: str,
+def get_stmts_for_rel_types(
+        rel_types: Union[str, List[str]],
         limit: Optional[int] = 10,
         *,
         client: Neo4jClient,
         evidence_limit: Optional[int] = None
 ) -> List[Statement]:
-    """Return the statements for the given relationship type.
+    """Return the statements for the given relationship types.
 
     Parameters
     ----------
-    rel_type : str
-        The relationship type to query for (e.g., "Phosphorylation").
+    rel_types : Union[str, List[str]]
+        The relationship types to query for (e.g., ["Phosphorylation", "Activation"]).
     limit : Optional[int], default: 10
-        The maximum number of statements returned
+        The maximum number of statements returned.
     client : Neo4jClient
         The Neo4j client to use for querying.
     evidence_limit : Optional[int], default: None
@@ -1368,21 +1365,24 @@ def get_stmts_for_rel_type(
     Returns
     -------
     List[Statement]
-        A list of statements filtered by the given relationship type.
+        A list of statements filtered by the given relationship types.
     """
+    if isinstance(rel_types, str):
+        rel_types = [rel_types]
 
     query = """
-    MATCH p = (a:BioEntity)-[r:indra_rel {stmt_type: $rel_type}]->(b:BioEntity)
+    MATCH p = (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
+    WHERE r.stmt_type IN $rel_types
     RETURN p LIMIT $limit
     """
 
     params = {
-        "rel_type": rel_type,
+        "rel_types": rel_types,
         "limit": limit
     }
 
     logger.info(
-        f"Getting statements for relationship type '{rel_type}' with limit {limit}")
+        f"Getting statements for relationship types '{rel_types}' with limit {limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
     if evidence_limit and evidence_limit > 1:
