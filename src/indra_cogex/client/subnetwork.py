@@ -296,7 +296,8 @@ def indra_subnetwork_go(
 
     Parameters
     ----------
-    include_db_evidence
+    include_db_evidence :
+        Whether to include database evidence or not.
     go_term :
         The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
