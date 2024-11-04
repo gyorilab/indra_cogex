@@ -1146,34 +1146,43 @@ def get_stmts_for_stmt_hashes(
 
 @autoclient()
 def get_statements(
-        *,
-        rel_types: Optional[Union[str, List[str]]] = None,
-        stmt_sources: Optional[Union[str, List[str]]] = None,
-        agent_name: Optional[str] = None,
-        agent_role: Optional[str] = None,
-        limit: Optional[int] = 10,
-        client: Neo4jClient,
-        evidence_limit: Optional[int] = None,
-        return_evidence_counts: bool = False,
-) ->Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
+    agent: Union[str, Tuple[str, str]],
+    *,
+    rel_types: Optional[Union[str, List[str]]] = None,
+    stmt_sources: Optional[Union[str, List[str]]] = None,
+    agent_role: Optional[str] = None,
+    other_agent: Optional[Union[str, Tuple[str, str]]] = None,
+    other_role: Optional[str] = None,
+    limit: Optional[int] = 10,
+    client: Neo4jClient,
+    evidence_limit: Optional[int] = None,
+    return_evidence_counts: bool = False,
+) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
     Parameters
     ----------
     rel_types : Optional[Union[str, List[str]]], default: None
-        The relationship type(s) to query for (e.g., "Phosphorylation" or ["Phosphorylation", "Activation"]).
+        The relationship type(s) to filter by, e.g., "Phosphorylation" or ["Phosphorylation", "Activation"].
     stmt_sources : Optional[Union[str, List[str]]], default: None
-        The source(s) to query for (e.g., "reach" or ["reach", "sparser"]).
-    agent_name : Optional[str], default: None
-        The name of the agent to filter by (e.g., "EGFR").
+        The source(s) to filter by, e.g., "reach" or ["reach", "sparser"].
+    agent : Union[str, Tuple[str, str]]
+        The primary agent involved in the interaction. Can be specified as a name (e.g., "EGFR") or as a CURIE
+        tuple (namespace, ID), such as ("MESH", "D051379").
     agent_role : Optional[str], default: None
-        The role of the agent in the interaction, either "subject" or "object".
+        The role of `agent` in the interaction: either "subject", "object", or None for an undirected search.
+    other_agent : Optional[Union[str, Tuple[str, str]]], default: None
+        A secondary agent in the interaction, specified either as a name or CURIE tuple.
+    other_role : Optional[str], default: None
+        The role of `other_agent` in the interaction: either "subject", "object", or None.
     limit : Optional[int], default: 10
-        The maximum number of statements returned
+        The maximum number of statements to return.
     client : Neo4jClient
-        The Neo4j client to use for querying.
+        The Neo4j client used for executing the query.
     evidence_limit : Optional[int], default: None
-        The optional limit for the number of evidence entries per statement.
+        The optional maximum number of evidence entries to retrieve per statement.
+    return_evidence_counts : bool, default: False
+        Whether to include a mapping of statement hash to evidence count in the results.
 
     Returns
     -------
@@ -1181,26 +1190,40 @@ def get_statements(
         A list of statements filtered by the provided constraints.
     """
 
-    if agent_name and agent_role:
-        if agent_role.lower() == "subject":
-            match_clause = f"(a:BioEntity {{name: $agent_name}})-[r:indra_rel"
-            match_direction = "]->(b:BioEntity)"
-        elif agent_role.lower() == "object":
-            match_clause = f"(a:BioEntity)-[r:indra_rel"
-            match_direction = f"]->(b:BioEntity {{name: $agent_name}})"
-    elif agent_name:
-        match_clause = f"(a:BioEntity {{name: $agent_name}})-[r:indra_rel"
-        match_direction = "]-(b:BioEntity)"
+    if isinstance(agent, tuple):
+        agent_constraint = norm_id(*agent)
+        agent_match_clause = f"(a:BioEntity {{id: $agent_constraint}})"
     else:
-        match_clause = f"(a:BioEntity)-[r:indra_rel"
-        match_direction = "]-(b:BioEntity)"
+        agent_constraint = agent
+        agent_match_clause = f"(a:BioEntity {{name: $agent_constraint}})"
 
-    match_clause += match_direction
+    if isinstance(other_agent, tuple):
+        other_agent_constraint = norm_id(*other_agent)
+        other_agent_match_clause = f"(b:BioEntity {{id: $other_agent_constraint}})"
+    elif other_agent:
+        other_agent_constraint = other_agent
+        other_agent_match_clause = f"(b:BioEntity {{name: $other_agent_constraint}})"
+    else:
+        other_agent_match_clause = "(b:BioEntity)"
+
+
+    if agent_role == "subject" and other_role == "object":
+        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
+    elif agent_role == "object" and other_role == "subject":
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
+    elif agent_role == "subject":
+        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
+    elif agent_role == "object":
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
+    else:
+        match_clause = f"{agent_match_clause}-[r:indra_rel]-{other_agent_match_clause}"
+
     where_clauses = []
     if rel_types:
         if isinstance(rel_types, str):
             rel_types = [rel_types]
         where_clauses.append("r.stmt_type IN $rel_types")
+
     if stmt_sources:
         if isinstance(stmt_sources, str):
             stmt_sources = [stmt_sources]
@@ -1215,14 +1238,17 @@ def get_statements(
     query = f"MATCH p = {match_clause} RETURN p LIMIT $limit"
 
     params = {
-        "agent_name": agent_name,
+        "agent_constraint": agent_constraint,
         "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
         "limit": limit
     }
 
+    if other_agent:
+        params["other_agent_constraint"] = other_agent_constraint
+
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
-                f"source={stmt_sources}, agent_name={agent_name}, "
-                f"agent_role={agent_role}, limit={limit}")
+                f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
+                f"agent_role={agent_role}, other_role={other_role}, limit={limit}")
     rels = client.query_relations(query, **params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
@@ -1232,8 +1258,10 @@ def get_statements(
             client=client,
             evidence_limit=evidence_limit,
         )
+
     if not return_evidence_counts:
         return stmts
+
     evidence_counts = {
         stmt.get_hash(): rel.data["evidence_count"]
         for rel, stmt in zip(rels, stmts)
