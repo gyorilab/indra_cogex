@@ -5,14 +5,10 @@
     <!-- Vue 2 -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
-    <!-- Indralab-vue, for access to <statement> component and its child components -->
-    {% if LOCAL_VUE %}
-        <script src="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
-        <link href="{{ url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}" rel="stylesheet">
-    {% else %}
-        <script src="{{ vue_src_js }}"></script>
-        <link href="{{ vue_src_css }}" rel="stylesheet">
-    {% endif %}
+<!-- Indralab-vue, for access to <statement> component and its child components -->
+    <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
+    <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
+          rel="stylesheet">
 
     <!-- Source badge CSS -->
     <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
@@ -92,8 +88,11 @@
             {% if is_proteocentric %}
             <div class="card-body">
                 <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" id="exclude_db_evidence"
-                           v-model="exclude_db_evidence" @change="updateExcludeDbEvidence">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           id="exclude_db_evidence"
+                           v-model="exclude_db_evidence"
+                           @change="handleExcludeDbEvidence">
                     <label class="form-check-label" for="exclude_db_evidence">Exclude database evidence</label>
                 </div>
             </div>
@@ -101,7 +100,7 @@
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in stmts"
+                        v-for="st_obj in this.$data.stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -111,7 +110,6 @@
                         :badges="st_obj.badges"
                         :loadable="true"
                         :sources_left_of_badges="true"
-                        :include-db-evidence="!exclude_db_evidence"
                 ></statement>
             </div>
             {% if footer %}
@@ -151,15 +149,20 @@
                 ],
                 include_db_evidence: {{ include_db_evidence|default(false)|tojson }},
                 exclude_db_evidence: {{ exclude_db_evidence|default(false)|tojson }},
-                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }},
+                checkboxDisabled: false
             },
             methods: {
+                handleCheckboxChange() {
+                    this.checkboxDisabled = true;
+                    this.updateExcludeDbEvidence();
+                },
                 updateExcludeDbEvidence() {
-                    let currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('exclude_db_evidence', this.exclude_db_evidence);
-                    window.location.href = currentUrl.toString();
+                let currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('exclude_db_evidence', this.exclude_db_evidence);
+                window.location.href = currentUrl.toString();
                 }
-            }
+           }
         });
     </script>
 {% endblock %}
