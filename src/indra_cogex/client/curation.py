@@ -125,7 +125,9 @@ def get_go_curation_hashes(
 
     Parameters
     ----------
-    include_db_evidence
+    include_db_evidence :
+        If True, include statements with database evidence. If False, exclude them,
+        by default True
     go_term :
         The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
@@ -179,7 +181,9 @@ def get_ppi_source_counts(
 
     Parameters
     ----------
-    include_db_evidence
+    include_db_evidence :
+        If True, include statements with database evidence. If False, exclude them,
+       by default True
     client :
         The Neo4j client.
 
@@ -220,10 +224,14 @@ def get_goa_source_counts(
 
     Parameters
     ----------
-    minimum_evidences
-    include_db_evidence
     client :
-        The Neo4j client.
+       The Neo4j client
+   minimum_evidences :
+       Minimum number of evidences required for a statement to be included,
+       by default 10
+   include_db_evidence :
+       If True, include statements with database evidence. If False, exclude them,
+       by default True
 
     Returns
     -------
