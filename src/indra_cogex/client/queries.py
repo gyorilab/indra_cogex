@@ -1145,7 +1145,7 @@ def get_stmts_for_stmt_hashes(
     return rv, evidence_counts
 
 @autoclient()
-def get_statements_mix(
+def get_statements(
         *,
         rel_types: Optional[Union[str, List[str]]] = None,
         stmt_sources: Optional[Union[str, List[str]]] = None,
