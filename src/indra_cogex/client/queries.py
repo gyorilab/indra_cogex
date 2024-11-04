@@ -994,8 +994,10 @@ def get_stmts_for_mesh(
 
     Parameters
     ----------
-    include_db_evidence
-    evidence_limit
+    include_db_evidence :
+        Whether to include db evidence or not
+    evidence_limit :
+        Maximum number of evidence per statement
     client :
         The Neo4j client.
     mesh_term :
@@ -1071,9 +1073,13 @@ def get_stmts_for_stmt_hashes(
 
     Parameters
     ----------
-    object_prefix
-    return_evidence_counts
-    subject_prefix
+    return_evidence_counts :
+       If True, returns a tuple of (statements, evidence_counts). If False, returns
+       only statements
+   subject_prefix :
+       Filter statements to only those where the subject ID starts with this prefix
+   object_prefix :
+       Filter statements to only those where the object ID starts with this prefix
     include_db_evidence : bool
         If True, include statements with database evidence. If False, exclude them.
     client :
