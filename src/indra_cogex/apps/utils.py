@@ -91,18 +91,33 @@ def render_statements(
 
     Parameters
     ----------
-    is_proteocentric
-    limit
-    evidence_lookup_time
-    curations
-    include_db_evidence
-    exclude_db_evidence
-    stmts:
-
-    evidence_counts:
-        Mapping from statement hash to total number of evidences
+    stmts :
+        List of INDRA Statement objects to be rendered
+    evidence_counts :
+        Dictionary mapping statement hash to total number of evidences
+    evidence_lookup_time :
+        Time taken to look up evidences in seconds
+    limit :
+        Maximum number of statements to render
+    curations :
+        List of curation data dictionaries for the statements
     source_counts_dict :
-        Mapping from statement hash to dictionaries of source name to source counts
+        Dictionary mapping statement hash to dictionaries of
+        source name to source counts
+    include_db_evidence :
+        Whether to include evidence from databases in the display, by default True
+    is_proteocentric :
+        Whether the view is protein-centric, enabling specific protein-related features,
+        by default False
+    exclude_db_evidence :
+        Whether to exclude database evidence from the display, by default False
+    kwargs :
+        Additional keyword arguments to pass to the template renderer
+
+    Returns
+    -------
+    str :
+        HTML string of the rendered statements
     """
 
     _, _, user_email = resolve_email()
@@ -397,13 +412,10 @@ def remove_curated_statements(
 
     def should_keep(stmt):
         if isinstance(stmt, list):
-            # Assuming the first element is the hash and the second is the evidence
-            stmt_hash, evidence = stmt[0], stmt[1]
-            return (stmt_hash not in curated_pa_hashes or
-                    (include_db_evidence and any(ev.get('source_api', '') != 'User' for ev in evidence)))
+            stmt_hash = stmt[0]
+            return stmt_hash not in curated_pa_hashes
         else:
-            return (stmt.get_hash() not in curated_pa_hashes or
-                    (include_db_evidence and any(ev.source_api != 'User' for ev in stmt.evidence)))
+            return stmt.get_hash() not in curated_pa_hashes
 
     kept_statements = [stmt for stmt in statements if should_keep(stmt)]
     return kept_statements
