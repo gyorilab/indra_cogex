@@ -1244,7 +1244,7 @@ def get_statements_mix(
 @autoclient()
 def get_stmts_for_agent_type(
     agent_name: str,
-    agent_role: str,
+    agent_role: Optional[str] = None,
     limit: Optional[int] = 10,
     *,
     client: Neo4jClient,
@@ -1256,7 +1256,7 @@ def get_stmts_for_agent_type(
     ----------
     agent_name : str
         The name of the agent (e.g.,"MEK").
-    agent_role : str
+    agent_role : Optional[str], default: None
         The role of the agent in the interaction, either "subject" or "object".
     limit : Optional[int], default: 10
         The maximum number of statements returned
