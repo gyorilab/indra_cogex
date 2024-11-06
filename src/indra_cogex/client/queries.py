@@ -45,7 +45,7 @@ __all__ = [
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
-    "get_statements_mix",
+    "get_statements",
     "get_stmts_for_agent_type",
     "get_stmts_for_source",
     "get_stmts_for_rel_types",
@@ -784,7 +784,7 @@ def get_evidences_for_mesh(
         match_terms = {norm_mesh} | child_terms
         where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
-        query_params["mesh_terms"] = match_terms
+        query_params["mesh_terms"] = list(match_terms)
     else:
         single_mesh_match = ' {id: $mesh_id}'
         where_clause = ""
@@ -1146,17 +1146,19 @@ def get_stmts_for_stmt_hashes(
 
 @autoclient()
 def get_statements(
-    agent: Union[str, Tuple[str, str]],
-    *,
-    rel_types: Optional[Union[str, List[str]]] = None,
-    stmt_sources: Optional[Union[str, List[str]]] = None,
-    agent_role: Optional[str] = None,
-    other_agent: Optional[Union[str, Tuple[str, str]]] = None,
-    other_role: Optional[str] = None,
-    limit: Optional[int] = 10,
-    client: Neo4jClient,
-    evidence_limit: Optional[int] = None,
-    return_evidence_counts: bool = False,
+        agent: Union[str, Tuple[str, str]],
+        *,
+        rel_types: Optional[Union[str, List[str]]] = None,
+        stmt_sources: Optional[Union[str, List[str]]] = None,
+        agent_role: Optional[str] = None,
+        other_agent: Optional[Union[str, Tuple[str, str]]] = None,
+        other_role: Optional[str] = None,
+        mesh_term: Optional[Tuple[str, str]] = None,
+        include_child_terms: Optional[bool] = False,
+        limit: Optional[int] = 10,
+        client: Neo4jClient,
+        evidence_limit: Optional[int] = None,
+        return_evidence_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
@@ -1170,11 +1172,15 @@ def get_statements(
         The primary agent involved in the interaction. Can be specified as a name (e.g., "EGFR") or as a CURIE
         tuple (namespace, ID), such as ("MESH", "D051379").
     agent_role : Optional[str], default: None
-        The role of `agent` in the interaction: either "subject", "object", or None for an undirected search.
+        The role of agent in the interaction: either "subject", "object", or None for an undirected search.
     other_agent : Optional[Union[str, Tuple[str, str]]], default: None
         A secondary agent in the interaction, specified either as a name or CURIE tuple.
     other_role : Optional[str], default: None
-        The role of `other_agent` in the interaction: either "subject", "object", or None.
+        The role of other_agent in the interaction: either "subject", "object", or None.
+    mesh_term : Optional[Tuple[str, str]], default : None
+        The mesh_term filter for evidences
+    include_child_terms : Optional[bool], default : True
+        If True, also match against the child MESH terms of the given MESH term.
     limit : Optional[int], default: 10
         The maximum number of statements to return.
     client : Neo4jClient
@@ -1189,10 +1195,19 @@ def get_statements(
     List[Statement]
         A list of statements filtered by the provided constraints.
     """
+    where_clauses = []
+    evidence_map = None
+    mesh_hashes = None
+    if mesh_term:
+        evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
+        mesh_hashes = list(evidence_map.keys())
+        where_clauses.append("r.stmt_hash IN $stmt_hashes")
 
+    # Agent being CURIE
     if isinstance(agent, tuple):
         agent_constraint = norm_id(*agent)
         agent_match_clause = f"(a:BioEntity {{id: $agent_constraint}})"
+    # Agent being text name
     else:
         agent_constraint = agent
         agent_match_clause = f"(a:BioEntity {{name: $agent_constraint}})"
@@ -1206,7 +1221,6 @@ def get_statements(
     else:
         other_agent_match_clause = "(b:BioEntity)"
 
-
     if agent_role == "subject" and other_role == "object":
         match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
     elif agent_role == "object" and other_role == "subject":
@@ -1218,33 +1232,33 @@ def get_statements(
     else:
         match_clause = f"{agent_match_clause}-[r:indra_rel]-{other_agent_match_clause}"
 
-    where_clauses = []
     if rel_types:
         if isinstance(rel_types, str):
             rel_types = [rel_types]
         where_clauses.append("r.stmt_type IN $rel_types")
 
+
     if stmt_sources:
         if isinstance(stmt_sources, str):
             stmt_sources = [stmt_sources]
-        source_conditions = " OR ".join(
-            [f'r.source_counts CONTAINS \'"{source}":\'' for source in
-             stmt_sources])
-        where_clauses.append(f"({source_conditions})")
+        where_clauses.append("any(source IN $stmt_sources WHERE r.source_counts CONTAINS source)")
 
     if where_clauses:
         match_clause += " WHERE " + " AND ".join(where_clauses)
 
     query = f"MATCH p = {match_clause} RETURN p LIMIT $limit"
-
+    print(query)
     params = {
         "agent_constraint": agent_constraint,
         "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
         "limit": limit
     }
-
     if other_agent:
         params["other_agent_constraint"] = other_agent_constraint
+    if mesh_hashes:
+        params['stmt_hashes'] = mesh_hashes
+    if stmt_sources:
+        params['stmt_sources'] = stmt_sources
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
@@ -1256,6 +1270,7 @@ def get_statements(
         stmts = enrich_statements(
             stmts,
             client=client,
+            evidence_map=evidence_map,
             evidence_limit=evidence_limit,
         )
 

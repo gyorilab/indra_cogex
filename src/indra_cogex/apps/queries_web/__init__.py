@@ -72,9 +72,12 @@ examples_dict = {
     "rel_type": fields.String(example="Phosphorylation"),
     "rel_types": fields.List(fields.String, example=["Phosphorylation", "Activation"]),
     "agent_name": fields.String(example="MEK"),
+    "agent": fields.String(example="MEK"),
+    "other_agent": fields.String(example="ERK"),
+    "agent_role": fields.String(example="Object"),
+    "other_role" : fields.String(example="Subject"),
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
-    "agent_role": fields.String(example="subject"),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
@@ -121,6 +124,7 @@ SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
     "get_evidences_for_stmt_hash": {"remove_medscan"},
     "get_evidences_for_stmt_hashes": {"remove_medscan"},
+    "get_statements": {"mesh_term","include_child_terms"}
 }
 
 # This is the list of functions to be included
