@@ -9,7 +9,7 @@ import networkx as nx
 from indra.statements import Agent, Evidence, Statement
 
 from .neo4j_client import Neo4jClient, autoclient
-from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
+from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
 
 logger = logging.getLogger(__name__)
 
@@ -933,30 +933,13 @@ def get_stmts_for_paper(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
 
-    if paper_term[0].lower() in {"pmid", "pubmed"}:
-        parameter = norm_id(*paper_term)
-        publication_props = "{id: $parameter}"
-
-    elif paper_term[0].lower() == "doi":
-        parameter = paper_term[1]
-        publication_props = "{doi: $parameter}"
-
-    elif paper_term[0].lower() in {"pmc", "pmcid"}:
-        parameter = paper_term[1]
-        publication_props = "{pmcid: $parameter}"
-
-    elif paper_term[0].lower() == "trid":
-        parameter = paper_term[1]
-        publication_props = "{trid: $parameter}"
-
-    else:
-        raise ValueError(f"Invalid prefix for publication lookup: {paper_term[0]}")
+    parameter, publication_props = generate_paper_clause(paper_term)
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-    result = client.query_tx(hash_query, parameter=parameter)
+    result = client.query_tx(hash_query, paper_parameter=parameter)
     return _stmts_from_results(client=client, result=result, **kwargs)
 
 
@@ -1153,6 +1136,7 @@ def get_statements(
         agent_role: Optional[str] = None,
         other_agent: Optional[Union[str, Tuple[str, str]]] = None,
         other_role: Optional[str] = None,
+        paper_term: Optional[Tuple[str, str]] = None,
         mesh_term: Optional[Tuple[str, str]] = None,
         include_child_terms: Optional[bool] = True,
         limit: Optional[int] = 10,
@@ -1177,6 +1161,8 @@ def get_statements(
         A secondary agent in the interaction, specified either as a name or CURIE tuple.
     other_role : Optional[str], default: None
         The role of other_agent in the interaction: either "subject", "object", or None.
+    paper_term: Optional[Tuple[str, str]], default : None
+        The paper filter. Can be a PubMed ID, PMC id, TRID, or DOI
     mesh_term : Optional[Tuple[str, str]], default : None
         The mesh_term filter for evidences
     include_child_terms : Optional[bool], default : True
@@ -1197,20 +1183,28 @@ def get_statements(
     """
     where_clauses = []
     mesh_all_term, hash_in_rel = None, ""
-    if mesh_term:
+    if paper_term:
+        paper_param, paper_clause = generate_paper_clause(paper_term)
+    else:
+        paper_clause = None
+
+    if mesh_term or paper_term:
+        query = (f"MATCH (e:Evidence)-[:has_citation]->"
+                 f"(pub:Publication {paper_clause})-[:annotated_with] "
+                 f"-> (mesh_term:BioEntity)")
         hash_in_rel = "{stmt_hash: e.stmt_hash}"
-        query = f"MATCH (e:Evidence)-[:has_citation]->(pub:Publication)-[:annotated_with] -> (mesh_term:BioEntity)"
-        norm_mesh = norm_id(*mesh_term)
-        if include_child_terms:
-            child_terms = _get_mesh_child_terms(mesh_term, client=client)
-        else:
-            child_terms = set()
-        if child_terms:
-            mesh_all_term = {norm_mesh} | child_terms
-            mesh_all_term = list(mesh_all_term)
-        else:
-            mesh_all_term = [norm_mesh]
-        where_clauses.append("mesh_term.id IN $mesh_terms")
+        if mesh_term:
+            norm_mesh = norm_id(*mesh_term)
+            if include_child_terms:
+                child_terms = _get_mesh_child_terms(mesh_term, client=client)
+            else:
+                child_terms = set()
+            if child_terms:
+                mesh_all_term = {norm_mesh} | child_terms
+                mesh_all_term = list(mesh_all_term)
+            else:
+                mesh_all_term = [norm_mesh]
+            where_clauses.append("mesh_term.id IN $mesh_terms")
     else:
         query = ""
 
@@ -1269,12 +1263,15 @@ def get_statements(
         params["mesh_terms"] = mesh_all_term
     if stmt_sources:
         params['stmt_sources'] = stmt_sources
+    if paper_term:
+        print(paper_param)
+        params['paper_parameter'] = paper_param
 
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
                 f"agent_role={agent_role}, other_role={other_role}, limit={limit}")
-
+    logger.info(query)
     rels = client.query_tx(query, **params)
     flattened_rels = [client.neo4j_to_relation(i[0]) for rel in rels for i in rel]
     stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
