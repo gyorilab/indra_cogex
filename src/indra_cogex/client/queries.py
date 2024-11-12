@@ -1154,7 +1154,7 @@ def get_statements(
         other_agent: Optional[Union[str, Tuple[str, str]]] = None,
         other_role: Optional[str] = None,
         mesh_term: Optional[Tuple[str, str]] = None,
-        include_child_terms: Optional[bool] = False,
+        include_child_terms: Optional[bool] = True,
         limit: Optional[int] = 10,
         client: Neo4jClient,
         evidence_limit: Optional[int] = None,
@@ -1196,12 +1196,23 @@ def get_statements(
         A list of statements filtered by the provided constraints.
     """
     where_clauses = []
-    evidence_map = None
-    mesh_hashes = None
+    mesh_all_term, hash_in_rel = None, ""
     if mesh_term:
-        evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
-        mesh_hashes = list(evidence_map.keys())
-        where_clauses.append("r.stmt_hash IN $stmt_hashes")
+        hash_in_rel = "{stmt_hash: e.stmt_hash}"
+        query = f"MATCH (e:Evidence)-[:has_citation]->(pub:Publication)-[:annotated_with] -> (mesh_term:BioEntity)"
+        norm_mesh = norm_id(*mesh_term)
+        if include_child_terms:
+            child_terms = _get_mesh_child_terms(mesh_term, client=client)
+        else:
+            child_terms = set()
+        if child_terms:
+            mesh_all_term = {norm_mesh} | child_terms
+            mesh_all_term = list(mesh_all_term)
+        else:
+            mesh_all_term = [norm_mesh]
+        where_clauses.append("mesh_term.id IN $mesh_terms")
+    else:
+        query = ""
 
     # Agent being CURIE
     if isinstance(agent, tuple):
@@ -1222,15 +1233,15 @@ def get_statements(
         other_agent_match_clause = "(b:BioEntity)"
 
     if agent_role == "subject" and other_role == "object":
-        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
     elif agent_role == "object" and other_role == "subject":
-        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
     elif agent_role == "subject":
-        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
     elif agent_role == "object":
-        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
     else:
-        match_clause = f"{agent_match_clause}-[r:indra_rel]-{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]-{other_agent_match_clause}"
 
     if rel_types:
         if isinstance(rel_types, str):
@@ -1246,8 +1257,7 @@ def get_statements(
     if where_clauses:
         match_clause += " WHERE " + " AND ".join(where_clauses)
 
-    query = f"MATCH p = {match_clause} RETURN p LIMIT $limit"
-    print(query)
+    query += f"MATCH p = {match_clause} WITH distinct r.stmt_hash AS hash, collect(p) as pp RETURN pp LIMIT $limit"
     params = {
         "agent_constraint": agent_constraint,
         "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
@@ -1255,22 +1265,23 @@ def get_statements(
     }
     if other_agent:
         params["other_agent_constraint"] = other_agent_constraint
-    if mesh_hashes:
-        params['stmt_hashes'] = mesh_hashes
+    if mesh_all_term:
+        params["mesh_terms"] = mesh_all_term
     if stmt_sources:
         params['stmt_sources'] = stmt_sources
+
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
                 f"agent_role={agent_role}, other_role={other_role}, limit={limit}")
-    rels = client.query_relations(query, **params)
-    stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
+    rels = client.query_tx(query, **params)
+    flattened_rels = [client.neo4j_to_relation(i[0]) for rel in rels for i in rel]
+    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
     if evidence_limit and evidence_limit > 1:
         stmts = enrich_statements(
             stmts,
             client=client,
-            evidence_map=evidence_map,
             evidence_limit=evidence_limit,
         )
 
@@ -1278,8 +1289,8 @@ def get_statements(
         return stmts
 
     evidence_counts = {
-        stmt.get_hash(): rel.data["evidence_count"]
-        for rel, stmt in zip(rels, stmts)
+        stmt.get_hash(): min(rel.data["evidence_count"], evidence_limit)
+        for rel, stmt in zip(flattened_rels, stmts)
     }
 
     return stmts, evidence_counts
