@@ -368,6 +368,30 @@ def test_get_stmts_by_hashes():
     assert stmts
     assert isinstance(stmts[0], Statement)
 
+@pytest.mark.nonpublic
+def test_get_statements():
+    client = _get_client()
+    stmts, evidence_map = get_statements(
+        agent="MEK",
+        other_agent="ERK",
+        agent_role='subject',
+        other_role='object',
+        rel_types=["Phosphorylation", "Activation"],
+        stmt_sources='reach',
+        mesh_term=("MESH", 'D000818'),
+        paper_term=('pubmed', '23356518'),
+        client=client,
+        limit=1000,
+        evidence_limit=500,
+        return_evidence_counts=True
+    )
+    assert stmts
+    assert all(isinstance(stmt, Statement) for stmt in stmts)
+    assert evidence_map
+    stmt_hashes = {stmt.get_hash() for stmt in stmts}
+    assert stmt_hashes == evidence_map.keys()
+    for stmt_hash, evidence_count in evidence_map.items():
+        assert evidence_count <= 500
 
 @pytest.mark.nonpublic
 def test_is_gene_mutated():
