@@ -1264,7 +1264,6 @@ def get_statements(
     if stmt_sources:
         params['stmt_sources'] = stmt_sources
     if paper_term:
-        print(paper_param)
         params['paper_parameter'] = paper_param
 
 
