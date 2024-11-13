@@ -1285,7 +1285,11 @@ def get_statements(
         return stmts
 
     evidence_counts = {
-        stmt.get_hash(): min(rel.data["evidence_count"], evidence_limit)
+        stmt.get_hash(): (
+            min(rel.data["evidence_count"], evidence_limit)
+            if evidence_limit is not None
+            else rel.data["evidence_count"]
+        )
         for rel, stmt in zip(flattened_rels, stmts)
     }
 
