@@ -25,14 +25,16 @@ def search():
         agent_name = form.agent_name.data
         agent_role = form.agent_role.data
         source_type = form.source_type.data
-        rel_type = form.rel_type.data
-        statements = get_statements_mix(
-            agent_name=agent_name,
+        rel_type = form.rel_type.data 
+        statements, evidence_count = get_statements(
+            agent=agent_name,
             agent_role=agent_role,
-            stmt_source=source_type,
-            rel_type=rel_type,
-            limit=10
+            stmt_sources=source_type,
+            rel_types=rel_type,
+            limit=50,
+            evidence_limit=2000,
+            return_evidence_counts=True
         )
-        return render_statements(stmts=statements)
+        return render_statements(stmts=statements, evidence_count=evidence_count)
 
     return render_template("search/search_page.html", form=form)
