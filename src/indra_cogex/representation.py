@@ -3,7 +3,7 @@
 """Representations for nodes and relations to upload to Neo4j."""
 
 
-__all__ = ["Node", "Relation", "indra_stmts_from_relations", "norm_id"]
+__all__ = ["Node", "Relation", "indra_stmts_from_relations", "norm_id", "generate_paper_clause"]
 
 import codecs
 from typing import (
@@ -505,3 +505,31 @@ def indra_stmts_from_relations(rels: Iterable[Relation],
         # We do it this way to not change the order of the statements
         stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
     return stmts
+
+
+def generate_paper_clause(paper_term: Tuple[str, str]):
+    """
+    paper_term :
+        Can be a PubMed ID, PMC id, TRID, or DOI
+    """
+    if paper_term[0].lower() in {"pmid", "pubmed"}:
+        parameter = norm_id(*paper_term)
+        publication_props = "{id: $paper_parameter}"
+
+    elif paper_term[0].lower() == "doi":
+        parameter = paper_term[1]
+        publication_props = "{doi: $paper_parameter}"
+
+    elif paper_term[0].lower() in {"pmc", "pmcid"}:
+        parameter = paper_term[1]
+        publication_props = "{pmcid: $paper_parameter}"
+
+    elif paper_term[0].lower() == "trid":
+        parameter = paper_term[1]
+        publication_props = "{trid: $paper_parameter}"
+
+    else:
+        raise ValueError(
+            f"Invalid prefix for publication lookup: {paper_term[0]}")
+
+    return parameter, publication_props
