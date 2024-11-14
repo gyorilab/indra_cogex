@@ -33,18 +33,9 @@ def search():
         other_agent = form.other_agent.data
         source_type = form.source_type.data
         rel_type = form.rel_type.data
-        agent_role = None
-        other_role = None
+        agent_role = form.agent_role.data
+        other_role = form.other_agent_role.data
 
-        if form.right_arrow.data:
-            agent_role = 'subject'
-            other_role = 'object'
-        elif form.left_arrow.data:
-            agent_role = 'object'
-            other_role = 'subject'
-        elif form.both_arrow.data:
-            agent_role = None
-            other_role = None
         statements, evidence_count = get_statements(
             agent=agent,
             agent_role=agent_role,
