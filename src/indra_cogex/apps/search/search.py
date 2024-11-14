@@ -40,7 +40,7 @@ def search():
         agent = form.agent_name.data
         other_agent = form.other_agent.data
         source_type = form.source_type.data
-        rel_type = form.rel_type.data
+        rel_types = json.loads(form.rel_type.data)
         agent_role = form.agent_role.data
         other_role = form.other_agent_role.data
 
@@ -50,7 +50,7 @@ def search():
             other_agent=other_agent,
             other_role=other_role,
             stmt_sources=source_type,
-            rel_types=rel_type,
+            rel_types=rel_types,
             limit=1000,
             evidence_limit=2000,
             return_evidence_counts=True
