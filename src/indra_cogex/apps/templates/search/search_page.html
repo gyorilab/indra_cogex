@@ -1,5 +1,33 @@
 {% extends "base_form.html" %}
 
+{% block head %}
+    <style>
+        /* Default gray style */
+        .btn-group .btn-outline-secondary {
+            color: gray;
+            background-color: white;
+            border-color: gray;
+        }
+
+        /* Override hover and active styles */
+        .btn-group .btn-outline-secondary:hover,
+        .btn-group .btn-outline-secondary:focus {
+            color: gray;
+            background-color: lightgray;
+            border-color: gray;
+            box-shadow: none;
+        }
+
+        /* Stay highlighted in dark gray when active */
+        .btn-group .btn-outline-secondary.active-btn {
+            color: white;
+            background-color: gray;
+            border-color: gray;
+        }
+    </style>
+    {{ super() }}
+{% endblock %}
+
 {% block container %}
     <div class="card card-body bg-light">
         <h1 class="display-4">{% block header %}Statement Search{% endblock %}</h1>
@@ -39,19 +67,49 @@
 
                             <!-- Arrow Icons for Agent Roles -->
                             <div class="btn-group" role="group" aria-label="Agent Role">
-                                <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object">
+                                <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')" onmouseleave="resetButtonColor()">
                                     &larr;
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles">
+                                <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')" onmouseleave="resetButtonColor()">
                                     &harr;
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object">
+                                <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')" onmouseleave="resetButtonColor()">
                                     &rarr;
                                 </button>
                             </div>
 
                             <input type="hidden" id="agent-role" name="agent_role" value="">
                             <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+
+                            <script>
+                                let selectedButton = null;
+
+                                function selectRole(direction) {
+                                    // Clear previous active state on all buttons
+                                    document.getElementById('left-arrow').classList.remove('active-btn');
+                                    document.getElementById('both-arrow').classList.remove('active-btn');
+                                    document.getElementById('right-arrow').classList.remove('active-btn');
+
+                                    // Apply active state based on the selected direction and set the hidden input values
+                                    if (direction === 'left') {
+                                        selectedButton = 'left-arrow';
+                                        document.getElementById('left-arrow').classList.add('active-btn');
+                                        document.getElementById('agent-role').value = 'object';
+                                        document.getElementById('other-agent-role').value = 'subject';
+                                    } else if (direction === 'right') {
+                                        selectedButton = 'right-arrow';
+                                        document.getElementById('right-arrow').classList.add('active-btn');
+                                        document.getElementById('agent-role').value = 'subject';
+                                        document.getElementById('other-agent-role').value = 'object';
+                                    } else {
+                                        selectedButton = 'both-arrow';
+                                        document.getElementById('both-arrow').classList.add('active-btn');
+                                        document.getElementById('agent-role').value = '';
+                                        document.getElementById('other-agent-role').value = '';
+                                    }
+                                }
+                            </script>
+
                         </div>
 
                         <!-- Right Other Agent Input -->
@@ -81,3 +139,5 @@
         </div>
     </div>
 {% endblock %}
+
+
