@@ -1,6 +1,9 @@
+import json
+
 from flask import Blueprint, render_template, request
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
+from indra.statements import get_all_descendants, Statement
 from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
@@ -27,7 +30,12 @@ class SearchForm(FlaskForm):
 @search_blueprint.route("/", methods=['GET','POST'])
 @jwt_required(optional=True)
 def search():
+    stmt_types = {c.__name__ for c in get_all_descendants(Statement)}
+    stmt_types -= {"Influence", "Event", "Unresolved"}
+    stmt_types_json = json.dumps(sorted(list(stmt_types)))
+
     form = SearchForm()
+
     if form.validate_on_submit():
         agent = form.agent_name.data
         other_agent = form.other_agent.data
@@ -49,4 +57,6 @@ def search():
         )
         return render_statements(stmts=statements, evidence_count=evidence_count)
 
-    return render_template("search/search_page.html", form=form)
+    return render_template("search/search_page.html",
+                           form=form,
+                           stmt_types_json=stmt_types_json)
