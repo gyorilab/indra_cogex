@@ -40,6 +40,15 @@
             cursor: pointer;
             color: #888;
         }
+        /* Styling for clickable example */
+        .example-text {
+            cursor: pointer;
+            color: #007bff; /* Bootstrap primary color */
+            text-decoration: underline;
+        }
+        .example-text:hover {
+            color: #0056b3;
+        }
     </style>
     <script>
         // Pass stmt_types_json from Flask to JavaScript
@@ -51,7 +60,10 @@
 {% block container %}
     <div class="card card-body bg-light">
         <h1 class="display-4">{% block header %}Statement Search{% endblock %}</h1>
-        <p class="lead">{% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}</p>
+        <p class="lead">
+            {% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}
+        </p>
+        <button type="button" class="btn btn-link" id="example-button" onclick="fillExample()">MEK Phosphorylates ERK</button>
 
         <form method="POST" id="agent-form">
             <!-- Row for Agent, Relationship Type, and Other Agent -->
@@ -134,54 +146,77 @@
                 }
 
                 document.addEventListener("DOMContentLoaded", function() {
-                    const relTypeContainer = document.getElementById("relTypeContainer");
-                    const relTypeDropdown = document.getElementById("relTypeDropdown");
-                    const relTypeInput = document.getElementById("relTypeInput");
+                const relTypeContainer = document.getElementById("relTypeContainer");
+                const relTypeDropdown = document.getElementById("relTypeDropdown");
+                const relTypeInput = document.getElementById("relTypeInput");
 
-                    stmtTypes.forEach(type => {
-                        const option = document.createElement("option");
-                        option.value = type;
-                        option.textContent = type;
-                        relTypeDropdown.appendChild(option);
-                    });
+                // Populate dropdown with options from stmtTypes
+                stmtTypes.forEach(type => {
+                    const option = document.createElement("option");
+                    option.value = type;
+                    option.textContent = type;
+                    relTypeDropdown.appendChild(option);
+                });
 
-                    let selectedTypes = [];
+                // Track selected relationship types in a single list
+                let selectedTypes = [];
 
-                    relTypeDropdown.addEventListener("change", function() {
-                        const selectedType = relTypeDropdown.value;
-                        if (selectedType && !selectedTypes.includes(selectedType)) {
-                            selectedTypes.push(selectedType);
+                // Function to update displayed tags and hidden input based on selectedTypes
+                function updateTags() {
+                    relTypeContainer.innerHTML = "";
+                    selectedTypes.forEach(type => {
+                        const tag = document.createElement("span");
+                        tag.classList.add("rel-tag");
+                        tag.textContent = type;
+
+                        // Remove button for each tag
+                        const removeButton = document.createElement("span");
+                        removeButton.classList.add("remove-tag");
+                        removeButton.innerHTML = "&times;";
+                        removeButton.onclick = () => {
+                            selectedTypes = selectedTypes.filter(t => t !== type);
                             updateTags();
                             updateHiddenInput();
-                        }
-                        relTypeDropdown.value = "";
+                        };
+
+                        tag.appendChild(removeButton);
+                        relTypeContainer.appendChild(tag);
                     });
+                }
 
-                    function updateTags() {
-                        relTypeContainer.innerHTML = "";
-                        selectedTypes.forEach(type => {
-                            const tag = document.createElement("span");
-                            tag.classList.add("rel-tag");
-                            tag.textContent = type;
+                // Update the hidden input value based on selectedTypes
+                function updateHiddenInput() {
+                    relTypeInput.value = JSON.stringify(selectedTypes);
+                }
 
-                            const removeButton = document.createElement("span");
-                            removeButton.classList.add("remove-tag");
-                            removeButton.innerHTML = "&times;";
-                            removeButton.onclick = () => {
-                                selectedTypes = selectedTypes.filter(t => t !== type);
-                                updateTags();
-                                updateHiddenInput();
-                            };
-
-                            tag.appendChild(removeButton);
-                            relTypeContainer.appendChild(tag);
-                        });
+                // Handle adding a type from dropdown
+                relTypeDropdown.addEventListener("change", function() {
+                    const selectedType = relTypeDropdown.value;
+                    if (selectedType && !selectedTypes.includes(selectedType)) {
+                        selectedTypes.push(selectedType);
+                        updateTags();
+                        updateHiddenInput();
                     }
-
-                    function updateHiddenInput() {
-                        relTypeInput.value = JSON.stringify(selectedTypes);
-                    }
+                    relTypeDropdown.value = "";  // Reset dropdown selection
                 });
+
+                // Function to fill example data for "MEK Phosphorylates ERK"
+                function fillExample() {
+                    document.getElementById('agent-name').value = 'MEK';
+                    document.getElementById('other-agent-name').value = 'ERK';
+
+                    // Clear selected types and set only "Phosphorylation"
+                    selectedTypes = ["Phosphorylation"];
+                    updateTags();
+                    updateHiddenInput();
+
+                    // Activate the right-arrow button for agent roles
+                    selectRole('right');
+                }
+
+                // Attach fillExample function to a button or event if needed
+                document.getElementById("example-button").onclick = fillExample; // Example button to trigger fillExample
+            });
             </script>
 
             <!-- Additional Inputs for Paper Information -->
