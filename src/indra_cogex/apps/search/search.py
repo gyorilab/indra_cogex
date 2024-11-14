@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
+from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.utils import render_statements, format_stmts
@@ -13,25 +14,45 @@ search_blueprint = Blueprint("search", __name__, url_prefix="/search")
 class SearchForm(FlaskForm):
     agent_name = StringField("Agent Name", validators=[DataRequired()])
     agent_role = StringField("Agent Role")
+    other_agent = StringField("Other Agent")
+    other_agent_role = StringField("Other Agent Role")
     source_type = StringField("Source Type")
     rel_type = StringField("Relationship Type")
+    left_arrow = BooleanField("⇐")
+    right_arrow = BooleanField("➔")
+    both_arrow = BooleanField("⇔")
     submit = SubmitField("Search")
+
 
 @search_blueprint.route("/", methods=['GET','POST'])
 @jwt_required(optional=True)
 def search():
     form = SearchForm()
     if form.validate_on_submit():
-        agent_name = form.agent_name.data
-        agent_role = form.agent_role.data
+        agent = form.agent_name.data
+        other_agent = form.other_agent.data
         source_type = form.source_type.data
-        rel_type = form.rel_type.data 
+        rel_type = form.rel_type.data
+        agent_role = None
+        other_role = None
+
+        if form.right_arrow.data:
+            agent_role = 'subject'
+            other_role = 'object'
+        elif form.left_arrow.data:
+            agent_role = 'object'
+            other_role = 'subject'
+        elif form.both_arrow.data:
+            agent_role = None
+            other_role = None
         statements, evidence_count = get_statements(
-            agent=agent_name,
+            agent=agent,
             agent_role=agent_role,
+            other_agent=other_agent,
+            other_role=other_role,
             stmt_sources=source_type,
             rel_types=rel_type,
-            limit=50,
+            limit=1000,
             evidence_limit=2000,
             return_evidence_counts=True
         )

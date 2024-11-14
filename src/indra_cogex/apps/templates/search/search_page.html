@@ -1,5 +1,83 @@
 {% extends "base_form.html" %}
 
-{% block header %}Statement Search{% endblock %}
-{% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-4">{% block header %}Statement Search{% endblock %}</h1>
+        <p class="lead">{% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}</p>
 
+        <!-- Tab navigation -->
+        <ul class="nav nav-tabs" id="searchTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="agent-tab" data-toggle="tab" href="#agent" role="tab" aria-controls="agent" aria-selected="true">Agent</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="paper-tab" data-toggle="tab" href="#paper" role="tab" aria-controls="paper" aria-selected="false">Paper</a>
+            </li>
+        </ul>
+
+        <!-- Tab content -->
+        <div class="tab-content mt-3" id="searchTabsContent">
+            <!-- Agent Tab -->
+            <div class="tab-pane fade show active" id="agent" role="tabpanel" aria-labelledby="agent-tab">
+                <form method="POST" id="agent-form">
+                    <div class="form-row align-items-center">
+                        <!-- Left Agent Input -->
+                        <div class="col-md-4">
+                            <label for="agent-name">Agent</label>
+                            <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
+                        </div>
+
+                        <!-- Relationship Type and Arrow Selection -->
+                        <div class="col-md-4 text-center">
+                            <label for="rel-type">Relationship Type</label>
+                            <select class="form-control mb-2" id="rel-type" name="rel_type">
+                                <option value="Phosphorylation">Phosphorylation</option>
+                                <option value="Activation">Activation</option>
+                                <option value="Inhibition">Inhibition</option>
+                                <!-- Add more relationship types as needed -->
+                            </select>
+
+                            <!-- Arrow Icons for Agent Roles -->
+                            <div class="btn-group" role="group" aria-label="Agent Role">
+                                <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object">
+                                    &larr;
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles">
+                                    &harr;
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object">
+                                    &rarr;
+                                </button>
+                            </div>
+
+                            <input type="hidden" id="agent-role" name="agent_role" value="">
+                            <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+                        </div>
+
+                        <!-- Right Other Agent Input -->
+                        <div class="col-md-4">
+                            <label for="other-agent-name">Other Agent</label>
+                            <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (optional)">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" id="agent-submit-btn">Search</button>
+                </form>
+            </div>
+
+            <!-- Paper Tab -->
+            <div class="tab-pane fade" id="paper" role="tabpanel" aria-labelledby="paper-tab">
+                <form id="paper-form" method="POST">
+                    <div class="form-group">
+                        <label for="paper-id">Paper ID</label>
+                        <input type="text" class="form-control" id="paper-id" name="paper_id" placeholder="Enter Paper ID (e.g., PubMed ID)">
+                    </div>
+                    <div class="form-group">
+                        <label for="mesh-terms">MeSH Terms</label>
+                        <input type="text" class="form-control" id="mesh-terms" name="mesh_terms">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="paper-submit-btn">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
