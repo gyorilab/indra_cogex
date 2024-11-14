@@ -1131,6 +1131,7 @@ def get_stmts_for_stmt_hashes(
 def get_statements(
         agent: Union[str, Tuple[str, str]],
         *,
+        client: Neo4jClient,
         rel_types: Optional[Union[str, List[str]]] = None,
         stmt_sources: Optional[Union[str, List[str]]] = None,
         agent_role: Optional[str] = None,
@@ -1140,7 +1141,6 @@ def get_statements(
         mesh_term: Optional[Tuple[str, str]] = None,
         include_child_terms: Optional[bool] = True,
         limit: Optional[int] = 10,
-        client: Neo4jClient,
         evidence_limit: Optional[int] = None,
         return_evidence_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
@@ -1148,6 +1148,8 @@ def get_statements(
 
     Parameters
     ----------
+    client : Neo4jClient
+        The Neo4j client used for executing the query.
     rel_types : Optional[Union[str, List[str]]], default: None
         The relationship type(s) to filter by, e.g., "Phosphorylation" or ["Phosphorylation", "Activation"].
     stmt_sources : Optional[Union[str, List[str]]], default: None
@@ -1169,8 +1171,6 @@ def get_statements(
         If True, also match against the child MESH terms of the given MESH term.
     limit : Optional[int], default: 10
         The maximum number of statements to return.
-    client : Neo4jClient
-        The Neo4j client used for executing the query.
     evidence_limit : Optional[int], default: None
         The optional maximum number of evidence entries to retrieve per statement.
     return_evidence_counts : bool, default: False
