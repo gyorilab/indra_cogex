@@ -25,29 +25,15 @@
             border-color: gray;
         }
 
-        .form-control {
-        padding: 0.375rem 0.75rem;
-        }
-
-        #rel-type {
-            padding-top: 0.375rem 0.75rem;
-            margin: 0;
-        }
-
-        /* Styling for tags inside the container */
-        #relTypeContainer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            min-height: 40px;
-            align-items: center;
-        }
+        /* Style for individual relationship tags */
         .rel-tag {
-            display: flex;
+            display: inline-flex;
             align-items: center;
+            margin: 5px;
             padding: 5px 8px;
             background-color: #e0e0e0;
             border-radius: 15px;
+            font-size: 0.9rem;
         }
         .rel-tag .remove-tag {
             margin-left: 5px;
@@ -90,17 +76,18 @@
                             <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
                         </div>
 
-                        <!-- Relationship Type Dropdown -->
+                        <!-- Relationship Type Dropdown and Selected Tags -->
                         <div class="col-md-4 text-center">
                             <label for="relTypeDropdown">Relationship Type</label>
 
-                            <!-- Container for tags -->
-                            <div class="form-control" id="relTypeContainer">
+                            <!-- Selected relationship tags appear here -->
+                            <div id="relTypeContainer">
                                 <!-- Tags will be dynamically added here -->
                             </div>
 
                             <!-- Dropdown to select relationship types -->
                             <select class="form-control mt-2" id="relTypeDropdown" name="rel_type_dropdown">
+                                <option value="" disabled selected>Select a relationship type</option> \
                                 <!-- Options populated by JavaScript -->
                             </select>
 
