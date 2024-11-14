@@ -24,6 +24,8 @@ class SearchForm(FlaskForm):
     left_arrow = BooleanField("⇐")
     right_arrow = BooleanField("➔")
     both_arrow = BooleanField("⇔")
+    paper_id = StringField("Paper ID")
+    mesh_terms = StringField("MeSH Terms")
     submit = SubmitField("Search")
 
 
@@ -43,6 +45,8 @@ def search():
         rel_types = json.loads(form.rel_type.data)
         agent_role = form.agent_role.data
         other_role = form.other_agent_role.data
+        paper_id = form.paper_id.data
+        mesh_terms = form.mesh_terms.data
 
         statements, evidence_count = get_statements(
             agent=agent,
@@ -51,6 +55,8 @@ def search():
             other_role=other_role,
             stmt_sources=source_type,
             rel_types=rel_types,
+            paper_term=paper_id,
+            mesh_term=mesh_terms,
             limit=1000,
             evidence_limit=2000,
             return_evidence_counts=True

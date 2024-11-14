@@ -31,14 +31,14 @@
             align-items: center;
             margin: 5px;
             padding: 5px 8px;
-            background-color: #e0e0e0;
+            background-color: light gray;
             border-radius: 15px;
             font-size: 0.9rem;
         }
         .rel-tag .remove-tag {
             margin-left: 5px;
             cursor: pointer;
-            color: #888;
+            color: medium gray;
         }
     </style>
     <script>
@@ -53,176 +53,148 @@
         <h1 class="display-4">{% block header %}Statement Search{% endblock %}</h1>
         <p class="lead">{% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}</p>
 
-        <!-- Tab navigation -->
-        <ul class="nav nav-tabs" id="searchTabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="agent-tab" data-toggle="tab" href="#agent" role="tab" aria-controls="agent" aria-selected="true">Agent</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="paper-tab" data-toggle="tab" href="#paper" role="tab" aria-controls="paper" aria-selected="false">Paper</a>
-            </li>
-        </ul>
+        <form method="POST" id="agent-form">
+            <!-- Row for Agent, Relationship Type, and Other Agent -->
+            <div class="form-row align-items-center">
+                <!-- Left Agent Input -->
+                <div class="col-md-4 text-center">
+                    <label for="agent-name">Agent</label>
+                    <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
+                </div>
 
-        <!-- Tab content -->
-        <div class="tab-content mt-3" id="searchTabsContent">
-            <!-- Agent Tab -->
-            <div class="tab-pane fade show active" id="agent" role="tabpanel" aria-labelledby="agent-tab">
-                <form method="POST" id="agent-form">
-                    <!-- Row for Agent, Relationship Type, and Other Agent -->
-                    <div class="form-row align-items-center">
-                        <!-- Left Agent Input -->
-                        <div class="col-md-4 text-center">
-                            <label for="agent-name">Agent</label>
-                            <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
-                        </div>
+                <!-- Relationship Type Dropdown and Selected Tags -->
+                <div class="col-md-4 text-center">
+                    <label for="relTypeDropdown">Relationship Type</label>
 
-                        <!-- Relationship Type Dropdown and Selected Tags -->
-                        <div class="col-md-4 text-center">
-                            <label for="relTypeDropdown">Relationship Type</label>
-
-                            <!-- Selected relationship tags appear here -->
-                            <div id="relTypeContainer">
-                                <!-- Tags will be dynamically added here -->
-                            </div>
-
-                            <!-- Dropdown to select relationship types -->
-                            <select class="form-control mt-2" id="relTypeDropdown" name="rel_type_dropdown">
-                                <option value="" disabled selected>Select a relationship type</option> \
-                                <!-- Options populated by JavaScript -->
-                            </select>
-
-                            <!-- Hidden input to store selected relationship types as a list -->
-                            <input type="hidden" id="relTypeInput" name="rel_type" value="[]">
-                        </div>
-
-                        <!-- Right Other Agent Input -->
-                        <div class="col-md-4 text-center">
-                            <label for="other-agent-name">Other Agent</label>
-                            <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (optional)">
-                        </div>
+                    <!-- Selected relationship tags appear here -->
+                    <div id="relTypeContainer">
+                        <!-- Tags will be dynamically added here -->
                     </div>
 
-                    <!-- Row for Arrow Icons for Agent Roles, placed beneath the Relationship Type -->
-                    <div class="form-row justify-content-center mt-2">
-                        <div class="btn-group" role="group" aria-label="Agent Role">
-                            <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')">
-                                &larr;
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')">
-                                &harr;
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')">
-                                &rarr;
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Dropdown to select relationship types -->
+                    <select class="form-control mt-2" id="relTypeDropdown" name="rel_type_dropdown">
+                        <option value="" disabled selected>Select a relationship type</option>
+                        <!-- Options populated by JavaScript -->
+                    </select>
 
-                    <input type="hidden" id="agent-role" name="agent_role" value="">
-                    <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+                    <!-- Hidden input to store selected relationship types as a list -->
+                    <input type="hidden" id="relTypeInput" name="rel_type" value="[]">
+                </div>
 
-                    <script>
-                        let selectedButton = null;
+                <!-- Right Other Agent Input -->
+                <div class="col-md-4 text-center">
+                    <label for="other-agent-name">Other Agent</label>
+                    <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (optional)">
+                </div>
+            </div>
 
-                        function selectRole(direction) {
-                            // Clear previous active state on all buttons
-                            document.getElementById('left-arrow').classList.remove('active-btn');
-                            document.getElementById('both-arrow').classList.remove('active-btn');
-                            document.getElementById('right-arrow').classList.remove('active-btn');
+            <!-- Row for Arrow Icons for Agent Roles, placed beneath the Relationship Type -->
+            <div class="form-row justify-content-center mt-2">
+                <div class="btn-group" role="group" aria-label="Agent Role">
+                    <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')">
+                        &larr;
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')">
+                        &harr;
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')">
+                        &rarr;
+                    </button>
+                </div>
+            </div>
 
-                            // Apply active state based on the selected direction and set the hidden input values
-                            if (direction === 'left') {
-                                selectedButton = 'left-arrow';
-                                document.getElementById('left-arrow').classList.add('active-btn');
-                                document.getElementById('agent-role').value = 'object';
-                                document.getElementById('other-agent-role').value = 'subject';
-                            } else if (direction === 'right') {
-                                selectedButton = 'right-arrow';
-                                document.getElementById('right-arrow').classList.add('active-btn');
-                                document.getElementById('agent-role').value = 'subject';
-                                document.getElementById('other-agent-role').value = 'object';
-                            } else {
-                                selectedButton = 'both-arrow';
-                                document.getElementById('both-arrow').classList.add('active-btn');
-                                document.getElementById('agent-role').value = '';
-                                document.getElementById('other-agent-role').value = '';
-                            }
+            <input type="hidden" id="agent-role" name="agent_role" value="">
+            <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+
+            <!-- JavaScript for managing relationship types -->
+            <script>
+                let selectedButton = null;
+
+                function selectRole(direction) {
+                    document.getElementById('left-arrow').classList.remove('active-btn');
+                    document.getElementById('both-arrow').classList.remove('active-btn');
+                    document.getElementById('right-arrow').classList.remove('active-btn');
+
+                    if (direction === 'left') {
+                        selectedButton = 'left-arrow';
+                        document.getElementById('left-arrow').classList.add('active-btn');
+                        document.getElementById('agent-role').value = 'object';
+                        document.getElementById('other-agent-role').value = 'subject';
+                    } else if (direction === 'right') {
+                        selectedButton = 'right-arrow';
+                        document.getElementById('right-arrow').classList.add('active-btn');
+                        document.getElementById('agent-role').value = 'subject';
+                        document.getElementById('other-agent-role').value = 'object';
+                    } else {
+                        selectedButton = 'both-arrow';
+                        document.getElementById('both-arrow').classList.add('active-btn');
+                        document.getElementById('agent-role').value = '';
+                        document.getElementById('other-agent-role').value = '';
+                    }
+                }
+
+                document.addEventListener("DOMContentLoaded", function() {
+                    const relTypeContainer = document.getElementById("relTypeContainer");
+                    const relTypeDropdown = document.getElementById("relTypeDropdown");
+                    const relTypeInput = document.getElementById("relTypeInput");
+
+                    stmtTypes.forEach(type => {
+                        const option = document.createElement("option");
+                        option.value = type;
+                        option.textContent = type;
+                        relTypeDropdown.appendChild(option);
+                    });
+
+                    let selectedTypes = [];
+
+                    relTypeDropdown.addEventListener("change", function() {
+                        const selectedType = relTypeDropdown.value;
+                        if (selectedType && !selectedTypes.includes(selectedType)) {
+                            selectedTypes.push(selectedType);
+                            updateTags();
+                            updateHiddenInput();
                         }
+                        relTypeDropdown.value = "";
+                    });
 
-                        document.addEventListener("DOMContentLoaded", function() {
-                        const relTypeContainer = document.getElementById("relTypeContainer");
-                        const relTypeDropdown = document.getElementById("relTypeDropdown");
-                        const relTypeInput = document.getElementById("relTypeInput");
+                    function updateTags() {
+                        relTypeContainer.innerHTML = "";
+                        selectedTypes.forEach(type => {
+                            const tag = document.createElement("span");
+                            tag.classList.add("rel-tag");
+                            tag.textContent = type;
 
-                        // Populate dropdown with options
-                        stmtTypes.forEach(type => {
-                            const option = document.createElement("option");
-                            option.value = type;
-                            option.textContent = type;
-                            relTypeDropdown.appendChild(option);
-                        });
-
-                        // Track selected relationship types
-                        let selectedTypes = [];
-
-                        // Handle adding a type
-                        relTypeDropdown.addEventListener("change", function() {
-                            const selectedType = relTypeDropdown.value;
-                            if (selectedType && !selectedTypes.includes(selectedType)) {
-                                selectedTypes.push(selectedType);
+                            const removeButton = document.createElement("span");
+                            removeButton.classList.add("remove-tag");
+                            removeButton.innerHTML = "&times;";
+                            removeButton.onclick = () => {
+                                selectedTypes = selectedTypes.filter(t => t !== type);
                                 updateTags();
                                 updateHiddenInput();
-                            }
-                            relTypeDropdown.value = "";  // Reset dropdown selection
+                            };
+
+                            tag.appendChild(removeButton);
+                            relTypeContainer.appendChild(tag);
                         });
+                    }
 
-                        // Update the tags in the container
-                        function updateTags() {
-                            relTypeContainer.innerHTML = "";  // Clear existing tags
-                            selectedTypes.forEach(type => {
-                                const tag = document.createElement("span");
-                                tag.classList.add("rel-tag");
-                                tag.textContent = type;
+                    function updateHiddenInput() {
+                        relTypeInput.value = JSON.stringify(selectedTypes);
+                    }
+                });
+            </script>
 
-                                // Remove button
-                                const removeButton = document.createElement("span");
-                                removeButton.classList.add("remove-tag");
-                                removeButton.innerHTML = "&times;";
-                                removeButton.onclick = () => {
-                                    selectedTypes = selectedTypes.filter(t => t !== type);
-                                    updateTags();
-                                    updateHiddenInput();
-                                };
-
-                                tag.appendChild(removeButton);
-                                relTypeContainer.appendChild(tag);
-                            });
-                        }
-
-                        // Update the hidden input value
-                        function updateHiddenInput() {
-                            relTypeInput.value = JSON.stringify(selectedTypes);
-                        }
-                    });
-                    </script>
-
-                    <button type="submit" class="btn btn-primary mt-3" id="agent-submit-btn">Search</button>
-                </form>
+            <!-- Additional Inputs for Paper Information -->
+            <div class="form-group mt-4">
+                <label for="paper-id">Paper ID</label>
+                <input type="text" class="form-control" id="paper-id" name="paper_id" placeholder="Enter Paper ID (e.g., PubMed ID)">
+            </div>
+            <div class="form-group">
+                <label for="mesh-terms">MeSH Terms</label>
+                <input type="text" class="form-control" id="mesh-terms" name="mesh_terms">
             </div>
 
-            <!-- Paper Tab -->
-            <div class="tab-pane fade" id="paper" role="tabpanel" aria-labelledby="paper-tab">
-                <form id="paper-form" method="POST">
-                    <div class="form-group">
-                        <label for="paper-id">Paper ID</label>
-                        <input type="text" class="form-control" id="paper-id" name="paper_id" placeholder="Enter Paper ID (e.g., PubMed ID)">
-                    </div>
-                    <div class="form-group">
-                        <label for="mesh-terms">MeSH Terms</label>
-                        <input type="text" class="form-control" id="mesh-terms" name="mesh_terms">
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="paper-submit-btn">Search</button>
-                </form>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-primary mt-3" id="agent-submit-btn">Search</button>
+        </form>
     </div>
 {% endblock %}
