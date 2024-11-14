@@ -24,7 +24,20 @@
             background-color: gray;
             border-color: gray;
         }
+
+        .form-control {
+        padding: 0.375rem 0.75rem;
+        }
+
+        #rel-type {
+            padding-top: 0.375rem 0.75rem;
+            margin: 0;
+        }
     </style>
+    <script>
+        // Pass stmt_types_json from Flask to JavaScript
+        const stmtTypes = {{ stmt_types_json | safe }};
+    </script>
     {{ super() }}
 {% endblock %}
 
@@ -48,76 +61,86 @@
             <!-- Agent Tab -->
             <div class="tab-pane fade show active" id="agent" role="tabpanel" aria-labelledby="agent-tab">
                 <form method="POST" id="agent-form">
+                    <!-- Row for Agent, Relationship Type, and Other Agent -->
                     <div class="form-row align-items-center">
                         <!-- Left Agent Input -->
-                        <div class="col-md-4">
+                        <div class="col-md-4 text-center">
                             <label for="agent-name">Agent</label>
                             <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
                         </div>
 
-                        <!-- Relationship Type and Arrow Selection -->
+                        <!-- Relationship Type Dropdown -->
                         <div class="col-md-4 text-center">
                             <label for="rel-type">Relationship Type</label>
-                            <select class="form-control mb-2" id="rel-type" name="rel_type">
-                                <option value="Phosphorylation">Phosphorylation</option>
-                                <option value="Activation">Activation</option>
-                                <option value="Inhibition">Inhibition</option>
-                                <!-- Add more relationship types as needed -->
+                            <select class="form-control" id="rel-type" name="rel_type">
+                                <!-- Options will be dynamically populated using JavaScript -->
                             </select>
-
-                            <!-- Arrow Icons for Agent Roles -->
-                            <div class="btn-group" role="group" aria-label="Agent Role">
-                                <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')" onmouseleave="resetButtonColor()">
-                                    &larr;
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')" onmouseleave="resetButtonColor()">
-                                    &harr;
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')" onmouseleave="resetButtonColor()">
-                                    &rarr;
-                                </button>
-                            </div>
-
-                            <input type="hidden" id="agent-role" name="agent_role" value="">
-                            <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
-
-                            <script>
-                                let selectedButton = null;
-
-                                function selectRole(direction) {
-                                    // Clear previous active state on all buttons
-                                    document.getElementById('left-arrow').classList.remove('active-btn');
-                                    document.getElementById('both-arrow').classList.remove('active-btn');
-                                    document.getElementById('right-arrow').classList.remove('active-btn');
-
-                                    // Apply active state based on the selected direction and set the hidden input values
-                                    if (direction === 'left') {
-                                        selectedButton = 'left-arrow';
-                                        document.getElementById('left-arrow').classList.add('active-btn');
-                                        document.getElementById('agent-role').value = 'object';
-                                        document.getElementById('other-agent-role').value = 'subject';
-                                    } else if (direction === 'right') {
-                                        selectedButton = 'right-arrow';
-                                        document.getElementById('right-arrow').classList.add('active-btn');
-                                        document.getElementById('agent-role').value = 'subject';
-                                        document.getElementById('other-agent-role').value = 'object';
-                                    } else {
-                                        selectedButton = 'both-arrow';
-                                        document.getElementById('both-arrow').classList.add('active-btn');
-                                        document.getElementById('agent-role').value = '';
-                                        document.getElementById('other-agent-role').value = '';
-                                    }
-                                }
-                            </script>
-
                         </div>
 
                         <!-- Right Other Agent Input -->
-                        <div class="col-md-4">
+                        <div class="col-md-4 text-center">
                             <label for="other-agent-name">Other Agent</label>
                             <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (optional)">
                         </div>
                     </div>
+
+                    <!-- Row for Arrow Icons for Agent Roles, placed beneath the Relationship Type -->
+                    <div class="form-row justify-content-center mt-2">
+                        <div class="btn-group" role="group" aria-label="Agent Role">
+                            <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')">
+                                &larr;
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')">
+                                &harr;
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')">
+                                &rarr;
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="agent-role" name="agent_role" value="">
+                    <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+
+                    <script>
+                        let selectedButton = null;
+
+                        function selectRole(direction) {
+                            // Clear previous active state on all buttons
+                            document.getElementById('left-arrow').classList.remove('active-btn');
+                            document.getElementById('both-arrow').classList.remove('active-btn');
+                            document.getElementById('right-arrow').classList.remove('active-btn');
+
+                            // Apply active state based on the selected direction and set the hidden input values
+                            if (direction === 'left') {
+                                selectedButton = 'left-arrow';
+                                document.getElementById('left-arrow').classList.add('active-btn');
+                                document.getElementById('agent-role').value = 'object';
+                                document.getElementById('other-agent-role').value = 'subject';
+                            } else if (direction === 'right') {
+                                selectedButton = 'right-arrow';
+                                document.getElementById('right-arrow').classList.add('active-btn');
+                                document.getElementById('agent-role').value = 'subject';
+                                document.getElementById('other-agent-role').value = 'object';
+                            } else {
+                                selectedButton = 'both-arrow';
+                                document.getElementById('both-arrow').classList.add('active-btn');
+                                document.getElementById('agent-role').value = '';
+                                document.getElementById('other-agent-role').value = '';
+                            }
+                        }
+
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const relTypeSelect = document.getElementById("rel-type");
+                            stmtTypes.forEach(type => {
+                                const option = document.createElement("option");
+                                option.value = type;
+                                option.textContent = type;
+                                relTypeSelect.appendChild(option);
+                            });
+                        });
+                    </script>
+
                     <button type="submit" class="btn btn-primary mt-3" id="agent-submit-btn">Search</button>
                 </form>
             </div>
@@ -139,5 +162,3 @@
         </div>
     </div>
 {% endblock %}
-
-
