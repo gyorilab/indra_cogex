@@ -1,15 +1,14 @@
 {% extends "base_form.html" %}
 
 {% block head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
     <style>
-        /* Default gray style */
         .btn-group .btn-outline-secondary {
             color: gray;
             background-color: white;
             border-color: gray;
         }
 
-        /* Override hover and active styles */
         .btn-group .btn-outline-secondary:hover,
         .btn-group .btn-outline-secondary:focus {
             color: gray;
@@ -18,217 +17,122 @@
             box-shadow: none;
         }
 
-        /* Stay highlighted in dark gray when active */
         .btn-group .btn-outline-secondary.active-btn {
             color: white;
             background-color: gray;
             border-color: gray;
         }
 
-        /* Style for individual relationship tags */
-        .rel-tag {
-            display: inline-flex;
-            align-items: center;
-            margin: 5px;
-            padding: 5px 8px;
-            background-color: #e0e0e0;
-            border-radius: 15px;
-            font-size: 0.9rem;
-        }
-        .rel-tag .remove-tag {
-            margin-left: 5px;
-            cursor: pointer;
-            color: #888;
-        }
-        /* Styling for clickable example */
         .example-text {
             cursor: pointer;
-            color: #007bff; /* Bootstrap primary color */
+            color: #007bff;
             text-decoration: underline;
         }
+
         .example-text:hover {
             color: #0056b3;
         }
+
+        .mt-4 {
+            margin-top: 1.5rem;
+        }
     </style>
-    <script>
-        // Pass stmt_types_json from Flask to JavaScript
-        const stmtTypes = {{ stmt_types_json | safe }};
-    </script>
     {{ super() }}
 {% endblock %}
 
 {% block container %}
     <div class="card card-body bg-light">
-        <h1 class="display-4">{% block header %}Statement Search{% endblock %}</h1>
-        <p class="lead">
-            {% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}
-        </p>
-        <p class="example-text" id="example-text" onclick="fillExample()">Example: MEK Phosphorylates ERK</p>
+        <h1 class="display-4">Statement Search</h1>
+        <p class="lead">Search for statements by specifying agent, relationship types, and roles.</p>
+
         <form method="POST" id="agent-form">
-            <!-- Row for Agent, Relationship Type, and Other Agent -->
-            <div class="form-row align-items-center">
-                <!-- Left Agent Input -->
-                <div class="col-md-4 text-center">
-                    <label for="agent-name">Agent</label>
-                    <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
-                </div>
-
-                <!-- Relationship Type Dropdown and Selected Tags -->
-                <div class="col-md-4 text-center">
-                    <label for="relTypeDropdown">Relationship Type</label>
-
-                    <!-- Selected relationship tags appear here -->
-                    <div id="relTypeContainer">
-                        <!-- Tags will be dynamically added here -->
-                    </div>
-
-                    <!-- Dropdown to select relationship types -->
-                    <select class="form-control mt-2" id="relTypeDropdown" name="rel_type_dropdown">
-                        <option value="" disabled selected>Select a relationship type</option>
-                        <!-- Options populated by JavaScript -->
-                    </select>
-
-                    <!-- Hidden input to store selected relationship types as a list -->
-                    <input type="hidden" id="relTypeInput" name="rel_type" value="[]">
-                </div>
-
-                <!-- Right Other Agent Input -->
-                <div class="col-md-4 text-center">
-                    <label for="other-agent-name">Other Agent</label>
-                    <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (optional)">
-                </div>
-            </div>
-
-            <!-- Row for Arrow Icons for Agent Roles, placed beneath the Relationship Type -->
-            <div class="form-row justify-content-center mt-2">
-                <div class="btn-group" role="group" aria-label="Agent Role">
-                    <button type="button" class="btn btn-outline-secondary" id="left-arrow" title="Agent is subject, Other Agent is object" onclick="selectRole('left')">
-                        &larr;
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="both-arrow" title="No specified roles" onclick="selectRole('both')">
-                        &harr;
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="right-arrow" title="Other Agent is subject, Agent is object" onclick="selectRole('right')">
-                        &rarr;
-                    </button>
-                </div>
-            </div>
-
-            <input type="hidden" id="agent-role" name="agent_role" value="">
-            <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
-
-            <!-- JavaScript for managing relationship types -->
-            <script>
-                let selectedButton = null;
-
-                function selectRole(direction) {
-                    document.getElementById('left-arrow').classList.remove('active-btn');
-                    document.getElementById('both-arrow').classList.remove('active-btn');
-                    document.getElementById('right-arrow').classList.remove('active-btn');
-
-                    if (direction === 'left') {
-                        selectedButton = 'left-arrow';
-                        document.getElementById('left-arrow').classList.add('active-btn');
-                        document.getElementById('agent-role').value = 'object';
-                        document.getElementById('other-agent-role').value = 'subject';
-                    } else if (direction === 'right') {
-                        selectedButton = 'right-arrow';
-                        document.getElementById('right-arrow').classList.add('active-btn');
-                        document.getElementById('agent-role').value = 'subject';
-                        document.getElementById('other-agent-role').value = 'object';
-                    } else {
-                        selectedButton = 'both-arrow';
-                        document.getElementById('both-arrow').classList.add('active-btn');
-                        document.getElementById('agent-role').value = '';
-                        document.getElementById('other-agent-role').value = '';
-                    }
-                }
-
-                document.addEventListener("DOMContentLoaded", function() {
-                const relTypeContainer = document.getElementById("relTypeContainer");
-                const relTypeDropdown = document.getElementById("relTypeDropdown");
-                const relTypeInput = document.getElementById("relTypeInput");
-
-                // Populate dropdown with options from stmtTypes
-                stmtTypes.forEach(type => {
-                    const option = document.createElement("option");
-                    option.value = type;
-                    option.textContent = type;
-                    relTypeDropdown.appendChild(option);
-                });
-
-                // Track selected relationship types in a single list
-                let selectedTypes = [];
-
-                // Function to update displayed tags and hidden input based on selectedTypes
-                function updateTags() {
-                    relTypeContainer.innerHTML = "";
-                    selectedTypes.forEach(type => {
-                        const tag = document.createElement("span");
-                        tag.classList.add("rel-tag");
-                        tag.textContent = type;
-
-                        // Remove button for each tag
-                        const removeButton = document.createElement("span");
-                        removeButton.classList.add("remove-tag");
-                        removeButton.innerHTML = "&times;";
-                        removeButton.onclick = () => {
-                            selectedTypes = selectedTypes.filter(t => t !== type);
-                            updateTags();
-                            updateHiddenInput();
-                        };
-
-                        tag.appendChild(removeButton);
-                        relTypeContainer.appendChild(tag);
-                    });
-                }
-
-                // Update the hidden input value based on selectedTypes
-                function updateHiddenInput() {
-                    relTypeInput.value = JSON.stringify(selectedTypes);
-                }
-
-                // Handle adding a type from dropdown
-                relTypeDropdown.addEventListener("change", function() {
-                    const selectedType = relTypeDropdown.value;
-                    if (selectedType && !selectedTypes.includes(selectedType)) {
-                        selectedTypes.push(selectedType);
-                        updateTags();
-                        updateHiddenInput();
-                    }
-                    relTypeDropdown.value = "";  // Reset dropdown selection
-                });
-
-                // Function to fill example data for "MEK Phosphorylates ERK"
-                function fillExample() {
-                    document.getElementById('agent-name').value = 'MEK';
-                    document.getElementById('other-agent-name').value = 'ERK';
-
-                    // Clear selected types and set only "Phosphorylation"
-                    selectedTypes = ["Phosphorylation"];
-                    updateTags();
-                    updateHiddenInput();
-
-                    // Activate the right-arrow button for agent roles
-                    selectRole('right');
-                }
-
-                // Attach fillExample function to a button or event if needed
-                document.getElementById("example-text").onclick = fillExample; // Example button to trigger fillExample
-            });
-            </script>
-
-            <!-- Additional Inputs for Paper Information -->
-            <div class="form-group mt-4">
-                <label for="paper-id">Paper ID</label>
-                <input type="text" class="form-control" id="paper-id" name="paper_id" placeholder="Enter Paper ID (e.g., PubMed ID)">
-            </div>
+            <!-- Agent Input -->
             <div class="form-group">
-                <label for="mesh-terms">MeSH Terms</label>
-                <input type="text" class="form-control" id="mesh-terms" name="mesh_terms">
+                <label for="agent-name">Agent</label>
+                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
             </div>
 
-            <button type="submit" class="btn btn-primary mt-3" id="agent-submit-btn">Search</button>
+            <!-- Relationship Type Multiselect -->
+            <div class="form-group mt-4">
+                <label for="choices-multiple-remove-button">Relationship Types</label>
+                <select id="choices-multiple-remove-button" name="rel_types[]" multiple></select>
+                <!-- Hidden input to store serialized selected options -->
+                <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
+            </div>
+
+            <!-- Subject/Object Role Buttons -->
+            <div class="form-group mt-4 text-center">
+                <label>Agent Role</label>
+                <div class="btn-group" role="group" aria-label="Agent Role">
+                    <button type="button" class="btn btn-outline-secondary" id="left-arrow" onclick="selectRole('left')">Subject</button>
+                    <button type="button" class="btn btn-outline-secondary" id="both-arrow" onclick="selectRole('None')">None</button>
+                    <button type="button" class="btn btn-outline-secondary" id="right-arrow" onclick="selectRole('right')">Object</button>
+                </div>
+                <input type="hidden" id="agent-role" name="agent_role" value="">
+                <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+            </div>
+
+            <!-- Optional Other Agent Input -->
+            <div class="form-group mt-4" id="other-agent-input-container" style="display: none;">
+                <label for="other-agent-name">Other Agent</label>
+                <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-4">Search</button>
         </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const stmtTypes = {{ stmt_types_json | safe }};
+            const selectElement = document.getElementById('choices-multiple-remove-button');
+            const hiddenInput = document.getElementById('rel-type-hidden');
+
+            // Initialize Choices.js
+            const choices = new Choices(selectElement, {
+                removeItemButton: true,
+                maxItemCount: 5,
+                searchResultLimit: 5,
+                renderChoiceLimit: 5
+            });
+
+            // Add options to Choices.js dynamically
+            stmtTypes.forEach(type => {
+                choices.setChoices([{ value: type, label: type, selected: false }], 'value', 'label', false);
+            });
+
+            // Update the hidden input whenever selections change
+            selectElement.addEventListener('change', function () {
+                const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
+                hiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
+            });
+        });
+
+        // Handle role selection
+        function selectRole(direction) {
+            // Remove active state from all buttons
+            document.getElementById('left-arrow').classList.remove('active-btn');
+            document.getElementById('both-arrow').classList.remove('active-btn');
+            document.getElementById('right-arrow').classList.remove('active-btn');
+
+            // Apply active state to the clicked button
+            if (direction === 'left') {
+                document.getElementById('left-arrow').classList.add('active-btn');
+                document.getElementById('agent-role').value = 'subject';
+                document.getElementById('other-agent-role').value = 'object';
+                document.getElementById('other-agent-input-container').style.display = 'block';
+            } else if (direction === 'right') {
+                document.getElementById('right-arrow').classList.add('active-btn');
+                document.getElementById('agent-role').value = 'object';
+                document.getElementById('other-agent-role').value = 'subject';
+                document.getElementById('other-agent-input-container').style.display = 'block';
+            } else {
+                document.getElementById('both-arrow').classList.add('active-btn');
+                document.getElementById('agent-role').value = '';
+                document.getElementById('other-agent-role').value = '';
+                document.getElementById('other-agent-input-container').style.display = 'none';
+            }
+        }
+    </script>
 {% endblock %}
