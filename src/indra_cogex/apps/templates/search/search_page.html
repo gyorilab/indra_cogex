@@ -63,8 +63,7 @@
         <p class="lead">
             {% block lead %}Search for statements by specifying agent, source, and relationship type.{% endblock %}
         </p>
-        <button type="button" class="btn btn-link" id="example-button" onclick="fillExample()">MEK Phosphorylates ERK</button>
-
+        <p class="example-text" id="example-text" onclick="fillExample()">Example: MEK Phosphorylates ERK</p>
         <form method="POST" id="agent-form">
             <!-- Row for Agent, Relationship Type, and Other Agent -->
             <div class="form-row align-items-center">
@@ -215,7 +214,7 @@
                 }
 
                 // Attach fillExample function to a button or event if needed
-                document.getElementById("example-button").onclick = fillExample; // Example button to trigger fillExample
+                document.getElementById("example-text").onclick = fillExample; // Example button to trigger fillExample
             });
             </script>
 
