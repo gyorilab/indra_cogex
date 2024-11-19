@@ -966,24 +966,6 @@ def get_stmts_for_paper(
         """
 
     result = client.query_tx(hash_query, parameter=parameter)
-
-    # Sample some results for debugging
-    print("\nDEBUG: Sampling first 5 results:")
-    for i, row in enumerate(result):
-        if i >= 5:
-            break
-        print(f"Result {i + 1}:")
-        print(f"  Hash: {row[0] if len(row) > 0 else 'N/A'}")
-        evidence = row[1] if len(row) > 1 else {}
-        try:
-            evidence_dict = json.loads(evidence) if isinstance(evidence, str) else evidence
-            source_api = evidence_dict.get('source_api', 'N/A')
-            print(f"  Source API: {source_api}")
-        except Exception as e:
-            print(f"  Error parsing evidence: {str(e)}")
-
-    print("\nDEBUG: === Ending get_stmts_for_paper ===\n")
-
     return _stmts_from_results(client=client, result=result, **kwargs)
 
 
