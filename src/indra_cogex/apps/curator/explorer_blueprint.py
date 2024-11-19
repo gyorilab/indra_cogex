@@ -38,13 +38,13 @@ from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
 from ...client.neo4j_client import process_identifier
 
 __all__ = [
-    "explorator_blueprint",
+    "explorer_blueprint",
 ]
 
 from ...representation import indra_stmts_from_relations, Relation
 
 logger = logging.getLogger(__name__)
-explorator_blueprint = flask.Blueprint("explorator", __name__, url_prefix="/explore")
+explorer_blueprint = flask.Blueprint("explorer", __name__, url_prefix="/explore")
 
 EVIDENCE_TEXT = """\
 Statements are listed in descending order by number of textual evidences
@@ -74,7 +74,7 @@ class GeneOntologyForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
-@explorator_blueprint.route("/go/", methods=["GET", "POST"])
+@explorer_blueprint.route("/go/", methods=["GET", "POST"])
 def gene_ontology():
     """A home page for GO exploration."""
     form = GeneOntologyForm()
@@ -86,7 +86,7 @@ def gene_ontology():
     return render_template("curation/go_form.html", form=form)
 
 
-@explorator_blueprint.route("/go/<term>", methods=["GET"])
+@explorer_blueprint.route("/go/<term>", methods=["GET"])
 @jwt_required(optional=True)
 def explore_go(term: str):
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
@@ -97,9 +97,9 @@ def explore_go(term: str):
     )
     return _enrich_render_statements(
         stmts,
-        title=f"GO Explorator: {term}",
+        title=f"GO explorer: {term}",
         description=f"""\
-            The GO Pathway explorator identifies a list of genes associated with
+            The GO Pathway explorer identifies a list of genes associated with
             the given GO term then INDRA statements where the subject and
             object are both from the list using INDRA CoGEx.
             {_database_text("Pathway Commons")}
@@ -158,7 +158,7 @@ class MeshDiseaseForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
-@explorator_blueprint.route("/mesh/", methods=["GET", "POST"])
+@explorer_blueprint.route("/mesh/", methods=["GET", "POST"])
 def mesh():
     """A home page for MeSH Disease exploration."""
     form = MeshDiseaseForm()
@@ -177,8 +177,8 @@ MESH_EXPLORATION_SUBSETS = {
 }
 
 
-@explorator_blueprint.route("/mesh/<term>", methods=["GET"])
-@explorator_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
+@explorer_blueprint.route("/mesh/<term>", methods=["GET"])
+@explorer_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
 @jwt_required(optional=True)
 def explore_mesh(term: str, subset: Optional[str] = None):
     """Explore all statements for papers with a given MeSH annotation."""
@@ -236,12 +236,12 @@ def _explore_mesh_helper(
 
     return render_statements(
         stmts,
-        title=f"MeSH Explorator: {term}",
+        title=f"MeSH explorer: {term}",
         evidence_lookup_time=evidence_lookup_time,
         limit=proxies.limit,
         curations=curations,
         description=f"""\
-            The topic explorator identifies INDRA Statements in publications
+            The topic explorer identifies INDRA Statements in publications
             annotated with the given Medical Subject Headings (MeSH) term
             using INDRA CoGEx. INDRA statements already appearing in
             high-quality reference databases and statements that have already
@@ -353,16 +353,16 @@ def _render_evidence_counts(
     )
 
 
-@explorator_blueprint.route("/ppi", methods=["GET"])
+@explorer_blueprint.route("/ppi", methods=["GET"])
 @jwt_required(optional=True)
 def ppi():
-    """The PPI explorator looks for the highest evidences for PPIs that don't appear in a database."""
+    """The PPI explorer looks for the highest evidences for PPIs that don't appear in a database."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_ppi_source_counts,
-        title="PPI Explorator",
+        title="PPI explorer",
         description=f"""\
-            The protein-protein interaction (PPI) explorator identifies INDRA
+            The protein-protein interaction (PPI) explorer identifies INDRA
             statements using INDRA CoGEx whose subjects and objects are human
             gene products (i.e., RNA or proteins) and whose statements are
             "binds". 
@@ -374,16 +374,16 @@ def ppi():
     )
 
 
-@explorator_blueprint.route("/goa", methods=["GET"])
+@explorer_blueprint.route("/goa", methods=["GET"])
 @jwt_required(optional=True)
 def goa():
-    """The GO Annotation explorator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
+    """The GO Annotation explorer looks for the highest evidence gene-GO term relations that don't appear in GOA."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_goa_source_counts,
-        title="GO Annotation Explorator",
+        title="GO Annotation explorer",
         description=f"""\
-            The Gene Ontology annotation explorator identifiers INDRA statements
+            The Gene Ontology annotation explorer identifiers INDRA statements
             using INDRA CoGEx whose subjects are human genes/proteins and whose
             objects are Gene Ontology terms. Statements whose gene-GO term pair
             already appear in the Gene Ontology Annotation database and statements
@@ -396,7 +396,7 @@ def goa():
     )
 
 
-@explorator_blueprint.route("/conflicts", methods=["GET"])
+@explorer_blueprint.route("/conflicts", methods=["GET"])
 @jwt_required(optional=True)
 def conflicts():
     """Explore statements with conflicting prior curations."""
@@ -411,16 +411,16 @@ def conflicts():
     )
 
 
-@explorator_blueprint.route("/tf", methods=["GET"])
+@explorer_blueprint.route("/tf", methods=["GET"])
 @jwt_required(optional=True)
 def tf():
     """Explore transcription factors."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_tf_statements,
-        title="Transcription Factor Explorator",
+        title="Transcription Factor explorer",
         description=f"""\
-            The transcription factor explorator identifies INDRA statements using
+            The transcription factor explorer identifies INDRA statements using
             INDRA CoGEx whose subjects are human transcription factors and whose
             statements are "increases amount of" or "decreases amount of".
             {_database_text("Pathway Commons")}
@@ -431,16 +431,16 @@ def tf():
     )
 
 
-@explorator_blueprint.route("/kinase", methods=["GET"])
+@explorer_blueprint.route("/kinase", methods=["GET"])
 @jwt_required(optional=True)
 def kinase():
     """Explore kinases."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_kinase_statements,
-        title="Kinase Explorator",
+        title="Kinase explorer",
         description=f"""\
-            The kinase explorator identifies INDRA statements using INDRA
+            The kinase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human protein kinases and whose
             statements are "phosphorylates". 
             {_database_text("PhosphoSitePlus")}
@@ -451,16 +451,16 @@ def kinase():
     )
 
 
-@explorator_blueprint.route("/phosphatase", methods=["GET"])
+@explorer_blueprint.route("/phosphatase", methods=["GET"])
 @jwt_required(optional=True)
 def phosphatase():
     """Explore phosphatases."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_phosphatase_statements,
-        title="Phosphatase Explorator",
+        title="Phosphatase explorer",
         description=f"""\
-            The phosphatase explorator identifies INDRA statements using INDRA
+            The phosphatase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human phosphatase genes and whose
             statements are "dephosphorylates".
             {_database_text("Pathway Commons")}
@@ -471,16 +471,16 @@ def phosphatase():
     )
 
 
-@explorator_blueprint.route("/dub", methods=["GET"])
+@explorer_blueprint.route("/dub", methods=["GET"])
 @jwt_required(optional=True)
 def deubiquitinase():
     """Explore deubiquitinases."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_dub_statements,
-        title="Deubiquitinase Explorator",
+        title="Deubiquitinase explorer",
         description=f"""\
-            The deubiquitinase explorator identifies INDRA statements using INDRA
+            The deubiquitinase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human deubiquitinase genes and whose
             statements are "deubiquinates".
             {_database_text("Pathway Commons")}
@@ -491,16 +491,16 @@ def deubiquitinase():
     )
 
 
-@explorator_blueprint.route("/mirna", methods=["GET"])
+@explorer_blueprint.route("/mirna", methods=["GET"])
 @jwt_required(optional=True)
 def mirna():
     """Explore miRNAs."""
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_mirna_statements,
-        title="miRNA Explorator",
+        title="miRNA explorer",
         description=f"""\
-            The miRNA explorator identifies INDRA statements using INDRA
+            The miRNA explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are micro-RNAs and whose
             statements are "increases amount" or "decreases amount".
             {_database_text("miRTarBase")}
@@ -511,8 +511,8 @@ def mirna():
     )
 
 
-@explorator_blueprint.route("/disprot", methods=["GET"])
-@explorator_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
+@explorer_blueprint.route("/disprot", methods=["GET"])
+@explorer_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
 @jwt_required(optional=True)
 def disprot(object_prefix: Optional[str] = None):
     """Explore intrensically disordered proteins."""
@@ -520,9 +520,9 @@ def disprot(object_prefix: Optional[str] = None):
     assert object_prefix in {None, "hgnc", "go", "chebi"}
     return _render_func(
         get_disprot_statements,
-        title="DisProt Explorator",
+        title="DisProt explorer",
         description=f"""\
-            The DisProt explorator identifies INDRA statements using INDRA
+            The DisProt explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are intrensically disordered proteins.
             {EVIDENCE_TEXT}
         """,
@@ -531,14 +531,14 @@ def disprot(object_prefix: Optional[str] = None):
     )
 
 
-@explorator_blueprint.route("/modulator/", methods=["GET"])
+@explorer_blueprint.route("/modulator/", methods=["GET"])
 @jwt_required(optional=True)
 def modulator():
     """Get small molecule modulators for the given protein."""
     raise NotImplementedError
 
 
-@explorator_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
+@explorer_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
 @jwt_required(optional=True)
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
@@ -617,7 +617,7 @@ class PaperForm(FlaskForm):
         raise ValueError(f"Unhandled prefix in CURIE {s}")
 
 
-@explorator_blueprint.route("/paper", methods=["GET", "POST"])
+@explorer_blueprint.route("/paper", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def paper():
     """Get all statements for the given paper."""
@@ -652,7 +652,7 @@ def _explore_paper(
 
     return render_statements(
         stmts,
-        title=f"Publication Explorator: {prefix}:{identifier}",
+        title=f"Publication explorer: {prefix}:{identifier}",
         limit=proxies.limit,
         curations=curations,
         description=f"""
@@ -732,7 +732,7 @@ class NodesForm(FlaskForm):
         return sorted(processed_nodes)
 
 
-@explorator_blueprint.route("/subnetwork", methods=["GET", "POST"])
+@explorer_blueprint.route("/subnetwork", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def subnetwork():
     """Get all statements induced by the nodes."""
@@ -769,9 +769,9 @@ def subnetwork():
         stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
         return _enrich_render_statements(
             stmts,
-            title="Subnetwork Explorator",
+            title="Subnetwork explorer",
             description=f"""\
-            The subnetwork explorator shows statements between the following nodes.
+            The subnetwork explorer shows statements between the following nodes.
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
             </p>
@@ -787,7 +787,7 @@ def subnetwork():
     return render_template("curation/node_form.html", form=form)
 
 
-@explorator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
+@explorer_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
 @jwt_required(optional=True)
 def explore_statement(stmt_hash: int):
     """Explore all evidences for the statement."""
@@ -803,7 +803,7 @@ def explore_statement(stmt_hash: int):
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
     return render_statements(
         enriched_stmts,
-        title=f"Statement Explorator: {stmt_hash}",
+        title=f"Statement explorer: {stmt_hash}",
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         description="Explore evidences from a single statement",
