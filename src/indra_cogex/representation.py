@@ -485,20 +485,20 @@ def indra_stmts_from_relations(
 
     Parameters
     ----------
-    rels : Iterable[Relation]
+    rels :
         A list of Relations.
-    deduplicate : bool, optional
+    deduplicate :
         If True, only unique statements are returned. In some cases
         e.g., for Complexes, there are multiple relations for one statement
         and this option can be used to return only one of these redundant
         statements. Default: True
-    include_db_evidence : bool, optional
+    include_db_evidence :
         If True, include statements with database evidence. If False,
         exclude statements that only have database evidence. Default: True
 
     Returns
     -------
-    List[Statement]
+    :
         A list of INDRA Statements.
     """
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
