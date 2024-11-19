@@ -5,7 +5,7 @@
     <!-- Vue 2 -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 
-<!-- Indralab-vue, for access to <statement> component and its child components -->
+    <!-- Indralab-vue, for access to <statement> component and its child components -->
     <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
     <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
           rel="stylesheet">
@@ -88,19 +88,16 @@
             {% if is_proteocentric %}
             <div class="card-body">
                 <div class="form-check mb-3">
-                    <input type="checkbox"
-                           class="form-check-input"
-                           id="exclude_db_evidence"
-                           v-model="exclude_db_evidence"
-                           @change="handleExcludeDbEvidence">
-                    <label class="form-check-label" for="exclude_db_evidence">Exclude database evidence</label>
+                    <input type="checkbox" class="form-check-input" id="include_db_evidence"
+                           v-model="include_db_evidence" @change="updateIncludeDbEvidence">
+                    <label class="form-check-label" for="include_db_evidence">Include database evidence</label>
                 </div>
             </div>
             {% endif %}
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in this.$data.stmts"
+                        v-for="st_obj in stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -147,22 +144,16 @@
                         },
                     {% endfor %}
                 ],
-                include_db_evidence: {{ include_db_evidence|default(false)|tojson }},
-                exclude_db_evidence: {{ exclude_db_evidence|default(false)|tojson }},
-                is_proteocentric: {{ is_proteocentric|default(false)|tojson }},
-                checkboxDisabled: false
+                include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
             },
             methods: {
-                handleCheckboxChange() {
-                    this.checkboxDisabled = true;
-                    this.updateExcludeDbEvidence();
-                },
-                updateExcludeDbEvidence() {
-                let currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('exclude_db_evidence', this.exclude_db_evidence);
-                window.location.href = currentUrl.toString();
+                updateIncludeDbEvidence() {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
+                    window.location.href = currentUrl.toString();
                 }
-           }
+            }
         });
     </script>
 {% endblock %}
