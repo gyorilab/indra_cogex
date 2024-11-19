@@ -16,7 +16,7 @@ from indra_cogex.apps.constants import (
     STATEMENT_CURATION_CACHE,
 )
 from indra_cogex.apps.chat_page import chat_blueprint
-from indra_cogex.apps.curator import explorator_blueprint
+from indra_cogex.apps.curator import explorer_blueprint
 from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
@@ -36,7 +36,7 @@ app.register_blueprint(home_blueprint)
 app.register_blueprint(gene_blueprint)
 app.register_blueprint(metabolite_blueprint)
 app.register_blueprint(data_display_blueprint)
-app.register_blueprint(explorator_blueprint)
+app.register_blueprint(explorer_blueprint)
 app.register_blueprint(chat_blueprint)
 api.init_app(app)
 
