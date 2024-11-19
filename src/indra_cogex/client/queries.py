@@ -792,9 +792,11 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(
-        client.query_tx(query, **query_params), remove_medscan=True
-    )
+
+    result = client.query_tx(query, **query_params)
+    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+
+    return evidence_map
 
 
 @autoclient()
@@ -923,31 +925,64 @@ def get_stmts_for_paper(
     :
         The statements for the given PubMed ID.
     """
+    # Define all database source APIs
+    DATABASE_SOURCE_APIS = {
+        'psp', 'cbn', 'pc', 'bel_lc', 'signor', 'biogrid', 'tas', 'hprd',
+        'trrust', 'ctd', 'vhn', 'pe', 'drugbank', 'omnipath', 'conib',
+        'crog', 'dgi', 'minerva', 'creeds', 'ubibrowser', 'acsn', 'bel'
+    }
+
     if paper_term[0].lower() in {"pmid", "pubmed"}:
         parameter = norm_id(*paper_term)
         publication_props = "{id: $parameter}"
-
     elif paper_term[0].lower() == "doi":
         parameter = paper_term[1]
         publication_props = "{doi: $parameter}"
-
     elif paper_term[0].lower() in {"pmc", "pmcid"}:
         parameter = paper_term[1]
         publication_props = "{pmcid: $parameter}"
-
     elif paper_term[0].lower() == "trid":
         parameter = paper_term[1]
         publication_props = "{trid: $parameter}"
-
     else:
         raise ValueError(f"Invalid prefix for publication lookup: {paper_term[0]}")
 
+    # Build WHERE clause to filter out all database sources
+    if include_db_evidence:
+        where_clause = "true"
+    else:
+        # Create conditions to exclude all database sources
+        db_conditions = [f"NOT e.evidence CONTAINS '\"{source}\"'"
+                         for source in DATABASE_SOURCE_APIS]
+        where_clause = (
+            f"(NOT exists(e.evidence) OR e.evidence IS NULL OR "
+            f"({' AND '.join(db_conditions)}))"
+        )
+
     hash_query = f"""\
-        MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
-        WHERE {("true" if include_db_evidence else "NOT e.has_database_evidence OR e.has_database_evidence IS NULL")}
-        RETURN e.stmt_hash, e.evidence
-    """
+            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
+            WHERE {where_clause}
+            RETURN e.stmt_hash, e.evidence
+        """
+
     result = client.query_tx(hash_query, parameter=parameter)
+
+    # Sample some results for debugging
+    print("\nDEBUG: Sampling first 5 results:")
+    for i, row in enumerate(result):
+        if i >= 5:
+            break
+        print(f"Result {i + 1}:")
+        print(f"  Hash: {row[0] if len(row) > 0 else 'N/A'}")
+        evidence = row[1] if len(row) > 1 else {}
+        try:
+            evidence_dict = json.loads(evidence) if isinstance(evidence, str) else evidence
+            source_api = evidence_dict.get('source_api', 'N/A')
+            print(f"  Source API: {source_api}")
+        except Exception as e:
+            print(f"  Error parsing evidence: {str(e)}")
+
+    print("\nDEBUG: === Ending get_stmts_for_paper ===\n")
 
     return _stmts_from_results(client=client, result=result, **kwargs)
 
@@ -1090,23 +1125,23 @@ def get_stmts_for_stmt_hashes(
 
     Parameters
     ----------
-    return_evidence_counts :
-       If True, returns a tuple of (statements, evidence_counts). If False, returns
-       only statements
-   subject_prefix :
-       Filter statements to only those where the subject ID starts with this prefix
-   object_prefix :
-       Filter statements to only those where the object ID starts with this prefix
-    include_db_evidence : bool
+    include_db_evidence :
         If True, include statements with database evidence. If False, exclude them.
+    object_prefix :
+        Filter statements to only those where the object ID starts with this prefix
+    subject_prefix :
+        Filter statements to only those where the subject ID starts with this prefix
+    evidence_limit :
+        An optional maximum number of evidences to return
     client :
         The Neo4j client.
-    stmt_hashes :
-        The statement hashes to query.
     evidence_map :
         Optionally provide a mapping of stmt hash to a list of evidence objects
-    evidence_limit:
-        An optional maximum number of evidences to return
+    stmt_hashes :
+        The statement hashes to query.
+    return_evidence_counts :
+        If True, returns a tuple of (statements, evidence_counts). If False, returns
+        only statements.
 
     Returns
     -------
@@ -1523,7 +1558,7 @@ def _get_ev_dict_from_hash_ev_query(
     result: Optional[Iterable[List[Union[int, str]]]] = None,
     remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
-    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    """Assumes result is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning("No result for hash, Evidence query, returning empty dict")
         return {}
