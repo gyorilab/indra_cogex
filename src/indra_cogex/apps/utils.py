@@ -17,7 +17,7 @@ from typing import (
     Union,
 )
 
-from flask import Response, render_template, request
+from flask import render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
