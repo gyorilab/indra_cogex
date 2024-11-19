@@ -1,101 +1,140 @@
 {% extends "base_form.html" %}
 
 {% block head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
     <style>
-        .btn-group .btn-outline-secondary {
-            color: gray;
-            background-color: white;
-            border-color: gray;
+        #cy-subject, #cy-object, #cy-either {
+            width: 240px;
+            height: 240px;
+            margin-top: 5px;
         }
 
-        .btn-group .btn-outline-secondary:hover,
-        .btn-group .btn-outline-secondary:focus {
-            color: gray;
-            background-color: lightgray;
-            border-color: gray;
-            box-shadow: none;
-        }
-
-        .btn-group .btn-outline-secondary.active-btn {
-            color: white;
-            background-color: gray;
-            border-color: gray;
-        }
-
-        .example-text {
+        .btn-role {
+            width: 240px;
+            height: 240px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
             cursor: pointer;
-            color: #007bff;
-            text-decoration: underline;
+            transition: all 0.3s ease;
+            margin: 10px;
         }
 
-        .example-text:hover {
-            color: #0056b3;
+        .btn-role.active {
+            background-color: #e9ecef;
+            border-color: #0056b3;
         }
 
-        .mt-4 {
-            margin-top: 1.5rem;
+        .btn-role:hover {
+            background-color: #e9ecef;
         }
 
-        /* Add scrollbar to the dropdown to show all elements */
+        .role-buttons-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .agent-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .choices__list--dropdown {
-            max-height: 300px; /* Adjust the height to your preference */
-            overflow-y: auto; /* Enable vertical scrolling */
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .cy-role {
+            pointer-events: none; /* Disable all node interactions */
+        }
+
+        .other-agent-container {
+            margin-top: 15px;
+            display: none;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
     {{ super() }}
 {% endblock %}
 
 {% block container %}
-    <div class="card card-body bg-light">
-        <h1 class="display-4">Statement Search</h1>
-        <p class="lead">Search for statements by specifying agent, relationship types, and roles.</p>
 
-        <form method="POST" id="agent-form">
-            <!-- Agent Input -->
-            <div class="form-group">
-                <label for="agent-name">Agent</label>
-                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
+<div class="card card-body bg-light">
+    <h1 class="display-4">Statement Search</h1>
+    <p class="lead">Search for statements by specifying agent, relationship types, and roles.</p>
+
+    <form method="POST" id="agent-form">
+        <!-- Agent Input -->
+        <div class="form-group agent-container">
+            <label for="agent-name">Agent</label>
+            <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
+        </div>
+
+        <!-- Subject/Object Role Buttons -->
+        <div class="role-buttons-container">
+            <div class="btn-role" id="btn-subject" data-role="subject">
+                <div id="cy-subject" class="cy-role"></div>
             </div>
-
-            <!-- Relationship Type Multiselect -->
-            <div class="form-group mt-4">
-                <label for="choices-multiple-remove-button">Relationship Types</label>
-                <select id="choices-multiple-remove-button" name="rel_types[]" multiple></select>
-                <!-- Hidden input to store serialized selected options -->
-                <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
+            <div class="btn-role" id="btn-object" data-role="object">
+                <div id="cy-object" class="cy-role"></div>
             </div>
-
-            <!-- Subject/Object Role Buttons -->
-            <div class="form-group mt-4 text-center">
-                <label>Agent Role</label>
-                <div class="btn-group" role="group" aria-label="Agent Role">
-                    <button type="button" class="btn btn-outline-secondary" id="left-arrow" onclick="selectRole('left')">Subject</button>
-                    <button type="button" class="btn btn-outline-secondary" id="both-arrow" onclick="selectRole('None')">None</button>
-                    <button type="button" class="btn btn-outline-secondary" id="right-arrow" onclick="selectRole('right')">Object</button>
-                </div>
-                <input type="hidden" id="agent-role" name="agent_role" value="">
-                <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+            <div class="btn-role" id="btn-either" data-role="either">
+                <div id="cy-either" class="cy-role"></div>
             </div>
+        </div>
 
-            <!-- Optional Other Agent Input -->
-            <div class="form-group mt-4" id="other-agent-input-container" style="display: none;">
-                <label for="other-agent-name">Other Agent</label>
+        <!-- Optional Other Agent Input -->
+            <div class="form-group other-agent-container" id="other-agent-container">
+                <label for="other-agent-name">Other Agent(Optional)</label>
                 <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
             </div>
 
-            <button type="submit" class="btn btn-primary mt-4">Search</button>
-        </form>
-    </div>
+        <!-- Relationship Type Multiselect -->
+        <div class="form-group mt-4">
+            <label for="choices-multiple-remove-button">Relationship Types</label>
+            <select id="choices-multiple-remove-button" name="rel_types[]" multiple></select>
+            <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const stmtTypes = {{ stmt_types_json | safe }};
-            const selectElement = document.getElementById('choices-multiple-remove-button');
-            const hiddenInput = document.getElementById('rel-type-hidden');
+        <!-- Hidden Inputs for Roles -->
+        <input type="hidden" id="agent-role" name="agent_role" value="">
+        <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
 
-            // Initialize Choices.js
+
+        <button type="submit" class="btn btn-primary mt-4">Search</button>
+
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const agentNameInput = document.getElementById('agent-name');
+        const otherAgentInput = document.getElementById('other-agent-name');
+        const roleButtons = document.querySelectorAll('.btn-role');
+        const agentRoleInput = document.getElementById('agent-role');
+        const otherAgentRoleInput = document.getElementById('other-agent-role');
+        const otherAgentContainer = document.getElementById('other-agent-container');
+
+
+        // Cytoscape Initialization for Each Role
+        const cySubject = initCytoscape('cy-subject', 'inward');
+        const cyObject = initCytoscape('cy-object', 'outward');
+        const cyEither = initCytoscape('cy-either', 'neutral');
+
+
+        const stmtTypes = {{ stmt_types_json | safe }};
+        const selectElement = document.getElementById('choices-multiple-remove-button');
+        const hiddenInput = document.getElementById('rel-type-hidden');
+
+        // Initialize Choices.js
             const choices = new Choices(selectElement, {
                 removeItemButton: true,
                 searchResultLimit: stmtTypes.length,
@@ -117,32 +156,135 @@
             selectElement.addEventListener('choice', function () {
                 choices.hideDropdown();
             });
+
+
+        // Initialize Cytoscape for each button
+        function initCytoscape(containerId, arrowDirection) {
+            const cy = cytoscape({
+                container: document.getElementById(containerId),
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#007bff',
+                            'label': 'data(label)',
+                            'width': 50,
+                            'height': 50,
+                            'color': '#fff',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '14px',
+                        },
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 3,
+                            'line-color': '#007bff',
+                            'target-arrow-color': '#007bff',
+                            'target-arrow-shape': 'triangle',
+                        },
+                    },
+                ],
+                elements: generateElements(arrowDirection),
+                layout: {
+                    name: 'preset',
+                },
+                userZoomingEnabled: false,
+                userPanningEnabled: false,
+                autoungrabify: true, // Prevent node dragging
+            });
+
+            return cy;
+        }
+
+        // Generate Elements
+        function generateElements(arrowDirection) {
+            const elements = [
+                {
+                    data: { id: 'agent', label: 'Agent' },
+                    position: { x: 300, y: 150 }, // Agent node on the right
+                },
+                {
+                    data: { id: 'other', label: 'Other' },
+                    position: { x: 100, y: 150 }, // Other node on the left
+                },
+            ];
+
+            if (arrowDirection === 'inward') {
+                elements.push({ data: { source: 'other', target: 'agent' } });
+            } else if (arrowDirection === 'outward') {
+                elements.push({ data: { source: 'agent', target: 'other' } });
+            }
+
+            return elements;
+        }
+
+        // Update Cytoscape Graphs
+        function updateGraphs(agentLabel = 'Agent', otherLabel = 'Other') {
+            cySubject.elements().remove();
+            cySubject.add(generateElements('inward'));
+            cySubject.$('#agent').data('label', agentLabel);
+            cySubject.$('#other').data('label', otherLabel);
+            cySubject.layout({ name: 'preset' }).run();
+
+            cyObject.elements().remove();
+            cyObject.add(generateElements('outward'));
+            cyObject.$('#agent').data('label', agentLabel);
+            cyObject.$('#other').data('label', otherLabel);
+            cyObject.layout({ name: 'preset' }).run();
+
+            cyEither.elements().remove();
+            cyEither.add(generateElements('neutral'));
+            cyEither.$('#agent').data('label', agentLabel);
+            cyEither.$('#other').data('label', otherLabel);
+            cyEither.layout({ name: 'preset' }).run();
+        }
+
+        // Role Button Click Handlers
+        roleButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                // Remove 'active' class from all buttons
+                roleButtons.forEach(btn => btn.classList.remove('active'));
+
+                // Add 'active' class to the clicked button
+                this.classList.add('active');
+
+                // Determine role based on the clicked button
+                const role = this.dataset.role;
+
+                // Update agent and other agent roles based on the role
+                if (role === 'subject') {
+                    agentRoleInput.value = 'subject';
+                    otherAgentRoleInput.value = 'object';
+                    otherAgentContainer.style.display = 'block';
+                    otherAgentContainer.style.marginTop = '10px';
+                } else if (role === 'object') {
+                    agentRoleInput.value = 'object';
+                    otherAgentRoleInput.value = 'subject';
+                    otherAgentContainer.style.display = 'block';
+                    otherAgentContainer.style.marginTop = '10px';
+                } else {
+                    agentRoleInput.value = '';
+                    otherAgentRoleInput.value = '';
+                }
+
+            });
         });
 
-        // Handle role selection
-        function selectRole(direction) {
-            // Remove active state from all buttons
-            document.getElementById('left-arrow').classList.remove('active-btn');
-            document.getElementById('both-arrow').classList.remove('active-btn');
-            document.getElementById('right-arrow').classList.remove('active-btn');
+        agentNameInput.addEventListener('input', function () {
+        const agentLabel = agentNameInput.value || 'Agent';
+        const otherLabel = otherAgentInput.value || 'Other';
+        updateGraphs(agentLabel, otherLabel);
+    });
 
-            // Apply active state to the clicked button
-            if (direction === 'left') {
-                document.getElementById('left-arrow').classList.add('active-btn');
-                document.getElementById('agent-role').value = 'subject';
-                document.getElementById('other-agent-role').value = 'object';
-                document.getElementById('other-agent-input-container').style.display = 'block';
-            } else if (direction === 'right') {
-                document.getElementById('right-arrow').classList.add('active-btn');
-                document.getElementById('agent-role').value = 'object';
-                document.getElementById('other-agent-role').value = 'subject';
-                document.getElementById('other-agent-input-container').style.display = 'block';
-            } else {
-                document.getElementById('both-arrow').classList.add('active-btn');
-                document.getElementById('agent-role').value = '';
-                document.getElementById('other-agent-role').value = '';
-                document.getElementById('other-agent-input-container').style.display = 'none';
-            }
-        }
-    </script>
+        // Update Other Agent Name in Graph
+        otherAgentInput.addEventListener('input', function () {
+            const agentLabel = agentNameInput.value || 'Agent';
+            const otherLabel = otherAgentInput.value || 'Other';
+            updateGraphs(agentLabel, otherLabel);
+        });
+    });
+</script>
+
 {% endblock %}
