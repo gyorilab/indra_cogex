@@ -224,6 +224,8 @@ def get_goa_source_counts(
 
     Parameters
     ----------
+    include_db_evidence :
+       If True, include statements with database evidence. If False, exclude them
     client :
        The Neo4j client
    minimum_evidences :
