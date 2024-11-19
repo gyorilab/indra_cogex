@@ -1,4 +1,4 @@
-"""Curation app for INDRA CoGEx."""
+"""Blueprint for INDRA CoGEx exploration and curation."""
 
 import logging
 import time
@@ -30,7 +30,6 @@ from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_ha
 
 from .utils import get_conflict_source_counts
 from ..utils import (
-    remove_curated_evidences,
     remove_curated_pa_hashes,
     remove_curated_statements,
     render_statements,
@@ -39,15 +38,17 @@ from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
 from ...client.neo4j_client import process_identifier
 
 __all__ = [
-    "curator_blueprint",
+    "explorator_blueprint",
 ]
 
+from ...representation import indra_stmts_from_relations, Relation
+
 logger = logging.getLogger(__name__)
-curator_blueprint = flask.Blueprint("curator", __name__, url_prefix="/curate")
+explorator_blueprint = flask.Blueprint("explorator", __name__, url_prefix="/explore")
 
 EVIDENCE_TEXT = """\
 Statements are listed in descending order by number of textual evidences
-such that entries appearing earlier should be easier to curate.
+such that entries appearing earlier should be easier to explore.
 """
 
 
@@ -66,28 +67,28 @@ class GeneOntologyForm(FlaskForm):
     term = StringField(
         "Gene Ontology Term",
         validators=[DataRequired()],
-        description="Choose a gene ontology term to curate (e.g., "
+        description="Choose a gene ontology term to explore (e.g., "
                     '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
 
-@curator_blueprint.route("/go/", methods=["GET", "POST"])
+@explorator_blueprint.route("/go/", methods=["GET", "POST"])
 def gene_ontology():
-    """A home page for GO curation."""
+    """A home page for GO exploration."""
     form = GeneOntologyForm()
     if form.validate_on_submit():
         include_db_evidence = form.include_db_evidence.data
-        return redirect(url_for(f".{curate_go.__name__}",
+        return redirect(url_for(f".{explore_go.__name__}",
                                 term=form.term.data,
                                 include_db_evidence=str(include_db_evidence).lower()))
     return render_template("curation/go_form.html", form=form)
 
 
-@curator_blueprint.route("/go/<term>", methods=["GET"])
+@explorator_blueprint.route("/go/<term>", methods=["GET"])
 @jwt_required(optional=True)
-def curate_go(term: str):
+def explore_go(term: str):
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     stmts = indra_subnetwork_go(
         go_term=("GO", term),
@@ -96,9 +97,9 @@ def curate_go(term: str):
     )
     return _enrich_render_statements(
         stmts,
-        title=f"GO Curator: {term}",
+        title=f"GO Explorator: {term}",
         description=f"""\
-            The GO Pathway curator identifies a list of genes associated with
+            The GO Pathway explorator identifies a list of genes associated with
             the given GO term then INDRA statements where the subject and
             object are both from the list using INDRA CoGEx.
             {_database_text("Pathway Commons")}
@@ -151,47 +152,47 @@ class MeshDiseaseForm(FlaskForm):
     term = StringField(
         "MeSH Term",
         validators=[DataRequired()],
-        description='Choose a MeSH disease to curate (e.g., <a href="./D006009">D006009</a> for Pompe Disease)',
+        description='Choose a MeSH disease to explore (e.g., <a href="./D006009">D006009</a> for Pompe Disease)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
 
 
-@curator_blueprint.route("/mesh/", methods=["GET", "POST"])
+@explorator_blueprint.route("/mesh/", methods=["GET", "POST"])
 def mesh():
-    """A home page for MeSH Disease curation."""
+    """A home page for MeSH Disease exploration."""
     form = MeshDiseaseForm()
     if form.validate_on_submit():
         include_db_evidence = form.include_db_evidence.data
-        return redirect(url_for(f".{curate_mesh.__name__}",
+        return redirect(url_for(f".{explore_mesh.__name__}",
                                 term=form.term.data,
                                 include_db_evidence=str(include_db_evidence).lower()))
     return render_template("curation/mesh_form.html", form=form)
 
 
-MESH_CURATION_SUBSETS = {
+MESH_EXPLORATION_SUBSETS = {
     "ppi": ("hgnc", "hgnc"),
     "pmi": ("hgnc", "chebi"),
     "go": ("hgnc", "go"),
 }
 
 
-@curator_blueprint.route("/mesh/<term>", methods=["GET"])
-@curator_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
+@explorator_blueprint.route("/mesh/<term>", methods=["GET"])
+@explorator_blueprint.route("/mesh/<term>/<subset>", methods=["GET"])
 @jwt_required(optional=True)
-def curate_mesh(term: str, subset: Optional[str] = None):
-    """Curate all statements for papers with a given MeSH annotation."""
+def explore_mesh(term: str, subset: Optional[str] = None):
+    """Explore all statements for papers with a given MeSH annotation."""
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     if subset is None:
-        return _curate_mesh_helper(term=term, include_db_evidence=include_db_evidence)
-    elif subset not in MESH_CURATION_SUBSETS:
+        return _explore_mesh_helper(term=term, include_db_evidence=include_db_evidence)
+    elif subset not in MESH_EXPLORATION_SUBSETS:
         return abort(
             400,
-            f"Invalid subset: {subset}. Choose one of {sorted(MESH_CURATION_SUBSETS)}",
+            f"Invalid subset: {subset}. Choose one of {sorted(MESH_EXPLORATION_SUBSETS)}",
         )
     else:
-        subject_prefix, object_prefix = MESH_CURATION_SUBSETS[subset]
-        return _curate_mesh_helper(
+        subject_prefix, object_prefix = MESH_EXPLORATION_SUBSETS[subset]
+        return _explore_mesh_helper(
             term=term,
             subject_prefix=subject_prefix,
             object_prefix=object_prefix,
@@ -199,7 +200,7 @@ def curate_mesh(term: str, subset: Optional[str] = None):
         )
 
 
-def _curate_mesh_helper(
+def _explore_mesh_helper(
     term: str,
     subject_prefix: Optional[str] = None,
     object_prefix: Optional[str] = None,
@@ -214,15 +215,20 @@ def _curate_mesh_helper(
 
     logger.info(f"Getting statements for mesh:{term}")
     start_time = time.time()
-    stmts, evidence_counts = get_stmts_for_mesh(
-        mesh_term=("MESH", term),
-        include_child_terms=True,
-        client=client,
-        evidence_limit=10,
-        subject_prefix=subject_prefix,
-        object_prefix=object_prefix,
-        include_db_evidence=include_db_evidence,
-    )
+    try:
+        stmts = get_stmts_for_mesh(
+            mesh_term=("MESH", term),
+            include_child_terms=True,
+            client=client,
+            evidence_limit=10,
+            subject_prefix=subject_prefix,
+            object_prefix=object_prefix,
+            include_db_evidence=include_db_evidence,
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        stmts = []
+
     evidence_lookup_time = time.time() - start_time
 
     if filter_curated:
@@ -230,13 +236,12 @@ def _curate_mesh_helper(
 
     return render_statements(
         stmts,
-        title=f"MeSH Curator: {term}",
-        evidence_counts=evidence_counts,
+        title=f"MeSH Explorator: {term}",
         evidence_lookup_time=evidence_lookup_time,
         limit=proxies.limit,
         curations=curations,
         description=f"""\
-            The topic curator identifies INDRA Statements in publications
+            The topic explorator identifies INDRA Statements in publications
             annotated with the given Medical Subject Headings (MeSH) term
             using INDRA CoGEx. INDRA statements already appearing in
             high-quality reference databases and statements that have already
@@ -256,10 +261,6 @@ def _render_func(
     is_proteocentric=False,
     **kwargs,
 ) -> Response:
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence if is_proteocentric else True
-    func_kwargs = func_kwargs or {}
-    func_kwargs['include_db_evidence'] = include_db_evidence
     """Render the evidence counts generated by a function call.
 
     Parameters
@@ -283,6 +284,11 @@ def _render_func(
         A Flask response generated by calling the function then rendering
         the statements is evidence count dictionary covers
     """
+    include_db_evidence = request.args.get('include_db_evidence',
+                                           'true' if is_proteocentric else 'true').lower() == 'true'
+    func_kwargs = func_kwargs or {}
+    func_kwargs['include_db_evidence'] = include_db_evidence
+
     start = time.time()
     stmt_hash_to_source_counts = func(client=client, **(func_kwargs or {}))
     time_delta = time.time() - start
@@ -295,7 +301,6 @@ def _render_func(
         'description': description,
         'include_db_evidence': include_db_evidence,
         'is_proteocentric': is_proteocentric,
-        'exclude_db_evidence': exclude_db_evidence,
     }
     render_kwargs.update(kwargs)
 
@@ -309,7 +314,6 @@ def _render_evidence_counts(
     description: Optional[str] = None,
     include_db_evidence: bool = True,
     is_proteocentric=False,
-    exclude_db_evidence=False,
 ) -> Response:
     curations = curation_cache.get_curation_cache()
     logger.debug(f"loaded {len(curations):,} curations")
@@ -345,22 +349,20 @@ def _render_evidence_counts(
         source_counts_dict=stmt_hash_to_source_counts,
         include_db_evidence=include_db_evidence,
         is_proteocentric=is_proteocentric,
-        exclude_db_evidence=exclude_db_evidence,
         # no limit necessary here since it was already applied above
     )
 
 
-@curator_blueprint.route("/ppi", methods=["GET"])
+@explorator_blueprint.route("/ppi", methods=["GET"])
 @jwt_required(optional=True)
 def ppi():
-    """The PPI curator looks for the highest evidences for PPIs that don't appear in a database."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """The PPI explorator looks for the highest evidences for PPIs that don't appear in a database."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_ppi_source_counts,
-        title="PPI Curator",
+        title="PPI Explorator",
         description=f"""\
-            The protein-protein interaction (PPI) curator identifies INDRA
+            The protein-protein interaction (PPI) explorator identifies INDRA
             statements using INDRA CoGEx whose subjects and objects are human
             gene products (i.e., RNA or proteins) and whose statements are
             "binds". 
@@ -369,22 +371,19 @@ def ppi():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/goa", methods=["GET"])
+@explorator_blueprint.route("/goa", methods=["GET"])
 @jwt_required(optional=True)
 def goa():
-    """The GO Annotation curator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
-
+    """The GO Annotation explorator looks for the highest evidence gene-GO term relations that don't appear in GOA."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_goa_source_counts,
-        title="GO Annotation Curator",
+        title="GO Annotation Explorator",
         description=f"""\
-            The Gene Ontology annotation curator identifiers INDRA statements
+            The Gene Ontology annotation explorator identifiers INDRA statements
             using INDRA CoGEx whose subjects are human genes/proteins and whose
             objects are Gene Ontology terms. Statements whose gene-GO term pair
             already appear in the Gene Ontology Annotation database and statements
@@ -394,14 +393,13 @@ def goa():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/conflicts", methods=["GET"])
+@explorator_blueprint.route("/conflicts", methods=["GET"])
 @jwt_required(optional=True)
 def conflicts():
-    """Curate statements with conflicting prior curations."""
+    """Explore statements with conflicting prior curations."""
     return _render_func(
         get_conflict_source_counts, title="Conflict Resolver",
         filter_curated=False,
@@ -413,17 +411,16 @@ def conflicts():
     )
 
 
-@curator_blueprint.route("/tf", methods=["GET"])
+@explorator_blueprint.route("/tf", methods=["GET"])
 @jwt_required(optional=True)
 def tf():
-    """Curate transcription factors."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """Explore transcription factors."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_tf_statements,
-        title="Transcription Factor Curator",
+        title="Transcription Factor Explorator",
         description=f"""\
-            The transcription factor curator identifies INDRA statements using
+            The transcription factor explorator identifies INDRA statements using
             INDRA CoGEx whose subjects are human transcription factors and whose
             statements are "increases amount of" or "decreases amount of".
             {_database_text("Pathway Commons")}
@@ -431,21 +428,19 @@ def tf():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/kinase", methods=["GET"])
+@explorator_blueprint.route("/kinase", methods=["GET"])
 @jwt_required(optional=True)
 def kinase():
-    """Curate kinases."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """Explore kinases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_kinase_statements,
-        title="Kinase Curator",
+        title="Kinase Explorator",
         description=f"""\
-            The kinase curator identifies INDRA statements using INDRA
+            The kinase explorator identifies INDRA statements using INDRA
             CoGEx whose subjects are human protein kinases and whose
             statements are "phosphorylates". 
             {_database_text("PhosphoSitePlus")}
@@ -453,21 +448,19 @@ def kinase():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/phosphatase", methods=["GET"])
+@explorator_blueprint.route("/phosphatase", methods=["GET"])
 @jwt_required(optional=True)
 def phosphatase():
-    """Curate phosphatases."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """Explore phosphatases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_phosphatase_statements,
-        title="Phosphatase Curator",
+        title="Phosphatase Explorator",
         description=f"""\
-            The phosphatase curator identifies INDRA statements using INDRA
+            The phosphatase explorator identifies INDRA statements using INDRA
             CoGEx whose subjects are human phosphatase genes and whose
             statements are "dephosphorylates".
             {_database_text("Pathway Commons")}
@@ -475,21 +468,19 @@ def phosphatase():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/dub", methods=["GET"])
+@explorator_blueprint.route("/dub", methods=["GET"])
 @jwt_required(optional=True)
 def deubiquitinase():
-    """Curate deubiquitinases."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """Explore deubiquitinases."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_dub_statements,
-        title="Deubiquitinase Curator",
+        title="Deubiquitinase Explorator",
         description=f"""\
-            The deubiquitinase curator identifies INDRA statements using INDRA
+            The deubiquitinase explorator identifies INDRA statements using INDRA
             CoGEx whose subjects are human deubiquitinase genes and whose
             statements are "deubiquinates".
             {_database_text("Pathway Commons")}
@@ -497,22 +488,19 @@ def deubiquitinase():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/mirna", methods=["GET"])
+@explorator_blueprint.route("/mirna", methods=["GET"])
 @jwt_required(optional=True)
 def mirna():
-    """Curate miRNAs."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
-
+    """Explore miRNAs."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_mirna_statements,
-        title="miRNA Curator",
+        title="miRNA Explorator",
         description=f"""\
-            The miRNA curator identifies INDRA statements using INDRA
+            The miRNA explorator identifies INDRA statements using INDRA
             CoGEx whose subjects are micro-RNAs and whose
             statements are "increases amount" or "decreases amount".
             {_database_text("miRTarBase")}
@@ -520,47 +508,44 @@ def mirna():
         """,
         func_kwargs={'include_db_evidence': include_db_evidence},
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/disprot", methods=["GET"])
-@curator_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
+@explorator_blueprint.route("/disprot", methods=["GET"])
+@explorator_blueprint.route("/disprot/<object_prefix>", methods=["GET"])
 @jwt_required(optional=True)
 def disprot(object_prefix: Optional[str] = None):
-    """Curate intrensically disordered proteins."""
-    exclude_db_evidence = request.args.get('exclude_db_evidence', 'false').lower() == 'true'
-    include_db_evidence = not exclude_db_evidence
+    """Explore intrensically disordered proteins."""
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     assert object_prefix in {None, "hgnc", "go", "chebi"}
     return _render_func(
         get_disprot_statements,
-        title="DisProt Curator",
+        title="DisProt Explorator",
         description=f"""\
-            The DisProt curator identifies INDRA statements using INDRA
+            The DisProt explorator identifies INDRA statements using INDRA
             CoGEx whose subjects are intrensically disordered proteins.
             {EVIDENCE_TEXT}
         """,
         func_kwargs=dict(object_prefix=object_prefix, include_db_evidence=include_db_evidence),
         is_proteocentric=True,
-        exclude_db_evidence=exclude_db_evidence
     )
 
 
-@curator_blueprint.route("/modulator/", methods=["GET"])
+@explorator_blueprint.route("/modulator/", methods=["GET"])
 @jwt_required(optional=True)
 def modulator():
     """Get small molecule modulators for the given protein."""
     raise NotImplementedError
 
 
-@curator_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
+@explorator_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
 @jwt_required(optional=True)
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     if prefix in {"pubmed", "pmc", "doi", "trid"}:
-        return _curate_paper(prefix, identifier, filter_curated=proxies.filter_curated,
-                             include_db_evidence=include_db_evidence)
+        return _explore_paper(prefix, identifier, filter_curated=proxies.filter_curated,
+                              include_db_evidence=include_db_evidence)
     if prefix in {"hgnc"}:
         return _render_func(
             get_entity_source_counts,
@@ -599,7 +584,7 @@ class PaperForm(FlaskForm):
     filter_curated = BooleanField(
         "Filter Curated Evidences",
         default=True,
-        description="Do not show evidences that have been previously curated",
+        description="Do not show evidences that have been previously explored",
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
@@ -632,7 +617,7 @@ class PaperForm(FlaskForm):
         raise ValueError(f"Unhandled prefix in CURIE {s}")
 
 
-@curator_blueprint.route("/paper", methods=["GET", "POST"])
+@explorator_blueprint.route("/paper", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def paper():
     """Get all statements for the given paper."""
@@ -650,7 +635,7 @@ def paper():
     return render_template("curation/paper_form.html", form=form)
 
 
-def _curate_paper(
+def _explore_paper(
     prefix: str,
     identifier: str,
     filter_curated: bool = True,
@@ -667,11 +652,11 @@ def _curate_paper(
 
     return render_statements(
         stmts,
-        title=f"Publication Curator: {prefix}:{identifier}",
+        title=f"Publication Explorator: {prefix}:{identifier}",
         limit=proxies.limit,
         curations=curations,
         description=f"""
-            Curate statements with evidences occurring in 
+            Explore statements with evidences occurring in 
             <a href="https://bioregistry.io/{prefix}:{identifier}">
             <code>{prefix}:{identifier}</code></a>.
         """,
@@ -695,19 +680,59 @@ class NodesForm(FlaskForm):
     submit = SubmitField("Submit")
 
     def get_nodes(self) -> List[Tuple[str, str]]:
-        """Get the CURIEs from the form."""
-        if not self.curies.data:  # Check if curies.data is None or empty
+        """
+        Get the CURIEs from the form, handling both newlines and commas as separators.
+
+        Returns
+        -------
+        List[Tuple[str, str]]
+            List of (namespace, identifier) tuples, sorted for consistency
+
+        Raises
+        ------
+        ValueError
+            If any identifier is malformed
+        """
+        if not self.curies.data:
             return []
-        return sorted(
-            {
-                tuple(process_identifier(entry.strip()))
-                for line in self.curies.data.split("\n")
-                for entry in line.strip().split(",")
-            }
-        )
+
+        # First split into lines, then split each line by commas
+        entries = [
+            entry.strip()
+            for line in self.curies.data.split("\n")
+            for entry in line.strip().split(",")
+            if entry.strip()  # Only keep non-empty entries
+        ]
+
+        # Process all valid entries and collect invalid ones
+        processed_nodes = set()
+        invalid_entries = []
+
+        for entry in entries:
+            try:
+                if ':' in entry:
+                    ns, id_part = entry.split(':', maxsplit=1)
+                    if ns.strip() and id_part.strip():  # Ensure both parts exist
+                        clean_entry = f"{ns.strip()}:{id_part.strip()}"
+                        processed = tuple(process_identifier(clean_entry))
+                        processed_nodes.add(processed)
+                    else:
+                        invalid_entries.append(entry)
+                else:
+                    invalid_entries.append(entry)
+            except ValueError:
+                invalid_entries.append(entry)
+
+        if invalid_entries:
+            raise ValueError(
+                f"Invalid identifier(s): {', '.join(invalid_entries)}. "
+                "Expected format: 'namespace:identifier' (e.g., 'FPLX:MEK')"
+            )
+
+        return sorted(processed_nodes)
 
 
-@curator_blueprint.route("/subnetwork", methods=["GET", "POST"])
+@explorator_blueprint.route("/subnetwork", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def subnetwork():
     """Get all statements induced by the nodes."""
@@ -744,9 +769,9 @@ def subnetwork():
         stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
         return _enrich_render_statements(
             stmts,
-            title="Subnetwork Curator",
+            title="Subnetwork Explorator",
             description=f"""\
-            The subnetwork curator shows statements between the following nodes.
+            The subnetwork explorator shows statements between the following nodes.
             {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
             </p>
@@ -762,10 +787,10 @@ def subnetwork():
     return render_template("curation/node_form.html", form=form)
 
 
-@curator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
+@explorator_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
 @jwt_required(optional=True)
-def curate_statement(stmt_hash: int):
-    """Curate all evidences for the statement."""
+def explore_statement(stmt_hash: int):
+    """Explore all evidences for the statement."""
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
     start_time = time.time()
     enriched_stmts, evidence_counts = get_stmts_for_stmt_hashes(
@@ -778,9 +803,9 @@ def curate_statement(stmt_hash: int):
     logger.info(f"Got statements in {evidence_lookup_time:.2f} seconds")
     return render_statements(
         enriched_stmts,
-        title=f"Statement Curator: {stmt_hash}",
+        title=f"Statement Explorator: {stmt_hash}",
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
-        description="Curate evidences from a single statement",
+        description="Explore evidences from a single statement",
         include_db_evidence=include_db_evidence
     )
