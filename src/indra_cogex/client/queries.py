@@ -793,9 +793,11 @@ def get_evidences_for_mesh(
         single_mesh_match,
         where_clause,
     )
-    return _get_ev_dict_from_hash_ev_query(
-        client.query_tx(query, **query_params), remove_medscan=True
-    )
+
+    result = client.query_tx(query, **query_params)
+    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+
+    return evidence_map
 
 
 @autoclient()
@@ -906,7 +908,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    paper_term: Tuple[str, str], *, client: Neo4jClient, include_db_evidence: bool = False, **kwargs,
+    paper_term: Tuple[str, str], *, client: Neo4jClient, include_db_evidence: bool = True, **kwargs,
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -1073,23 +1075,23 @@ def get_stmts_for_stmt_hashes(
 
     Parameters
     ----------
-    return_evidence_counts :
-       If True, returns a tuple of (statements, evidence_counts). If False, returns
-       only statements
-   subject_prefix :
-       Filter statements to only those where the subject ID starts with this prefix
-   object_prefix :
-       Filter statements to only those where the object ID starts with this prefix
-    include_db_evidence : bool
+    include_db_evidence :
         If True, include statements with database evidence. If False, exclude them.
+    object_prefix :
+        Filter statements to only those where the object ID starts with this prefix
+    subject_prefix :
+        Filter statements to only those where the subject ID starts with this prefix
+    evidence_limit :
+        An optional maximum number of evidences to return
     client :
         The Neo4j client.
-    stmt_hashes :
-        The statement hashes to query.
     evidence_map :
         Optionally provide a mapping of stmt hash to a list of evidence objects
-    evidence_limit:
-        An optional maximum number of evidences to return
+    stmt_hashes :
+        The statement hashes to query.
+    return_evidence_counts :
+        If True, returns a tuple of (statements, evidence_counts). If False, returns
+        only statements.
 
     Returns
     -------
@@ -1673,7 +1675,7 @@ def _get_ev_dict_from_hash_ev_query(
     result: Optional[Iterable[List[Union[int, str]]]] = None,
     remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
-    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    """Assumes result is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning("No result for hash, Evidence query, returning empty dict")
         return {}
