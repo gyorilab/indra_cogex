@@ -42,7 +42,9 @@ def search():
         agent = form.agent_name.data
         other_agent = form.other_agent.data
         source_type = form.source_type.data
-        rel_types = json.loads(form.rel_type.data)
+        if form.rel_type.data:
+            rel_types = json.loads(form.rel_type.data)
+        else: rel_types = None
         agent_role = form.agent_role.data
         other_role = form.other_agent_role.data
         paper_id = form.paper_id.data
