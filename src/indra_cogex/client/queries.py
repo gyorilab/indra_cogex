@@ -908,7 +908,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    paper_term: Tuple[str, str], *, client: Neo4jClient, include_db_evidence: bool = True, **kwargs,
+    paper_term: Tuple[str, str], *, client: Neo4jClient, **kwargs,
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -918,8 +918,6 @@ def get_stmts_for_paper(
         The Neo4j client.
     paper_term :
         The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
-    include_db_evidence:
-        Whether to include statements with database evidence.
 
     Returns
     -------
@@ -930,7 +928,6 @@ def get_stmts_for_paper(
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
-        WHERE {("true" if include_db_evidence else "NOT e.has_database_evidence OR e.has_database_evidence IS NULL")}
         RETURN e.stmt_hash, e.evidence
     """
     result = client.query_tx(hash_query, paper_parameter=parameter)
