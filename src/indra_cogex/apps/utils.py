@@ -218,15 +218,12 @@ def format_stmts(
             else:
                 evidence_counts[stmt.get_hash()] = len(stmt.evidence)
     else:
-        logger.info("Using provided evidence_counts")
         logger.debug(f"format_stmts input evidence_counts: {evidence_counts}")
     # Make sure statements are sorted by highest evidence counts first
-    logger.info("Sorting statements by evidence count in descending order")
     if all(isinstance(stmt, list) for stmt in stmts):
         stmts = sorted(stmts, key=lambda s: evidence_counts[s[0]], reverse=True)
     else:
         stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
-    logger.debug(f"format_stmts sorted stmts: {stmts}")
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
@@ -277,8 +274,6 @@ def format_stmts(
         if row is not None:
             stmt_rows.append(row)
 
-    logger.info(f"format_stmts returning {len(stmt_rows)} statement rows")
-    logger.debug(f"format_stmts output stmt_rows: {stmt_rows}")
     return stmt_rows[:limit] if limit else stmt_rows
 
 
@@ -413,8 +408,16 @@ def remove_curated_statements(
     def should_keep(stmt):
         if isinstance(stmt, list):
             stmt_hash = stmt[0]
+            evidence = stmt[1] if len(stmt) > 1 and isinstance(stmt[1], dict) else {}
+            # Handle include_db_evidence for list-type statements
+            if include_db_evidence and evidence.get('has_database_evidence', False):
+                return True
             return stmt_hash not in curated_pa_hashes
         else:
+            # Handle include_db_evidence for Statement objects
+            if include_db_evidence and hasattr(stmt, 'evidence'):
+                if any(getattr(e, 'has_database_evidence', False) for e in stmt.evidence):
+                    return True
             return stmt.get_hash() not in curated_pa_hashes
 
     kept_statements = [stmt for stmt in statements if should_keep(stmt)]
