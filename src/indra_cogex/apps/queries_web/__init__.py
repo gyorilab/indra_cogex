@@ -79,7 +79,6 @@ examples_dict = {
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
     "include_db_evidence": fields.Boolean(example=True),
-    "exclude_db_evidence": fields.Boolean(example=False),gi
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
