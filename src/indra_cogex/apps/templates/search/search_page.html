@@ -36,6 +36,12 @@
         .mt-4 {
             margin-top: 1.5rem;
         }
+
+        /* Add scrollbar to the dropdown to show all elements */
+        .choices__list--dropdown {
+            max-height: 300px; /* Adjust the height to your preference */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
     </style>
     {{ super() }}
 {% endblock %}
@@ -92,9 +98,8 @@
             // Initialize Choices.js
             const choices = new Choices(selectElement, {
                 removeItemButton: true,
-                maxItemCount: 5,
-                searchResultLimit: 5,
-                renderChoiceLimit: 5
+                searchResultLimit: stmtTypes.length,
+                renderChoiceLimit: stmtTypes.length,
             });
 
             // Add options to Choices.js dynamically
@@ -106,6 +111,11 @@
             selectElement.addEventListener('change', function () {
                 const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
                 hiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
+            });
+
+            // Close the dropdown after selecting an option
+            selectElement.addEventListener('choice', function () {
+                choices.hideDropdown();
             });
         });
 
