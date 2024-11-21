@@ -1170,8 +1170,8 @@ def get_stmts_for_stmt_hashes(
     if not return_evidence_counts:
         return rv
     evidence_counts = {
-        stmt.get_hash(): rel.data["evidence_count"] for rel, stmt in zip(rels, stmts)
-    }
+        stmt.get_hash():  len(stmt.evidence) for stmt in rv}
+
     return rv, evidence_counts
 
 
