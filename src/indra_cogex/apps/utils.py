@@ -84,7 +84,6 @@ def render_statements(
     source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
     include_db_evidence=True,
     is_proteocentric=False,
-    exclude_db_evidence=False,
     **kwargs,
 ) -> str:
     """Render INDRA statements.
@@ -109,8 +108,6 @@ def render_statements(
     is_proteocentric :
         Whether the view is protein-centric, enabling specific protein-related features,
         by default False
-    exclude_db_evidence :
-        Whether to exclude database evidence from the display, by default False
     kwargs :
         Additional keyword arguments to pass to the template renderer
 
@@ -150,7 +147,6 @@ def render_statements(
         sources_dict=sources_dict,
         include_db_evidence=include_db_evidence,
         is_proteocentric=is_proteocentric,
-        exclude_db_evidence=exclude_db_evidence,
         **kwargs,
     )
     logger.info("Template rendered successfully")
@@ -256,8 +252,7 @@ def format_stmts(
         if isinstance(stmt, list):
             stmt_hash, evidence = stmt[0], stmt[1]
             row = _stmt_to_row(
-                stmt_hash,
-                evidence=evidence,
+                stmts_by_hash[stmt_hash],
                 cur_dict=cur_dict,
                 cur_counts=cur_counts,
                 remove_medscan=remove_medscan,
