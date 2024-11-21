@@ -747,7 +747,8 @@ def get_mesh_ids_for_pmids(
 
 @autoclient()
 def get_evidences_for_mesh(
-    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, include_db_evidence: bool = True, *,
+    client: Neo4jClient
 ) -> Dict[int, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -759,6 +760,8 @@ def get_evidences_for_mesh(
         The MESH ID to query.
     include_child_terms :
         If True, also match against the child MESH terms of the given MESH ID
+    include_db_evidence :
+        If True, include and prioritize database evidence. If False, exclude it.
 
     Returns
     -------
@@ -777,7 +780,7 @@ def get_evidences_for_mesh(
 
     query_params = {}
     if child_terms:
-        match_terms = {norm_mesh} | child_terms
+        match_terms = list({norm_mesh} | child_terms)
         where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
         query_params["mesh_terms"] = match_terms
@@ -786,17 +789,23 @@ def get_evidences_for_mesh(
         where_clause = ""
         query_params["mesh_id"] = norm_mesh
 
-    query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
-           %s
-           RETURN e.stmt_hash, e.evidence""" % (
-        single_mesh_match,
-        where_clause,
-    )
+    db_filter = "" if include_db_evidence else "WHERE NOT e.source_api = 'database'"
+
+    query = f"""
+        MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
+        %s
+        %s
+        WITH DISTINCT e.stmt_hash AS hash, COUNT(e) AS evidence_count
+        LIMIT 25 
+        WITH collect(hash) as top_hashes
+        MATCH (e:Evidence)
+        WHERE e.stmt_hash IN top_hashes
+        %s
+        RETURN e.stmt_hash, e.evidence
+    """ % (single_mesh_match, where_clause, db_filter, db_filter)
 
     result = client.query_tx(query, **query_params)
-    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
-
-    return evidence_map
+    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
 
 
 @autoclient()
