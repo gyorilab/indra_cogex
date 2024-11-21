@@ -4,12 +4,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
     <style>
-        #cy-subject, #cy-object, #cy-either {
-            width: 240px;
-            height: 240px;
-            margin-top: 5px;
-        }
-
         .btn-role {
             width: 240px;
             height: 240px;
@@ -42,7 +36,6 @@
         .agent-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
             margin-bottom: 20px;
         }
 
@@ -79,15 +72,15 @@
         </div>
 
         <!-- Subject/Object Role Buttons -->
-        <div class="role-buttons-container">
-            <div class="btn-role" id="btn-subject" data-role="subject">
-                <div id="cy-subject" class="cy-role"></div>
-            </div>
-            <div class="btn-role" id="btn-object" data-role="object">
-                <div id="cy-object" class="cy-role"></div>
-            </div>
-            <div class="btn-role" id="btn-either" data-role="either">
-                <div id="cy-either" class="cy-role"></div>
+        <div class="form-group">
+            <label for="role-buttons-container" class="form-label">Role</label>
+            <div class="role-buttons-container" id="role-buttons-container">
+                <div class="btn-role" id="btn-subject" data-role="subject">
+                </div>
+                <div class="btn-role" id="btn-object" data-role="object">
+                </div>
+                <div class="btn-role" id="btn-either" data-role="either">
+                </div>
             </div>
         </div>
 
@@ -124,12 +117,6 @@
         const otherAgentContainer = document.getElementById('other-agent-container');
 
 
-        // Cytoscape Initialization for Each Role
-        const cySubject = initCytoscape('cy-subject', 'inward');
-        const cyObject = initCytoscape('cy-object', 'outward');
-        const cyEither = initCytoscape('cy-either', 'neutral');
-
-
         const stmtTypes = {{ stmt_types_json | safe }};
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const hiddenInput = document.getElementById('rel-type-hidden');
@@ -157,89 +144,6 @@
                 choices.hideDropdown();
             });
 
-
-        // Initialize Cytoscape for each button
-        function initCytoscape(containerId, arrowDirection) {
-            const cy = cytoscape({
-                container: document.getElementById(containerId),
-                style: [
-                    {
-                        selector: 'node',
-                        style: {
-                            'background-color': '#007bff',
-                            'label': 'data(label)',
-                            'width': 50,
-                            'height': 50,
-                            'color': '#fff',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'font-size': '14px',
-                        },
-                    },
-                    {
-                        selector: 'edge',
-                        style: {
-                            'width': 3,
-                            'line-color': '#007bff',
-                            'target-arrow-color': '#007bff',
-                            'target-arrow-shape': 'triangle',
-                        },
-                    },
-                ],
-                elements: generateElements(arrowDirection),
-                layout: {
-                    name: 'preset',
-                },
-                userZoomingEnabled: false,
-                userPanningEnabled: false,
-                autoungrabify: true, // Prevent node dragging
-            });
-
-            return cy;
-        }
-
-        // Generate Elements
-        function generateElements(arrowDirection) {
-            const elements = [
-                {
-                    data: { id: 'agent', label: 'Agent' },
-                    position: { x: 300, y: 150 }, // Agent node on the right
-                },
-                {
-                    data: { id: 'other', label: 'Other' },
-                    position: { x: 100, y: 150 }, // Other node on the left
-                },
-            ];
-
-            if (arrowDirection === 'inward') {
-                elements.push({ data: { source: 'other', target: 'agent' } });
-            } else if (arrowDirection === 'outward') {
-                elements.push({ data: { source: 'agent', target: 'other' } });
-            }
-
-            return elements;
-        }
-
-        // Update Cytoscape Graphs
-        function updateGraphs(agentLabel = 'Agent', otherLabel = 'Other') {
-            cySubject.elements().remove();
-            cySubject.add(generateElements('inward'));
-            cySubject.$('#agent').data('label', agentLabel);
-            cySubject.$('#other').data('label', otherLabel);
-            cySubject.layout({ name: 'preset' }).run();
-
-            cyObject.elements().remove();
-            cyObject.add(generateElements('outward'));
-            cyObject.$('#agent').data('label', agentLabel);
-            cyObject.$('#other').data('label', otherLabel);
-            cyObject.layout({ name: 'preset' }).run();
-
-            cyEither.elements().remove();
-            cyEither.add(generateElements('neutral'));
-            cyEither.$('#agent').data('label', agentLabel);
-            cyEither.$('#other').data('label', otherLabel);
-            cyEither.layout({ name: 'preset' }).run();
-        }
 
         // Role Button Click Handlers
         roleButtons.forEach(button => {
@@ -270,19 +174,6 @@
                 }
 
             });
-        });
-
-        agentNameInput.addEventListener('input', function () {
-        const agentLabel = agentNameInput.value || 'Agent';
-        const otherLabel = otherAgentInput.value || 'Other';
-        updateGraphs(agentLabel, otherLabel);
-    });
-
-        // Update Other Agent Name in Graph
-        otherAgentInput.addEventListener('input', function () {
-            const agentLabel = agentNameInput.value || 'Agent';
-            const otherLabel = otherAgentInput.value || 'Other';
-            updateGraphs(agentLabel, otherLabel);
         });
     });
 </script>
