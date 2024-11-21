@@ -215,8 +215,7 @@ def _explore_mesh_helper(
 
     logger.info(f"Getting statements for mesh:{term}")
     start_time = time.time()
-    try:
-        stmts = get_stmts_for_mesh(
+    stmts = get_stmts_for_mesh(
             mesh_term=("MESH", term),
             include_child_terms=True,
             client=client,
@@ -224,10 +223,7 @@ def _explore_mesh_helper(
             subject_prefix=subject_prefix,
             object_prefix=object_prefix,
             include_db_evidence=include_db_evidence,
-        )
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        stmts = []
+    )
 
     evidence_lookup_time = time.time() - start_time
 
@@ -685,7 +681,8 @@ class NodesForm(FlaskForm):
 
         Returns
         -------
-        List[Tuple[str, str]]
+        :
+
             List of (namespace, identifier) tuples, sorted for consistency
 
         Raises
