@@ -570,11 +570,11 @@ class PaperForm(FlaskForm):
         validators=[DataRequired()],
         description="""\
             This field accepts identifiers from PubMed, PubMed Central, and DOI
-            as either a CURIEs that looks like <code>pubmed:1234</code>,
-            <code>pmc:PMC3084216</code>, or <code>doi:10.1038/nbt1156</code>
+            as either a CURIEs that looks like <code>pubmed:26186194</code>,
+            <code>PMC4617211</code>, or doi:<code>10.1016/J.CELL.2015.06.043</code>
             <strong>or</strong> as a local unique identifier that looks like
-            <code>1234</code>, <code>PMC3084216</code>, or
-            <code>10.1038/nbt1156</code>.
+            <code>26186194</code>, <code>PMC4617211</code>, or
+            <code>10.1016/J.CELL.2015.06.043</code>.
         """,
     )
     filter_curated = BooleanField(
