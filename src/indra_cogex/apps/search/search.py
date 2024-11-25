@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, jsonify
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement
@@ -68,3 +68,30 @@ def search():
     return render_template("search/search_page.html",
                            form=form,
                            stmt_types_json=stmt_types_json)
+from flask import current_app
+
+@search_blueprint.route("/gilda_ground", methods=["GET","POST"])
+@jwt_required(optional=True)
+def gilda_ground_endpoint():
+    data = request.get_json()
+    current_app.logger.info(f"Received payload: {data}")
+    agent_text = data.get("agent")
+    if not agent_text:
+        return {"error": "Agent text is required."}, 400
+
+    try:
+        gilda_list = gilda_ground(agent_text)
+        return jsonify(gilda_list)
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+def gilda_ground(agent_text):
+    try:
+        from gilda.api import ground
+        return [r.to_json() for r in ground(agent_text)]
+    except ImportError:
+        import requests
+        res = requests.post('http://grounding.indra.bio/ground', json={'text': agent_text})
+        return res.json()
+    except Exception as e:
+        return {"error": f"Grounding failed: {str(e)}"}

@@ -5,8 +5,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
     <style>
         .btn-role {
-            width: 240px;
-            height: 240px;
+            width: 120px;
+            height: 120px;
             background-color: #f8f9fa;
             border: 1px solid #ddd;
             display: flex;
@@ -52,6 +52,13 @@
             margin-top: 15px;
             display: none;
         }
+        #ground-results-container {
+            position: relative;
+            margin-top: 10px;
+        }
+        #ground-results {
+            width: 100%;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
@@ -68,7 +75,11 @@
         <!-- Agent Input -->
         <div class="form-group agent-container">
             <label for="agent-name">Agent</label>
-            <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
+            <div style="display: flex; align-items: center;">
+                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
+                <select class="form-control" id="agent-select" style="display: none;"></select>
+                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2">Ground</button>
+            </div>
         </div>
 
         <!-- Subject/Object Role Buttons -->
@@ -115,36 +126,64 @@
         const agentRoleInput = document.getElementById('agent-role');
         const otherAgentRoleInput = document.getElementById('other-agent-role');
         const otherAgentContainer = document.getElementById('other-agent-container');
+        const agentSelect = document.getElementById('agent-select');
+
 
 
         const stmtTypes = {{ stmt_types_json | safe }};
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const hiddenInput = document.getElementById('rel-type-hidden');
+        const groundAgentButton = document.getElementById('ground-agent-button');
 
-        // Initialize Choices.js
-            const choices = new Choices(selectElement, {
-                removeItemButton: true,
-                searchResultLimit: stmtTypes.length,
-                renderChoiceLimit: stmtTypes.length,
+
+    groundAgentButton.addEventListener('click', async function () {
+        const agentText = agentNameInput.value.trim();
+        if (!agentText) {
+            alert("Please enter an agent name to ground.");
+            return;
+        }
+        try {
+            const response = await fetch('/search/gilda_ground', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ agent: agentText }),
             });
+            if (!response.ok) throw new Error('Failed to ground the agent.');
+            const data = await response.json();
 
-            // Add options to Choices.js dynamically
-            stmtTypes.forEach(type => {
-                choices.setChoices([{ value: type, label: type, selected: false }], 'value', 'label', false);
+            if (!data || data.length === 0) {
+                alert("No grounding results found.");
+                return;
+            }
+            agentSelect.innerHTML = '';
+            data.forEach(result => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify({
+                    source_db: result.term.source_db,
+                    source_id: result.term.source_id,
+                });
+                option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                agentSelect.appendChild(option);
             });
+            agentNameInput.style.display = 'none';
+            agentSelect.style.display = 'block';
+        } catch (error) {
+            console.error("Error grounding agent:", error);
+            alert("An error occurred while grounding the agent.");
+        }
+    });
 
-            // Update the hidden input whenever selections change
-            selectElement.addEventListener('change', function () {
-                const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
-                hiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
-            });
-
-            // Close the dropdown after selecting an option
-            selectElement.addEventListener('choice', function () {
-                choices.hideDropdown();
-            });
-
-
+    agentSelect.addEventListener('change', function () {
+        const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+        if (selectedOption) {
+            const { source_db, source_id } = JSON.parse(selectedOption.value);
+            agentNameInput.value = `(${source_db}, ${source_id})`;
+            agentSelect.style.display = 'none';
+            agentNameInput.style.display = 'block';
+        }
+    });
         // Role Button Click Handlers
         roleButtons.forEach(button => {
             button.addEventListener('click', function () {
@@ -175,6 +214,28 @@
 
             });
         });
+        // Initialize Choices.js
+            const choices = new Choices(selectElement, {
+                removeItemButton: true,
+                searchResultLimit: stmtTypes.length,
+                renderChoiceLimit: stmtTypes.length,
+            });
+
+            // Add options to Choices.js dynamically
+            stmtTypes.forEach(type => {
+                choices.setChoices([{ value: type, label: type, selected: false }], 'value', 'label', false);
+            });
+
+            // Update the hidden input whenever selections change
+            selectElement.addEventListener('change', function () {
+                const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
+                hiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
+            });
+
+            // Close the dropdown after selecting an option
+            selectElement.addEventListener('choice', function () {
+                choices.hideDropdown();
+            });
     });
 </script>
 
