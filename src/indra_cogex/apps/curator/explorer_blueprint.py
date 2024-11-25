@@ -41,8 +41,6 @@ __all__ = [
     "explorer_blueprint",
 ]
 
-from ...representation import indra_stmts_from_relations, Relation
-
 logger = logging.getLogger(__name__)
 explorer_blueprint = flask.Blueprint("explorer", __name__, url_prefix="/explore")
 
@@ -97,7 +95,7 @@ def explore_go(term: str):
     )
     return _enrich_render_statements(
         stmts,
-        title=f"GO explorer: {term}",
+        title=f"GO Explorer: {term}",
         description=f"""\
             The GO Pathway explorer identifies a list of genes associated with
             the given GO term then INDRA statements where the subject and
@@ -232,7 +230,7 @@ def _explore_mesh_helper(
 
     return render_statements(
         stmts,
-        title=f"MeSH explorer: {term}",
+        title=f"MeSH Explorer: {term}",
         evidence_lookup_time=evidence_lookup_time,
         limit=proxies.limit,
         curations=curations,
@@ -356,7 +354,7 @@ def ppi():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_ppi_source_counts,
-        title="PPI explorer",
+        title="PPI Explorer",
         description=f"""\
             The protein-protein interaction (PPI) explorer identifies INDRA
             statements using INDRA CoGEx whose subjects and objects are human
@@ -377,7 +375,7 @@ def goa():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_goa_source_counts,
-        title="GO Annotation explorer",
+        title="GO Annotation Explorer",
         description=f"""\
             The Gene Ontology annotation explorer identifiers INDRA statements
             using INDRA CoGEx whose subjects are human genes/proteins and whose
@@ -414,7 +412,7 @@ def tf():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_tf_statements,
-        title="Transcription Factor explorer",
+        title="Transcription Factor Explorer",
         description=f"""\
             The transcription factor explorer identifies INDRA statements using
             INDRA CoGEx whose subjects are human transcription factors and whose
@@ -434,7 +432,7 @@ def kinase():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_kinase_statements,
-        title="Kinase explorer",
+        title="Kinase Explorer",
         description=f"""\
             The kinase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human protein kinases and whose
@@ -454,7 +452,7 @@ def phosphatase():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_phosphatase_statements,
-        title="Phosphatase explorer",
+        title="Phosphatase Explorer",
         description=f"""\
             The phosphatase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human phosphatase genes and whose
@@ -474,7 +472,7 @@ def deubiquitinase():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_dub_statements,
-        title="Deubiquitinase explorer",
+        title="Deubiquitinase Explorer",
         description=f"""\
             The deubiquitinase explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are human deubiquitinase genes and whose
@@ -494,7 +492,7 @@ def mirna():
     include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
     return _render_func(
         get_mirna_statements,
-        title="miRNA explorer",
+        title="miRNA Explorer",
         description=f"""\
             The miRNA explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are micro-RNAs and whose
@@ -516,7 +514,7 @@ def disprot(object_prefix: Optional[str] = None):
     assert object_prefix in {None, "hgnc", "go", "chebi"}
     return _render_func(
         get_disprot_statements,
-        title="DisProt explorer",
+        title="DisProt Explorer",
         description=f"""\
             The DisProt explorer identifies INDRA statements using INDRA
             CoGEx whose subjects are intrensically disordered proteins.
@@ -648,7 +646,7 @@ def _explore_paper(
 
     return render_statements(
         stmts,
-        title=f"Publication explorer: {prefix}:{identifier}",
+        title=f"Publication Explorer: {prefix}:{identifier}",
         limit=proxies.limit,
         curations=curations,
         description=f"""
@@ -766,7 +764,7 @@ def subnetwork():
         stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
         return _enrich_render_statements(
             stmts,
-            title="Subnetwork explorer",
+            title="Subnetwork Explorer",
             description=f"""\
             The subnetwork explorer shows statements between the following nodes.
             {_database_text("Pathway Commons")}
