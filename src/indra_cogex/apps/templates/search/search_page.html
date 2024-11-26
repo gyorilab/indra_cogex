@@ -5,8 +5,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
     <style>
         .btn-role {
-            width: 120px;
-            height: 120px;
+            width: 115px;
+            height: 70px;
             background-color: #f8f9fa;
             border: 1px solid #ddd;
             display: flex;
@@ -16,6 +16,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin: 10px;
+        }
+        .btn-role img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
         }
 
         .btn-role.active {
@@ -59,6 +65,12 @@
         #ground-results {
             width: 100%;
         }
+        #ground-agent-button {
+        width: 200px;
+        }
+        #ground-mesh-button {
+        width: 200px;
+        }
     </style>
 
     {{ super() }}
@@ -77,7 +89,7 @@
             <div style="display: flex; align-items: center;">
                 <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
                 <select class="form-control" id="agent-select" style="display: none;"></select>
-                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2">Ground</button>
+                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2">Ground with Gilda</button>
             </div>
         </div>
 
@@ -86,10 +98,13 @@
             <label for="role-buttons-container" class="form-label">Role</label>
             <div class="role-buttons-container" id="role-buttons-container">
                 <div class="btn-role" id="btn-subject" data-role="subject">
+                    <img src="{{ url_for('static', filename='search/images/role_button1.png') }}" alt="Subject" />
                 </div>
                 <div class="btn-role" id="btn-object" data-role="object">
+                    <img src="{{ url_for('static', filename='search/images/role_button2.png') }}" alt="Subject" />
                 </div>
                 <div class="btn-role" id="btn-either" data-role="either">
+                    <img src="{{ url_for('static', filename='search/images/role_button3.png') }}" alt="Subject" />
                 </div>
             </div>
         </div>
@@ -107,11 +122,26 @@
             <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
         </div>
 
+
+        <!-- Mesh Constraint -->
+        <div class="form-group mesh-container">
+            <label for="mesh-name">Mesh Constraint</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <!-- Input field for Mesh name -->
+                <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name" required>
+                <select class="form-control" id="mesh-select" style="display: none;"></select>
+                <button type="button" id="ground-mesh-button" class="btn btn-secondary">Ground with Gilda</button>
+            </div>
+        </div>
+
         <!-- Hidden Inputs for Roles -->
         <input type="hidden" id="agent-role" name="agent_role" value="">
         <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
         <!-- Hidden Inputs for Agent -->
         <input type="hidden" id="agent-tuple" name="agent_tuple" value="">
+
+        <input type="hidden" id="mesh-tuple" name="mesh_tuple" value="">
+
 
         <button type="submit" class="btn btn-primary mt-4">Search</button>
 
