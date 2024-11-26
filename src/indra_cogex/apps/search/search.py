@@ -40,6 +40,10 @@ def search():
 
     if form.validate_on_submit():
         agent = form.agent_name.data
+        agent_tuple = request.form.get('agent_tuple')  # This is a JSON string
+        if agent_tuple:
+            source_db, source_id = json.loads(agent_tuple)
+            agent = (source_db,source_id)
         other_agent = form.other_agent.data
         source_type = form.source_type.data
         if form.rel_type.data:
