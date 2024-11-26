@@ -7,16 +7,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const otherAgentContainer = document.getElementById('other-agent-container');
         const agentSelect = document.getElementById('agent-select');
         const meshSelect = document.getElementById('mesh-select');
-
         const meshNameInput = document.getElementById('mesh-name');
-
-
-
-
         const stmtTypes = JSON.parse(document.getElementById('stmt-types-json').textContent);
         console.log('stmt-types-json element:', stmtTypes);
         const selectElement = document.getElementById('choices-multiple-remove-button');
-        const hiddenInput = document.getElementById('rel-type-hidden');
+        const RelhiddenInput = document.getElementById('rel-type-hidden');
         const groundAgentButton = document.getElementById('ground-agent-button');
         const groundMeshButton = document.getElementById('ground-mesh-button');
 
@@ -89,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Add 'active' class to the clicked button
                 this.classList.add('active');
 
-                // Determine role based on the clicked button
                 const role = this.dataset.role;
 
                 // Update agent and other agent roles based on the role
@@ -125,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update the hidden input whenever selections change
         selectElement.addEventListener('change', function () {
             const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
-            hiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
+            RelhiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
         });
 
         // Close the dropdown after selecting an option
@@ -158,14 +152,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Filter results to include only those where result.term.db === "MESH"
                 const meshResults = data.filter(result => result.term.db === "MESH");
                 if (meshResults.length === 0) {
                     alert("No Mesh grounding results found.");
                     return;
                 }
 
-                // Populate dropdown with filtered results
                 meshSelect.innerHTML = '';
                 const placeholderOption = document.createElement('option');
                 placeholderOption.textContent = 'Grounded Results...';
@@ -206,14 +198,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         window.addEventListener('pageshow', function () {
-            // Reload the page when navigating back
-            const agentNameInput = document.getElementById('agent-name');
-            const agentSelect = document.getElementById('agent-select');
-            const hiddenInput = document.getElementById('agent-tuple');
-
             // Reset input box and hidden input
             agentNameInput.value = '';
-            hiddenInput.value = '';
+            document.getElementById('agent-tuple').value = '';
+            meshNameInput.value = '';
+            document.getElementById('mesh-tuple').value = '';
 
             // Clear the dropdown and add placeholder option
             agentSelect.innerHTML = '';
