@@ -53,6 +53,10 @@ def search():
         other_role = form.other_agent_role.data
         paper_id = form.paper_id.data
         mesh_terms = form.mesh_terms.data
+        mesh_tuple = request.form.get('mesh_tuple')
+        if mesh_tuple:
+            source_db, source_id = json.loads(mesh_tuple)
+            mesh_terms = (source_db, source_id)
 
         statements, evidence_count = get_statements(
             agent=agent,
