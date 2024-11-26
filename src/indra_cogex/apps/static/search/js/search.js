@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', function () {
             data.forEach(result => {
                 const option = document.createElement('option');
                 option.value = JSON.stringify({
-                    source_db: result.term.source_db,
-                    source_id: result.term.source_id,
+                    source_db: result.term.db,
+                    source_id: result.term.id,
                 });
                 option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
                 agentSelect.appendChild(option);
@@ -55,15 +55,24 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    agentSelect.addEventListener('change', function () {
+    agentSelect.addEventListener('input', function () {
         const selectedOption = agentSelect.options[agentSelect.selectedIndex];
         if (selectedOption) {
             const { source_db, source_id } = JSON.parse(selectedOption.value);
-            agentNameInput.value = `(${source_db}, ${source_id})`;
+
+            // Update the display text in the input box
+            agentNameInput.value = selectedOption.textContent;
+            agentNameInput.readOnly = true;
+
+            // Update the hidden input with the tuple value
+            document.getElementById('agent-tuple').value = JSON.stringify([source_db, source_id]);
+
+            // Hide the dropdown and show the text box
             agentSelect.style.display = 'none';
             agentNameInput.style.display = 'block';
         }
-    });
+        });
+
         // Role Button Click Handlers
         roleButtons.forEach(button => {
             button.addEventListener('click', function () {
