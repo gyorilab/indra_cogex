@@ -1,13 +1,22 @@
 """Queries that generate statement subnetworks."""
 
 import json
-from typing import Any, Iterable, List, Tuple
+from textwrap import dedent
+from typing import Any, Iterable, List, Optional, Sequence, Tuple
 
 from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
 from .queries import get_genes_for_go_term, get_genes_in_tissue
-from ..representation import Relation, indra_stmts_from_relations, norm_id
+from .utils import minimum_belief_helper, minimum_evidence_helper
+from ..representation import (
+    Relation,
+    get_nodes_str,
+    indra_stmts_from_relations,
+    node_query,
+    norm_id,
+    triple_query,
+)
 
 __all__ = [
     "indra_subnetwork",
@@ -15,12 +24,18 @@ __all__ = [
     "indra_mediated_subnetwork",
     "indra_subnetwork_tissue",
     "indra_subnetwork_go",
+    "get_neighbor_network",
+    "get_neighbor_network_statements",
 ]
 
 
 @autoclient()
 def indra_subnetwork_relations(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -37,14 +52,20 @@ def indra_subnetwork_relations(
         The subnetwork induced by the given nodes represented as Relation
         objects.
     """
-    nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
-    query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-            WHERE n1.id IN [%s]
-            AND n2.id IN [%s]
+    nodes_str = get_nodes_str(nodes)
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
+    query = dedent(
+        f"""\
+        MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+        WHERE 
+            n1.id IN [{nodes_str}]
+            AND n2.id IN [{nodes_str}]
             AND n1.id <> n2.id
-            RETURN p""" % (
-        nodes_str,
-        nodes_str,
+            {belief_line}
+            {evidence_line}
+        RETURN p
+    """
     )
     return client.query_relations(query)
 
@@ -326,3 +347,131 @@ def indra_subnetwork_go(
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
     return rv
+
+
+@autoclient()
+def get_neighbor_network(
+    nodes: Sequence[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    upstream: bool = True,
+    downstream: bool = True,
+    node_prefix: Optional[str] = None,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> List[Relation]:
+    """Get the subnetwork induced around the given nodes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+    upstream :
+        Include predecessors (i.e., nodes that are sources in
+        relations where the target is a query nodes)?
+    downstream:
+        Include successors (i.e. nodes that are targets in
+        relations where the source is a query node)?
+    node_prefix:
+        The node prefix to return
+    minimum_evidence_count :
+        Minimum number of evidences to consider a causal relationship
+    minimum_belief :
+        Minimum belief to consider a causal relationship
+    """
+    if not upstream and not downstream:
+        raise ValueError(
+            "must specify at least one of upstream and downstream to be true"
+        )
+    nodes_str = get_nodes_str(nodes)
+    prefix_filter = f"AND n.id STARTS WITH '{node_prefix}'" if node_prefix else ""
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
+    query = set(nodes)
+    if upstream:
+        match_clause = "MATCH (n:BioEntity)-[r:indra_rel]->(query:BioEntity)"
+        upstream_cypher = dedent(
+            f"""\
+            MATCH (n:BioEntity)-[r:indra_rel]->(query:BioEntity)
+            WHERE 
+                query.id IN [{nodes_str}]
+                AND n.id <> query.id
+                {prefix_filter}
+                {belief_line}
+                {evidence_line}
+            RETURN DISTINCT n
+        """
+        )
+        print("Upstream query:", upstream_cypher)
+        upstream_res = client.query_nodes(upstream_cypher)
+        if upstream_res is None:
+            raise ValueError
+        upstream_nodes = {upstream_node.grounding() for upstream_node in upstream_res}
+        print(f"got {len(upstream_nodes):,} upstream nodes")
+        query.update(upstream_nodes)
+    if downstream:
+        downstream_cypher = dedent(
+            f"""\
+            MATCH (query:BioEntity)-[r:indra_rel]->(n:BioEntity)
+            WHERE 
+                query.id IN [{nodes_str}]
+                AND n.id <> query.id
+                {prefix_filter}
+                {belief_line}
+                {evidence_line}
+            RETURN DISTINCT n
+        """
+        )
+        print("downstream query", downstream_cypher)
+        downstream_res = client.query_nodes(downstream_cypher)
+        if downstream_res is None:
+            raise ValueError
+        downstream_nodes = {
+            downstream_node.grounding() for downstream_node in downstream_res
+        }
+        print(f"got {len(upstream_nodes):,} downstream nodes")
+        query.update(downstream_nodes)
+    print(f"doing subnetwork query over {len(query):,} nodes")
+    return indra_subnetwork_relations(
+        nodes=sorted(query),
+        client=client,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief,
+    )
+
+
+@autoclient()
+def get_neighbor_network_statements(
+    nodes: Sequence[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    upstream: bool = True,
+    downstream: bool = True,
+    node_prefix: Optional[str] = None,
+    minimum_evidence_count: Optional[int] = None,
+    minimum_belief: Optional[float] = None,
+) -> List[Statement]:
+    """Get the subnetwork induced around the given nodes as INDRA statements.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    nodes :
+        The nodes to query.
+    kwargs :
+        remaining keyword arguments to pass through to :func:`get_neighbor_network`
+    """
+    rels = get_neighbor_network(
+        nodes=nodes,
+        client=client,
+        upstream=upstream,
+        downstream=downstream,
+        node_prefix=node_prefix,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
+    stmts = indra_stmts_from_relations(rels)
+    return stmts
