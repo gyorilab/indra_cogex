@@ -1,0 +1,2803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="https://bigmech.s3.amazonaws.com/indra-db/favicon.ico">
+
+    <title>Statements for DKK4</title>
+
+    <!-- CSS only -->
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+          crossorigin="anonymous">
+
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"></script>
+
+    <!-- Optional theme -->
+    <link rel="stylesheet"
+          href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+          integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
+          crossorigin="anonymous">
+
+    <style>
+        a, .parent-a {
+          color: #256DC5;
+          target-new: tab;
+        }
+        h1 {
+          margin-bottom: 0;
+        }
+        .page-header {
+          padding-top: 1em;
+          padding-bottom: 1em;
+        }
+
+        /* The sidebar menu */
+        .side-info {
+          height: 100%; /* Full-height: remove this if you want "auto" height */
+          z-index: 1; /* Stay on top */
+          position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+          top: 0; /* Stay at the top */
+          background-color: #000000; /* Black */
+          color: #606060;
+          overflow-x: hidden; /* Disable horizontal scroll */
+          padding-top: 85px;
+          padding-left: 1em;
+          padding-right: 1em;
+        }
+
+        .left {
+          width: 20em;
+          left: 0;
+        }
+
+        .right {
+          width: 20em;
+          right: 0;
+        }
+
+        /* The navigation menu links */
+        .side-info .il-nav-link {
+          font-size: 12pt;
+          target-new: tab;
+          display: block;
+        }
+
+        .side-info h4 {
+          font-size: 14pt;
+          display: block;
+          text-decoration: none;
+        }
+
+        .side-info-block {
+          padding: 1em 8px 1em 16px;
+        }
+
+        .source-desc {
+          border-radius: 4px;
+          padding: 0.25em 0.5em 0.25em 0.5em;
+          margin: 4px;
+        }
+
+        
+          
+            .source-psp {
+              background-color: #bc80bd;
+              color: black;
+            }
+            .source-psp a {
+              color: black;
+            }
+          
+            .source-cbn {
+              background-color: #d9d9d9;
+              color: black;
+            }
+            .source-cbn a {
+              color: black;
+            }
+          
+            .source-pc {
+              background-color: #b3de69;
+              color: black;
+            }
+            .source-pc a {
+              color: black;
+            }
+          
+            .source-bel_lc {
+              background-color: #fb8072;
+              color: black;
+            }
+            .source-bel_lc a {
+              color: black;
+            }
+          
+            .source-signor {
+              background-color: #bebada;
+              color: black;
+            }
+            .source-signor a {
+              color: black;
+            }
+          
+            .source-biogrid {
+              background-color: #8dd3c7;
+              color: black;
+            }
+            .source-biogrid a {
+              color: black;
+            }
+          
+            .source-tas {
+              background-color: #e0e03d;
+              color: black;
+            }
+            .source-tas a {
+              color: black;
+            }
+          
+            .source-hprd {
+              background-color: #80b1d3;
+              color: black;
+            }
+            .source-hprd a {
+              color: black;
+            }
+          
+            .source-trrust {
+              background-color: #fccde5;
+              color: black;
+            }
+            .source-trrust a {
+              color: black;
+            }
+          
+            .source-ctd {
+              background-color: #ffed6f;
+              color: black;
+            }
+            .source-ctd a {
+              color: black;
+            }
+          
+            .source-vhn {
+              background-color: #ccebc5;
+              color: black;
+            }
+            .source-vhn a {
+              color: black;
+            }
+          
+            .source-pe {
+              background-color: #ffe8f4;
+              color: black;
+            }
+            .source-pe a {
+              color: black;
+            }
+          
+            .source-drugbank {
+              background-color: #fdb462;
+              color: black;
+            }
+            .source-drugbank a {
+              color: black;
+            }
+          
+            .source-omnipath {
+              background-color: #acfcfc;
+              color: black;
+            }
+            .source-omnipath a {
+              color: black;
+            }
+          
+            .source-conib {
+              background-color: #999999;
+              color: black;
+            }
+            .source-conib a {
+              color: black;
+            }
+          
+            .source-crog {
+              background-color: #00d4a6;
+              color: black;
+            }
+            .source-crog a {
+              color: black;
+            }
+          
+            .source-dgi {
+              background-color: #00e8ff;
+              color: black;
+            }
+            .source-dgi a {
+              color: black;
+            }
+          
+            .source-minerva {
+              background-color: #dd99ff;
+              color: black;
+            }
+            .source-minerva a {
+              color: black;
+            }
+          
+            .source-creeds {
+              background-color: #f68ee1;
+              color: black;
+            }
+            .source-creeds a {
+              color: black;
+            }
+          
+            .source-ubibrowser {
+              background-color: #d8b865;
+              color: black;
+            }
+            .source-ubibrowser a {
+              color: black;
+            }
+          
+            .source-acsn {
+              background-color: #bf98eb;
+              color: black;
+            }
+            .source-acsn a {
+              color: black;
+            }
+          
+        
+          
+            .source-geneways {
+              background-color: #d9d9d9;
+              color: white;
+            }
+            .source-geneways a {
+              color: white;
+            }
+          
+            .source-tees {
+              background-color: #8dd3c7;
+              color: white;
+            }
+            .source-tees a {
+              color: white;
+            }
+          
+            .source-gnbr {
+              background-color: #ffed6f;
+              color: white;
+            }
+            .source-gnbr a {
+              color: white;
+            }
+          
+            .source-semrep {
+              background-color: #6600cc;
+              color: white;
+            }
+            .source-semrep a {
+              color: white;
+            }
+          
+            .source-isi {
+              background-color: #fb8072;
+              color: white;
+            }
+            .source-isi a {
+              color: white;
+            }
+          
+            .source-trips {
+              background-color: #80b1d3;
+              color: white;
+            }
+            .source-trips a {
+              color: white;
+            }
+          
+            .source-rlimsp {
+              background-color: #fccde5;
+              color: white;
+            }
+            .source-rlimsp a {
+              color: white;
+            }
+          
+            .source-medscan {
+              background-color: #b3de69;
+              color: white;
+            }
+            .source-medscan a {
+              color: white;
+            }
+          
+            .source-eidos {
+              background-color: #bc80bd;
+              color: white;
+            }
+            .source-eidos a {
+              color: white;
+            }
+          
+            .source-sparser {
+              background-color: #fdb462;
+              color: white;
+            }
+            .source-sparser a {
+              color: white;
+            }
+          
+            .source-reach {
+              background-color: #bebada;
+              color: white;
+            }
+            .source-reach a {
+              color: white;
+            }
+          
+        
+
+        
+    </style>
+
+    
+  <!-- Toggle a hidden element -->
+  <script>
+    let ALL_COLLAPSED = true;
+
+    function toggler(short_name_key) {
+      /**
+       * Toggle the info list elements by changing their class.
+       */
+      // Find the group associated with this heading.
+      let el = document.getElementById(short_name_key + "_group");
+
+      // Toggle the group class between the invisible one and the visible one.
+      if ( el.classList.contains("group") )
+        el.classList.replace("group", "group_shown");
+      else
+        el.classList.replace("group_shown", "group");
+    }
+
+    async function getPubmedInfoByPMID(pmid) {
+      /**
+       * Get the Pubmed title and author from Entrez.
+       */
+      // Trim the PMID because it may have a lot of spaces in it.
+      let id = pmid.trim();
+
+      // Get the data from entrez in JSON format.
+      const entrez_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi';
+      let url = `${entrez_url}?id=${id}&retmode=json&db=pubmed`;
+      const resp = await fetch(url, {method: 'POST'});
+      if (resp.status !== 200)
+        return "Failed to load.";
+      const data = await resp.json();
+
+      // Extract and format the title from the result.
+      const pmd = data.result[id];
+      let auth_str = '';
+      let n = 0;
+      if (pmd.authors)
+        for (let author of pmd.authors) {
+          if (n > 2) {
+            auth_str += ', ...';
+            break;
+          }
+          auth_str += author.name;
+          if (n < pmd.authors.length) {
+            auth_str += ', ';
+          }
+          n += 1;
+        }
+      return `${auth_str}, "${pmd.title}", ${pmd.source}, ${pmd.pubdate}`;
+    }
+
+    function setPMIDlinkTitle(pmid, link_tag) {
+      // Modify link hover text
+      getPubmedInfoByPMID(pmid).then(title => link_tag.title = title);
+    }
+
+    function populatePMIDlinkTitles() {
+      // Loop all pmid link nodes and set title
+      let pmid_link_array = document.getElementsByClassName("pmid_link");
+      for (let link_obj of pmid_link_array) {
+        let pmid = link_obj.textContent;
+        setPMIDlinkTitle(pmid, link_obj)
+      }
+    }
+
+    // Expand/collapse all
+    function expandCollapseAll() {
+      let expColBtn = document.getElementById('expand-collapse-all');
+
+      // Expand all; set ALL_COLLAPSED = false;
+      let show = ALL_COLLAPSED;
+      if (ALL_COLLAPSED) {
+        ALL_COLLAPSED = false;
+        expColBtn.textContent = 'Collapse All';
+        // Collapse all; set ALL_COLLAPSED = true;
+      } else {
+        ALL_COLLAPSED = true;
+        expColBtn.textContent = 'Expand All';
+      }
+
+      // Loop all tags
+      let old_c, new_c;
+      if (show) {
+        old_c = "group";
+        new_c = "group_shown";
+      } else {
+        old_c = "group_shown";
+        new_c = "group";
+      }
+
+      let elements = document.getElementsByClassName(old_c);
+      let elem_arr = Array();
+      for (let el of elements) {
+        elem_arr.push(el);
+      }
+      elem_arr.forEach(el => {
+        el.classList.replace(old_c, new_c);
+      });
+    }
+
+    window.onload = function() {
+      // Check if expand_all is true in query string
+      let query_string = window.location.search;
+      let url_params = new URLSearchParams(query_string);
+      let expand_all = url_params.get('expand_all');
+      if (expand_all === 'true') {
+        expandCollapseAll();
+      }
+      
+    };
+  </script>
+  <style>
+    
+      
+        .source-psp {
+          background-color: #bc80bd;
+          color: black;
+        }
+      
+        .source-cbn {
+          background-color: #d9d9d9;
+          color: black;
+        }
+      
+        .source-pc {
+          background-color: #b3de69;
+          color: black;
+        }
+      
+        .source-bel_lc {
+          background-color: #fb8072;
+          color: black;
+        }
+      
+        .source-signor {
+          background-color: #bebada;
+          color: black;
+        }
+      
+        .source-biogrid {
+          background-color: #8dd3c7;
+          color: black;
+        }
+      
+        .source-tas {
+          background-color: #e0e03d;
+          color: black;
+        }
+      
+        .source-hprd {
+          background-color: #80b1d3;
+          color: black;
+        }
+      
+        .source-trrust {
+          background-color: #fccde5;
+          color: black;
+        }
+      
+        .source-ctd {
+          background-color: #ffed6f;
+          color: black;
+        }
+      
+        .source-vhn {
+          background-color: #ccebc5;
+          color: black;
+        }
+      
+        .source-pe {
+          background-color: #ffe8f4;
+          color: black;
+        }
+      
+        .source-drugbank {
+          background-color: #fdb462;
+          color: black;
+        }
+      
+        .source-omnipath {
+          background-color: #acfcfc;
+          color: black;
+        }
+      
+        .source-conib {
+          background-color: #999999;
+          color: black;
+        }
+      
+        .source-crog {
+          background-color: #00d4a6;
+          color: black;
+        }
+      
+        .source-dgi {
+          background-color: #00e8ff;
+          color: black;
+        }
+      
+        .source-minerva {
+          background-color: #dd99ff;
+          color: black;
+        }
+      
+        .source-creeds {
+          background-color: #f68ee1;
+          color: black;
+        }
+      
+        .source-ubibrowser {
+          background-color: #d8b865;
+          color: black;
+        }
+      
+        .source-acsn {
+          background-color: #bf98eb;
+          color: black;
+        }
+      
+    
+      
+        .source-geneways {
+          background-color: #d9d9d9;
+          color: white;
+        }
+      
+        .source-tees {
+          background-color: #8dd3c7;
+          color: white;
+        }
+      
+        .source-gnbr {
+          background-color: #ffed6f;
+          color: white;
+        }
+      
+        .source-semrep {
+          background-color: #6600cc;
+          color: white;
+        }
+      
+        .source-isi {
+          background-color: #fb8072;
+          color: white;
+        }
+      
+        .source-trips {
+          background-color: #80b1d3;
+          color: white;
+        }
+      
+        .source-rlimsp {
+          background-color: #fccde5;
+          color: white;
+        }
+      
+        .source-medscan {
+          background-color: #b3de69;
+          color: white;
+        }
+      
+        .source-eidos {
+          background-color: #bc80bd;
+          color: white;
+        }
+      
+        .source-sparser {
+          background-color: #fdb462;
+          color: white;
+        }
+      
+        .source-reach {
+          background-color: #bebada;
+          color: white;
+        }
+      
+    
+
+    .badge-source {
+      font-size: 8pt;
+      margin: 0;
+    }
+
+    .statements-header {
+      position: -webkit-sticky;
+      position: sticky;
+      top: 0;
+      background-color: white;
+      z-index: 10;
+      padding-top: 5px;
+    }
+
+    .nvp {
+    }
+
+    .nvm {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .src-api {
+        overflow-x: hidden;
+    }
+
+    .group, .group-shown {
+    }
+
+    .group {
+        display: none;
+    }
+
+    .bars {
+      border-right: #0d5aa7 solid 1px;
+    }
+
+    .super_group_heading, .group_heading, .statement, .evidence {
+    }
+
+    .evidence, .evidence-text {
+        margin-bottom: 10px;
+    }
+
+    .evidence-text {
+      margin-right: 5px;
+      margin-left: 5px;
+    }
+
+    .super_group_heading, .group_heading {
+        cursor: pointer;
+    }
+
+    .super_group_heading:hover, .group_heading:hover {
+        background-color: #f2f2f2;
+    }
+
+    .badge-subject {
+        background-color: #4a36aa;
+        color: #FFFFFF;
+    }
+
+    .badge-object {
+        background-color: #2d8e4c;
+        color: #FFFFFF;
+    }
+
+    .badge-other {
+        background-color: #606060;
+        color: #FFFFFF;
+    }
+
+    .badge-belief {
+        background-color: #ffc266;
+        color: #FFFFFF;
+    }
+
+    .curation-row {
+        overflow-y: hidden;
+    }
+
+    .curation_toggle {
+        cursor: pointer;
+    }
+
+    .pmid_link, .pmcid_link, .doi_link {
+      display: block;
+    }
+    
+  </style>
+
+
+</head>
+
+<body>
+
+
+<!-- THE MAIN BODY -->
+<main role="main" class="container">
+
+  
+    <!-- THE SIMPLE HEADING -->
+    <div class="page-header">
+      <h2>Statements for DKK4</h2>
+      <hr>
+    </div>
+  
+
+  <!-- THE MAIN CONTENT -->
+  <div class="content">
+    
+
+  <div class="statements-header">
+    <div class="row">
+      <div class="col">
+        <h3 >
+          Statements
+        </h3>
+      </div>
+      <div class="col text-right">
+        <button id="expand-collapse-all" type="button"
+            class="btn btn-primary"
+            onclick="expandCollapseAll()">
+          Expand All
+        </button>
+      </div>
+    </div>
+
+  
+
+    <div class="row justify-content-md-center">
+    
+      <div class="col col-auto text-center">
+        
+    
+      
+        databases
+      
+      
+      
+        
+          <span class="badge badge-source source-psp"
+              title="psp">
+          psp
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-cbn"
+              title="cbn">
+          cbn
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-pc"
+              title="pc">
+          pc
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-bel_lc"
+              title="bel_lc">
+          bel_lc
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-signor"
+              title="signor">
+          signor
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-biogrid"
+              title="biogrid">
+          biogrid
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-tas"
+              title="tas">
+          tas
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-hprd"
+              title="hprd">
+          hprd
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-trrust"
+              title="trrust">
+          trrust
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-ctd"
+              title="ctd">
+          ctd
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-vhn"
+              title="vhn">
+          vhn
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-pe"
+              title="pe">
+          pe
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-drugbank"
+              title="drugbank">
+          drugbank
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-omnipath"
+              title="omnipath">
+          omnipath
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-conib"
+              title="conib">
+          conib
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-crog"
+              title="crog">
+          crog
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-dgi"
+              title="dgi">
+          dgi
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-minerva"
+              title="minerva">
+          minerva
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-creeds"
+              title="creeds">
+          creeds
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-ubibrowser"
+              title="ubibrowser">
+          ubibrowser
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-acsn"
+              title="acsn">
+          acsn
+          </span>
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+          <br><span class="badge badge-source">|</span>
+        
+      
+      
+        
+          <span class="badge badge-source source-geneways"
+              title="geneways">
+          geneways
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-tees"
+              title="tees">
+          tees
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-gnbr"
+              title="gnbr">
+          gnbr
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-semrep"
+              title="semrep">
+          semrep
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-isi"
+              title="isi">
+          isi
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-trips"
+              title="trips">
+          trips
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-rlimsp"
+              title="rlimsp">
+          rlimsp
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-medscan"
+              title="medscan">
+          medscan
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-eidos"
+              title="eidos">
+          eidos
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-sparser"
+              title="sparser">
+          sparser
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          reach
+          </span>
+        
+      
+      
+        reading
+      
+    
+  
+      </div>
+    </div>
+
+  
+
+    <hr>
+  </div>
+
+  
+    
+
+  <span class="agent-pair">
+
+    
+
+    <div class="row">
+      <div class="col">
+        <div class="group-shown" id="tl-799ab9f5-fd21-4725-b09e-53650bc24373_group">
+
+    
+
+          <div class="container bars nvp">
+
+    
+      
+
+            <span class="relation">
+
+      
+
+              <div class="row group_heading"
+                   onclick="toggler('405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a');"
+                   id="405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a_heading">
+                <div class="col-auto text-left nvp">
+                    <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
+                </div>
+                <div class="col text-right nvp">
+                  
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          7
+          </span>
+        
+      
+      
+    
+  
+                </div>
+              </div>
+              <div class="row group" id="405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a_group">
+
+      
+
+                <div class="col">
+                  <div class="container bars nvp">
+
+      
+        
+
+                    <a name="33728523169869412"></a>
+                    <div class="row statement group_heading"
+                         onclick="toggler( '405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a-33728523169869412' )"
+                         id="405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a-33728523169869412_heading">
+                      <div class="col-auto text-left nvp">
+                        <h5>
+                          <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> activates <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
+                          <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                             target="_blank">
+                            <small class="badge badge-secondary badge-pill">7 / 7</small>
+                          </a>
+                          
+                        </h5>
+                      </div>
+                      <div class="col text-right nvp">
+                        
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          7
+          </span>
+        
+      
+      
+    
+  
+                      </div>
+                    </div>  <!-- end statement heading row -->
+                    <div class="row group"
+                         id="405a1d02-cab9-4c1a-8f36-c7d67fd1fc0a-33728523169869412_group">
+                      <div class="col">
+                        <div class="container bars" id="stmt-0-0-0"
+                             data-stmt_hash="33728523169869412">
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="1219269571735046918"
+                                 id="ev-0-0-0-0">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-0-click"
+                                       data-parent_id="ev-0-0-0-0">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Thus, even though <span class="badge badge-object">DKK-4</span> has previously been considered a Wnt &quot; antagonist &quot; similar to the 1,25D-upregulated DKK-1 gene, the fact that <span class="badge badge-object">DKK-4</span> is both targeted and upregulated by <span class="badge badge-subject">beta-catenin</span>, and is significantly elevated in colonic tumor tissue [XREF_BIBR, XREF_BIBR] suggests that <span class="badge badge-object">DKK-4</span> may in fact possess unique tumorigenic properties."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/20043299'
+                                    target="_blank">
+                                  20043299</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="6489077510159151989"
+                                 id="ev-0-0-0-1">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-1-click"
+                                       data-parent_id="ev-0-0-0-1">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Calcitriol also represses expression of DKK4 in SW480-ADH cells; DKK4 is induced by the TCF7L2 and CTNNB1 pathway and enhances the migratory, invasive and pro angiogenic potential of colorectal cancer."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/27245104'
+                                    target="_blank">
+                                  27245104</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="2341031944647884925"
+                                 id="ev-0-0-0-2">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-2-click"
+                                       data-parent_id="ev-0-0-0-2">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "DICKKOPF-4 is induced by TCF and betacatenin and upregulated in human colon cancer, promotes tumour cell invasion and angiogenesis and is repressed by 1alpha,25-dihydroxyvitamin D3."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/20367197'
+                                    target="_blank">
+                                  20367197</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="724294307080177370"
+                                 id="ev-0-0-0-3">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-3-click"
+                                       data-parent_id="ev-0-0-0-3">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Stabilization of <span class="badge badge-subject">beta-catenin</span> reverses the proliferation suppressive effect of DKK4 in HCC cells cultured in NG."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/27272409'
+                                    target="_blank">
+                                  27272409</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-2104419687762628416"
+                                 id="ev-0-0-0-4">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-4-click"
+                                       data-parent_id="ev-0-0-0-4">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Furthermore, the relationship between glucose and DKK4 became apparent because stabilization of <span class="badge badge-subject">beta-catenin</span> by inhibiting GSK3beta under normoglycemic condition causes abrogation of DKK4 functionality thereby facilitating cellular proliferation."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/27272409'
+                                    target="_blank">
+                                  27272409</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-1272552320460580135"
+                                 id="ev-0-0-0-5">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-5-click"
+                                       data-parent_id="ev-0-0-0-5">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "DICKKOPF-4 is induced by TCF and <span class="badge badge-subject">beta-catenin</span> and upregulated in human colon cancer, promotes tumour cell invasion and angiogenesis and is repressed by 1alpha,25-dihydroxyvitamin D3."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/18408752'
+                                    target="_blank">
+                                  18408752</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-3203611578723220842"
+                                 id="ev-0-0-0-6">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-0-0-6-click"
+                                       data-parent_id="ev-0-0-0-6">
+                                      <a href="https://db.indra.bio/statements/from_hash/33728523169869412?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "However, DKK4, induced by <span class="badge badge-subject">beta-catenin</span> activation, was found to be upregulated and promote invasion and angiogenesis in human colon cancers [XREF_BIBR, XREF_BIBR]."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/28666421'
+                                    target="_blank">
+                                  28666421</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                        </div> <!-- end stmt container -->
+                      </div> <!-- end stmt col -->
+                    </div> <!-- end stmt row -->
+
+      
+
+                  </div> <!-- end relation (stmt list) container -->
+                </div> <!-- end relation col -->
+              </div> <!-- end relation row -->
+            </span> <!-- end relation -->
+
+    
+      
+
+            <span class="relation">
+
+      
+
+              <div class="row group_heading"
+                   onclick="toggler('5ede227f-ab02-4202-b753-9339a754687d');"
+                   id="5ede227f-ab02-4202-b753-9339a754687d_heading">
+                <div class="col-auto text-left nvp">
+                    <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> binds <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
+                </div>
+                <div class="col text-right nvp">
+                  
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-sparser"
+              title="sparser">
+          2
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          2
+          </span>
+        
+      
+      
+    
+  
+                </div>
+              </div>
+              <div class="row group" id="5ede227f-ab02-4202-b753-9339a754687d_group">
+
+      
+
+                <div class="col">
+                  <div class="container bars nvp">
+
+      
+        
+
+                    <a name="33347782181673413"></a>
+                    <div class="row statement group_heading"
+                         onclick="toggler( '5ede227f-ab02-4202-b753-9339a754687d-33347782181673413' )"
+                         id="5ede227f-ab02-4202-b753-9339a754687d-33347782181673413_heading">
+                      <div class="col-auto text-left nvp">
+                        <h5>
+                          <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a> binds <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a>.
+                          <a href="https://db.indra.bio/statements/from_hash/33347782181673413?format=html"
+                             target="_blank">
+                            <small class="badge badge-secondary badge-pill">4 / 4</small>
+                          </a>
+                          
+                        </h5>
+                      </div>
+                      <div class="col text-right nvp">
+                        
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-sparser"
+              title="sparser">
+          2
+          </span>
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          2
+          </span>
+        
+      
+      
+    
+  
+                      </div>
+                    </div>  <!-- end statement heading row -->
+                    <div class="row group"
+                         id="5ede227f-ab02-4202-b753-9339a754687d-33347782181673413_group">
+                      <div class="col">
+                        <div class="container bars" id="stmt-0-1-0"
+                             data-stmt_hash="33347782181673413">
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="5855941062647481367"
+                                 id="ev-0-1-0-0">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-1-0-0-click"
+                                       data-parent_id="ev-0-1-0-0">
+                                      <a href="https://db.indra.bio/statements/from_hash/33347782181673413?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Moreover, 1,25 D, but not LCA, suppressed endogenous expression of the <span class="badge badge-other">beta-catenin</span> target gene <span class="badge badge-other">DKK-4</span> independent of VDR DNA binding activity."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/20043299'
+                                    target="_blank">
+                                  20043299</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-5258454271538988167"
+                                 id="ev-0-1-0-1">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-1-0-1-click"
+                                       data-parent_id="ev-0-1-0-1">
+                                      <a href="https://db.indra.bio/statements/from_hash/33347782181673413?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "n Caco-2 colorectal cancer cells [XREF_BIBR], 1,25 D suppresses <span class="badge badge-other">beta-catenin</span> transcriptional activity and endogenous expression of the <span class="badge badge-other">beta-catenin</span> target gene <span class="badge badge-other">DKK-4</span> independent of VDR DNA binding activity."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/22085499'
+                                    target="_blank">
+                                  22085499</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="438450029013536991"
+                                 id="ev-0-1-0-2">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-1-0-2-click"
+                                       data-parent_id="ev-0-1-0-2">
+                                      <a href="https://db.indra.bio/statements/from_hash/33347782181673413?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="sparser">
+                                      sparser
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "Furthermore, immunohistochemical studies showed that decreased expression of DKK4 was associated with β-catenin accumulation in HCC tissues."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/22249261'
+                                    target="_blank">
+                                  22249261</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="891993840293578232"
+                                 id="ev-0-1-0-3">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-1-0-3-click"
+                                       data-parent_id="ev-0-1-0-3">
+                                      <a href="https://db.indra.bio/statements/from_hash/33347782181673413?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="sparser">
+                                      sparser
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "We found that several proteins involved in Wnt signaling, including DKK4 and β-catenin, and proteins that bind β-catenin, such as FUS and NONO, were up-regulated in SPNs."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/26148796'
+                                    target="_blank">
+                                  26148796</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                        </div> <!-- end stmt container -->
+                      </div> <!-- end stmt col -->
+                    </div> <!-- end stmt row -->
+
+      
+
+                  </div> <!-- end relation (stmt list) container -->
+                </div> <!-- end relation col -->
+              </div> <!-- end relation row -->
+            </span> <!-- end relation -->
+
+    
+      
+
+            <span class="relation">
+
+      
+
+              <div class="row group_heading"
+                   onclick="toggler('f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c');"
+                   id="f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c_heading">
+                <div class="col-auto text-left nvp">
+                    <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
+                </div>
+                <div class="col text-right nvp">
+                  
+    
+      
+      
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-pc"
+              title="pc">
+          1
+          </span>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          1
+          </span>
+        
+      
+      
+    
+  
+                </div>
+              </div>
+              <div class="row group" id="f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c_group">
+
+      
+
+                <div class="col">
+                  <div class="container bars nvp">
+
+      
+        
+
+                    <a name="-32358899428670312"></a>
+                    <div class="row statement group_heading"
+                         onclick="toggler( 'f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c--32358899428670312' )"
+                         id="f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c--32358899428670312_heading">
+                      <div class="col-auto text-left nvp">
+                        <h5>
+                          <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> increases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
+                          <a href="https://db.indra.bio/statements/from_hash/-32358899428670312?format=html"
+                             target="_blank">
+                            <small class="badge badge-secondary badge-pill">2 / 2</small>
+                          </a>
+                          
+                        </h5>
+                      </div>
+                      <div class="col text-right nvp">
+                        
+    
+      
+      
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-pc"
+              title="pc">
+          1
+          </span>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          <span class="badge badge-source source-reach"
+              title="reach">
+          1
+          </span>
+        
+      
+      
+    
+  
+                      </div>
+                    </div>  <!-- end statement heading row -->
+                    <div class="row group"
+                         id="f0f63fc0-7d06-477e-93fe-7e3aa6e7c45c--32358899428670312_group">
+                      <div class="col">
+                        <div class="container bars" id="stmt-0-2-0"
+                             data-stmt_hash="-32358899428670312">
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-1419419640088078524"
+                                 id="ev-0-2-0-0">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-2-0-0-click"
+                                       data-parent_id="ev-0-2-0-0">
+                                      <a href="https://db.indra.bio/statements/from_hash/-32358899428670312?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <a href="http://www.biopax.org/" target="_blank"
+                                
+                                      class="col-9 nvm src-api"
+                                      title="biopax:pid">
+                                      biopax:pid
+                                
+                                  </a>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  <i>No evidence text available</i>
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/17397822'
+                                    target="_blank">
+                                  17397822</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                          <div class="evidence">
+                            <hr>
+                            <div class="row evidence-text" data-source_hash="-15174594728445248"
+                                 id="ev-0-2-0-1">
+                              <div class="col-1">
+                                <div class="row">
+                                  <div class="col-3 nvm curation_toggle"
+                                       id="ev-0-2-0-1-click"
+                                       data-parent_id="ev-0-2-0-1">
+                                      <a href="https://db.indra.bio/statements/from_hash/-32358899428670312?format=html"
+                                         target="_blank">
+                                          &#10166;
+                                      </a>
+                                  </div>
+                                
+                                  <div
+                                
+                                      class="col-9 nvm src-api"
+                                      title="reach">
+                                      reach
+                                
+                                  </div>
+                                
+                                </div>
+                              </div>
+
+          
+
+                              <div class="col-10">
+
+          
+          
+
+                                  "TPA dramatically increased DKK4 promoter transcription mediated by beta-catenin and TCF4E or beta-catenin/TCF4E/CK1epsilon."
+
+          
+
+                              </div>
+
+          
+
+                              <div class="col-1 text-right">
+
+          
+          
+
+                                <a class="pmid_link"
+                                    title="Hover again to see info"
+                                    onmouseover="setPMIDlinkTitle(this.textContent, this); this.onmouseover=null;"
+                                    href='https://www.ncbi.nlm.nih.gov/pubmed/30038030'
+                                    target="_blank">
+                                  30038030</a>
+
+          
+          
+
+                              </div> <!-- end ID col -->
+                            </div> <!-- end row -->
+                          </div> <!-- end evidence -->
+
+        
+
+                        </div> <!-- end stmt container -->
+                      </div> <!-- end stmt col -->
+                    </div> <!-- end stmt row -->
+
+      
+
+                  </div> <!-- end relation (stmt list) container -->
+                </div> <!-- end relation col -->
+              </div> <!-- end relation row -->
+            </span> <!-- end relation -->
+
+    
+      
+
+            <span class="relation">
+
+      
+
+              <div class="row group_heading"
+                   onclick="toggler('40262892-0ecf-44db-8d63-e47734f194aa');"
+                   id="40262892-0ecf-44db-8d63-e47734f194aa_heading">
+                <div class="col-auto text-left nvp">
+                    <h5><a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.</h5>
+                </div>
+                <div class="col text-right nvp">
+                  
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+  
+                </div>
+              </div>
+              <div class="row group" id="40262892-0ecf-44db-8d63-e47734f194aa_group">
+
+      
+
+                <div class="col">
+                  <div class="container bars nvp">
+
+      
+        
+
+                    <a name="34747166071998815"></a>
+                    <div class="row statement group_heading"
+                         onclick="toggler( '40262892-0ecf-44db-8d63-e47734f194aa-34747166071998815' )"
+                         id="40262892-0ecf-44db-8d63-e47734f194aa-34747166071998815_heading">
+                      <div class="col-auto text-left nvp">
+                        <h5>
+                          <a href='https://identifiers.org/hgnc:2514' target='_blank'>CTNNB1</a> decreases the amount of <a href='https://identifiers.org/hgnc:2894' target='_blank'>DKK4</a>.
+                          <a href="https://db.indra.bio/statements/from_hash/34747166071998815?format=html"
+                             target="_blank">
+                            <small class="badge badge-secondary badge-pill">0 / 0</small>
+                          </a>
+                          
+                        </h5>
+                      </div>
+                      <div class="col text-right nvp">
+                        
+    
+      
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+      
+      
+        <span class="badge badge-source">|</span>
+        
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+      
+    
+  
+                      </div>
+                    </div>  <!-- end statement heading row -->
+                    <div class="row group"
+                         id="40262892-0ecf-44db-8d63-e47734f194aa-34747166071998815_group">
+                      <div class="col">
+                        <div class="container bars" id="stmt-0-3-0"
+                             data-stmt_hash="34747166071998815">
+
+        
+
+                        </div> <!-- end stmt container -->
+                      </div> <!-- end stmt col -->
+                    </div> <!-- end stmt row -->
+
+      
+
+                  </div> <!-- end relation (stmt list) container -->
+                </div> <!-- end relation col -->
+              </div> <!-- end relation row -->
+            </span> <!-- end relation -->
+
+    
+
+          </div> <!-- end agent pair (relation list) container -->
+        </div> <!-- end agent pair group -->
+      </div> <!-- end agent pair col -->
+    </div> <!-- end agent pair row -->
+  </span> <!-- end agent pair span -->
+
+  
+
+  </div>
+</main>
+
+
+</body>
+</html>
