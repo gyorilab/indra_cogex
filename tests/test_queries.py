@@ -512,3 +512,325 @@ def test_get_ev_dict_from_hash_ev_query():
     )
     assert 654321 not in ev_dict
     assert not ev_dict
+
+
+@pytest.mark.nonpublic
+def test_get_phenotypes_for_disease():
+    client = _get_client()
+    disease = ("doid", "0040093")
+    phenotypes = get_phenotypes_for_disease(disease, client=client)
+    phenotype_list = list(phenotypes)
+    assert phenotype_list  # Check if list is not empty
+    assert isinstance(phenotype_list[0], Node)
+    assert phenotype_list[0].db_ns == "MESH"
+
+
+@pytest.mark.nonpublic
+def test_get_diseases_for_phenotype():
+    client = _get_client()
+    phenotype = ("hp", "0003138")
+    diseases = get_diseases_for_phenotype(phenotype, client=client)
+    disease_list = list(diseases)
+    assert disease_list  # Check if list is not empty
+    assert isinstance(disease_list[0], Node)
+    assert disease_list[0].db_ns in ["DOID", "MESH"]  # Accept either namespace
+
+
+@pytest.mark.nonpublic
+def test_has_phenotype():
+    client = _get_client()
+    disease = ("doid", "0040093")
+    phenotype = ("hp", "0003138")  # Using HPO ID that we know exists
+    assert has_phenotype(disease, phenotype, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_genes_for_phenotype():
+    client = _get_client()
+    phenotype = ("MESH", "D009264")  # from our findings
+    genes = get_genes_for_phenotype(phenotype, client=client)
+    assert genes
+    assert isinstance(genes[0], Node)
+    assert genes[0].db_ns == "HGNC"
+
+
+@pytest.mark.nonpublic
+def test_get_phenotypes_for_gene():
+    client = _get_client()
+    gene = ("HGNC", "25126")  # from our findings
+    phenotypes = get_phenotypes_for_gene(gene, client=client)
+    assert phenotypes
+    assert isinstance(phenotypes[0], Node)
+    assert phenotypes[0].db_ns == "MESH"
+
+
+@pytest.mark.nonpublic
+def test_has_phenotype_gene():
+    client = _get_client()
+    phenotype = ("MESH", "D009264")
+    gene = ("HGNC", "25126")
+    assert has_phenotype_gene(phenotype, gene, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_markers_for_cell_type():
+    client = _get_client()
+    cell_type = ("cl", "0000020")
+    markers = get_markers_for_cell_type(cell_type, client=client)
+    marker_list = list(markers)
+    assert marker_list  # Check if list is not empty
+    assert isinstance(marker_list[0], Node)
+    assert marker_list[0].db_ns == "HGNC"
+    # Verify a specific marker we know exists
+    assert ("HGNC", "11337") in [m.grounding() for m in marker_list]
+
+
+@pytest.mark.nonpublic
+def test_get_cell_types_for_marker():
+    client = _get_client()
+    marker = ("HGNC", "11337")  # Using marker we know exists
+    cell_types = get_cell_types_for_marker(marker, client=client)
+    cell_type_list = list(cell_types)
+    assert cell_type_list
+    assert isinstance(cell_type_list[0], Node)
+    assert cell_type_list[0].db_ns == "CL"
+    assert ("CL", "CL:0000020") in [c.grounding() for c in cell_type_list]
+
+
+@pytest.mark.nonpublic
+def test_is_marker_for_cell_type():
+    client = _get_client()
+    marker = ("HGNC", "11337")
+    cell_type = ("cl", "0000020")
+    assert is_marker_for_cell_type(marker, cell_type, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_publisher_for_journal():
+    client = _get_client()
+    journal = ("nlm", "100972832")
+    publishers = get_publisher_for_journal(journal, client=client)
+    publisher_list = list(publishers)
+    assert publisher_list
+    assert isinstance(publisher_list[0], Node)
+    assert publisher_list[0].db_ns == "ISNI"
+    assert ("ISNI", "0000000031304729") in [p.grounding() for p in publisher_list]
+
+
+@pytest.mark.nonpublic
+def test_get_journals_for_publisher():
+    client = _get_client()
+    publisher = ("isni", "0000000080461210")
+    journals = get_journals_for_publisher(publisher, client=client)
+    journal_list = list(journals)
+    assert journal_list
+    assert isinstance(journal_list[0], Node)
+    assert journal_list[0].db_ns == "NLM"
+    assert ("NLM", "8214119") in [j.grounding() for j in journal_list]
+
+
+@pytest.mark.nonpublic
+def test_is_journal_published_by():
+    client = _get_client()
+    journal = ("nlm", "100972832")
+    publisher = ("isni", "0000000031304729")
+    assert is_journal_published_by(journal, publisher, client=client)
+
+
+@pytest.mark.nonpublic
+def test_check_pubmed():
+    client = _get_client()
+    print("\nChecking pubmed relationships...")
+
+    # Check format of published_in relationship
+    query = """
+    MATCH (p:Publication)-[r:published_in]->(j:Journal)
+    RETURN p.id, j.id
+    LIMIT 5
+    """
+    result = client.query_tx(query)
+    print("\nFound published_in relationships:", result)
+
+
+@pytest.mark.nonpublic
+def test_get_journal_for_publication():
+    client = _get_client()
+    publication = ("pubmed", "14334679")  # Using publication we know exists
+    journals = get_journal_for_publication(publication, client=client)
+    journal_list = list(journals)
+    assert journal_list
+    assert isinstance(journal_list[0], Node)
+    assert journal_list[0].db_ns == "NLM"
+    assert ("NLM", "0000201") in [j.grounding() for j in journal_list]
+
+
+@pytest.mark.nonpublic
+def test_get_publications_for_journal():
+    client = _get_client()
+    journal = ("nlm", "0000201")
+    publications = get_publications_for_journal(journal, client=client)
+    publication_list = list(publications)
+    assert publication_list
+    assert isinstance(publication_list[0], Node)
+    assert publication_list[0].db_ns == "PUBMED"
+    assert ("PUBMED", "14334679") in [p.grounding() for p in publication_list]
+
+
+@pytest.mark.nonpublic
+def test_is_published_in_journal():
+    client = _get_client()
+    publication = ("pubmed", "14334679")
+    journal = ("nlm", "0000201")
+    assert is_published_in_journal(publication, journal, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_journal = ("nlm", "000000")
+    assert not is_published_in_journal(publication, wrong_journal, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_diseases_for_gene():
+    client = _get_client()
+    gene = ("hgnc", "57")
+    diseases = get_diseases_for_gene(gene, client=client)
+    disease_list = list(diseases)
+    assert disease_list
+    assert isinstance(disease_list[0], Node)
+    assert disease_list[0].db_ns in ["DOID", "MESH", "UMLS", "MONDO"]  # Allow all disease namespaces
+    assert ("DOID", "DOID:2738") in [d.grounding() for d in disease_list]  # Correct DOID format
+
+
+@pytest.mark.nonpublic
+def test_get_genes_for_disease():
+    client = _get_client()
+    disease = ("doid", "DOID:2738")  # Correct format with DOID: prefix
+    genes = get_genes_for_disease(disease, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "57") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_get_diseases_for_variant():
+    client = _get_client()
+    variant = ("dbsnp", "rs9994441")
+    diseases = get_diseases_for_variant(variant, client=client)
+    disease_list = list(diseases)
+    assert disease_list
+    assert isinstance(disease_list[0], Node)
+    assert disease_list[0].db_ns in ["DOID", "UMLS"]
+    assert ("DOID", "DOID:10652") in [d.grounding() for d in disease_list]
+
+
+@pytest.mark.nonpublic
+def test_get_variants_for_disease():
+    client = _get_client()
+    disease = ("doid", "DOID:10652")
+    variants = get_variants_for_disease(disease, client=client)
+    variant_list = list(variants)
+    assert variant_list
+    assert isinstance(variant_list[0], Node)
+    assert variant_list[0].db_ns == "DBSNP"
+    assert ("DBSNP", "rs9994441") in [v.grounding() for v in variant_list]
+
+
+@pytest.mark.nonpublic
+def test_get_genes_for_variant():
+    client = _get_client()
+    variant = ("dbsnp", "rs74615166")
+    genes = get_genes_for_variant(variant, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "12310") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_get_variants_for_gene():
+    client = _get_client()
+    gene = ("hgnc", "12310")
+    variants = get_variants_for_gene(gene, client=client)
+    variant_list = list(variants)
+    assert variant_list
+    assert isinstance(variant_list[0], Node)
+    assert variant_list[0].db_ns == "DBSNP"
+    assert ("DBSNP", "rs74615166") in [v.grounding() for v in variant_list]
+
+
+@pytest.mark.nonpublic
+def test_has_gene_disease_association():
+    client = _get_client()
+    gene = ("hgnc", "57")
+    disease = ("doid", "DOID:2738")
+    assert has_gene_disease_association(gene, disease, client=client)
+
+
+@pytest.mark.nonpublic
+def test_has_variant_disease_association():
+    client = _get_client()
+    variant = ("dbsnp", "rs9994441")
+    disease = ("doid", "DOID:10652")
+    assert has_variant_disease_association(variant, disease, client=client)
+
+
+@pytest.mark.nonpublic
+def test_has_variant_gene_association():
+    client = _get_client()
+    variant = ("dbsnp", "rs74615166")
+    gene = ("hgnc", "12310")
+    assert has_variant_gene_association(variant, gene, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_publications_for_project():
+    client = _get_client()
+    project = ("nihreporter.project", "2106659")
+    publications = get_publications_for_project(project, client=client)
+    pub_list = list(publications)
+    assert pub_list
+    assert isinstance(pub_list[0], Node)
+    assert pub_list[0].db_ns == "PUBMED"
+    assert ("PUBMED", "11818301") in [p.grounding() for p in pub_list]
+
+
+@pytest.mark.nonpublic
+def test_get_clinical_trials_for_project():
+    client = _get_client()
+    project = ("nihreporter.project", "6439077")
+    trials = get_clinical_trials_for_project(project, client=client)
+    trial_list = list(trials)
+    assert trial_list
+    assert isinstance(trial_list[0], Node)
+    assert trial_list[0].db_ns == "CLINICALTRIALS"
+    assert ("CLINICALTRIALS", "NCT00201240") in [t.grounding() for t in trial_list]
+
+
+@pytest.mark.nonpublic
+def test_get_patents_for_project():
+    client = _get_client()
+    project = ("nihreporter.project", "2106676")
+    patents = get_patents_for_project(project, client=client)
+    patent_list = list(patents)
+    assert patent_list
+    assert isinstance(patent_list[0], Node)
+    assert patent_list[0].db_ns == "GOOGLE.PATENT"
+    assert ("GOOGLE.PATENT", "US5939275") in [p.grounding() for p in patent_list]
+
+
+@pytest.mark.nonpublic
+def test_check_interpro():
+    client = _get_client()
+    print("\nChecking interpro relationships...")
+
+    query = """
+    MATCH (b1:BioEntity)-[r]->(b2:BioEntity)
+    WHERE type(r) IN ['has_domain', 'associated_with']
+    RETURN DISTINCT type(r), b1.id, b2.id
+    LIMIT 5
+    """
+    result = client.query_tx(query)
+    print("\nFound interpro relationships:", result)
+
