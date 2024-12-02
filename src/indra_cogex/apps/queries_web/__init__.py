@@ -114,6 +114,20 @@ examples_dict = {
     "permutations": fields.Integer(example=100),
     "source": fields.String(example="go"),
     "indra_path_analysis": fields.Boolean(example=False),
+    # Cell marker
+    "cell_type": fields.List(fields.String, example=["cl", "0000020"]),
+    "marker": fields.List(fields.String, example=["hgnc", "11337"]),
+    # Pubmed
+    "publication": fields.List(fields.String, example=["pubmed", "14334679"]),
+    "journal": fields.List(fields.String, example=["nlm", "0000201"]),
+    # Disgenet
+    "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
+    # Wikidata
+    "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
+    # NIH Reporter
+    "project": fields.List(fields.String, example=["nihreporter.project", "2106659"]),
+    # HPOA
+    "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
 }
 
 # Parameters to always skip in the examples and in the documentation
