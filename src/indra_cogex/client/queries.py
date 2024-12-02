@@ -3,7 +3,7 @@ import logging
 import time
 from collections import Counter, defaultdict
 from textwrap import dedent
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
@@ -54,6 +54,33 @@ __all__ = [
     "get_targets_for_drug",
     "get_targets_for_drugs",
     "is_drug_target",
+    "get_markers_for_cell_type",
+    "get_cell_types_for_marker",
+    "is_marker_for_cell_type",
+    "get_phenotypes_for_disease",
+    "get_diseases_for_phenotype",
+    "has_phenotype",
+    "get_genes_for_phenotype",
+    "get_phenotypes_for_gene",
+    "has_phenotype_gene",
+    "get_publisher_for_journal",
+    "get_journals_for_publisher",
+    "is_journal_published_by",
+    "get_journal_for_publication",
+    "get_publications_for_journal",
+    "is_published_in_journal",
+    "get_diseases_for_gene",
+    "get_genes_for_disease",
+    "has_gene_disease_association",
+    "get_diseases_for_variant",
+    "get_variants_for_disease",
+    "has_variant_disease_association",
+    "get_genes_for_variant",
+    "get_variants_for_gene",
+    "has_variant_gene_association",
+    "get_publications_for_project",
+    "get_clinical_trials_for_project",
+    "get_patents_for_project",
     # Summary functions
     "get_node_counter",
     "get_edge_counter",
@@ -1739,6 +1766,739 @@ def _filter_out_medscan_evidence(
         for ev in ev_list
         if not (remove_medscan and ev["source_api"] == "medscan")
     ]
+
+
+# Cell marker functions
+@autoclient()
+def get_markers_for_cell_type(
+    cell_type: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the markers associated with the given cell type.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    cell_type :
+        The cell type to query (e.g., ("cl", "0000020"))
+
+    Returns
+    -------
+    :
+        The markers (genes) associated with the cell type
+    """
+    cell_id = f"{cell_type[0]}:{cell_type[1]}".lower()
+    query = """
+    MATCH (c:BioEntity {id: $cell_id})-[r:has_marker]->(m:BioEntity)
+    RETURN m
+    """
+    return client.query_nodes(query, cell_id=cell_id)
+
+
+@autoclient()
+def get_cell_types_for_marker(
+    marker: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the cell types associated with the given marker.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    marker :
+        The marker (gene) to query (e.g., ("HGNC", "11337"))
+
+    Returns
+    -------
+    :
+        The cell types associated with the marker
+    """
+    marker_id = f"{marker[0]}:{marker[1]}".lower()
+    query = """
+    MATCH (c:BioEntity)-[r:has_marker]->(m:BioEntity {id: $marker_id})
+    RETURN c
+    """
+    return client.query_nodes(query, marker_id=marker_id)
+
+
+@autoclient()
+def is_marker_for_cell_type(
+    marker: Tuple[str, str], cell_type: Tuple[str, str], *, client: Neo4jClient
+) -> list[Any]:
+    """Return True if the marker is associated with the given cell type.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    marker :
+        The marker to query
+    cell_type :
+        The cell type to query
+
+    Returns
+    -------
+    :
+        True if the marker is associated with the cell type
+    """
+    marker_id = f"{marker[0]}:{marker[1]}".lower()
+    cell_id = f"{cell_type[0]}:{cell_type[1]}".lower()
+    query = """
+    MATCH (c:BioEntity {id: $cell_id})-[r:has_marker]->(m:BioEntity {id: $marker_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, cell_id=cell_id, marker_id=marker_id, squeeze=True)[0]
+
+
+# HPOA Functions
+@autoclient()
+def get_phenotypes_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the phenotypes associated with the given disease.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    disease :
+        The disease to query (e.g., ("doid", "0040093"))
+
+    Returns
+    -------
+    :
+        The phenotypes associated with the disease
+    """
+    # Construct the full ID as it appears in database
+    disease_id = f"{disease[0]}:{disease[1]}"
+
+    # Use direct query since get_targets is returning an empty list
+    query = f"""
+    MATCH (d:BioEntity {{id: $disease_id}})-[r:has_phenotype]->(p:BioEntity)
+    RETURN p
+    """
+    return client.query_nodes(query, disease_id=disease_id)
+
+
+@autoclient()
+def get_diseases_for_phenotype(
+    phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the diseases associated with the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (e.g., ("hp", "0003138"))
+
+    Returns
+    -------
+    :
+        The diseases associated with the phenotype
+    """
+    phenotype_id = f"{phenotype[0]}:{phenotype[1]}".lower()
+    query = """
+    MATCH (d:BioEntity)-[r:has_phenotype]->(p:BioEntity {id: $phenotype_id})
+    RETURN d
+    """
+    return client.query_nodes(query, phenotype_id=phenotype_id)
+
+
+@autoclient()
+def has_phenotype(
+    disease: Tuple[str, str], phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> list[Any]:
+    """Return True if the disease has the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    disease :
+        The disease to query
+    phenotype :
+        The phenotype to query
+
+    Returns
+    -------
+    :
+        True if the disease has the phenotype
+    """
+    disease_id = f"{disease[0]}:{disease[1]}".lower()
+    phenotype_id = f"{phenotype[0]}:{phenotype[1]}".lower()
+    query = """
+    MATCH (d:BioEntity {id: $disease_id})-[r:has_phenotype]->(p:BioEntity {id: $phenotype_id})
+    RETURN COUNT(r) > 0
+    """
+    return client.query_tx(query, disease_id=disease_id, phenotype_id=phenotype_id, squeeze=True)[0]
+
+
+@autoclient()
+def get_genes_for_phenotype(
+    phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the genes associated with the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (MESH ID)
+
+    Returns
+    -------
+    :
+        The genes (HGNC) associated with the phenotype
+    """
+    return client.get_targets(
+        phenotype,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def get_phenotypes_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the phenotypes associated with the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    gene :
+        The gene to query (HGNC ID)
+
+    Returns
+    -------
+    :
+        The phenotypes (MESH) associated with the gene
+    """
+    return client.get_sources(
+        gene,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def has_phenotype_gene(
+    phenotype: Tuple[str, str], gene: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Return True if the phenotype is associated with the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (MESH ID)
+    gene :
+        The gene to query (HGNC ID)
+
+    Returns
+    -------
+    :
+        True if the phenotype is associated with the gene
+    """
+    return client.has_relation(
+        phenotype,
+        gene,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+# Wikidata functions
+@autoclient()
+def get_publisher_for_journal(
+    journal: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the publisher for the given journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "100972832"))
+
+    Returns
+    -------
+    :
+        The publisher nodes associated with the journal
+    """
+    journal_id = f"{journal[0]}:{journal[1]}".lower()
+    query = """
+    MATCH (j:Journal {id: $journal_id})-[r:published_by]->(p:Publisher)
+    RETURN p
+    """
+    return client.query_nodes(query, journal_id=journal_id)
+
+
+@autoclient()
+def get_journals_for_publisher(
+    publisher: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the journals for the given publisher.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publisher : Tuple[str, str]
+        The publisher to query (e.g., ("isni", "0000000080461210"))
+
+    Returns
+    -------
+    :
+        The journal nodes published by this publisher
+    """
+    publisher_id = f"{publisher[0]}:{publisher[1]}".lower()
+    query = """
+    MATCH (j:Journal)-[r:published_by]->(p:Publisher {id: $publisher_id})
+    RETURN j
+    """
+    return client.query_nodes(query, publisher_id=publisher_id)
+
+
+@autoclient()
+def is_journal_published_by(
+    journal: Tuple[str, str], publisher: Tuple[str, str], *, client: Neo4jClient
+) -> list[Any]:
+    """Check if a journal is published by a specific publisher.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "100972832"))
+    publisher : Tuple[str, str]
+        The publisher to query (e.g., ("isni", "0000000031304729"))
+
+    Returns
+    -------
+    :
+        True if the journal is published by the given publisher
+    """
+    journal_id = f"{journal[0]}:{journal[1]}".lower()
+    publisher_id = f"{publisher[0]}:{publisher[1]}".lower()
+    query = """
+    MATCH (j:Journal {id: $journal_id})-[r:published_by]->(p:Publisher {id: $publisher_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, journal_id=journal_id, publisher_id=publisher_id, squeeze=True)[0]
+
+
+@autoclient()
+def get_journal_for_publication(
+    publication: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the journal where the publication was published.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "14334679"))
+
+    Returns
+    -------
+    :
+        The journal nodes where this publication was published
+    """
+    return client.get_targets(
+        publication,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def get_publications_for_journal(
+    journal: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the publications published in the given journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "0000201"))
+
+    Returns
+    -------
+    :
+        The publication nodes published in this journal
+    """
+    return client.get_sources(
+        journal,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def is_published_in_journal(
+    publication: Tuple[str, str], journal: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a publication was published in a specific journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "14334679"))
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "0000201"))
+
+    Returns
+    -------
+    :
+        True if the publication was published in the given journal
+    """
+    return client.has_relation(
+        publication,
+        journal,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def get_diseases_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return diseases associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "57"))
+
+    Returns
+    -------
+    :
+        Disease nodes (DOID or MESH) associated with this gene
+    """
+    return client.get_targets(
+        gene,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "2738") or ("mesh", "D011561"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this disease
+    """
+    return client.get_sources(
+        disease,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_diseases_for_variant(
+    variant: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return diseases associated with the given variant.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+
+    Returns
+    -------
+    :
+        Disease nodes (DOID or UMLS) associated with this variant
+    """
+    return client.get_targets(
+        variant,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_gene_disease_association(
+    gene: Tuple[str, str], disease: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene is associated with a disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "57"))
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "DOID:2738"))
+
+    Returns
+    -------
+    :
+        True if the gene is associated with the disease
+    """
+    return client.has_relation(
+        gene,
+        disease,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_variants_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return variants associated with the given disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "10652") or ("umls", "C4528257"))
+
+    Returns
+    -------
+    :
+        Variant nodes (DBSNP) associated with this disease
+    """
+    return client.get_sources(
+        disease,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_variant_disease_association(
+    variant: Tuple[str, str], disease: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a variant is associated with a disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs9994441"))
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "DOID:10652"))
+
+    Returns
+    -------
+    :
+        True if the variant is associated with the disease
+    """
+    return client.has_relation(
+        variant,
+        disease,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_variant(
+    variant: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given variant.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this variant
+    """
+    return client.get_targets(
+        variant,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_variants_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return variants associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "12310"))
+
+    Returns
+    -------
+    :
+        Variant nodes (DBSNP) associated with this gene
+    """
+    return client.get_sources(
+        gene,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_variant_gene_association(
+    variant: Tuple[str, str], gene: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a variant is associated with a gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "12310"))
+
+    Returns
+    -------
+    :
+        True if the variant is associated with the gene
+    """
+    return client.has_relation(
+        variant,
+        gene,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+# nih_reporter
+@autoclient()
+def get_publications_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return publications associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "2106659"))
+
+    Returns
+    -------
+    :
+        Publication nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_publication",
+        source_type="ResearchProject",
+        target_type="Publication"
+    )
+
+
+@autoclient()
+def get_clinical_trials_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return clinical trials associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "6439077"))
+
+    Returns
+    -------
+    :
+        Clinical trial nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_clinical_trial",
+        source_type="ResearchProject",
+        target_type="ClinicalTrial"
+    )
+
+
+@autoclient()
+def get_patents_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return patents associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "2106676"))
+
+    Returns
+    -------
+    :
+        Patent nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_patent",
+        source_type="ResearchProject",
+        target_type="Patent"
+    )
 
 
 if __name__ == "__main__":
