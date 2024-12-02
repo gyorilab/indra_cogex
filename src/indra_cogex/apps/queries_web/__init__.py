@@ -63,12 +63,21 @@ examples_dict = {
     "parent": fields.List(fields.String, example=["MESH", "D007855"]),
     "mesh_term": fields.List(fields.String, example=["MESH", "D015002"]),
     "pmid_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
-    "paper_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
+    "paper_term": fields.List(fields.String, example=["PUBMED", "23356518"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
     "include_child_terms": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
+    "rel_type": fields.String(example="Phosphorylation"),
+    "rel_types": fields.List(fields.String, example=["Phosphorylation", "Activation"]),
+    "agent_name": fields.String(example="MEK"),
+    "agent": fields.String(example="MEK"),
+    "other_agent": fields.String(example="ERK"),
+    "agent_role": fields.String(example="Subject"),
+    "other_role" : fields.String(example="Object"),
+    "stmt_source": fields.String(example="reach"),
+    "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
@@ -115,6 +124,7 @@ SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
     "get_evidences_for_stmt_hash": {"remove_medscan"},
     "get_evidences_for_stmt_hashes": {"remove_medscan"},
+    "get_statements": {"mesh_term","include_child_terms"}
 }
 
 # This is the list of functions to be included

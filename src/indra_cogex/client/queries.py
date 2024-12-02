@@ -9,7 +9,7 @@ import networkx as nx
 from indra.statements import Agent, Evidence, Statement
 
 from .neo4j_client import Neo4jClient, autoclient
-from ..representation import Node, Relation, indra_stmts_from_relations, norm_id
+from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ __all__ = [
     "get_stmts_for_mesh",
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
+    "get_statements",
     "is_gene_mutated",
     "get_mutated_genes",
     "get_drugs_for_target",
@@ -780,7 +781,7 @@ def get_evidences_for_mesh(
         match_terms = {norm_mesh} | child_terms
         where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
-        query_params["mesh_terms"] = match_terms
+        query_params["mesh_terms"] = list(match_terms)
     else:
         single_mesh_match = ' {id: $mesh_id}'
         where_clause = ""
@@ -929,30 +930,13 @@ def get_stmts_for_paper(
     # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
     #  stmt type
 
-    if paper_term[0].lower() in {"pmid", "pubmed"}:
-        parameter = norm_id(*paper_term)
-        publication_props = "{id: $parameter}"
-
-    elif paper_term[0].lower() == "doi":
-        parameter = paper_term[1]
-        publication_props = "{doi: $parameter}"
-
-    elif paper_term[0].lower() in {"pmc", "pmcid"}:
-        parameter = paper_term[1]
-        publication_props = "{pmcid: $parameter}"
-
-    elif paper_term[0].lower() == "trid":
-        parameter = paper_term[1]
-        publication_props = "{trid: $parameter}"
-
-    else:
-        raise ValueError(f"Invalid prefix for publication lookup: {paper_term[0]}")
+    parameter, publication_props = generate_paper_clause(paper_term)
 
     hash_query = f"""\
         MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
         RETURN e.stmt_hash, e.evidence
     """
-    result = client.query_tx(hash_query, parameter=parameter)
+    result = client.query_tx(hash_query, paper_parameter=parameter)
     return _stmts_from_results(client=client, result=result, **kwargs)
 
 
@@ -1140,6 +1124,173 @@ def get_stmts_for_stmt_hashes(
     }
     return rv, evidence_counts
 
+@autoclient()
+def get_statements(
+        agent: Union[str, Tuple[str, str]],
+        *,
+        client: Neo4jClient,
+        rel_types: Optional[Union[str, List[str]]] = None,
+        stmt_sources: Optional[Union[str, List[str]]] = None,
+        agent_role: Optional[str] = None,
+        other_agent: Optional[Union[str, Tuple[str, str]]] = None,
+        other_role: Optional[str] = None,
+        paper_term: Optional[Tuple[str, str]] = None,
+        mesh_term: Optional[Tuple[str, str]] = None,
+        include_child_terms: Optional[bool] = True,
+        limit: Optional[int] = 10,
+        evidence_limit: Optional[int] = None,
+        return_evidence_counts: bool = False,
+) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
+    """Return the statements based on optional constraints on relationship type and source(s).
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client used for executing the query.
+    rel_types : Optional[Union[str, List[str]]], default: None
+        The relationship type(s) to filter by, e.g., "Phosphorylation" or ["Phosphorylation", "Activation"].
+    stmt_sources : Optional[Union[str, List[str]]], default: None
+        The source(s) to filter by, e.g., "reach" or ["reach", "sparser"].
+    agent : Union[str, Tuple[str, str]]
+        The primary agent involved in the interaction. Can be specified as a name (e.g., "EGFR") or as a CURIE
+        tuple (namespace, ID), such as ("MESH", "D051379").
+    agent_role : Optional[str], default: None
+        The role of agent in the interaction: either "subject", "object", or None for an undirected search.
+    other_agent : Optional[Union[str, Tuple[str, str]]], default: None
+        A secondary agent in the interaction, specified either as a name or CURIE tuple.
+    other_role : Optional[str], default: None
+        The role of other_agent in the interaction: either "subject", "object", or None.
+    paper_term: Optional[Tuple[str, str]], default : None
+        The paper filter. Can be a PubMed ID, PMC id, TRID, or DOI
+    mesh_term : Optional[Tuple[str, str]], default : None
+        The mesh_term filter for evidences
+    include_child_terms : Optional[bool], default : True
+        If True, also match against the child MESH terms of the given MESH term.
+    limit : Optional[int], default: 10
+        The maximum number of statements to return.
+    evidence_limit : Optional[int], default: None
+        The optional maximum number of evidence entries to retrieve per statement.
+    return_evidence_counts : bool, default: False
+        Whether to include a mapping of statement hash to evidence count in the results.
+
+    Returns
+    -------
+    List[Statement]
+        A list of statements filtered by the provided constraints.
+    """
+    where_clauses = []
+    mesh_all_term, hash_in_rel = None, ""
+    if paper_term:
+        paper_param, paper_clause = generate_paper_clause(paper_term)
+    else:
+        paper_clause = None
+
+    if mesh_term or paper_term:
+        query = (f"MATCH (e:Evidence)-[:has_citation]->"
+                 f"(pub:Publication {paper_clause})-[:annotated_with] "
+                 f"-> (mesh_term:BioEntity)")
+        hash_in_rel = "{stmt_hash: e.stmt_hash}"
+        if mesh_term:
+            norm_mesh = norm_id(*mesh_term)
+            if include_child_terms:
+                child_terms = _get_mesh_child_terms(mesh_term, client=client)
+            else:
+                child_terms = set()
+            if child_terms:
+                mesh_all_term = {norm_mesh} | child_terms
+                mesh_all_term = list(mesh_all_term)
+            else:
+                mesh_all_term = [norm_mesh]
+            where_clauses.append("mesh_term.id IN $mesh_terms")
+    else:
+        query = ""
+
+    # Agent being CURIE
+    if isinstance(agent, tuple):
+        agent_constraint = norm_id(*agent)
+        agent_match_clause = f"(a:BioEntity {{id: $agent_constraint}})"
+    # Agent being text name
+    else:
+        agent_constraint = agent
+        agent_match_clause = f"(a:BioEntity {{name: $agent_constraint}})"
+
+    if isinstance(other_agent, tuple):
+        other_agent_constraint = norm_id(*other_agent)
+        other_agent_match_clause = f"(b:BioEntity {{id: $other_agent_constraint}})"
+    elif other_agent:
+        other_agent_constraint = other_agent
+        other_agent_match_clause = f"(b:BioEntity {{name: $other_agent_constraint}})"
+    else:
+        other_agent_match_clause = "(b:BioEntity)"
+
+    if agent_role == "subject" and other_role == "object":
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
+    elif agent_role == "object" and other_role == "subject":
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
+    elif agent_role == "subject":
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
+    elif agent_role == "object":
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
+    else:
+        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]-{other_agent_match_clause}"
+
+    if rel_types:
+        if isinstance(rel_types, str):
+            rel_types = [rel_types]
+        where_clauses.append("r.stmt_type IN $rel_types")
+
+
+    if stmt_sources:
+        if isinstance(stmt_sources, str):
+            stmt_sources = [stmt_sources]
+        where_clauses.append("any(source IN $stmt_sources WHERE r.source_counts CONTAINS source)")
+
+    if where_clauses:
+        match_clause += " WHERE " + " AND ".join(where_clauses)
+
+    query += f"MATCH p = {match_clause} WITH distinct r.stmt_hash AS hash, collect(p) as pp RETURN pp LIMIT $limit"
+    params = {
+        "agent_constraint": agent_constraint,
+        "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
+        "limit": limit
+    }
+    if other_agent:
+        params["other_agent_constraint"] = other_agent_constraint
+    if mesh_all_term:
+        params["mesh_terms"] = mesh_all_term
+    if stmt_sources:
+        params['stmt_sources'] = stmt_sources
+    if paper_term:
+        params['paper_parameter'] = paper_param
+
+
+    logger.info(f"Running query with constraints: rel_type={rel_types}, "
+                f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
+                f"agent_role={agent_role}, other_role={other_role}, limit={limit}")
+    logger.info(query)
+    rels = client.query_tx(query, **params)
+    flattened_rels = [client.neo4j_to_relation(i[0]) for rel in rels for i in rel]
+    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
+    if evidence_limit and evidence_limit > 1:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+
+    if not return_evidence_counts:
+        return stmts
+
+    evidence_counts = {
+        stmt.get_hash(): (
+            min(rel.data["evidence_count"], evidence_limit)
+            if evidence_limit is not None
+            else rel.data["evidence_count"]
+        )
+        for rel, stmt in zip(flattened_rels, stmts)
+    }
+
+    return stmts, evidence_counts
 
 @autoclient()
 def enrich_statements(
