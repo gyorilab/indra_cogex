@@ -68,7 +68,7 @@ def search():
             paper_term=paper_id,
             mesh_term=mesh_terms,
             limit=1000,
-            evidence_limit=2000,
+            evidence_limit=1000,
             return_evidence_counts=True
         )
         return render_statements(stmts=statements, evidence_count=evidence_count)
