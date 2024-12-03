@@ -71,6 +71,64 @@
         #ground-mesh-button {
         width: 200px;
         }
+
+        /* Circle for the question mark */
+        .info-icon {
+            font-size: 12px;
+            color: #fff;
+            background: #007bff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Tooltip box */
+        .tooltip-box {
+            display: none;
+            position: absolute;
+            bottom: 19px; /* Increase this value to move the box down */
+            right: -100px; /* horizontal alignment */
+            background: #f8f9fa;
+            color: #333; /* Ensure text is visible */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            width: 240px;
+            z-index: 1000;
+        }
+
+        /* Arrow for tooltip */
+        .tooltip-box::before {
+            content: '';
+            position: absolute;
+            top: -6px; /* Adjust arrow to align with the mark */
+            left: 20px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #ddd transparent;
+        }
+
+        .tooltip-box::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 20px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #f8f9fa transparent;
+        }
+
+        /* Keep tooltip visible on hover */
+        .info-icon:hover + .tooltip-box,
+        .tooltip-box:hover {
+            display: block;
+        }
     </style>
 
     {{ super() }}
@@ -92,10 +150,19 @@
         <!-- Agent Input -->
         <div class="form-group agent-container">
             <label for="agent-name">Agent</label>
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; position: relative;">
                 <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
                 <select class="form-control" id="agent-select" style="display: none;"></select>
-                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2">Ground with Gilda</button>
+                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2" style="position: relative;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the agent name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
             </div>
         </div>
 
@@ -132,11 +199,20 @@
         <!-- Mesh Constraint -->
         <div class="form-group mesh-container">
             <label for="mesh-name">Mesh Constraint</label>
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; position: relative;">
                 <!-- Input field for Mesh name -->
                 <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name">
                 <select class="form-control" id="mesh-select" style="display: none;"></select>
-                <button type="button" id="ground-mesh-button" class="btn btn-secondary">Ground with Gilda</button>
+                <button type="button" id="ground-mesh-button" class="btn btn-secondary" style="position: relative;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the Mesh name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
             </div>
         </div>
 

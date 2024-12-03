@@ -16,53 +16,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const exampleText = document.getElementById('clickable-text');
 
+        const infoIcon = document.getElementById('info-icon');
+        const tooltip = document.getElementById('tooltip');
 
 
 
-    groundAgentButton.addEventListener('click', async function () {
-        const agentText = agentNameInput.value.trim();
-        if (!agentText) {
-            alert("Please enter an agent name to ground.");
-            return;
-        }
-        try {
-            const response = await fetch('/search/gilda_ground', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ agent: agentText }),
-            });
-            if (!response.ok) throw new Error('Failed to ground the agent.');
-            const data = await response.json();
 
-            if (!data || data.length === 0) {
-                alert("No grounding results found.");
+        groundAgentButton.addEventListener('click', async function () {
+            const agentText = agentNameInput.value.trim();
+            if (!agentText) {
+                alert("Please enter an agent name to ground.");
                 return;
             }
-            agentSelect.innerHTML = '';
-            const placeholderOption = document.createElement('option');
-            placeholderOption.textContent = 'Grounded Results...';
-            placeholderOption.value = '';
-            placeholderOption.hidden = true; // non-selectable
-            placeholderOption.selected = true; // Show as default selected
-            agentSelect.appendChild(placeholderOption);
-            data.forEach(result => {
-                const option = document.createElement('option');
-                option.value = JSON.stringify({
-                    source_db: result.term.db,
-                    source_id: result.term.id,
+            try {
+                const response = await fetch('/search/gilda_ground', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ agent: agentText }),
                 });
-                option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
-                agentSelect.appendChild(option);
-            });
-            agentNameInput.style.display = 'none';
-            agentSelect.style.display = 'block';
-        } catch (error) {
-            console.error("Error grounding agent:", error);
-            alert("An error occurred while grounding the agent.");
-        }
-    });
+                if (!response.ok) throw new Error('Failed to ground the agent.');
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    alert("No grounding results found.");
+                    return;
+                }
+                agentSelect.innerHTML = '';
+                const placeholderOption = document.createElement('option');
+                placeholderOption.textContent = 'Grounded Results...';
+                placeholderOption.value = '';
+                placeholderOption.hidden = true; // non-selectable
+                placeholderOption.selected = true; // Show as default selected
+                agentSelect.appendChild(placeholderOption);
+                data.forEach(result => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify({
+                        source_db: result.term.db,
+                        source_id: result.term.id,
+                    });
+                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                    agentSelect.appendChild(option);
+                });
+                agentNameInput.style.display = 'none';
+                agentSelect.style.display = 'block';
+            } catch (error) {
+                console.error("Error grounding agent:", error);
+                alert("An error occurred while grounding the agent.");
+            }
+        });
 
         agentSelect.addEventListener('change', function () {
             const selectedOption = agentSelect.options[agentSelect.selectedIndex];
@@ -149,25 +152,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // Update relationship type
 
 
-    console.log('Available options:', Array.from(selectElement.options).map(option => option.value));
-    choices.setChoiceByValue('Phosphorylation');
+        choices.setChoiceByValue('Phosphorylation');
 
 
         // Ensure the hidden input is updated with the selected value
-    const selectedValues = ['Phosphorylation'];
-    RelhiddenInput.value = JSON.stringify(selectedValues); // Convert to JSON string
+        const selectedValues = ['Phosphorylation'];
+        RelhiddenInput.value = JSON.stringify(selectedValues);
 
-    // Debugging logs
-    console.log('Updated RelhiddenInput:', RelhiddenInput.value);
-    console.log('Phosphorylation option selected.');
-
-
-            // Log updates for debugging
-            console.log('Agent:', agentNameInput.value);
-            console.log('Other Agent:', otherAgentInput.value);
-            console.log('Agent Role:', agentRoleInput.value);
-            console.log('Other Agent Role:', otherAgentRoleInput.value);
-            console.log('Rel Types:', JSON.parse(RelhiddenInput.value));
         });
 
         groundMeshButton.addEventListener('click', async function () {
@@ -234,6 +225,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 meshNameInput.readOnly = true;
 
                 document.getElementById('mesh-tuple').value = JSON.stringify([source_db, source_id]);
+            }
+        });
+
+
+        // Show/hide tooltip when the icon is clicked
+        infoIcon.addEventListener('click', function (event) {
+            event.stopPropagation(); // Prevent clicks from propagating
+            if (tooltip.style.display === 'none' || tooltip.style.display === '') {
+                tooltip.style.display = 'block';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Hide the tooltip when clicking outside
+        document.addEventListener('click', function (event) {
+            if (!infoIcon.contains(event.target) && !tooltip.contains(event.target)) {
+                tooltip.style.display = 'none';
             }
         });
 
