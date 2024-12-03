@@ -9,11 +9,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const meshSelect = document.getElementById('mesh-select');
         const meshNameInput = document.getElementById('mesh-name');
         const stmtTypes = JSON.parse(document.getElementById('stmt-types-json').textContent);
-        console.log('stmt-types-json element:', stmtTypes);
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const RelhiddenInput = document.getElementById('rel-type-hidden');
         const groundAgentButton = document.getElementById('ground-agent-button');
         const groundMeshButton = document.getElementById('ground-mesh-button');
+
+        const exampleText = document.getElementById('clickable-text');
+
 
 
 
@@ -129,6 +131,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+        exampleText.addEventListener('click', function () {
+            // Update agent and other agent
+                    agentNameInput.value = 'MEK';
+            agentNameInput.readOnly = true;
+            otherAgentInput.value = 'ERK';
+            otherAgentInput.readOnly = true;
+
+            // Update roles (select the second button)
+            roleButtons.forEach(button => button.classList.remove('active'));
+            const subjectButton = document.getElementById('btn-subject');
+            subjectButton.classList.add('active');
+            agentRoleInput.value = 'subject';
+            otherAgentRoleInput.value = 'object';
+            otherAgentContainer.style.display = 'block';
+            otherAgentContainer.style.marginTop = '10px';
+            // Update relationship type
+
+
+    console.log('Available options:', Array.from(selectElement.options).map(option => option.value));
+    choices.setChoiceByValue('Phosphorylation');
+
+
+        // Ensure the hidden input is updated with the selected value
+    const selectedValues = ['Phosphorylation'];
+    RelhiddenInput.value = JSON.stringify(selectedValues); // Convert to JSON string
+
+    // Debugging logs
+    console.log('Updated RelhiddenInput:', RelhiddenInput.value);
+    console.log('Phosphorylation option selected.');
+
+
+            // Log updates for debugging
+            console.log('Agent:', agentNameInput.value);
+            console.log('Other Agent:', otherAgentInput.value);
+            console.log('Agent Role:', agentRoleInput.value);
+            console.log('Other Agent Role:', otherAgentRoleInput.value);
+            console.log('Rel Types:', JSON.parse(RelhiddenInput.value));
+        });
 
         groundMeshButton.addEventListener('click', async function () {
             const meshText = meshNameInput.value.trim();
