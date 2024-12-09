@@ -26,7 +26,8 @@ from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_contin
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 __all__ = [
-    "query_ns",
+    "api",
+    "target_ns",
 ]
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,201 @@ def get_example_data():
     names, log_fold_changes = zip(*reader)
     return names, [float(n) for n in log_fold_changes]
 
+
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
+
+api = Api(
+    title="INDRA CoGEx Query API",
+    description="REST API for INDRA CoGEx queries",
+    doc="/apidocs",
+)
+
+CATEGORY_DESCRIPTIONS = {
+    'search': "Find and retrieve data across genes, tissues, drugs, and pathways",
+    'validation': "Verify relationships and validate entity associations",
+    'evidence': "Access evidence and statement data supporting relationships",
+    'relationship': "Analyze connections between different biological entities",
+    'disease': "Explore disease-phenotype-gene relationships",
+    'publication': "Search and retrieve publication-related information",
+    'cell_line': "Query cell line mutations and drug sensitivity data",
+    'ontology': "Navigate ontology hierarchies and classifications",
+    'clinical': "Access clinical trial and drug indication data",
+    'mutation': "Analyze genetic mutations and their effects",
+    'network': "Explore biological network relationships and pathways",
+    'analysis': "Perform statistical and biological data analysis"
+}
+
+# Use namespace definitions to include descriptions
+search_ns = api.namespace("Search Operations", CATEGORY_DESCRIPTIONS['search'], path="/api")
+validation_ns = api.namespace("Validation Operations", CATEGORY_DESCRIPTIONS['validation'], path="/api")
+evidence_ns = api.namespace("Evidence Operations", CATEGORY_DESCRIPTIONS['evidence'], path="/api")
+relationship_ns = api.namespace("Relationship Operations", CATEGORY_DESCRIPTIONS['relationship'], path="/api")
+disease_ns = api.namespace("Disease Operations", CATEGORY_DESCRIPTIONS['disease'], path="/api")
+publication_ns = api.namespace("Publication Operations", CATEGORY_DESCRIPTIONS['publication'], path="/api")
+cell_line_ns = api.namespace("Cell Line Operations", CATEGORY_DESCRIPTIONS['cell_line'], path="/api")
+ontology_ns = api.namespace("Ontology Operations", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
+clinical_ns = api.namespace("Clinical Operations", CATEGORY_DESCRIPTIONS['clinical'], path="/api")
+mutation_ns = api.namespace("Mutation Operations", CATEGORY_DESCRIPTIONS['mutation'], path="/api")
+network_ns = api.namespace("Network Operations", CATEGORY_DESCRIPTIONS['network'], path="/api")
+analysis_ns = api.namespace("Analysis Operations", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
+
+
+FUNCTION_CATEGORIES = {
+    'search': {
+        'namespace': search_ns,
+        'functions': [
+            "get_genes_in_tissue",
+            "get_tissues_for_gene",
+            "get_go_terms_for_gene",
+            "get_genes_for_go_term",
+            "get_trials_for_drug",
+            "get_trials_for_disease",
+            "get_drugs_for_trial",
+            "get_diseases_for_trial",
+            "get_pathways_for_gene",
+            "get_genes_for_pathway",
+            "get_shared_pathways_for_genes",
+            "get_side_effects_for_drug",
+            "get_drugs_for_side_effect",
+            "get_markers_for_cell_type",
+            "get_cell_types_for_marker"
+        ]
+    },
+    'validation': {
+        'namespace': validation_ns,
+        'functions': [
+            "is_gene_in_tissue",
+            "is_go_term_for_gene",
+            "is_gene_in_pathway",
+            "is_side_effect_for_drug",
+            "is_drug_target",
+            "is_marker_for_cell_type",
+            "is_journal_published_by",
+            "is_published_in_journal",
+            "is_gene_mutated",
+            "is_gene_mutated_in_cell_line",
+            "is_cell_line_sensitive_to_drug",
+            "has_domain",
+            "has_enzyme_activity",
+            "has_indication",
+            "has_variant_phenotype_association",
+            "has_phenotype",
+            "has_phenotype_gene",
+            "has_gene_disease_association",
+            "has_variant_disease_association",
+            "has_variant_gene_association",
+            "has_codependency",
+            "has_cna_in_cell_line"
+        ]
+    },
+    'evidence': {
+        'namespace': evidence_ns,
+        'functions': [
+            "get_evidences_for_mesh",
+            "get_evidences_for_stmt_hash",
+            "get_evidences_for_stmt_hashes",
+            "get_stmts_for_paper",
+            "get_stmts_for_pmids",
+            "get_stmts_for_mesh",
+            "get_stmts_meta_for_stmt_hashes",
+            "get_stmts_for_stmt_hashes"
+        ]
+    },
+    'relationship': {
+        'namespace': relationship_ns,
+        'functions': [
+            "get_drugs_for_target",
+            "get_drugs_for_targets",
+            "get_targets_for_drug",
+            "get_targets_for_drugs",
+            "get_genes_for_variant",
+            "get_variants_for_gene",
+            "get_codependents_for_gene"
+        ]
+    },
+    'disease': {
+        'namespace': disease_ns,
+        'functions': [
+            "get_phenotypes_for_disease",
+            "get_diseases_for_phenotype",
+            "get_genes_for_phenotype",
+            "get_phenotypes_for_gene",
+            "get_diseases_for_gene",
+            "get_genes_for_disease",
+            "get_diseases_for_variant",
+            "get_variants_for_disease",
+            "get_phenotypes_for_variant_gwas",
+            "get_variants_for_phenotype_gwas"
+        ]
+    },
+    'publication': {
+        'namespace': publication_ns,
+        'functions': [
+            "get_pmids_for_mesh",
+            "get_mesh_ids_for_pmid",
+            "get_mesh_ids_for_pmids",
+            "get_publisher_for_journal",
+            "get_journals_for_publisher",
+            "get_journal_for_publication",
+            "get_publications_for_journal",
+            "get_publications_for_project",
+            "get_patents_for_project"
+        ]
+    },
+    'cell_line': {
+        'namespace': cell_line_ns,
+        'functions': [
+            "get_cell_lines_with_mutation",
+            "get_mutated_genes_in_cell_line",
+            "get_cell_lines_with_cna",
+            "get_cna_genes_in_cell_line",
+            "get_drugs_for_sensitive_cell_line",
+            "get_sensitive_cell_lines_for_drug"
+        ]
+    },
+    'ontology': {
+        'namespace': ontology_ns,
+        'functions': [
+            "get_ontology_child_terms",
+            "get_ontology_parent_terms",
+            "isa_or_partof",
+            "get_domains_for_gene",
+            "get_genes_for_domain",
+            "get_enzyme_activities_for_gene",
+            "get_genes_for_enzyme_activity"
+        ]
+    },
+    'clinical': {
+        'namespace': clinical_ns,
+        'functions': [
+            "get_clinical_trials_for_project",
+            "get_indications_for_molecule",
+            "get_molecules_for_indication"
+        ]
+    },
+    'mutation': {
+        'namespace': mutation_ns,
+        'functions': [
+            "get_mutated_genes"
+        ]
+    },
+    'analysis': {
+        'namespace': analysis_ns,
+        'functions': [
+            "discrete_analysis",
+            "signed_analysis",
+            "continuous_analysis",
+            "metabolite_discrete_analysis"
+        ]
+    },
+    'network': {
+        'namespace': network_ns,
+        'functions': [
+            "indra_subnetwork_relations",
+            "indra_subnetwork_meta",
+        ]
+    }
+}
 
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
@@ -79,7 +274,7 @@ examples_dict = {
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
-    "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
+    "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
         fields.List(fields.String),
@@ -106,8 +301,8 @@ examples_dict = {
     # Example for /gene/discrete
     "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
     # Examples for positive_genes and negative_genes for /gene/signed
-    "positive_genes": fields.List(fields.String,example=EXAMPLE_POSITIVE_HGNC_IDS),
-    "negative_genes": fields.List(fields.String,example=EXAMPLE_NEGATIVE_HGNC_IDS),
+    "positive_genes": fields.List(fields.String, example=EXAMPLE_POSITIVE_HGNC_IDS),
+    "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
@@ -121,13 +316,21 @@ examples_dict = {
     "publication": fields.List(fields.String, example=["pubmed", "14334679"]),
     "journal": fields.List(fields.String, example=["nlm", "0000201"]),
     # Disgenet
-    "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
+    "variant": fields.List(fields.String, example=[["dbsnp", "rs9994441"], ["dbsnp", "rs13015548"]]),
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
     "project": fields.List(fields.String, example=["nihreporter.project", "2106659"]),
     # HPOA
-    "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
+    "phenotype": fields.List(fields.String, example=[["hp", "0003138"], ["mesh", "D001827"]]),
+    # For InterPro
+    "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
+    # For ChEMBL
+    "molecule": fields.List(fields.String, examples=[["chebi", "10001"], ["chembl.compound", "CHEMBL25"]]),
+    "indication": fields.List(fields.String, example=["mesh", "D002318"]),
+    # For EC
+    "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
+    # For cBioPortal
 }
 
 # Parameters to always skip in the examples and in the documentation
@@ -147,10 +350,10 @@ SKIP_ARGUMENTS = {
 # listed explicitly below and properly documented in its docstring as well as having
 # example values for its parameters in the examples_dict above.
 module_functions = (
-        [(queries, fn) for fn in queries.__all__] +
-        [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
-        [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
-        [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+    [(queries, fn) for fn in queries.__all__] +
+    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
+    [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 
 # Maps function names to the actual functions
@@ -166,6 +369,17 @@ for module, func_name in module_functions:
     client_param = func_sig.parameters.get("client")
     if client_param is None:
         continue
+
+    # Find the appropriate namespace for this function
+    target_ns = None
+    for category, info in FUNCTION_CATEGORIES.items():
+        if func_name in info['functions']:
+            target_ns = info['namespace']
+            break
+
+    # If no category found, use search namespace as default
+    if target_ns is None:
+        target_ns = search_ns
 
     short_doc, fixed_doc = get_docstring(
         func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
@@ -198,8 +412,8 @@ for module, func_name in module_functions:
     )
 
 
-    @query_ns.expect(query_model)
-    @query_ns.route(f"/{func_name}", doc={"summary": short_doc})
+    @target_ns.expect(query_model)
+    @target_ns.route(f"/{func_name}", doc={"summary": short_doc})
     class QueryResource(Resource):
         """A resource for a query."""
 
