@@ -233,6 +233,9 @@ FUNCTION_CATEGORIES = {
         'functions': [
             "indra_subnetwork_relations",
             "indra_subnetwork_meta",
+            "indra_subnetwork_tissue",
+            "indra_subnetwork_go",
+            "indra_mediated_subnetwork"
         ]
     }
 }
@@ -351,7 +354,8 @@ SKIP_ARGUMENTS = {
 # example values for its parameters in the examples_dict above.
 module_functions = (
     [(queries, fn) for fn in queries.__all__] +
-    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta"]] +
+    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta", "indra_mediated_subnetwork",
+                                 "indra_subnetwork_tissue", "indra_subnetwork_go"]] +
     [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
     [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
@@ -367,7 +371,7 @@ for module, func_name in module_functions:
     func = getattr(module, func_name)
     func_sig = signature(func)
     client_param = func_sig.parameters.get("client")
-    if client_param is None:
+    if client_param is None:g
         continue
 
     # Find the appropriate namespace for this function
