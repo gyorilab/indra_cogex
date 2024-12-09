@@ -371,7 +371,7 @@ for module, func_name in module_functions:
     func = getattr(module, func_name)
     func_sig = signature(func)
     client_param = func_sig.parameters.get("client")
-    if client_param is None:g
+    if client_param is None:
         continue
 
     # Find the appropriate namespace for this function
