@@ -2,12 +2,15 @@
 
 import json
 from typing import Any, Iterable, List, Tuple
+import logging
 
 from indra.statements import Statement
 
 from .neo4j_client import Neo4jClient, autoclient
 from .queries import get_genes_for_go_term, get_genes_in_tissue
 from ..representation import Relation, indra_stmts_from_relations, norm_id
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "indra_subnetwork",
@@ -20,7 +23,7 @@ __all__ = [
 
 @autoclient()
 def indra_subnetwork_relations(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -30,6 +33,8 @@ def indra_subnetwork_relations(
         The Neo4j client.
     nodes :
         The nodes to query.
+    include_db_evidence :
+        Whether to include statements with database evidence.
 
     Returns
     -------
@@ -38,14 +43,12 @@ def indra_subnetwork_relations(
         objects.
     """
     nodes_str = ", ".join(["'%s'" % norm_id(*node) for node in nodes])
-    query = """MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
-            WHERE n1.id IN [%s]
-            AND n2.id IN [%s]
-            AND n1.id <> n2.id
-            RETURN p""" % (
-        nodes_str,
-        nodes_str,
-    )
+    query = f"""MATCH p=(n1:BioEntity)-[r:indra_rel]->(n2:BioEntity)
+               WHERE n1.id IN [{nodes_str}]
+               AND n2.id IN [{nodes_str}]
+               AND n1.id <> n2.id
+               {'' if include_db_evidence else 'AND NOT r.has_database_evidence'}
+               RETURN p"""
     return client.query_relations(query)
 
 
@@ -88,7 +91,7 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
@@ -98,13 +101,15 @@ def indra_subnetwork(
         The Neo4j client.
     nodes :
         The nodes to query.
+    include_db_evidence :
+        Whether to include statements with database evidence.
 
     Returns
     -------
     :
         The subnetwork induced by the given nodes.
     """
-    rels = indra_subnetwork_relations(nodes=nodes, client=client)
+    rels = indra_subnetwork_relations(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
     stmts = indra_stmts_from_relations(rels)
     return stmts
 
@@ -285,11 +290,14 @@ def indra_subnetwork_go(
     mediated: bool = False,
     upstream_controllers: bool = False,
     downstream_targets: bool = False,
+    include_db_evidence: bool = True,
 ) -> List[Statement]:
     """Return the INDRA Statement subnetwork induced by the given GO term.
 
     Parameters
     ----------
+    include_db_evidence :
+        Whether to include database evidence or not.
     go_term :
         The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
@@ -316,13 +324,14 @@ def indra_subnetwork_go(
         client=client, go_term=go_term, include_indirect=include_indirect
     )
     nodes = {g.grounding() for g in genes}
-    rv = indra_subnetwork(client=client, nodes=nodes)
+    rv = indra_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence)
     if mediated:
-        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes))
+        rv.extend(indra_mediated_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     if upstream_controllers:
-        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes))
+        rv.extend(indra_shared_upstream_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     if downstream_targets:
-        rv.extend(indra_shared_downstream_subnetwork(client=client, nodes=nodes))
+        rv.extend(
+            indra_shared_downstream_subnetwork(client=client, nodes=nodes, include_db_evidence=include_db_evidence))
     # No deduplication of statements based on the union of
     # the queries should be necessary since each are disjoint
     return rv

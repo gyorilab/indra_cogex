@@ -66,7 +66,6 @@
         {% if stmts|length == 0 %}
             <div class="card-body">
                 {% if filter_curated %}
-                    {# The statements were filtered, so allow for revealing rest #}
                     <p class="card-text">
                         There are no statements left to be curated!
                     </p>
@@ -86,10 +85,19 @@
                     <p class="card-text">{{ description | safe }}</p>
                 </div>
             {% endif %}
+            {% if is_proteocentric %}
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="include_db_evidence"
+                           v-model="include_db_evidence" @change="updateIncludeDbEvidence">
+                    <label class="form-check-label" for="include_db_evidence">Include database evidence</label>
+                </div>
+            </div>
+            {% endif %}
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in this.$data.stmts"
+                        v-for="st_obj in stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -135,7 +143,16 @@
                             badges: {{ badges|safe }}
                         },
                     {% endfor %}
-                ]
+                ],
+                include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+            },
+            methods: {
+                updateIncludeDbEvidence() {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
+                    window.location.href = currentUrl.toString();
+                }
             }
         });
     </script>

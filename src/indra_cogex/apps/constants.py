@@ -60,7 +60,7 @@ SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 
 # Set VUE parameters
 sources_dict = {
-    "databases": [d for d in db_sources],
+    "databases": [d for d in db_sources] + ["bel"],  # Fixme: temporary fix for BEL
     "reading": [r for r in reader_sources],
 }
 
@@ -70,6 +70,21 @@ if not SOURCE_BADGES_CSS.exists():
     from indra.assemblers.html.assembler import generate_source_css
 
     generate_source_css(SOURCE_BADGES_CSS.absolute().as_posix())
+
+    # Fixme: temporary fix for BEL
+    # Open the generated file and append the BEL badge (a copy of the 'bel_lc' badge)
+    from indra.assemblers.html.assembler import DEFAULT_SOURCE_COLORS
+    from textwrap import dedent
+
+    bel_color = DEFAULT_SOURCE_COLORS[0][1]["sources"]["bel_lc"]
+    with open(SOURCE_BADGES_CSS, "a") as f:
+        f.write(dedent(
+            f"""\
+            .source-bel {{
+                background-color: {bel_color};
+                color: black;
+            }}"""))
+    logger.info("source_badges.css generated with extra BEL badge.")
 
 
 # Path to locally built package of indralab-vue
