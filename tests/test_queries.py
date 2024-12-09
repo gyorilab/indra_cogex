@@ -540,14 +540,14 @@ def test_get_diseases_for_phenotype():
 def test_has_phenotype():
     client = _get_client()
     disease = ("doid", "0040093")
-    phenotype = ("hp", "0003138")  # Using HPO ID that we know exists
+    phenotype = ("hp", "0003138")
     assert has_phenotype(disease, phenotype, client=client)
 
 
 @pytest.mark.nonpublic
 def test_get_genes_for_phenotype():
     client = _get_client()
-    phenotype = ("MESH", "D009264")  # from our findings
+    phenotype = ("MESH", "D009264")
     genes = get_genes_for_phenotype(phenotype, client=client)
     assert genes
     assert isinstance(genes[0], Node)
@@ -557,7 +557,7 @@ def test_get_genes_for_phenotype():
 @pytest.mark.nonpublic
 def test_get_phenotypes_for_gene():
     client = _get_client()
-    gene = ("HGNC", "25126")  # from our findings
+    gene = ("HGNC", "25126")
     phenotypes = get_phenotypes_for_gene(gene, client=client)
     assert phenotypes
     assert isinstance(phenotypes[0], Node)
@@ -578,7 +578,7 @@ def test_get_markers_for_cell_type():
     cell_type = ("cl", "0000020")
     markers = get_markers_for_cell_type(cell_type, client=client)
     marker_list = list(markers)
-    assert marker_list  # Check if list is not empty
+    assert marker_list
     assert isinstance(marker_list[0], Node)
     assert marker_list[0].db_ns == "HGNC"
     # Verify a specific marker we know exists
@@ -588,7 +588,7 @@ def test_get_markers_for_cell_type():
 @pytest.mark.nonpublic
 def test_get_cell_types_for_marker():
     client = _get_client()
-    marker = ("HGNC", "11337")  # Using marker we know exists
+    marker = ("HGNC", "11337")
     cell_types = get_cell_types_for_marker(marker, client=client)
     cell_type_list = list(cell_types)
     assert cell_type_list
@@ -638,24 +638,9 @@ def test_is_journal_published_by():
 
 
 @pytest.mark.nonpublic
-def test_check_pubmed():
-    client = _get_client()
-    print("\nChecking pubmed relationships...")
-
-    # Check format of published_in relationship
-    query = """
-    MATCH (p:Publication)-[r:published_in]->(j:Journal)
-    RETURN p.id, j.id
-    LIMIT 5
-    """
-    result = client.query_tx(query)
-    print("\nFound published_in relationships:", result)
-
-
-@pytest.mark.nonpublic
 def test_get_journal_for_publication():
     client = _get_client()
-    publication = ("pubmed", "14334679")  # Using publication we know exists
+    publication = ("pubmed", "14334679")
     journals = get_journal_for_publication(publication, client=client)
     journal_list = list(journals)
     assert journal_list
@@ -696,14 +681,14 @@ def test_get_diseases_for_gene():
     disease_list = list(diseases)
     assert disease_list
     assert isinstance(disease_list[0], Node)
-    assert disease_list[0].db_ns in ["DOID", "MESH", "UMLS", "MONDO"]  # Allow all disease namespaces
-    assert ("DOID", "DOID:2738") in [d.grounding() for d in disease_list]  # Correct DOID format
+    assert disease_list[0].db_ns in ["DOID", "MESH", "UMLS", "MONDO"]
+    assert ("DOID", "DOID:2738") in [d.grounding() for d in disease_list]
 
 
 @pytest.mark.nonpublic
 def test_get_genes_for_disease():
     client = _get_client()
-    disease = ("doid", "DOID:2738")  # Correct format with DOID: prefix
+    disease = ("doid", "DOID:2738")
     genes = get_genes_for_disease(disease, client=client)
     gene_list = list(genes)
     assert gene_list
@@ -821,16 +806,268 @@ def test_get_patents_for_project():
 
 
 @pytest.mark.nonpublic
-def test_check_interpro():
+def test_get_domains_for_gene():
     client = _get_client()
-    print("\nChecking interpro relationships...")
+    gene = ("hgnc", "475")
+    domains = get_domains_for_gene(gene, client=client)
+    domain_list = list(domains)
+    assert domain_list
+    assert isinstance(domain_list[0], Node)
+    assert domain_list[0].db_ns == "IP"
+    assert ("IP", "IPR006047") in [d.grounding() for d in domain_list]
 
+
+@pytest.mark.nonpublic
+def test_get_genes_for_domain():
+    client = _get_client()
+    domain = ("interpro", "IPR006047")
+    genes = get_genes_for_domain(domain, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "475") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_has_domain():
+    client = _get_client()
+    gene = ("hgnc", "475")
+    domain = ("interpro", "IPR006047")
+    assert has_domain(gene, domain, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_domain = ("interpro", "IPR000000")
+    assert not has_domain(gene, wrong_domain, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_phenotypes_for_variant_gwas():
+    client = _get_client()
+    variant = ("dbsnp", "rs13015548")
+    phenotypes = get_phenotypes_for_variant_gwas(variant, client=client)
+    phenotype_list = list(phenotypes)
+    assert phenotype_list
+    assert isinstance(phenotype_list[0], Node)
+    assert phenotype_list[0].db_ns in ["MESH", "EFO", "DOID"]
+    assert ("MESH", "D001827") in [p.grounding() for p in phenotype_list]
+
+
+@pytest.mark.nonpublic
+def test_get_variants_for_phenotype_gwas():
+    client = _get_client()
+    phenotype = ("mesh", "D001827")
+    variants = get_variants_for_phenotype_gwas(phenotype, client=client)
+    variant_list = list(variants)
+    assert variant_list
+    assert isinstance(variant_list[0], Node)
+    assert variant_list[0].db_ns == "DBSNP"
+    assert ("DBSNP", "rs13015548") in [v.grounding() for v in variant_list]
+
+
+@pytest.mark.nonpublic
+def test_has_variant_phenotype_association():
+    client = _get_client()
+    variant = ("dbsnp", "rs13015548")
+    phenotype = ("mesh", "D001827")
+    assert has_variant_phenotype_association(variant, phenotype, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_phenotype = ("mesh", "D000000")
+    assert not has_variant_phenotype_association(variant, wrong_phenotype, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_indications_for_molecule():
+    client = _get_client()
+    molecule = ("chebi", "10001")
+    indications = get_indications_for_molecule(molecule, client=client)
+    indication_list = list(indications)
+    assert indication_list
+    assert isinstance(indication_list[0], Node)
+    assert indication_list[0].db_ns == "MESH"
+    assert ("MESH", "D002318") in [i.grounding() for i in indication_list]
+
+
+@pytest.mark.nonpublic
+def test_get_molecules_for_indication():
+    client = _get_client()
+    indication = ("mesh", "D002318")
+    molecules = get_molecules_for_indication(indication, client=client)
+    molecule_list = list(molecules)
+    assert molecule_list
+    assert isinstance(molecule_list[0], Node)
+    assert molecule_list[0].db_ns in ["CHEBI", "CHEMBL"]
+    assert ("CHEBI", "10001") in [m.grounding() for m in molecule_list]
+
+
+@pytest.mark.nonpublic
+def test_has_indication():
+    client = _get_client()
+    molecule = ("chebi", "10001")
+    indication = ("mesh", "D002318")
+    assert has_indication(molecule, indication, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_indication = ("mesh", "D000000")
+    assert not has_indication(molecule, wrong_indication, client=client)
+
+
+@pytest.mark.nonpublic
+def test_check_ec():
+    client = _get_client()
+    print("\nChecking EC relationships...")
+
+    # Check format of has_activity relationship
     query = """
-    MATCH (b1:BioEntity)-[r]->(b2:BioEntity)
-    WHERE type(r) IN ['has_domain', 'associated_with']
-    RETURN DISTINCT type(r), b1.id, b2.id
+    MATCH (b1:BioEntity)-[r:has_activity]->(b2:BioEntity)
+    RETURN DISTINCT b1.id, b2.id, b1.type, b2.type
     LIMIT 5
     """
     result = client.query_tx(query)
-    print("\nFound interpro relationships:", result)
+    print("\nFound EC relationships:", result)
+
+
+@pytest.mark.nonpublic
+def test_get_enzyme_activities_for_gene():
+    client = _get_client()
+    gene = ("hgnc", "10007")
+    enzymes = get_enzyme_activities_for_gene(gene, client=client)
+    enzyme_list = list(enzymes)
+    assert enzyme_list
+    assert isinstance(enzyme_list[0], Node)
+    assert enzyme_list[0].db_ns == "ECCODE"
+    assert ("ECCODE", "3.4.21.105") in [e.grounding() for e in enzyme_list]
+
+
+@pytest.mark.nonpublic
+def test_get_genes_for_enzyme_activity():
+    client = _get_client()
+    enzyme = ("ec-code", "3.4.21.105")
+    genes = get_genes_for_enzyme_activity(enzyme, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "10007") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_has_enzyme_activity():
+    client = _get_client()
+    gene = ("hgnc", "10007")
+    enzyme = ("ec-code", "3.4.21.105")
+    assert has_enzyme_activity(gene, enzyme, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_enzyme = ("ec-code", "1.1.1.1")
+    assert not has_enzyme_activity(gene, wrong_enzyme, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_cell_lines_with_mutation():
+    client = _get_client()
+    gene = ("hgnc", "11504")  # Gene we know exists from our check
+    cell_lines = get_cell_lines_with_mutation(gene, client=client)
+    cell_line_list = list(cell_lines)
+    assert cell_line_list
+    assert isinstance(cell_line_list[0], Node)
+    assert cell_line_list[0].db_ns == "CCLE"
+    assert ("CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE") in [c.grounding() for c in cell_line_list]
+
+
+@pytest.mark.nonpublic
+def test_get_mutated_genes_in_cell_line():
+    client = _get_client()
+    cell_line = ("ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE")
+    genes = get_mutated_genes_in_cell_line(cell_line, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "11504") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_is_gene_mutated_in_cell_line():
+    client = _get_client()
+    gene = ("hgnc", "11504")
+    cell_line = ("ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE")
+    assert is_gene_mutated_in_cell_line(gene, cell_line, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_cell_line = ("ccle", "NONEXISTENT_CELL_LINE")
+    assert not is_gene_mutated_in_cell_line(gene, wrong_cell_line, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_cell_lines_with_cna():
+    client = _get_client()
+    gene = ("hgnc", "11216")
+    cell_lines = get_cell_lines_with_cna(gene, client=client)
+    cell_line_list = list(cell_lines)
+    assert cell_line_list
+    assert isinstance(cell_line_list[0], Node)
+    assert cell_line_list[0].db_ns == "CCLE"
+    assert ("CCLE", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE") in [c.grounding() for c in cell_line_list]
+
+
+@pytest.mark.nonpublic
+def test_get_cna_genes_in_cell_line():
+    client = _get_client()
+    cell_line = ("ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE")
+    genes = get_cna_genes_in_cell_line(cell_line, client=client)
+    gene_list = list(genes)
+    assert gene_list
+    assert isinstance(gene_list[0], Node)
+    assert gene_list[0].db_ns == "HGNC"
+    assert ("HGNC", "11216") in [g.grounding() for g in gene_list]
+
+
+@pytest.mark.nonpublic
+def test_has_cna_in_cell_line():
+    client = _get_client()
+    gene = ("hgnc", "11216")
+    cell_line = ("ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE")
+    assert has_cna_in_cell_line(gene, cell_line, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_cell_line = ("ccle", "NONEXISTENT_CELL_LINE")
+    assert not has_cna_in_cell_line(gene, wrong_cell_line, client=client)
+
+
+@pytest.mark.nonpublic
+def test_get_drugs_for_sensitive_cell_line():
+    client = _get_client()
+    cell_line = ("ccle", "RL952_ENDOMETRIUM")
+    drugs = get_drugs_for_sensitive_cell_line(cell_line, client=client)
+    drug_list = list(drugs)
+    assert drug_list
+    assert isinstance(drug_list[0], Node)
+    assert drug_list[0].db_ns in ["MESH", "CHEBI"]
+    assert ("MESH", "C586365") in [d.grounding() for d in drug_list]
+
+
+@pytest.mark.nonpublic
+def test_get_sensitive_cell_lines_for_drug():
+    client = _get_client()
+    drug = ("mesh", "C586365")
+    cell_lines = get_sensitive_cell_lines_for_drug(drug, client=client)
+    cell_line_list = list(cell_lines)
+    assert cell_line_list
+    assert isinstance(cell_line_list[0], Node)
+    assert cell_line_list[0].db_ns == "CCLE"
+    assert ("CCLE", "RL952_ENDOMETRIUM") in [c.grounding() for c in cell_line_list]
+
+
+@pytest.mark.nonpublic
+def test_is_cell_line_sensitive_to_drug():
+    client = _get_client()
+    cell_line = ("ccle", "RL952_ENDOMETRIUM")
+    drug = ("mesh", "C586365")
+    assert is_cell_line_sensitive_to_drug(cell_line, drug, client=client)
+
+    # Test a relationship that shouldn't exist
+    wrong_drug = ("mesh", "C000000")
+    assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
 
