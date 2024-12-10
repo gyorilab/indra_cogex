@@ -263,11 +263,20 @@ def get_evidence(stmt_hash):
         )
 
         # Get the statement and then extend the evidence
-        stmt_iter = [
-            Statement._from_json(json.loads(r.data["stmt_json"])) for r in relations
-        ]
-        stmt: Statement = stmt_iter[0]
-        stmt.evidence += [ev for ev in ev_objs if not ev.equals(stmt.evidence[0])]
+        stmt: Statement = Statement._from_json(
+            json.loads(relations[0].data["stmt_json"])
+        )
+        more_evidence = []
+        # If medscan is the single evidence provided for the statement json in the
+        # relation data, its evidence will be empty, so we need to handle that here.
+        # See handling of medscan evidence in DbProcessor.get_relations in
+        # indra_cogex/sources/indra_db/__init__.py
+        existing_ev = stmt.evidence[0] if stmt.evidence else None
+        for ev in ev_objs:
+            if existing_ev and ev.equals(existing_ev):
+                continue
+            more_evidence.append(ev)
+        stmt.evidence += more_evidence
 
         # Get the evidence counts
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
