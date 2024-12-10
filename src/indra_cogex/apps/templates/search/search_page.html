@@ -129,6 +129,28 @@
         .tooltip-box:hover {
             display: block;
         }
+
+        .role-buttons-container {
+            display: flex;
+            justify-content: space-around; /* Spread buttons evenly */
+            width: 100%;
+        }
+
+        .btn-role {
+            display: flex;
+            width: 120px;
+            height: 90px;
+            background-color: #fff;
+        }
+
+            .btn-role img {
+                max-width: 80%;
+            }
+
+            .role-text {
+                font-size: 14px;
+                color: #333;
+            }
     </style>
 
     {{ super() }}
@@ -171,16 +193,19 @@
 
         <!-- Subject/Object Role Buttons -->
         <div class="form-group">
-            <label for="role-buttons-container" class="form-label">Role</label>
+            <label for="role-buttons-container" class="form-label">Agent Role</label>
             <div class="role-buttons-container" id="role-buttons-container">
+                <div class="btn-role" id="btn-either" data-role="either">
+                    <img src="{{ url_for('static', filename='search/images/role_button3.png') }}" alt="Either" />
+                    <div class="role-text">Subject/Object</div>
+                </div>
                 <div class="btn-role" id="btn-subject" data-role="subject">
                     <img src="{{ url_for('static', filename='search/images/role_button2.png') }}" alt="Subject" />
+                    <div class="role-text">Subject</div>
                 </div>
                 <div class="btn-role" id="btn-object" data-role="object">
-                    <img src="{{ url_for('static', filename='search/images/role_button1.png') }}" alt="Subject" />
-                </div>
-                <div class="btn-role" id="btn-either" data-role="either">
-                    <img src="{{ url_for('static', filename='search/images/role_button3.png') }}" alt="Subject" />
+                    <img src="{{ url_for('static', filename='search/images/role_button1.png') }}" alt="Object" />
+                    <div class="role-text">Object</div>
                 </div>
             </div>
         </div>
