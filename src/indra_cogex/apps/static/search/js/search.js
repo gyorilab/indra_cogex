@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const infoIcon = document.getElementById('info-icon');
         const tooltip = document.getElementById('tooltip');
+        const tooltipLink = document.getElementById('tooltip-link');
+
 
 
 
@@ -59,7 +61,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
                     agentSelect.appendChild(option);
                 });
-                agentNameInput.style.display = 'none';
+//                const fixedWidth = "300px";
+//                agentNameInput.style.width = fixedWidth;
+//                agentSelect.style.width = fixedWidth;
                 agentSelect.style.display = 'block';
             } catch (error) {
                 console.error("Error grounding agent:", error);
@@ -72,9 +76,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (selectedOption) {
                 const { source_db, source_id } = JSON.parse(selectedOption.value);
 
-                // Update the display text in the input box
-                agentNameInput.value = selectedOption.textContent;
-                agentNameInput.readOnly = true;
 
                 document.getElementById('agent-tuple').value = JSON.stringify([source_db, source_id]);
             }
@@ -237,6 +238,10 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 tooltip.style.display = 'none';
             }
+        });
+
+        tooltipLink.addEventListener('click', function (event) {
+            event.stopPropagation(); // Stops the event from propagating to the button
         });
 
         // Hide the tooltip when clicking outside

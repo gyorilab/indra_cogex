@@ -151,15 +151,18 @@
         <div class="form-group agent-container">
             <label for="agent-name">Agent</label>
             <div style="display: flex; align-items: center; position: relative;">
-                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name" required>
-                <select class="form-control" id="agent-select" style="display: none;"></select>
-                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2" style="position: relative;">
+                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
+
+                <select class="form-control" id="agent-select" name="agent_select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
                     <span style="position: relative;">
                         Find Identifier
                         <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
                         <div class="tooltip-box">
                             Use this button to ground the agent name into a unique identifier using
-                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;" id="tooltip-link">Gilda</a>.
                         </div>
                     </span>
                 </button>
