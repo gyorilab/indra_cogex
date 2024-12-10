@@ -263,6 +263,9 @@ examples_dict = {
     "pmid_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
     "paper_term": fields.List(fields.String, example=["PUBMED", "23356518"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
+    "mediated": fields.Boolean(example=False),
+    "upstream_controllers": fields.Boolean(example=False),
+    "downstream_targets": fields.Boolean(example=False),
     "include_child_terms": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
@@ -328,6 +331,9 @@ examples_dict = {
     "phenotype": fields.List(fields.String, example=[["hp", "0003138"], ["mesh", "D001827"]]),
     # For InterPro
     "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
+    # For DepMap codependency
+    "gene1": fields.List(fields.String, example=["hgnc", "1234"]),
+    "gene2": fields.List(fields.String, example=["hgnc", "5678"]),
     # For ChEMBL
     "molecule": fields.List(fields.String, examples=[["chebi", "10001"], ["chembl.compound", "CHEMBL25"]]),
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
