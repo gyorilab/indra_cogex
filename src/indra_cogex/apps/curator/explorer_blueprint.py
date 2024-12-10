@@ -532,7 +532,7 @@ def modulator():
     raise NotImplementedError
 
 
-@explorer_blueprint.route("/entity/<prefix>:<identifier>", methods=["GET"])
+@explorer_blueprint.route("/entity/<prefix>:<path:identifier>", methods=["GET"])
 @jwt_required(optional=True)
 def entity(prefix: str, identifier: str):
     """Get all statements about the given entity."""
