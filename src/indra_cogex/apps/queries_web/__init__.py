@@ -14,7 +14,7 @@ from http import HTTPStatus
 from inspect import isfunction, signature
 
 from flask import jsonify, request
-from flask_restx import Api, Resource, abort, fields
+from flask_restx import Resource, abort, fields, Namespace, Model
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
@@ -26,12 +26,12 @@ from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_contin
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 __all__ = [
-    "api",
     "query_ns",
 ]
 
 logger = logging.getLogger(__name__)
 
+query_ns = Namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 def get_example_data():
     """Get example data for gene continuous analysis."""
@@ -41,15 +41,6 @@ def get_example_data():
     return names, [float(n) for n in log_fold_changes]
 
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
-
-
-api = Api(
-    title="INDRA CoGEx Query API",
-    description="REST API for INDRA CoGEx queries",
-    doc="/apidocs",
-)
-
-query_ns = api.namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
@@ -72,12 +63,21 @@ examples_dict = {
     "parent": fields.List(fields.String, example=["MESH", "D007855"]),
     "mesh_term": fields.List(fields.String, example=["MESH", "D015002"]),
     "pmid_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
-    "paper_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
+    "paper_term": fields.List(fields.String, example=["PUBMED", "23356518"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
     "include_child_terms": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
+    "rel_type": fields.String(example="Phosphorylation"),
+    "rel_types": fields.List(fields.String, example=["Phosphorylation", "Activation"]),
+    "agent_name": fields.String(example="MEK"),
+    "agent": fields.String(example="MEK"),
+    "other_agent": fields.String(example="ERK"),
+    "agent_role": fields.String(example="Subject"),
+    "other_role" : fields.String(example="Object"),
+    "stmt_source": fields.String(example="reach"),
+    "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
@@ -125,6 +125,7 @@ SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
     "get_evidences_for_stmt_hash": {"remove_medscan"},
     "get_evidences_for_stmt_hashes": {"remove_medscan"},
+    "get_statements": {"mesh_term","include_child_terms"}
 }
 
 # This is the list of functions to be included
@@ -172,7 +173,7 @@ for module, func_name in module_functions:
             )
 
     # Get the parameters name for the other parameter that is not 'client'
-    query_model = api.model(
+    query_model = query_ns.model(
         model_name,
         {
             param_name: examples_dict[param_name]
