@@ -1144,7 +1144,8 @@ def get_stmts_for_stmt_hashes(
     if not return_evidence_counts:
         return rv
     evidence_counts = {
-        stmt.get_hash():  len(stmt.evidence) for stmt in rv}
+        rel.data["stmt_hash"]: rel.data["evidence_count"] for rel in rels
+    }
 
     return rv, evidence_counts
 
