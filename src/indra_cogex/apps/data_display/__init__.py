@@ -292,7 +292,7 @@ def get_evidence(stmt_hash):
         )
     except Exception as err:
         logger.exception(err)
-        abort(status=HTTPStatus.INTERNAL_SERVER_ERROR)
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Error fetching evidence")
 
 
 # Serve the statement display template
