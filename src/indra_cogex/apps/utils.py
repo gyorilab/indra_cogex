@@ -257,6 +257,7 @@ def format_stmts(
                 cur_counts=cur_counts,
                 remove_medscan=remove_medscan,
                 source_counts=source_counts_per_hash.get(stmt_hash) if source_counts_per_hash else None,
+                evidence_counts=evidence_counts
             )
         else:
             row = _stmt_to_row(
@@ -265,6 +266,7 @@ def format_stmts(
                 cur_counts=cur_counts,
                 remove_medscan=remove_medscan,
                 source_counts=source_counts_per_hash.get(stmt.get_hash()) if source_counts_per_hash else None,
+                evidence_counts=evidence_counts
             )
         if row is not None:
             stmt_rows.append(row)
@@ -280,6 +282,7 @@ def _stmt_to_row(
     remove_medscan: bool = True,
     source_counts: Dict[str, int] = None,
     include_belief_badge: bool = False,
+    evidence_counts: Optional[Mapping[int, int]] = None,
 ) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
@@ -307,7 +310,10 @@ def _stmt_to_row(
         sources = source_counts
 
     # Calculate the total evidence as the sum of each of the sources' evidences
-    total_evidence = sum(sources.values())
+    if evidence_counts is not None:
+        total_evidence = evidence_counts[hash_int]
+    else:
+        total_evidence = sum(sources.values())
 
     # Remove medscan from the sources count
     if remove_medscan and "medscan" in sources:
