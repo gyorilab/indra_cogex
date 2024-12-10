@@ -143,14 +143,14 @@
             background-color: #fff;
         }
 
-            .btn-role img {
-                max-width: 80%;
-            }
+        .btn-role img {
+            max-width: 80%;
+        }
 
-            .role-text {
-                font-size: 14px;
-                color: #333;
-            }
+        .role-text {
+            font-size: 14px;
+            color: #333;
+        }
     </style>
 
     {{ super() }}
@@ -227,11 +227,14 @@
         <!-- Mesh Constraint -->
         <div class="form-group mesh-container">
             <label for="mesh-name">Filter by Mesh Term</label>
-            <div style="display: flex; align-items: center; gap: 10px; position: relative;">
+            <div style="display: flex; align-items: center; position: relative;">
                 <!-- Input field for Mesh name -->
                 <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name">
-                <select class="form-control" id="mesh-select" style="display: none;"></select>
-                <button type="button" id="ground-mesh-button" class="btn btn-secondary" style="position: relative;">
+
+                <select class="form-control" id="mesh-select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-mesh-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
                     <span style="position: relative;">
                         Find Identifier
                         <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>

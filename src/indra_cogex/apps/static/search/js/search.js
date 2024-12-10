@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const infoIcon = document.getElementById('info-icon');
         const tooltip = document.getElementById('tooltip');
-        const tooltipLink = document.getElementById('tooltip-link');
+//        const tooltipLink = document.getElementById('tooltip-link');
 
 
 
@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         groundAgentButton.addEventListener('click', async function () {
             const agentText = agentNameInput.value.trim();
+            if (event.target.closest('.tooltip-box')) {
+                return;
+            }
             if (!agentText) {
                 alert("Please enter an agent name to ground.");
                 return;
@@ -106,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     agentRoleInput.value = '';
                     otherAgentRoleInput.value = '';
+                    otherAgentContainer.style.display = 'block';
+                    otherAgentContainer.style.marginTop = '10px';
                 }
 
             });
@@ -137,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         exampleText.addEventListener('click', function () {
             // Update agent and other agent
-                    agentNameInput.value = 'MEK';
+            agentNameInput.value = 'MEK';
             agentNameInput.readOnly = true;
             otherAgentInput.value = 'ERK';
             otherAgentInput.readOnly = true;
@@ -164,6 +169,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         groundMeshButton.addEventListener('click', async function () {
             const meshText = meshNameInput.value.trim();
+            if (event.target.closest('.tooltip-box')) {
+                return;
+            }
             if (!meshText) {
                 alert("Please enter a Mesh name to ground.");
                 return;
@@ -209,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 // Show the dropdown
-                meshNameInput.style.display = 'none';
                 meshSelect.style.display = 'block';
             } catch (error) {
                 console.error("Error grounding Mesh:", error);
@@ -240,9 +247,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        tooltipLink.addEventListener('click', function (event) {
-            event.stopPropagation(); // Stops the event from propagating to the button
-        });
+//        tooltipLink.addEventListener('click', function (event) {
+//            event.stopPropagation(); // Stops the event from propagating to the button
+//        });
 
         // Hide the tooltip when clicking outside
         document.addEventListener('click', function (event) {
