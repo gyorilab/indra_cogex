@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
+from indra.sources import SOURCE_INFO
 
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
@@ -935,12 +936,8 @@ def get_stmts_for_paper(
     :
         The statements for the given PubMed ID.
     """
-    # Define all database source APIs
-    DATABASE_SOURCE_APIS = {
-        'psp', 'cbn', 'pc', 'bel_lc', 'signor', 'biogrid', 'tas', 'hprd',
-        'trrust', 'ctd', 'vhn', 'pe', 'drugbank', 'omnipath', 'conib',
-        'crog', 'dgi', 'minerva', 'creeds', 'ubibrowser', 'acsn', 'bel'
-    }
+    # Get just the database sources from SOURCE_INFO
+    db_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "database"}
 
     parameter, publication_props = generate_paper_clause(paper_term)
 
@@ -950,14 +947,14 @@ def get_stmts_for_paper(
     else:
         # Create conditions to exclude all database sources
         db_conditions = [f"NOT e.evidence CONTAINS '\"{source}\"'"
-                         for source in DATABASE_SOURCE_APIS]
+                         for source in db_sources]
         where_clause = (
             f"(NOT exists(e.evidence) OR e.evidence IS NULL OR "
             f"({' AND '.join(db_conditions)}))"
         )
 
     hash_query = f"""\
-            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
+            MATCH (e:Evidence)-[:has_citation]->(:Publication {id: $paper_parameter}) 
             WHERE {where_clause}
             RETURN e.stmt_hash, e.evidence
         """
