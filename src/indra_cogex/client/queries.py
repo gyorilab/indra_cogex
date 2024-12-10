@@ -780,10 +780,10 @@ def get_evidences_for_mesh(
 
     query_params = {}
     if child_terms:
-        match_terms = list({norm_mesh} | child_terms)
+        match_terms = {norm_mesh} | child_terms
         where_clause = "WHERE b.id IN $mesh_terms"
         single_mesh_match = ""
-        query_params["mesh_terms"] = match_terms
+        query_params["mesh_terms"] = list(match_terms)
     else:
         single_mesh_match = ' {id: $mesh_id}'
         where_clause = ""
