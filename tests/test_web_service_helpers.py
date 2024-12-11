@@ -38,6 +38,7 @@ def test__stmt_to_row():
 
 
 def test__stmt_to_row_medscan():
+    # Setup test data
     db_ev_list = [
         Evidence._from_json(
             {
@@ -59,7 +60,9 @@ def test__stmt_to_row_medscan():
     a = Agent("x")
     b = Agent("y")
     db_stmt = Activation(a, b, evidence=db_ev_list)
-    source_counts = {"medscan": 1, "signor": 1}
+
+    # Test Case 1: Default behavior (remove_medscan=True)
+    source_counts_1 = {"medscan": 1, "signor": 1}
     (
         ev_array,
         english,
@@ -71,14 +74,38 @@ def test__stmt_to_row_medscan():
         stmt=db_stmt,
         cur_dict={},
         cur_counts={},
-        source_counts=source_counts,
-        include_belief_badge=True,
+        source_counts=source_counts_1,
+        include_belief_badge=True
     )
     assert int(total_evidence) == 1
     assert stmt_hash is not None
     assert "signor" in ev_array
     assert "medscan" not in ev_array
-    assert sources == json.dumps(source_counts)
-    assert english == '"<b>X</b> activates <b>y</b>."'
     assert sources == '{"signor": 1}'
-    assert '"num": 1,' in badges  # Evidence count badge
+    assert english == '"<b>X</b> activates <b>y</b>."'
+    assert '"num": 1,' in badges
+
+    # Test Case 2: Include medscan (remove_medscan=False)
+    source_counts_2 = {"medscan": 1, "signor": 1}
+    (
+        ev_array,
+        english,
+        stmt_hash,
+        sources,
+        total_evidence,
+        badges,
+    ) = _stmt_to_row(
+        stmt=db_stmt,
+        cur_dict={},
+        cur_counts={},
+        source_counts=source_counts_2,
+        include_belief_badge=True,
+        remove_medscan=False
+    )
+    assert int(total_evidence) == 2
+    assert stmt_hash is not None
+    assert "signor" in ev_array
+    assert "medscan" in ev_array
+    assert sources == '{"medscan": 1, "signor": 1}'
+    assert english == '"<b>X</b> activates <b>y</b>."'
+    assert '"num": 2,' in badges
