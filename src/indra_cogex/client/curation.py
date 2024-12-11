@@ -454,7 +454,7 @@ def _help(
             AND NOT r.medscan_only
             AND a.id <> b.id
             AND r.evidence_count > {minimum_evidences} 
-            AND EXISTS(r.source_counts)
+            AND r.source_counts IS NOT NULL
         RETURN r.stmt_hash, r.source_counts 
         {_limit_line(limit)}
     """
