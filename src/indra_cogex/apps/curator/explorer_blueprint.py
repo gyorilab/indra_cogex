@@ -88,10 +88,12 @@ def gene_ontology():
 @jwt_required(optional=True)
 def explore_go(term: str):
     include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
-    stmts = indra_subnetwork_go(
+    stmts, source_counts = indra_subnetwork_go(
         go_term=("GO", term),
         client=client,
         include_db_evidence=include_db_evidence,
+        order_by_ev_count=True,
+        return_source_counts=True,
     )
     return _enrich_render_statements(
         stmts,
@@ -104,6 +106,7 @@ def explore_go(term: str):
             {EVIDENCE_TEXT}
         """,
         include_db_evidence=include_db_evidence,
+        source_counts=source_counts,
     )
 
 
