@@ -1,7 +1,7 @@
 """Queries that generate statement subnetworks."""
 
 import json
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, List, Tuple, Union, Dict
 import logging
 
 from indra.statements import Statement
@@ -91,8 +91,13 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True,
-) -> List[Statement]:
+    nodes: Iterable[Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    include_db_evidence: bool = True,
+    order_by_ev_count: bool = False,
+    return_source_counts: bool = False,
+) -> Union[List[Statement], Tuple[List[Statement], Dict[int, Dict[str, int]]]]:
     """Return the INDRA Statement subnetwork induced by the given nodes.
 
     Parameters
@@ -103,14 +108,27 @@ def indra_subnetwork(
         The nodes to query.
     include_db_evidence :
         Whether to include statements with database evidence.
+    order_by_ev_count :
+        Whether to order the statements by evidence count in the query.
+    return_source_counts :
+        Whether to return source counts as well as statements.
 
     Returns
     -------
     :
         The subnetwork induced by the given nodes.
     """
-    rels = indra_subnetwork_relations(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
-    stmts = indra_stmts_from_relations(rels)
+    rels = indra_subnetwork_relations(
+        nodes=nodes,
+        client=client,
+        include_db_evidence=include_db_evidence
+    )
+    stmts = indra_stmts_from_relations(rels, order_by_ev_count=order_by_ev_count)
+    if return_source_counts:
+        source_counts = {
+            r.data["stmt_hash"]: json.loads(r.data["source_counts"]) for r in rels
+        }
+        return stmts, source_counts
     return stmts
 
 

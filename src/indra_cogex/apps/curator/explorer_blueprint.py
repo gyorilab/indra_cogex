@@ -114,6 +114,7 @@ def _enrich_render_statements(
     curations: Optional[List[Mapping[str, Any]]] = None,
     no_stmts_message: Optional[str] = None,
     include_db_evidence: bool = False,
+    source_counts: Optional[Mapping[int, Mapping[str, int]]] = None,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -137,6 +138,7 @@ def _enrich_render_statements(
         evidence_counts=evidence_counts,
         evidence_lookup_time=evidence_lookup_time,
         curations=curations,
+        source_counts_dict=source_counts,
         description=description,
         no_stmts_message=no_stmts_message,
         include_db_evidence=include_db_evidence
@@ -761,7 +763,13 @@ def subnetwork():
             for prefix, identifier in nodes
         )
 
-        stmts = indra_subnetwork(nodes=nodes, client=client, include_db_evidence=include_db_evidence)
+        stmts, source_counts = indra_subnetwork(
+            nodes=nodes,
+            client=client,
+            include_db_evidence=include_db_evidence,
+            order_by_ev_count=True,
+            return_source_counts=True,
+        )
         return _enrich_render_statements(
             stmts,
             title="Subnetwork Explorer",
@@ -774,7 +782,8 @@ def subnetwork():
             {nodes_html}
             """,
             no_stmts_message="No statements found for the given nodes.",
-            include_db_evidence=include_db_evidence
+            include_db_evidence=include_db_evidence,
+            source_counts=source_counts,
         )
 
     # If no nodes provided, just render the form
