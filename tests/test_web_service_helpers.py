@@ -74,11 +74,11 @@ def test__stmt_to_row_medscan():
         source_counts=source_counts,
         include_belief_badge=True,
     )
-    assert int(total_evidence) == 2
+    assert int(total_evidence) == 1
     assert stmt_hash is not None
     assert "signor" in ev_array
     assert "medscan" not in ev_array
     assert sources == json.dumps(source_counts)
     assert english == '"<b>X</b> activates <b>y</b>."'
     assert sources == '{"signor": 1}'
-    assert '"num": 2,' in badges  # Evidence count badge
+    assert '"num": 1,' in badges  # Evidence count badge
