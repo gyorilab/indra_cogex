@@ -476,6 +476,7 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
 def indra_stmts_from_relations(
     rels: Iterable[Relation],
     deduplicate: bool = True,
+    order_by_ev_count: bool = False,
 ) -> List[Statement]:
     """
     Convert a list of relations to INDRA Statements.
@@ -491,12 +492,18 @@ def indra_stmts_from_relations(
         e.g., for Complexes, there are multiple relations for one statement
         and this option can be used to return only one of these redundant
         statements. Default: True
+    order_by_ev_count :
+        If True, the statements are ordered by the number of evidences they have with the
+        statement with the most evidences first.
+        Default: False.
 
     Returns
     -------
     :
         A list of INDRA Statements.
     """
+    if order_by_ev_count:
+        rels = sorted(rels, key=lambda x: x.data["evidence_count"], reverse=True)
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
     if deduplicate:
