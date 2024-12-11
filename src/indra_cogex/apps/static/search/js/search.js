@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
         const agentNameInput = document.getElementById('agent-name');
         const otherAgentInput = document.getElementById('other-agent-name');
+        const otherAgentLabeltext = document.getElementById('other-agent-text');
         const roleButtons = document.querySelectorAll('.btn-role');
         const agentRoleInput = document.getElementById('agent-role');
         const otherAgentRoleInput = document.getElementById('other-agent-role');
@@ -97,16 +98,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Update agent and other agent roles based on the role
                 if (role === 'subject') {
+                    otherAgentLabeltext.textContent = 'Other Agent (being object)';
                     agentRoleInput.value = 'subject';
                     otherAgentRoleInput.value = 'object';
                     otherAgentContainer.style.display = 'block';
                     otherAgentContainer.style.marginTop = '10px';
                 } else if (role === 'object') {
+                    otherAgentLabeltext.textContent = 'Other Agent (being subject)';
                     agentRoleInput.value = 'object';
                     otherAgentRoleInput.value = 'subject';
                     otherAgentContainer.style.display = 'block';
                     otherAgentContainer.style.marginTop = '10px';
                 } else {
+                    otherAgentLabeltext.textContent = 'Other Agent (being either subject or object)';
                     agentRoleInput.value = '';
                     otherAgentRoleInput.value = '';
                     otherAgentContainer.style.display = 'block';

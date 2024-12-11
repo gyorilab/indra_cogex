@@ -103,26 +103,6 @@
             z-index: 1000;
         }
 
-        /* Arrow for tooltip */
-        .tooltip-box::before {
-            content: '';
-            position: absolute;
-            top: -6px; /* Adjust arrow to align with the mark */
-            left: 20px;
-            border-width: 6px;
-            border-style: solid;
-            border-color: transparent transparent #ddd transparent;
-        }
-
-        .tooltip-box::after {
-            content: '';
-            position: absolute;
-            top: -5px;
-            left: 20px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: transparent transparent #f8f9fa transparent;
-        }
 
         /* Keep tooltip visible on hover */
         .info-icon:hover + .tooltip-box,
@@ -151,6 +131,38 @@
             font-size: 14px;
             color: #333;
         }
+
+        .agent-tooltip-box,
+        .agent-role-tooltip-box,
+        .other-agent-tooltip-box,
+        .filter-by-mesh-tooltip-box,
+        .relation-type-tooltip-box
+        {
+            display: none;
+            position: absolute;
+            bottom: 19px;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        /* make tooptip near the label */
+        .tooltip-label {
+            position: relative;
+        }
+
+        /* Show the tooltip when hovering over the label */
+        #agent-text:hover + .agent-tooltip-box,
+        #agent-role-text:hover + .agent-role-tooltip-box,
+        #other-agent-text:hover + .other-agent-tooltip-box,
+        #filter-by-mesh-text:hover + .filter-by-mesh-tooltip-box,
+        #relation-type-text:hover + .relation-type-tooltip-box{
+            display: block; /* Show tooltip when hovering over "Agent" text */
+        }
+
     </style>
 
     {{ super() }}
@@ -162,6 +174,8 @@
     <h1 class="display-4">Statement Search</h1>
     <p class="lead">Search for statements by specifying agent, relationship types, and roles.</p>
 
+<!--        Other Agent(Optional): Promped while the agent role is selected. </p>-->
+
     <form method="POST" id="agent-form">
         <div class="form-group">
             <label for="clickable-text" class="form-label">Example Statement: </label>
@@ -171,7 +185,12 @@
         </div>
         <!-- Agent Input -->
         <div class="form-group agent-container">
-            <label for="agent-name">Agent</label>
+            <label for="agent-name" id="agent-label" class="tooltip-label">
+                <span id="agent-text">Agent</span>
+                <div class="agent-tooltip-box">
+                    (Required): This can be text or you can use the ‘Find Identifier’ feature to locate a unique identifier.
+                </div>
+            </label>
             <div style="display: flex; align-items: center; position: relative;">
                 <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
 
@@ -193,7 +212,12 @@
 
         <!-- Subject/Object Role Buttons -->
         <div class="form-group">
-            <label for="role-buttons-container" class="form-label">Agent Role</label>
+            <label for="role-buttons-container" class="tooltip-label">
+                <span id="agent-role-text">Agent Role</span>
+                <div class="agent-role-tooltip-box">
+                    (Optional): Specify the role of the agent in the statement. The default role is either ‘subject’ or ‘object’.
+                </div>
+            </label>
             <div class="role-buttons-container" id="role-buttons-container">
                 <div class="btn-role" id="btn-either" data-role="either">
                     <img src="{{ url_for('static', filename='search/images/role_button3.png') }}" alt="Either" />
@@ -212,13 +236,24 @@
 
         <!-- Optional Other Agent Input -->
             <div class="form-group other-agent-container" id="other-agent-container">
-                <label for="other-agent-name">Other Agent(Optional)</label>
+                <label for="other-agent-name" id="other-agent-label" class="tooltip-label">
+                <span id="other-agent-text">Other Agent</span>
+                <div class="other-agent-tooltip-box">
+                    (Optional):  Promped when the agent role is selected.
+                </div>
+            </label>
                 <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
             </div>
 
         <!-- Relationship Type Multiselect -->
         <div class="form-group mt-4">
-            <label for="choices-multiple-remove-button">Relationship Types</label>
+            <label for="choices-multiple-remove-button" class="tooltip-label">
+                <span id="relation-type-text">Relationship Types</span>
+                <div class="relation-type-tooltip-box">
+                    (Optional): Can be a single type or multiple types.
+                </div>
+            </label>
+
             <select id="choices-multiple-remove-button" name="rel_types[]" multiple></select>
             <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
         </div>
@@ -226,7 +261,12 @@
 
         <!-- Mesh Constraint -->
         <div class="form-group mesh-container">
-            <label for="mesh-name">Filter by Mesh Term</label>
+            <label for="mesh-name" class="tooltip-label">
+                <span id="filter-by-mesh-text">Filter by Mesh Term</span>
+                <div class="filter-by-mesh-tooltip-box">
+                    (Optional): Filter by paper context using Mesh terms. Each term must be grounded using the provided button.                </div>
+            </label>
+
             <div style="display: flex; align-items: center; position: relative;">
                 <!-- Input field for Mesh name -->
                 <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name">
