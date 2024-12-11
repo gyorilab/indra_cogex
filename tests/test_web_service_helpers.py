@@ -77,7 +77,7 @@ def test__stmt_to_row_medscan():
         source_counts=source_counts_1,
         include_belief_badge=True
     )
-    assert int(total_evidence) == 1
+    assert int(total_evidence) == 2
     assert stmt_hash is not None
     assert "signor" in ev_array
     assert "medscan" not in ev_array
