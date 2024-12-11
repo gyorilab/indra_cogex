@@ -942,22 +942,19 @@ def get_stmts_for_paper(
     parameter, publication_props = generate_paper_clause(paper_term)
 
     # Build WHERE clause to filter out all database sources
-    if include_db_evidence:
-        where_clause = "true"
-    else:
+    if not include_db_evidence:
         # Create conditions to exclude all database sources
         db_conditions = [f"NOT e.evidence CONTAINS '\"{source}\"'"
                          for source in db_sources]
         where_clause = (
-            f"(NOT exists(e.evidence) OR e.evidence IS NULL OR "
-            f"({' AND '.join(db_conditions)}))"
+            f"WHERE (e.evidence IS NULL OR ({' AND '.join(db_conditions)}))\n"
         )
+    else:
+        where_clause = ""
 
     hash_query = f"""\
-            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props}) 
-            WHERE {where_clause}
-            RETURN e.stmt_hash, e.evidence
-        """
+            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
+            {where_clause}RETURN e.stmt_hash, e.evidence"""
 
     result = client.query_tx(hash_query, paper_parameter=parameter)
     return _stmts_from_results(client=client, result=result, **kwargs)
