@@ -476,7 +476,6 @@ def load_statement_json(json_str: str, attempt: int = 1, max_attempts: int = 5) 
 def indra_stmts_from_relations(
     rels: Iterable[Relation],
     deduplicate: bool = True,
-    include_db_evidence: bool = True
 ) -> List[Statement]:
     """
     Convert a list of relations to INDRA Statements.
@@ -492,9 +491,6 @@ def indra_stmts_from_relations(
         e.g., for Complexes, there are multiple relations for one statement
         and this option can be used to return only one of these redundant
         statements. Default: True
-    include_db_evidence :
-        If True, include statements with database evidence. If False,
-        exclude statements that only have database evidence. Default: True
 
     Returns
     -------
@@ -503,18 +499,9 @@ def indra_stmts_from_relations(
     """
     stmts_json = [load_statement_json(rel.data["stmt_json"]) for rel in rels]
     stmts = stmts_from_json(stmts_json)
-
-    # Filter statements based on include_db_evidence
-    if not include_db_evidence:
-        stmts = [
-            stmt for stmt in stmts
-            if any(ev.source_api != 'database' for ev in stmt.evidence)
-        ]
-
     if deduplicate:
         # We do it this way to not change the order of the statements
         stmts = list({stmt.get_hash(): stmt for stmt in stmts}.values())
-
     return stmts
 
 
