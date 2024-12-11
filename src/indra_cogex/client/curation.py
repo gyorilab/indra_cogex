@@ -251,7 +251,6 @@ def get_goa_source_counts(
             AND NOT r.medscan_only
         RETURN r.stmt_hash, r.source_counts
         ORDER BY r.has_database_evidence DESC, r.evidence_count DESC
-        LIMIT 25
     """
 
     result = client.query_dict_value_json(query)
