@@ -954,12 +954,12 @@ def get_stmts_for_paper(
         )
 
     hash_query = f"""\
-            MATCH (e:Evidence)-[:has_citation]->(:Publication {id: $paper_parameter}) 
+            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props}) 
             WHERE {where_clause}
             RETURN e.stmt_hash, e.evidence
         """
 
-    result = client.query_tx(hash_query, parameter=parameter)
+    result = client.query_tx(hash_query, paper_parameter=parameter)
     return _stmts_from_results(client=client, result=result, **kwargs)
 
 
