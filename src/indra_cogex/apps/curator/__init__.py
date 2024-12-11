@@ -1,7 +1,7 @@
 """Curation app for INDRA CoGEx."""
 
-from .curator_blueprint import curator_blueprint
+from .explorer_blueprint import explorer_blueprint
 
 __all__ = [
-    "curator_blueprint",
+    "explorer_blueprint",
 ]

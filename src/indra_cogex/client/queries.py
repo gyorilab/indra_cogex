@@ -7,6 +7,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
+from indra.sources import SOURCE_INFO
 
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
@@ -748,7 +749,8 @@ def get_mesh_ids_for_pmids(
 
 @autoclient()
 def get_evidences_for_mesh(
-    mesh_term: Tuple[str, str], include_child_terms: bool = True, *, client: Neo4jClient
+    mesh_term: Tuple[str, str], include_child_terms: bool = True, include_db_evidence: bool = True, *,
+    client: Neo4jClient
 ) -> Dict[int, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
 
@@ -760,6 +762,8 @@ def get_evidences_for_mesh(
         The MESH ID to query.
     include_child_terms :
         If True, also match against the child MESH terms of the given MESH ID
+    include_db_evidence :
+        If True, include and prioritize database evidence. If False, exclude it.
 
     Returns
     -------
@@ -787,15 +791,23 @@ def get_evidences_for_mesh(
         where_clause = ""
         query_params["mesh_id"] = norm_mesh
 
-    query = """MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
-           %s
-           RETURN e.stmt_hash, e.evidence""" % (
-        single_mesh_match,
-        where_clause,
-    )
-    return _get_ev_dict_from_hash_ev_query(
-        client.query_tx(query, **query_params), remove_medscan=True
-    )
+    db_filter = "" if include_db_evidence else "WHERE NOT e.source_api = 'database'"
+
+    query = f"""
+        MATCH (e:Evidence)-[:has_citation]->(:Publication)-[:annotated_with]->(b:BioEntity%s)
+        %s
+        %s
+        WITH DISTINCT e.stmt_hash AS hash, COUNT(e) AS evidence_count
+        LIMIT 25 
+        WITH collect(hash) as top_hashes
+        MATCH (e:Evidence)
+        WHERE e.stmt_hash IN top_hashes
+        %s
+        RETURN e.stmt_hash, e.evidence
+    """ % (single_mesh_match, where_clause, db_filter, db_filter)
+
+    result = client.query_tx(query, **query_params)
+    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
 
 
 @autoclient()
@@ -906,7 +918,7 @@ def get_evidences_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_paper(
-    paper_term: Tuple[str, str], *, client: Neo4jClient, **kwargs
+    paper_term: Tuple[str, str], *, client: Neo4jClient, include_db_evidence: bool = False, **kwargs,
 ) -> List[Statement]:
     """Return the statements with evidence from the given PubMed ID.
 
@@ -916,26 +928,34 @@ def get_stmts_for_paper(
         The Neo4j client.
     paper_term :
         The term to query. Can be a PubMed ID, PMC id, TRID, or DOI
+    include_db_evidence:
+        Whether to include statements with database evidence.
 
     Returns
     -------
     :
         The statements for the given PubMed ID.
     """
-    # Todo: Investigate if it's possible to do this in one query like
-    # MATCH (e:Evidence)-[:has_citation]->(:Publication {id: "pubmed:14898026"})
-    # MATCH (:BioEntity)-[r:indra_rel {stmt_hash: e.stmt_hash}]->(:BioEntity)
-    # RETURN r, e
-
-    # Todo: Add filters: e.g. belief cutoff, sources, db supported only,
-    #  stmt type
+    # Get just the database sources from SOURCE_INFO
+    db_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "database"}
 
     parameter, publication_props = generate_paper_clause(paper_term)
 
+    # Build WHERE clause to filter out all database sources
+    if not include_db_evidence:
+        # Create conditions to exclude all database sources
+        db_conditions = [f"NOT e.evidence CONTAINS '\"{source}\"'"
+                         for source in db_sources]
+        where_clause = (
+            f"WHERE (e.evidence IS NULL OR ({' AND '.join(db_conditions)}))\n"
+        )
+    else:
+        where_clause = ""
+
     hash_query = f"""\
-        MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
-        RETURN e.stmt_hash, e.evidence
-    """
+            MATCH (e:Evidence)-[:has_citation]->(:Publication {publication_props})
+            {where_clause}RETURN e.stmt_hash, e.evidence"""
+
     result = client.query_tx(hash_query, paper_parameter=parameter)
     return _stmts_from_results(client=client, result=result, **kwargs)
 
@@ -991,12 +1011,18 @@ def get_stmts_for_mesh(
     include_child_terms: bool = True,
     *,
     client: Neo4jClient,
+    evidence_limit: int = 10,
+    include_db_evidence: bool = True,
     **kwargs,
-) -> Iterable[Statement]:
+) -> Union[Tuple[List[Statement], Mapping[int, int]], Tuple[List[Statement], None]]:
     """Return the statements with evidence for the given MESH ID.
 
     Parameters
     ----------
+    include_db_evidence :
+        Whether to include db evidence or not
+    evidence_limit :
+        Maximum number of evidence per statement
     client :
         The Neo4j client.
     mesh_term :
@@ -1014,12 +1040,15 @@ def get_stmts_for_mesh(
     """
     evidence_map = get_evidences_for_mesh(mesh_term, include_child_terms, client=client)
     hashes = list(evidence_map.keys())
-    return get_stmts_for_stmt_hashes(
+    stmts = get_stmts_for_stmt_hashes(
         hashes,
         evidence_map=evidence_map,
         client=client,
+        evidence_limit=evidence_limit,
+        include_db_evidence=include_db_evidence,
         **kwargs,
     )
+    return stmts
 
 
 @autoclient()
@@ -1063,19 +1092,29 @@ def get_stmts_for_stmt_hashes(
     return_evidence_counts: bool = False,
     subject_prefix: Optional[str] = None,
     object_prefix: Optional[str] = None,
+    include_db_evidence: bool = True,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements for the given statement hashes.
 
     Parameters
     ----------
+    include_db_evidence :
+        If True, include statements with database evidence. If False, exclude them.
+    object_prefix :
+        Filter statements to only those where the object ID starts with this prefix
+    subject_prefix :
+        Filter statements to only those where the subject ID starts with this prefix
+    evidence_limit :
+        An optional maximum number of evidences to return
     client :
         The Neo4j client.
-    stmt_hashes :
-        The statement hashes to query.
     evidence_map :
         Optionally provide a mapping of stmt hash to a list of evidence objects
-    evidence_limit:
-        An optional maximum number of evidences to return
+    stmt_hashes :
+        The statement hashes to query.
+    return_evidence_counts :
+        If True, returns a tuple of (statements, evidence_counts). If False, returns
+        only statements.
 
     Returns
     -------
@@ -1095,15 +1134,18 @@ def get_stmts_for_stmt_hashes(
     else:
         object_constraint = ""
 
+    db_evidence_constraint = "" if include_db_evidence else "AND NOT r.has_database_evidence"
+
     stmts_query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
             r.stmt_hash IN $stmt_hashes
             {subject_constraint}
             {object_constraint}
+            {db_evidence_constraint}
         RETURN p
     """
-    logger.info(f"Getting statements for {len(stmt_hashes)} hashes")
+    logger.info(f"get_stmts_for_stmt_hashes executing query with {len(stmt_hashes)} hashes")
     rels = client.query_relations(stmts_query, **query_params)
     stmts = indra_stmts_from_relations(rels, deduplicate=True)
 
@@ -1116,12 +1158,12 @@ def get_stmts_for_stmt_hashes(
             evidence_map=evidence_map,
             evidence_limit=evidence_limit,
         )
-
     if not return_evidence_counts:
         return rv
     evidence_counts = {
-        stmt.get_hash(): rel.data["evidence_count"] for rel, stmt in zip(rels, stmts)
+        rel.data["stmt_hash"]: rel.data["evidence_count"] for rel in rels
     }
+
     return rv, evidence_counts
 
 @autoclient()
@@ -1415,8 +1457,8 @@ def get_edge_counter(*, client: Neo4jClient) -> Counter:
                 f"MATCH ()-[r:{relation}]->() RETURN count(*)", squeeze=True
             )[0]
             for relation in client.query_tx(
-                "call db.relationshipTypes();", squeeze=True
-            )
+            "call db.relationshipTypes();", squeeze=True
+        )
         }
     )
 
@@ -1657,7 +1699,7 @@ def _get_ev_dict_from_hash_ev_query(
     result: Optional[Iterable[List[Union[int, str]]]] = None,
     remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
-    """Assumes `result` is an Iterable of pairs of [hash, evidence_json]"""
+    """Assumes result is an Iterable of pairs of [hash, evidence_json]"""
     if result is None:
         logger.warning("No result for hash, Evidence query, returning empty dict")
         return {}
