@@ -22,7 +22,17 @@ document.addEventListener('DOMContentLoaded', function () {
 //        const tooltipLink = document.getElementById('tooltip-link');
 
 
-
+        // First button clicked by default
+        const firstButton = roleButtons[0];
+         if (firstButton) {
+        firstButton.classList.add('active');
+         otherAgentLabeltext.textContent = 'Other Agent (being either subject or object)';
+                    agentRoleInput.value = '';
+                    otherAgentRoleInput.value = '';
+                    otherAgentContainer.style.display = 'block';
+                    otherAgentContainer.style.marginTop = '10px';
+        firstButton.click();
+        }
 
 
         groundAgentButton.addEventListener('click', async function () {
@@ -157,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
             subjectButton.classList.add('active');
             agentRoleInput.value = 'subject';
             otherAgentRoleInput.value = 'object';
+            otherAgentLabeltext.textContent = 'Other Agent (being object)';
             otherAgentContainer.style.display = 'block';
             otherAgentContainer.style.marginTop = '10px';
             // Update relationship type
@@ -262,20 +273,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        window.addEventListener('pageshow', function () {
-            // Reset input box and hidden input
-            agentNameInput.value = '';
-            document.getElementById('agent-tuple').value = '';
-            meshNameInput.value = '';
-            document.getElementById('mesh-tuple').value = '';
-
-            // Clear the dropdown and add placeholder option
-            agentSelect.innerHTML = '';
-            const placeholderOption = document.createElement('option');
-            placeholderOption.textContent = 'Grounding Result';
-            placeholderOption.value = '';
-            placeholderOption.hidden = true;
-            placeholderOption.selected = true;
-            agentSelect.appendChild(placeholderOption);
-        });
+//        window.addEventListener('pageshow', function () {
+//            // Reset input box and hidden input
+//            agentNameInput.value = '';
+//            document.getElementById('agent-tuple').value = '';
+//            meshNameInput.value = '';
+//            document.getElementById('mesh-tuple').value = '';
+//
+//            // Clear the dropdown and add placeholder option
+//            agentSelect.innerHTML = '';
+//            const placeholderOption = document.createElement('option');
+//            placeholderOption.textContent = 'Grounding Result';
+//            placeholderOption.value = '';
+//            placeholderOption.hidden = true;
+//            placeholderOption.selected = true;
+//            agentSelect.appendChild(placeholderOption);
+//        });
     });
