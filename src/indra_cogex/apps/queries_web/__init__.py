@@ -78,6 +78,7 @@ examples_dict = {
     "other_role" : fields.String(example="Object"),
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
+    "include_db_evidence": fields.Boolean(example=True),
     "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(

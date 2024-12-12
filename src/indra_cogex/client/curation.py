@@ -49,7 +49,9 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def _keep_by_source(source_counts) -> bool:
+def _keep_by_source(source_counts, include_db_evidence=False) -> bool:
+    if include_db_evidence:
+        return True
     return all(k not in db_sources for k in source_counts)
 
 
@@ -62,13 +64,13 @@ def _get_curated_statement_hashes() -> Set[int]:
     return {curation["pa_hash"] for curation in curation_list}
 
 
-def get_prioritized_stmt_hashes(stmts: Iterable[Statement]) -> List[int]:
+def get_prioritized_stmt_hashes(stmts: Iterable[Statement], include_db_evidence: bool = True) -> List[int]:
     """Get prioritized hashes of statements to curate."""
-    df = get_curation_df(stmts)
+    df = get_curation_df(stmts, include_db_evidence)
     return list(df["stmt_hash"])
 
 
-def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
+def get_curation_df(stmts: Iterable[Statement], include_db_evidence: bool = True) -> pd.DataFrame:
     """Generate a curation dataframe from INDRA statements."""
     assembler = IndraNetAssembler(list(stmts))
 
@@ -91,7 +93,7 @@ def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
 
     # Don't worry about curating statements
     # that already have database evidence
-    df = df[df["source_counts"].map(_keep_by_source)]
+    df = df[df["source_counts"].map(lambda x: _keep_by_source(x, include_db_evidence))]
 
     # Look up centralities for remaining rows
     df["centralities"] = [
@@ -102,7 +104,7 @@ def get_curation_df(stmts: Iterable[Statement]) -> pd.DataFrame:
     # Sort by the most central edges
     df = df.sort_values("centralities", ascending=False)
 
-    # If several evidences from the same statement, dont need
+    # If several evidences from the same statement, don't need
     # to have the hash multiple times
     df = df.drop_duplicates("stmt_hash")
     return df
@@ -117,11 +119,15 @@ def get_go_curation_hashes(
     mediated: bool = False,
     upstream_controllers: bool = False,
     downstream_targets: bool = False,
+    include_db_evidence: bool = True,
 ) -> List[int]:
     """Get prioritized statement hashes to curate for a given GO term.
 
     Parameters
     ----------
+    include_db_evidence :
+        If True, include statements with database evidence. If False, exclude them,
+        by default True
     go_term :
         The GO term to query. Example: ``("GO", "GO:0006915")``
     client :
@@ -151,6 +157,7 @@ def get_go_curation_hashes(
         mediated=mediated,
         upstream_controllers=upstream_controllers,
         downstream_targets=downstream_targets,
+        include_db_evidence=include_db_evidence,
     )
     return get_prioritized_stmt_hashes(stmts)
 
@@ -168,11 +175,15 @@ def get_ppi_source_counts(
     *,
     client: Neo4jClient,
     minimum_evidences: int = 20,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-gene relationships.
 
     Parameters
     ----------
+    include_db_evidence :
+        If True, include statements with database evidence. If False, exclude them,
+       by default True
     client :
         The Neo4j client.
 
@@ -195,7 +206,7 @@ def get_ppi_source_counts(
             AND b.id STARTS WITH 'hgnc'
             AND r.stmt_type = 'Complex'
             AND a.id < b.id
-            AND NOT r.has_database_evidence
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
             AND r.evidence_count > {minimum_evidences}
         RETURN r.stmt_hash, r.source_counts
     """
@@ -207,13 +218,22 @@ def get_goa_source_counts(
     *,
     client: Neo4jClient,
     minimum_evidences: int = 10,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """Get prioritized statement hashes for uncurated gene-GO annotations..
 
     Parameters
     ----------
+    include_db_evidence :
+       If True, include statements with database evidence. If False, exclude them
     client :
-        The Neo4j client.
+       The Neo4j client
+   minimum_evidences :
+       Minimum number of evidences required for a statement to be included,
+       by default 10
+   include_db_evidence :
+       If True, include statements with database evidence. If False, exclude them,
+       by default True
 
     Returns
     -------
@@ -223,13 +243,19 @@ def get_goa_source_counts(
     query = f"""\
         MATCH (a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
-            NOT (a:BioEntity)-[:associated_with]->(b:BioEntity)
-            and a.id STARTS WITH 'hgnc'
-            and b.id STARTS WITH 'go'
-            and r.evidence_count > {minimum_evidences}
+            NOT (a)-[:associated_with]->(b)
+            AND a.id STARTS WITH 'hgnc'
+            AND b.id STARTS WITH 'go'
+            AND r.evidence_count > {minimum_evidences}
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
+            AND NOT r.medscan_only
         RETURN r.stmt_hash, r.source_counts
+        ORDER BY r.has_database_evidence DESC, r.evidence_count DESC
     """
-    return client.query_dict_value_json(query)
+
+    result = client.query_dict_value_json(query)
+
+    return result
 
 
 def _get_symbol_curies(symbols: Iterable[str]) -> List[str]:
@@ -246,7 +272,10 @@ TF_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 
 @autoclient()
 def get_tf_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get transcription factor increase amount / decrease amount."""
     return _help(
@@ -254,6 +283,7 @@ def get_tf_statements(
         stmt_types=TF_STMT_TYPES,
         client=client,
         limit=limit,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -267,7 +297,10 @@ KINASE_STMT_TYPES = [
 
 @autoclient()
 def get_kinase_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get kinase statements."""
     return _help(
@@ -275,6 +308,7 @@ def get_kinase_statements(
         stmt_types=KINASE_STMT_TYPES,
         client=client,
         limit=limit,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -284,7 +318,10 @@ PHOSPHATASE_STMT_TYPES = [Dephosphorylation]
 
 @autoclient()
 def get_phosphatase_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get phosphatase statements."""
     return _help(
@@ -292,6 +329,7 @@ def get_phosphatase_statements(
         stmt_types=PHOSPHATASE_STMT_TYPES,
         client=client,
         limit=limit,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -310,7 +348,10 @@ DUB_STMT_TYPES = [Deubiquitination]
 
 @autoclient()
 def get_dub_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get deubiquitinase statements."""
     return _help(
@@ -318,6 +359,7 @@ def get_dub_statements(
         stmt_types=DUB_STMT_TYPES,
         client=client,
         limit=limit,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -335,14 +377,19 @@ MIRNA_STMT_TYPES = [IncreaseAmount, DecreaseAmount]
 
 @autoclient()
 def get_mirna_statements(
-    *, client: Neo4jClient, limit: Optional[int] = None
+    *,
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get miRNA statements."""
+
     return _help(
         sources=MIRNA_CURIES,
         stmt_types=MIRNA_STMT_TYPES,
         client=client,
         limit=limit,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -360,6 +407,7 @@ def get_disprot_statements(
     client: Neo4jClient,
     limit: Optional[int] = None,
     object_prefix: Optional[str] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     """Get statements about disordered proteins."""
     return _help(
@@ -368,6 +416,7 @@ def get_disprot_statements(
         client=client,
         limit=limit,
         object_prefix=object_prefix,
+        include_db_evidence=include_db_evidence,
     )
 
 
@@ -379,6 +428,7 @@ def _help(
     limit: Optional[int] = None,
     minimum_evidences: int = 3,
     object_prefix: Optional[str] = None,
+    include_db_evidence: bool = True,
 ) -> Mapping[int, Mapping[str, int]]:
     """
     Get relations that are:
@@ -399,13 +449,17 @@ def _help(
             a.id in {sources!r}
             AND r.stmt_type in {[t.__name__ for t in stmt_types]!r}
             AND b.id STARTS WITH '{object_prefix}'
-            AND NOT r.has_database_evidence
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
             AND NOT r.medscan_only
             AND a.id <> b.id
-            AND r.evidence_count > {minimum_evidences}
-        RETURN r.stmt_hash, r.source_counts
+            AND r.evidence_count > {minimum_evidences} 
+            AND r.source_counts IS NOT NULL
+        RETURN r.stmt_hash, r.source_counts 
+        {_limit_line(limit)}
     """
-    return client.query_dict_value_json(query)
+    result = client.query_dict_value_json(query)
+
+    return result
 
 
 @autoclient()
@@ -415,12 +469,13 @@ def get_entity_source_counts(
     *,
     client: Neo4jClient,
     limit: Optional[int] = None,
+    include_db_evidence: bool = True
 ) -> Mapping[int, Mapping[str, int]]:
     query = f"""\
         MATCH p=(a:BioEntity)-[r:indra_rel]->(b:BioEntity)
         WHERE
             a.id = "{prefix}:{identifier}"
-            AND NOT r.has_database_evidence
+            {"" if include_db_evidence else "AND NOT r.has_database_evidence"}
             AND a.id <> b.id
         RETURN r.stmt_hash, r.source_counts
         ORDER BY r.evidence_count DESC

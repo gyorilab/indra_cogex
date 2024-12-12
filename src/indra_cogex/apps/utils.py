@@ -14,9 +14,10 @@ from typing import (
     Set,
     Tuple,
     cast,
+    Union,
 )
 
-from flask import Response, render_template, request
+from flask import render_template, request
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
@@ -81,19 +82,41 @@ def render_statements(
     limit: Optional[int] = None,
     curations: Optional[List[Mapping[str, Any]]] = None,
     source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
+    include_db_evidence=True,
+    is_proteocentric=False,
     **kwargs,
-) -> Response:
+) -> str:
     """Render INDRA statements.
 
     Parameters
     ----------
-    stmts:
-
-    evidence_counts:
-        Mapping from statement hash to total number of evidences
+    stmts :
+        List of INDRA Statement objects to be rendered
+    evidence_counts :
+        Dictionary mapping statement hash to total number of evidences
+    evidence_lookup_time :
+        Time taken to look up evidences in seconds
+    limit :
+        Maximum number of statements to render
+    curations :
+        List of curation data dictionaries for the statements
     source_counts_dict :
-        Mapping from statement hash to dictionaries of source name to source counts
+        Dictionary mapping statement hash to dictionaries of
+        source name to source counts
+    include_db_evidence :
+        Whether to include evidence from databases in the display, by default True
+    is_proteocentric :
+        Whether the view is protein-centric, enabling specific protein-related features,
+        by default False
+    kwargs :
+        Additional keyword arguments to pass to the template renderer
+
+    Returns
+    -------
+    str :
+        HTML string of the rendered statements
     """
+
     _, _, user_email = resolve_email()
     remove_medscan = not bool(user_email)
 
@@ -114,7 +137,7 @@ def render_statements(
         footer = ""
     footer += f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds."
 
-    return render_template(
+    response = render_template(
         "data_display/data_display_base.html",
         stmts=formatted_stmts,
         user_email=user_email,
@@ -122,15 +145,19 @@ def render_statements(
         vue_src_js=VUE_SRC_JS,
         vue_src_css=VUE_SRC_CSS,
         sources_dict=sources_dict,
+        include_db_evidence=include_db_evidence,
+        is_proteocentric=is_proteocentric,
         **kwargs,
     )
+    logger.info("Template rendered successfully")
+    return response
 
 
 def format_stmts(
     stmts: Iterable[Statement],
     evidence_counts: Optional[Mapping[int, int]] = None,
     limit: Optional[int] = None,
-    curations: Curations = None,
+    curations: Optional[List[Mapping[str, Any]]] = None,
     remove_medscan: bool = True,
     source_counts_per_hash: Optional[Dict[int, Dict[str, int]]] = None,
 ) -> List[StmtRow]:
@@ -178,13 +205,31 @@ def format_stmts(
         total_evidence, badges).
     """
     if evidence_counts is None:
-        evidence_counts = {stmt.get_hash(): len(stmt.evidence) for stmt in stmts}
+        evidence_counts = {}
+        for stmt in stmts:
+            if isinstance(stmt, list):
+                # Assuming the hash is the first element and evidence is the second
+                stmt_hash, evidence = stmt[0], stmt[1]
+                evidence_counts[stmt_hash] = len(evidence)
+            else:
+                evidence_counts[stmt.get_hash()] = len(stmt.evidence)
+    else:
+        logger.debug(f"format_stmts input evidence_counts: {evidence_counts}")
     # Make sure statements are sorted by highest evidence counts first
-    stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
+    if all(isinstance(stmt, list) for stmt in stmts):
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s[0]], reverse=True)
+    else:
+        stmts = sorted(stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
     all_pa_hashes: Set[int] = {st.get_hash() for st in stmts}
     if curations is None:
         curations = curation_cache.get_curations(pa_hash=list(all_pa_hashes))
+    elif isinstance(curations, list):
+        # If curations is already a list, we assume it's in the correct format
+        pass
+    else:
+        # Assuming curations is a Curations object with a get_hash method
+        curations = curations.get_curations(pa_hash=list(all_pa_hashes))
 
     curations = [c for c in curations if c["pa_hash"] in all_pa_hashes]
     cur_dict = defaultdict(list)
@@ -204,15 +249,25 @@ def format_stmts(
 
     stmt_rows = []
     for stmt in stmts:
-        row = _stmt_to_row(
-            stmt,
-            cur_dict=cur_dict,
-            cur_counts=cur_counts,
-            remove_medscan=remove_medscan,
-            source_counts=source_counts_per_hash.get(stmt.get_hash())
-            if source_counts_per_hash
-            else None,
-        )
+        if isinstance(stmt, list):
+            stmt_hash, evidence = stmt[0], stmt[1]
+            row = _stmt_to_row(
+                stmts_by_hash[stmt_hash],
+                cur_dict=cur_dict,
+                cur_counts=cur_counts,
+                remove_medscan=remove_medscan,
+                source_counts=source_counts_per_hash.get(stmt_hash) if source_counts_per_hash else None,
+                evidence_counts=evidence_counts
+            )
+        else:
+            row = _stmt_to_row(
+                stmt,
+                cur_dict=cur_dict,
+                cur_counts=cur_counts,
+                remove_medscan=remove_medscan,
+                source_counts=source_counts_per_hash.get(stmt.get_hash()) if source_counts_per_hash else None,
+                evidence_counts=evidence_counts
+            )
         if row is not None:
             stmt_rows.append(row)
 
@@ -227,6 +282,7 @@ def _stmt_to_row(
     remove_medscan: bool = True,
     source_counts: Dict[str, int] = None,
     include_belief_badge: bool = False,
+    evidence_counts: Optional[Mapping[int, int]] = None,
 ) -> Optional[StmtRow]:
     # Todo: Refactor this function so that evidences can be passed on their
     #  own without having to be passed in as part of the statement.
@@ -253,12 +309,15 @@ def _stmt_to_row(
     else:
         sources = source_counts
 
+    # Calculate the total evidence as the sum of each of the sources' evidences
+    if evidence_counts is not None:
+        total_evidence = evidence_counts[hash_int]
+    else:
+        total_evidence = sum(sources.values())
+
     # Remove medscan from the sources count
     if remove_medscan and "medscan" in sources:
         del sources["medscan"]
-
-    # Calculate the total evidence as the sum of each of the sources' evidences
-    total_evidence = sum(sources.values())
 
     badges = [
         {
@@ -340,16 +399,30 @@ def remove_curated_pa_hashes(
 
 
 def remove_curated_statements(
-    statements: Iterable[Statement],
+    statements: Iterable[Union[Statement, List]],
     curations: Optional[List[Mapping[str, Any]]] = None,
-) -> List[Statement]:
+    include_db_evidence: bool = False,
+) -> List[Union[Statement, List]]:
     """Remove all hashes from the list that have already been curated."""
     curated_pa_hashes = get_curated_pa_hashes(curations=curations)
-    return [
-        statement
-        for statement in statements
-        if statement.get_hash() not in curated_pa_hashes
-    ]
+
+    def should_keep(stmt):
+        if isinstance(stmt, list):
+            stmt_hash = stmt[0]
+            evidence = stmt[1] if len(stmt) > 1 and isinstance(stmt[1], dict) else {}
+            # Handle include_db_evidence for list-type statements
+            if include_db_evidence and evidence.get('has_database_evidence', False):
+                return True
+            return stmt_hash not in curated_pa_hashes
+        else:
+            # Handle include_db_evidence for Statement objects
+            if include_db_evidence and hasattr(stmt, 'evidence'):
+                if any(getattr(e, 'has_database_evidence', False) for e in stmt.evidence):
+                    return True
+            return stmt.get_hash() not in curated_pa_hashes
+
+    kept_statements = [stmt for stmt in statements if should_keep(stmt)]
+    return kept_statements
 
 
 def remove_curated_evidences(
