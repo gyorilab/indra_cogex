@@ -14,7 +14,7 @@ from http import HTTPStatus
 from inspect import isfunction, signature
 
 from flask import jsonify, request
-from flask_restx import Resource, abort, fields, Namespace, Model
+from flask_restx import Resource, abort, fields, Namespace
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client import queries, subnetwork
@@ -30,9 +30,12 @@ __all__ = [
     "target_ns",
 ]
 
+from ..rest_api import api
+
 logger = logging.getLogger(__name__)
 
-query_ns = Namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
+target_ns = Namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
+
 
 def get_example_data():
     """Get example data for gene continuous analysis."""
@@ -43,12 +46,6 @@ def get_example_data():
 
 
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
-
-api = Api(
-    title="INDRA CoGEx Query API",
-    description="REST API for INDRA CoGEx queries",
-    doc="/apidocs",
-)
 
 CATEGORY_DESCRIPTIONS = {
     'search': "Find and retrieve data across genes, tissues, drugs, and pathways",
@@ -66,19 +63,18 @@ CATEGORY_DESCRIPTIONS = {
 }
 
 # Use namespace definitions to include descriptions
-search_ns = api.namespace("Search Operations", CATEGORY_DESCRIPTIONS['search'], path="/api")
-validation_ns = api.namespace("Validation Operations", CATEGORY_DESCRIPTIONS['validation'], path="/api")
-evidence_ns = api.namespace("Evidence Operations", CATEGORY_DESCRIPTIONS['evidence'], path="/api")
-relationship_ns = api.namespace("Relationship Operations", CATEGORY_DESCRIPTIONS['relationship'], path="/api")
-disease_ns = api.namespace("Disease Operations", CATEGORY_DESCRIPTIONS['disease'], path="/api")
-publication_ns = api.namespace("Publication Operations", CATEGORY_DESCRIPTIONS['publication'], path="/api")
-cell_line_ns = api.namespace("Cell Line Operations", CATEGORY_DESCRIPTIONS['cell_line'], path="/api")
-ontology_ns = api.namespace("Ontology Operations", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-clinical_ns = api.namespace("Clinical Operations", CATEGORY_DESCRIPTIONS['clinical'], path="/api")
-mutation_ns = api.namespace("Mutation Operations", CATEGORY_DESCRIPTIONS['mutation'], path="/api")
-network_ns = api.namespace("Network Operations", CATEGORY_DESCRIPTIONS['network'], path="/api")
-analysis_ns = api.namespace("Analysis Operations", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
-
+search_ns = Namespace("Search Operations", CATEGORY_DESCRIPTIONS['search'], path="/api")
+validation_ns = Namespace("Validation Operations", CATEGORY_DESCRIPTIONS['validation'], path="/api")
+evidence_ns = Namespace("Evidence Operations", CATEGORY_DESCRIPTIONS['evidence'], path="/api")
+relationship_ns = Namespace("Relationship Operations", CATEGORY_DESCRIPTIONS['relationship'], path="/api")
+disease_ns = Namespace("Disease Operations", CATEGORY_DESCRIPTIONS['disease'], path="/api")
+publication_ns = Namespace("Publication Operations", CATEGORY_DESCRIPTIONS['publication'], path="/api")
+cell_line_ns = Namespace("Cell Line Operations", CATEGORY_DESCRIPTIONS['cell_line'], path="/api")
+ontology_ns = Namespace("Ontology Operations", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
+clinical_ns = Namespace("Clinical Operations", CATEGORY_DESCRIPTIONS['clinical'], path="/api")
+mutation_ns = Namespace("Mutation Operations", CATEGORY_DESCRIPTIONS['mutation'], path="/api")
+network_ns = Namespace("Network Operations", CATEGORY_DESCRIPTIONS['network'], path="/api")
+analysis_ns = Namespace("Analysis Operations", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 
 FUNCTION_CATEGORIES = {
     'search': {
@@ -138,7 +134,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_pmids",
             "get_stmts_for_mesh",
             "get_stmts_meta_for_stmt_hashes",
-            "get_stmts_for_stmt_hashes"
+            "get_stmts_for_stmt_hashes",
+            "get_statements"
         ]
     },
     'relationship': {
@@ -276,7 +273,7 @@ examples_dict = {
     "agent": fields.String(example="MEK"),
     "other_agent": fields.String(example="ERK"),
     "agent_role": fields.String(example="Subject"),
-    "other_role" : fields.String(example="Object"),
+    "other_role": fields.String(example="Object"),
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
@@ -351,7 +348,7 @@ SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
     "get_evidences_for_stmt_hash": {"remove_medscan"},
     "get_evidences_for_stmt_hashes": {"remove_medscan"},
-    "get_statements": {"mesh_term","include_child_terms"}
+    "get_statements": {"mesh_term", "include_child_terms"}
 }
 
 # This is the list of functions to be included
@@ -411,7 +408,7 @@ for module, func_name in module_functions:
             )
 
     # Get the parameters name for the other parameter that is not 'client'
-    query_model = query_ns.model(
+    query_model = target_ns.model(
         model_name,
         {
             param_name: examples_dict[param_name]
