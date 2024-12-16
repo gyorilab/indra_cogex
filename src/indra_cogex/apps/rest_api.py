@@ -53,7 +53,6 @@ __all__ = [
     "network_ns"
 ]
 
-api.add_namespace(bioentity_ns)
 api.add_namespace(search_ns)
 api.add_namespace(validation_ns)
 api.add_namespace(evidence_ns)
@@ -66,3 +65,4 @@ api.add_namespace(clinical_ns)
 api.add_namespace(mutation_ns)
 api.add_namespace(network_ns)
 api.add_namespace(analysis_ns)
+api.add_namespace(bioentity_ns)
