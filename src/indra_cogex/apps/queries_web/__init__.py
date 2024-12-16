@@ -26,15 +26,16 @@ from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_contin
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 __all__ = [
-    "api",
-    "target_ns",
+    "api"
 ]
 
-from ..rest_api import api
+from ..rest_api import (
+    api, search_ns, validation_ns, evidence_ns, relationship_ns,
+    disease_ns, publication_ns, ontology_ns, cell_line_ns,
+    clinical_ns, mutation_ns, analysis_ns, network_ns
+)
 
 logger = logging.getLogger(__name__)
-
-target_ns = Namespace("CoGEx Queries", "Queries for INDRA CoGEx", path="/api/")
 
 
 def get_example_data():
@@ -47,34 +48,6 @@ def get_example_data():
 
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
 
-CATEGORY_DESCRIPTIONS = {
-    'search': "Find and retrieve data across genes, tissues, drugs, and pathways",
-    'validation': "Verify relationships and validate entity associations",
-    'evidence': "Access evidence and statement data supporting relationships",
-    'relationship': "Analyze connections between different biological entities",
-    'disease': "Explore disease-phenotype-gene relationships",
-    'publication': "Search and retrieve publication-related information",
-    'cell_line': "Query cell line mutations and drug sensitivity data",
-    'ontology': "Navigate ontology hierarchies and classifications",
-    'clinical': "Access clinical trial and drug indication data",
-    'mutation': "Analyze genetic mutations and their effects",
-    'network': "Explore biological network relationships and pathways",
-    'analysis': "Perform statistical and biological data analysis"
-}
-
-# Use namespace definitions to include descriptions
-search_ns = Namespace("Search Operations", CATEGORY_DESCRIPTIONS['search'], path="/api")
-validation_ns = Namespace("Validation Operations", CATEGORY_DESCRIPTIONS['validation'], path="/api")
-evidence_ns = Namespace("Evidence Operations", CATEGORY_DESCRIPTIONS['evidence'], path="/api")
-relationship_ns = Namespace("Relationship Operations", CATEGORY_DESCRIPTIONS['relationship'], path="/api")
-disease_ns = Namespace("Disease Operations", CATEGORY_DESCRIPTIONS['disease'], path="/api")
-publication_ns = Namespace("Publication Operations", CATEGORY_DESCRIPTIONS['publication'], path="/api")
-cell_line_ns = Namespace("Cell Line Operations", CATEGORY_DESCRIPTIONS['cell_line'], path="/api")
-ontology_ns = Namespace("Ontology Operations", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-clinical_ns = Namespace("Clinical Operations", CATEGORY_DESCRIPTIONS['clinical'], path="/api")
-mutation_ns = Namespace("Mutation Operations", CATEGORY_DESCRIPTIONS['mutation'], path="/api")
-network_ns = Namespace("Network Operations", CATEGORY_DESCRIPTIONS['network'], path="/api")
-analysis_ns = Namespace("Analysis Operations", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 
 FUNCTION_CATEGORIES = {
     'search': {
@@ -264,6 +237,8 @@ examples_dict = {
     "upstream_controllers": fields.Boolean(example=False),
     "downstream_targets": fields.Boolean(example=False),
     "include_child_terms": fields.Boolean(example=True),
+    "return_source_counts": fields.Boolean(example=False),
+    "order_by_ev_count": fields.Boolean(example=False),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
@@ -336,7 +311,6 @@ examples_dict = {
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
     # For EC
     "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
-    # For cBioPortal
 }
 
 # Parameters to always skip in the examples and in the documentation
