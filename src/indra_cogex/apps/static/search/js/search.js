@@ -7,19 +7,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const otherAgentRoleInput = document.getElementById('other-agent-role');
         const otherAgentContainer = document.getElementById('other-agent-container');
         const agentSelect = document.getElementById('agent-select');
+        const otherAgentSelect = document.getElementById('other-agent-select');
         const meshSelect = document.getElementById('mesh-select');
         const meshNameInput = document.getElementById('mesh-name');
         const stmtTypes = JSON.parse(document.getElementById('stmt-types-json').textContent);
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const RelhiddenInput = document.getElementById('rel-type-hidden');
         const groundAgentButton = document.getElementById('ground-agent-button');
+        const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
+
         const groundMeshButton = document.getElementById('ground-mesh-button');
 
         const exampleText = document.getElementById('clickable-text');
 
         const infoIcon = document.getElementById('info-icon');
         const tooltip = document.getElementById('tooltip');
-//        const tooltipLink = document.getElementById('tooltip-link');
 
 
         // First button clicked by default
@@ -75,9 +77,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
                     agentSelect.appendChild(option);
                 });
-//                const fixedWidth = "300px";
-//                agentNameInput.style.width = fixedWidth;
-//                agentSelect.style.width = fixedWidth;
                 agentSelect.style.display = 'block';
             } catch (error) {
                 console.error("Error grounding agent:", error);
@@ -89,9 +88,66 @@ document.addEventListener('DOMContentLoaded', function () {
             const selectedOption = agentSelect.options[agentSelect.selectedIndex];
             if (selectedOption) {
                 const { source_db, source_id } = JSON.parse(selectedOption.value);
-
-
                 document.getElementById('agent-tuple').value = JSON.stringify([source_db, source_id]);
+            }
+        });
+
+        groundOtherAgentButton.addEventListener('click', async function () {
+            const otherAgentText = otherAgentInput.value.trim();
+            if (event.target.closest('.tooltip-box')) {
+                return;
+            }
+            if (!otherAgentText) {
+                alert("Please enter an Other Agent name to ground.");
+                return;
+            }
+            try {
+                const response = await fetch('/search/gilda_ground', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ agent: otherAgentText }),
+                });
+                if (!response.ok) throw new Error('Failed to ground the Other Agent.');
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    alert("No grounding results found.");
+                    return;
+                }
+
+                otherAgentSelect.innerHTML = '';
+                const placeholderOption = document.createElement('option');
+                placeholderOption.textContent = 'Grounded Results...';
+                placeholderOption.value = '';
+                placeholderOption.hidden = true; // non-selectable
+                placeholderOption.selected = true; // Show as default selected
+                otherAgentSelect.appendChild(placeholderOption);
+
+                data.forEach(result => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify({
+                        source_db: result.term.db,
+                        source_id: result.term.id,
+                    });
+                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                    otherAgentSelect.appendChild(option);
+                });
+
+                // Show the dropdown
+                otherAgentSelect.style.display = 'block';
+            } catch (error) {
+                console.error("Error grounding Other Agent:", error);
+                alert("An error occurred while grounding the Other Agent.");
+            }
+        });
+
+        otherAgentSelect.addEventListener('change', function () {
+            const selectedOption = otherAgentSelect.options[otherAgentSelect.selectedIndex];
+            if (selectedOption) {
+                const { source_db, source_id } = JSON.parse(selectedOption.value);
+                document.getElementById('other-agent-tuple').value = JSON.stringify([source_db, source_id]);
             }
         });
 
@@ -262,9 +318,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-//        tooltipLink.addEventListener('click', function (event) {
-//            event.stopPropagation(); // Stops the event from propagating to the button
-//        });
 
         // Hide the tooltip when clicking outside
         document.addEventListener('click', function (event) {

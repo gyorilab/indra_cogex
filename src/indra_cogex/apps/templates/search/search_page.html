@@ -235,15 +235,31 @@
         </div>
 
         <!-- Optional Other Agent Input -->
-            <div class="form-group other-agent-container" id="other-agent-container">
-                <label for="other-agent-name" id="other-agent-label" class="tooltip-label">
+        <div class="form-group other-agent-container" id="other-agent-container">
+            <label for="other-agent-name" id="other-agent-label" class="tooltip-label">
                 <span id="other-agent-text">Other Agent</span>
                 <div class="other-agent-tooltip-box">
-                    (Optional):  Promped when the agent role is selected.
+                    (Optional): Promped when the agent role is selected.
                 </div>
             </label>
+            <div style="display: flex; align-items: center; position: relative;">
                 <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
+
+                <select class="form-control" id="other-agent-select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-other-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the other agent name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
             </div>
+        </div>
 
         <!-- Relationship Type Multiselect -->
         <div class="form-group mt-4">
@@ -264,7 +280,8 @@
             <label for="mesh-name" class="tooltip-label">
                 <span id="filter-by-mesh-text">Filter by Mesh Term</span>
                 <div class="filter-by-mesh-tooltip-box">
-                    (Optional): Filter by paper context using Mesh terms. Each term must be grounded using the provided button.                </div>
+                    (Optional): Filter by paper context using Mesh terms. Each term must be grounded using the provided button.
+                </div>
             </label>
 
             <div style="display: flex; align-items: center; position: relative;">
@@ -292,6 +309,7 @@
         <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
         <!-- Hidden Inputs for Agent -->
         <input type="hidden" id="agent-tuple" name="agent_tuple" value="">
+        <input type="hidden" id="other-agent-tuple" name="other_agent_tuple" value="">
 
         <input type="hidden" id="mesh-tuple" name="mesh_tuple" value="">
 

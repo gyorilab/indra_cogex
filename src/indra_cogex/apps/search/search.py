@@ -45,6 +45,10 @@ def search():
             source_db, source_id = json.loads(agent_tuple)
             agent = (source_db,source_id)
         other_agent = form.other_agent.data
+        other_agent_tuple = request.form.get('other_agent_tuple')
+        if other_agent_tuple:
+            source_db, source_id = json.loads(other_agent_tuple)
+            other_agent = (source_db, source_id)
         source_type = form.source_type.data
         if form.rel_type.data:
             rel_types = json.loads(form.rel_type.data)
