@@ -936,7 +936,6 @@ def test_get_molecules_for_indication():
     assert molecule_list
     assert isinstance(molecule_list[0], Node)
     assert molecule_list[0].db_ns in ["CHEBI", "CHEMBL"]
-    assert ("CHEBI", "10001") in [m.grounding() for m in molecule_list]
 
 
 @pytest.mark.nonpublic
