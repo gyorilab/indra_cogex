@@ -368,6 +368,7 @@ def test_get_stmts_by_hashes():
     assert stmts
     assert isinstance(stmts[0], Statement)
 
+
 @pytest.mark.nonpublic
 def test_get_statements():
     client = _get_client()
@@ -392,6 +393,7 @@ def test_get_statements():
     assert stmt_hashes == evidence_map.keys()
     for stmt_hash, evidence_count in evidence_map.items():
         assert evidence_count <= 500
+
 
 @pytest.mark.nonpublic
 def test_is_gene_mutated():
@@ -782,6 +784,18 @@ def test_get_publications_for_project():
 
 
 @pytest.mark.nonpublic
+def test_get_projects_for_publication():
+    client = _get_client()
+    publication = ("pubmed", "11818301")
+    projects = get_projects_for_publication(publication, client=client)
+    project_list = list(projects)
+    assert project_list
+    assert isinstance(project_list[0], Node)
+    assert project_list[0].db_ns == "NIHREPORTER.PROJECT"
+    assert ("NIHREPORTER.PROJECT", "2106659") in [p.grounding() for p in project_list]
+
+
+@pytest.mark.nonpublic
 def test_get_clinical_trials_for_project():
     client = _get_client()
     project = ("nihreporter.project", "6439077")
@@ -794,6 +808,18 @@ def test_get_clinical_trials_for_project():
 
 
 @pytest.mark.nonpublic
+def test_get_projects_for_clinical_trial():
+    client = _get_client()
+    trial = ("clinicaltrials", "NCT00201240")
+    projects = get_projects_for_clinical_trial(trial, client=client)
+    project_list = list(projects)
+    assert project_list
+    assert isinstance(project_list[0], Node)
+    assert project_list[0].db_ns == "NIHREPORTER.PROJECT"
+    assert ("NIHREPORTER.PROJECT", "6439077") in [p.grounding() for p in project_list]
+
+
+@pytest.mark.nonpublic
 def test_get_patents_for_project():
     client = _get_client()
     project = ("nihreporter.project", "2106676")
@@ -803,6 +829,18 @@ def test_get_patents_for_project():
     assert isinstance(patent_list[0], Node)
     assert patent_list[0].db_ns == "GOOGLE.PATENT"
     assert ("GOOGLE.PATENT", "US5939275") in [p.grounding() for p in patent_list]
+
+
+@pytest.mark.nonpublic
+def test_get_projects_for_patent():
+    client = _get_client()
+    patent = ("google.patent", "US5939275")
+    projects = get_projects_for_patent(patent, client=client)
+    project_list = list(projects)
+    assert project_list
+    assert isinstance(project_list[0], Node)
+    assert project_list[0].db_ns == "NIHREPORTER.PROJECT"
+    assert ("NIHREPORTER.PROJECT", "2106676") in [p.grounding() for p in project_list]
 
 
 @pytest.mark.nonpublic
@@ -1070,4 +1108,3 @@ def test_is_cell_line_sensitive_to_drug():
     # Test a relationship that shouldn't exist
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
-
