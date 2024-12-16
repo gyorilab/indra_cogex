@@ -81,6 +81,9 @@ __all__ = [
     "get_publications_for_project",
     "get_clinical_trials_for_project",
     "get_patents_for_project",
+    "get_projects_for_publication",
+    "get_projects_for_clinical_trial",
+    "get_projects_for_patent",
     "get_domains_for_gene",
     "get_genes_for_domain",
     "has_domain",
@@ -1217,22 +1220,23 @@ def get_stmts_for_stmt_hashes(
 
     return rv, evidence_counts
 
+
 @autoclient()
 def get_statements(
-        agent: Union[str, Tuple[str, str]],
-        *,
-        client: Neo4jClient,
-        rel_types: Optional[Union[str, List[str]]] = None,
-        stmt_sources: Optional[Union[str, List[str]]] = None,
-        agent_role: Optional[str] = None,
-        other_agent: Optional[Union[str, Tuple[str, str]]] = None,
-        other_role: Optional[str] = None,
-        paper_term: Optional[Tuple[str, str]] = None,
-        mesh_term: Optional[Tuple[str, str]] = None,
-        include_child_terms: Optional[bool] = True,
-        limit: Optional[int] = 10,
-        evidence_limit: Optional[int] = None,
-        return_evidence_counts: bool = False,
+    agent: Union[str, Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    rel_types: Optional[Union[str, List[str]]] = None,
+    stmt_sources: Optional[Union[str, List[str]]] = None,
+    agent_role: Optional[str] = None,
+    other_agent: Optional[Union[str, Tuple[str, str]]] = None,
+    other_role: Optional[str] = None,
+    paper_term: Optional[Tuple[str, str]] = None,
+    mesh_term: Optional[Tuple[str, str]] = None,
+    include_child_terms: Optional[bool] = True,
+    limit: Optional[int] = 10,
+    evidence_limit: Optional[int] = None,
+    return_evidence_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
@@ -1332,7 +1336,6 @@ def get_statements(
             rel_types = [rel_types]
         where_clauses.append("r.stmt_type IN $rel_types")
 
-
     if stmt_sources:
         if isinstance(stmt_sources, str):
             stmt_sources = [stmt_sources]
@@ -1355,7 +1358,6 @@ def get_statements(
         params['stmt_sources'] = stmt_sources
     if paper_term:
         params['paper_parameter'] = paper_param
-
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
@@ -1385,6 +1387,7 @@ def get_statements(
     }
 
     return stmts, evidence_counts
+
 
 @autoclient()
 def enrich_statements(
@@ -2474,6 +2477,32 @@ def get_publications_for_project(
 
 
 @autoclient()
+def get_projects_for_publication(
+    publication: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a publication.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "11818301"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this publication
+    """
+    return client.get_sources(
+        publication,
+        relation="has_publication",
+        source_type="ResearchProject",
+        target_type="Publication"
+    )
+
+
+@autoclient()
 def get_clinical_trials_for_project(
     project: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
@@ -2493,6 +2522,32 @@ def get_clinical_trials_for_project(
     """
     return client.get_targets(
         project,
+        relation="has_clinical_trial",
+        source_type="ResearchProject",
+        target_type="ClinicalTrial"
+    )
+
+
+@autoclient()
+def get_projects_for_clinical_trial(
+    trial: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a clinical trial.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    trial : Tuple[str, str]
+        The clinical trial to query (e.g., ("clinicaltrials", "NCT00201240"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this clinical trial
+    """
+    return client.get_sources(
+        trial,
         relation="has_clinical_trial",
         source_type="ResearchProject",
         target_type="ClinicalTrial"
@@ -2525,8 +2580,33 @@ def get_patents_for_project(
     )
 
 
-#interpro
+@autoclient()
+def get_projects_for_patent(
+    patent: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a patent.
 
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    patent : Tuple[str, str]
+        The patent to query (e.g., ("google.patent", "US5939275"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this patent
+    """
+    return client.get_sources(
+        patent,
+        relation="has_patent",
+        source_type="ResearchProject",
+        target_type="Patent"
+    )
+
+
+#interpro
 @autoclient()
 def get_domains_for_gene(
     gene: Tuple[str, str], *, client: Neo4jClient
@@ -2765,7 +2845,8 @@ def has_indication(
         True if the molecule is associated with the indication
     """
     molecule_id = f"{molecule[0]}:{molecule[1]}".lower()
-    indication_id = f"{indication[0]}:{indication[1]}" if indication[0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
+    indication_id = f"{indication[0]}:{indication[1]}" if indication[
+                                                              0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
     query = """
     MATCH (m:BioEntity {id: $molecule_id})-[r:has_indication]->(i:BioEntity {id: $indication_id})
     RETURN COUNT(r) > 0 as exists
