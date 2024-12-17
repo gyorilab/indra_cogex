@@ -7,8 +7,8 @@ from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import validate_headers
 from indra_cogex.sources.processor_util import (
     data_validator,
-    DataTypeError,
-    UnknownTypeError
+    DataTypeError,  # If the value does not validate against the Neo4j data type
+    UnknownTypeError  # If data_type is not recognized as a Neo4j data type
 )
 
 
