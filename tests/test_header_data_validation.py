@@ -13,23 +13,25 @@ from indra_cogex.sources.processor_util import (
 
 
 def test_validator():
-    # test the validator function
+    # test the header validator
     validate_headers(["myint:int"])
     validate_headers(["myintarr:int[]"])
 
     try:
         validate_headers(["badint:integer"])
+        assert False, "Expected exception: integer should not be a valid type"
     except Exception as e:
         # Check correct error type and that type info is in the error message
-        assert isinstance(e, TypeError)
+        assert isinstance(e, TypeError), f"Unexpected exception: {type(e)} - {repr(e)}"
         assert "badint" in str(e)
         assert "integer" in str(e)
 
     try:
         validate_headers(["badintarr:integer[]"])
+        assert False, "Expected exception"
     except Exception as e:
         # Check correct error type and that type info is in the error message
-        assert isinstance(e, TypeError)
+        assert isinstance(e, TypeError), f"Unexpected exception: {type(e)} - {repr(e)}"
         assert "badintarr" in str(e)
         assert "integer[]" in str(e)
 
