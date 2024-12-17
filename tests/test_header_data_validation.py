@@ -12,7 +12,7 @@ from indra_cogex.sources.processor_util import (
 )
 
 
-def test_validator():
+def test_header_validator():
     # test the header validator
     validate_headers(["myint:int"])
     validate_headers(["myintarr:int[]"])
