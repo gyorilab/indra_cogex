@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement
@@ -38,30 +38,51 @@ def search():
 
     form = SearchForm()
 
+    # POST Request: Generate a sharable link with query parameters
     if form.validate_on_submit():
-        agent = form.agent_name.data
-        agent_tuple = request.form.get('agent_tuple')  # This is a JSON string
-        if agent_tuple:
-            source_db, source_id = json.loads(agent_tuple)
-            agent = (source_db,source_id)
-        other_agent = form.other_agent.data
-        other_agent_tuple = request.form.get('other_agent_tuple')
-        if other_agent_tuple:
-            source_db, source_id = json.loads(other_agent_tuple)
-            other_agent = (source_db, source_id)
-        source_type = form.source_type.data
-        if form.rel_type.data:
-            rel_types = json.loads(form.rel_type.data)
-        else: rel_types = None
-        agent_role = form.agent_role.data
-        other_role = form.other_agent_role.data
-        paper_id = form.paper_id.data
-        mesh_terms = form.mesh_terms.data
-        mesh_tuple = request.form.get('mesh_tuple')
-        if mesh_tuple:
-            source_db, source_id = json.loads(mesh_tuple)
-            mesh_terms = (source_db, source_id)
+        query_params = {
+            "agent": form.agent_name.data,
+            "agent_tuple": request.form.get("agent_tuple"),
+            "other_agent": form.other_agent.data,
+            "other_agent_tuple": request.form.get("other_agent_tuple"),
+            "source_type": form.source_type.data,
+            "rel_types": json.loads(form.rel_type.data) if form.rel_type.data else None,
+            "agent_role": form.agent_role.data,
+            "other_role": form.other_agent_role.data,
+            "paper_id": form.paper_id.data,
+            "mesh_terms": form.mesh_terms.data,
+            "mesh_tuple": request.form.get("mesh_tuple"),
+        }
+        query_params = {k: v for k, v in query_params.items() if v}
+        return redirect(url_for("search.search", **query_params))
 
+    # GET Request: Extract query parameters and fetch statements
+    agent = request.args.get("agent")
+    agent_tuple = request.args.get("agent_tuple")
+    if agent_tuple:
+        source_db, source_id = json.loads(agent_tuple)
+        agent = (source_db, source_id)
+
+    other_agent = request.args.get("other_agent")
+    other_agent_tuple = request.args.get("other_agent_tuple")
+    if other_agent_tuple:
+        source_db, source_id = json.loads(other_agent_tuple)
+        other_agent = (source_db, source_id)
+
+    source_type = request.args.get("source_type")
+    rel_types = request.args.getlist("rel_types")
+
+    agent_role = request.args.get("agent_role")
+    other_role = request.args.get("other_role")
+    paper_id = request.args.get("paper_id")
+    mesh_terms = request.args.get("mesh_terms")
+    mesh_tuple = request.args.get("mesh_tuple")
+    if mesh_tuple:
+        source_db, source_id = json.loads(mesh_tuple)
+        mesh_terms = (source_db, source_id)
+
+    # Fetch and display statements
+    if agent or other_agent or rel_types:
         statements, evidence_count = get_statements(
             agent=agent,
             agent_role=agent_role,
@@ -73,13 +94,17 @@ def search():
             mesh_term=mesh_terms,
             limit=1000,
             evidence_limit=1000,
-            return_evidence_counts=True
+            return_evidence_counts=True,
         )
         return render_statements(stmts=statements, evidence_count=evidence_count)
 
-    return render_template("search/search_page.html",
-                           form=form,
-                           stmt_types_json=stmt_types_json)
+    # Render the form page
+    return render_template(
+        "search/search_page.html",
+        form=form,
+        stmt_types_json=stmt_types_json,
+    )
+
 from flask import current_app
 
 @search_blueprint.route("/gilda_ground", methods=["GET","POST"])
