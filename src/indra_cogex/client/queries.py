@@ -1851,7 +1851,7 @@ def get_cell_types_for_marker(
 @autoclient()
 def is_marker_for_cell_type(
     marker: Tuple[str, str], cell_type: Tuple[str, str], *, client: Neo4jClient
-) -> list[Any]:
+) -> List[Any]:
     """Return True if the marker is associated with the given cell type.
 
     Parameters
@@ -1936,7 +1936,7 @@ def get_diseases_for_phenotype(
 @autoclient()
 def has_phenotype(
     disease: Tuple[str, str], phenotype: Tuple[str, str], *, client: Neo4jClient
-) -> list[Any]:
+) -> List[Any]:
     """Return True if the disease has the given phenotype.
 
     Parameters
@@ -2099,7 +2099,7 @@ def get_journals_for_publisher(
 @autoclient()
 def is_journal_published_by(
     journal: Tuple[str, str], publisher: Tuple[str, str], *, client: Neo4jClient
-) -> list[Any]:
+) -> List[Any]:
     """Check if a journal is published by a specific publisher.
 
     Parameters
@@ -2827,7 +2827,7 @@ def get_molecules_for_indication(
 @autoclient()
 def has_indication(
     molecule: Tuple[str, str], indication: Tuple[str, str], *, client: Neo4jClient
-) -> list[Any]:
+) -> List[Any]:
     """Check if a molecule is associated with an indication in ChEMBL data.
 
     Parameters
@@ -2884,7 +2884,7 @@ def get_codependents_for_gene(
 @autoclient()
 def has_codependency(
     gene1: Tuple[str, str], gene2: Tuple[str, str], *, client: Neo4jClient
-) -> list[Any]:
+) -> List[Any]:
     """Check if two genes are codependent according to DepMap data.
 
     Parameters
