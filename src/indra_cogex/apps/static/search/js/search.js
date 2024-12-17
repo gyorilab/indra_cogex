@@ -18,7 +18,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const groundMeshButton = document.getElementById('ground-mesh-button');
 
-        const exampleText = document.getElementById('clickable-text');
+        const exampleText1 = document.getElementById('clickable-text-example1');
+        const exampleText2 = document.getElementById('clickable-text-example2');
+        const exampleText3 = document.getElementById('clickable-text-example3');
+        const exampleText4 = document.getElementById('clickable-text-example4');
 
         const infoIcon = document.getElementById('info-icon');
         const tooltip = document.getElementById('tooltip');
@@ -28,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const firstButton = roleButtons[0];
          if (firstButton) {
         firstButton.classList.add('active');
-         otherAgentLabeltext.textContent = 'Other Agent (being either subject or object)';
+         otherAgentLabeltext.textContent = 'Other Agent';
                     agentRoleInput.value = '';
                     otherAgentRoleInput.value = '';
                     otherAgentContainer.style.display = 'block';
@@ -164,19 +167,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Update agent and other agent roles based on the role
                 if (role === 'subject') {
-                    otherAgentLabeltext.textContent = 'Other Agent (being object)';
                     agentRoleInput.value = 'subject';
                     otherAgentRoleInput.value = 'object';
                     otherAgentContainer.style.display = 'block';
                     otherAgentContainer.style.marginTop = '10px';
                 } else if (role === 'object') {
-                    otherAgentLabeltext.textContent = 'Other Agent (being subject)';
                     agentRoleInput.value = 'object';
                     otherAgentRoleInput.value = 'subject';
                     otherAgentContainer.style.display = 'block';
                     otherAgentContainer.style.marginTop = '10px';
                 } else {
-                    otherAgentLabeltext.textContent = 'Other Agent (being either subject or object)';
                     agentRoleInput.value = '';
                     otherAgentRoleInput.value = '';
                     otherAgentContainer.style.display = 'block';
@@ -210,12 +210,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-        exampleText.addEventListener('click', function () {
+        exampleText1.addEventListener('click', function () {
+            choices.removeActiveItems();
+            agentNameInput.value = '';
+            otherAgentInput.value = '';
             // Update agent and other agent
             agentNameInput.value = 'MEK';
-            agentNameInput.readOnly = true;
             otherAgentInput.value = 'ERK';
-            otherAgentInput.readOnly = true;
 
             // Update roles (select the second button)
             roleButtons.forEach(button => button.classList.remove('active'));
@@ -223,20 +224,66 @@ document.addEventListener('DOMContentLoaded', function () {
             subjectButton.classList.add('active');
             agentRoleInput.value = 'subject';
             otherAgentRoleInput.value = 'object';
-            otherAgentLabeltext.textContent = 'Other Agent (being object)';
+            otherAgentLabeltext.textContent = 'Other Agent';
             otherAgentContainer.style.display = 'block';
             otherAgentContainer.style.marginTop = '10px';
-            // Update relationship type
 
 
         choices.setChoiceByValue('Phosphorylation');
-
-
-        // Ensure the hidden input is updated with the selected value
         const selectedValues = ['Phosphorylation'];
         RelhiddenInput.value = JSON.stringify(selectedValues);
 
         });
+
+
+        exampleText2.addEventListener('click', function () {
+            choices.removeActiveItems();
+            agentNameInput.value = '';
+            otherAgentInput.value = '';
+            agentNameInput.value = 'CDK';
+            roleButtons.forEach(button => button.classList.remove('active'));
+            const subjectButton = document.getElementById('btn-subject');
+            subjectButton.classList.add('active');
+            agentRoleInput.value = 'subject';
+            otherAgentContainer.style.display = 'block';
+            otherAgentContainer.style.marginTop = '10px';
+        choices.setChoiceByValue('Phosphorylation');
+        const selectedValues = ['Phosphorylation'];
+        RelhiddenInput.value = JSON.stringify(selectedValues);
+
+        });
+
+        exampleText3.addEventListener('click', function () {
+            choices.removeActiveItems();
+            agentNameInput.value = '';
+            otherAgentInput.value = '';
+            agentNameInput.value = 'MTOR';
+            roleButtons.forEach(button => button.classList.remove('active'));
+            const objectButton = document.getElementById('btn-object');
+            objectButton.classList.add('active');
+            agentRoleInput.value = 'object';
+            otherAgentContainer.style.display = 'block';
+            otherAgentContainer.style.marginTop = '10px';
+        choices.setChoiceByValue('Inhibition');
+        const selectedValues = ['Inhibition'];
+        RelhiddenInput.value = JSON.stringify(selectedValues);
+
+        });
+
+        exampleText4.addEventListener('click', function () {
+            choices.removeActiveItems();
+            agentNameInput.value = '';
+            otherAgentInput.value = '';
+            agentNameInput.value = 'PIK3CA';
+            roleButtons.forEach(button => button.classList.remove('active'));
+            const objectButton = document.getElementById('btn-either');
+            objectButton.classList.add('active');
+            agentRoleInput.value = null;
+            otherAgentContainer.style.display = 'block';
+            otherAgentContainer.style.marginTop = '10px';
+        RelhiddenInput.value = JSON.stringify(selectedValues);
+        });
+
 
         groundMeshButton.addEventListener('click', async function () {
             const meshText = meshNameInput.value.trim();
