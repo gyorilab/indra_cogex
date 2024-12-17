@@ -299,6 +299,7 @@ examples_dict = {
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
     "project": fields.List(fields.String, example=["nihreporter.project", "2106659"]),
+    "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
     "phenotype": fields.List(fields.String, example=[["hp", "0003138"], ["mesh", "D001827"]]),
     # For InterPro
