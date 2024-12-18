@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
             choices.removeActiveItems();
             agentNameInput.value = '';
             otherAgentInput.value = '';
-            agentNameInput.value = 'Seliciclib';
+            agentNameInput.value = 'seliciclib';
             roleButtons.forEach(button => button.classList.remove('active'));
             const subjectButton = document.getElementById('btn-subject');
             subjectButton.classList.add('active');
