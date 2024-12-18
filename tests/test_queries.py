@@ -868,15 +868,15 @@ def test_get_genes_for_domain():
 
 
 @pytest.mark.nonpublic
-def test_has_domain():
+def test_gene_has_domain():
     client = _get_client()
     gene = ("hgnc", "475")
     domain = ("interpro", "IPR006047")
-    assert has_domain(gene, domain, client=client)
+    assert gene_has_domain(gene, domain, client=client)
 
     # Test a relationship that shouldn't exist
     wrong_domain = ("interpro", "IPR000000")
-    assert not has_domain(gene, wrong_domain, client=client)
+    assert not gene_has_domain(gene, wrong_domain, client=client)
 
 
 @pytest.mark.nonpublic
@@ -939,15 +939,15 @@ def test_get_molecules_for_indication():
 
 
 @pytest.mark.nonpublic
-def test_has_indication():
+def test_molecule_has_indication():
     client = _get_client()
     molecule = ("chebi", "10001")
     indication = ("mesh", "D002318")
-    assert has_indication(molecule, indication, client=client)
+    assert molecule_has_indication(molecule, indication, client=client)
 
     # Test a relationship that shouldn't exist
     wrong_indication = ("mesh", "D000000")
-    assert not has_indication(molecule, wrong_indication, client=client)
+    assert not molecule_has_indication(molecule, wrong_indication, client=client)
 
 
 @pytest.mark.nonpublic
@@ -1107,3 +1107,26 @@ def test_is_cell_line_sensitive_to_drug():
     # Test a relationship that shouldn't exist
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
+
+
+@pytest.mark.nonpublic
+def test_verify_examples():
+    client = _get_client()
+    print("\nTesting examples...")
+
+    # Test marker example
+    cell_type = ("cl", "0000020")
+    markers = list(get_markers_for_cell_type(cell_type, client=client))
+    print("\nMarkers result:", [m.grounding() for m in markers])
+"""
+    # Test publication example
+    publication = ("pubmed", "14334679")
+    journal = get_journal_for_publication(publication, client=client)
+    print("\nJournal result:", list(journal))
+
+    # Test journal example
+    journal = ("nlm", "0000201")
+    publications = get_publications_for_journal(journal, client=client)
+    print("\nPublications result:", list(publications))"""
+
+

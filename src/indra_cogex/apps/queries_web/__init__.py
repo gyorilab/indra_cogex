@@ -253,7 +253,7 @@ examples_dict = {
         fields.List(fields.String),
         example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
     ),
-    "disease": fields.List(fields.String, example=["MESH", "D007855"]),
+    "disease": fields.List(fields.String, example=["doid", "0040093"]),
     "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
     "genes": fields.List(
         fields.List(fields.String),
@@ -286,7 +286,7 @@ examples_dict = {
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
-    "cell_line": fields.List(fields.String, example=["CCLE", "BT20_BREAST", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
+    "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
         fields.List(fields.String),
@@ -328,21 +328,21 @@ examples_dict = {
     "publication": fields.List(fields.String, example=["pubmed", "14334679"]),
     "journal": fields.List(fields.String, example=["nlm", "0000201"]),
     # Disgenet
-    "variant": fields.List(fields.String, example=[["dbsnp", "rs9994441"], ["dbsnp", "rs13015548"]]),
+    "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
     "project": fields.List(fields.String, example=["nihreporter.project", "2106659"]),
     "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
-    "phenotype": fields.List(fields.String, example=[["hp", "0003138"], ["mesh", "D001827"]]),
+    "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
     # For InterPro
     "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
     # For DepMap codependency
     "gene1": fields.List(fields.String, example=["hgnc", "1234"]),
     "gene2": fields.List(fields.String, example=["hgnc", "5678"]),
     # For ChEMBL
-    "molecule": fields.List(fields.String, examples=[["chebi", "10001"], ["chembl.compound", "CHEMBL25"]]),
+    "molecule": fields.List(fields.String, example=["chebi", "10001"]),
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
     # For EC
     "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
