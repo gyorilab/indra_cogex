@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update the hidden input whenever selections change
         selectElement.addEventListener('change', function () {
             const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
-            RelhiddenInput.value = JSON.stringify(selectedValues); // Store as a JSON string
+            RelhiddenInput.value = JSON.stringify(selectedValues);
         });
 
         // Close the dropdown after selecting an option
@@ -385,20 +385,4 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-//        window.addEventListener('pageshow', function () {
-//            // Reset input box and hidden input
-//            agentNameInput.value = '';
-//            document.getElementById('agent-tuple').value = '';
-//            meshNameInput.value = '';
-//            document.getElementById('mesh-tuple').value = '';
-//
-//            // Clear the dropdown and add placeholder option
-//            agentSelect.innerHTML = '';
-//            const placeholderOption = document.createElement('option');
-//            placeholderOption.textContent = 'Grounding Result';
-//            placeholderOption.value = '';
-//            placeholderOption.hidden = true;
-//            placeholderOption.selected = true;
-//            agentSelect.appendChild(placeholderOption);
-//        });
     });
