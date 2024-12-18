@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const exampleText2 = document.getElementById('clickable-text-example2');
         const exampleText3 = document.getElementById('clickable-text-example3');
         const exampleText4 = document.getElementById('clickable-text-example4');
+        const exampleText5 = document.getElementById('clickable-text-example5');
 
         const infoIcon = document.getElementById('info-icon');
         const tooltip = document.getElementById('tooltip');
@@ -215,8 +216,8 @@ document.addEventListener('DOMContentLoaded', function () {
             agentNameInput.value = '';
             otherAgentInput.value = '';
             // Update agent and other agent
-            agentNameInput.value = 'MEK';
-            otherAgentInput.value = 'ERK';
+            agentNameInput.value = 'DUSP1';
+            otherAgentInput.value = 'MAPK1';
 
             // Update roles (select the second button)
             roleButtons.forEach(button => button.classList.remove('active'));
@@ -240,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
             choices.removeActiveItems();
             agentNameInput.value = '';
             otherAgentInput.value = '';
-            agentNameInput.value = 'CDK';
+            agentNameInput.value = 'CDK12';
             roleButtons.forEach(button => button.classList.remove('active'));
             const subjectButton = document.getElementById('btn-subject');
             subjectButton.classList.add('active');
@@ -267,7 +268,6 @@ document.addEventListener('DOMContentLoaded', function () {
         choices.setChoiceByValue('Inhibition');
         const selectedValues = ['Inhibition'];
         RelhiddenInput.value = JSON.stringify(selectedValues);
-
         });
 
         exampleText4.addEventListener('click', function () {
@@ -284,6 +284,21 @@ document.addEventListener('DOMContentLoaded', function () {
         RelhiddenInput.value = JSON.stringify(selectedValues);
         });
 
+        exampleText5.addEventListener('click', function () {
+            choices.removeActiveItems();
+            agentNameInput.value = '';
+            otherAgentInput.value = '';
+            agentNameInput.value = 'Seliciclib';
+            roleButtons.forEach(button => button.classList.remove('active'));
+            const objectButton = document.getElementById('btn-object');
+            objectButton.classList.add('active');
+            agentRoleInput.value = 'subject';
+            otherAgentContainer.style.display = 'block';
+            otherAgentContainer.style.marginTop = '10px';
+        choices.setChoiceByValue('Inhibition');
+        const selectedValues = ['Inhibition'];
+        RelhiddenInput.value = JSON.stringify(selectedValues);
+        });
 
         groundMeshButton.addEventListener('click', async function () {
             const meshText = meshNameInput.value.trim();
