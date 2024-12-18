@@ -229,9 +229,6 @@ document.addEventListener('DOMContentLoaded', function () {
             otherAgentContainer.style.display = 'block';
             otherAgentContainer.style.marginTop = '10px';
 
-
-        choices.setChoiceByValue('Phosphorylation');
-        const selectedValues = ['Phosphorylation'];
         RelhiddenInput.value = JSON.stringify(selectedValues);
 
         });
@@ -290,8 +287,8 @@ document.addEventListener('DOMContentLoaded', function () {
             otherAgentInput.value = '';
             agentNameInput.value = 'Seliciclib';
             roleButtons.forEach(button => button.classList.remove('active'));
-            const objectButton = document.getElementById('btn-object');
-            objectButton.classList.add('active');
+            const subjectButton = document.getElementById('btn-subject');
+            subjectButton.classList.add('active');
             agentRoleInput.value = 'subject';
             otherAgentContainer.style.display = 'block';
             otherAgentContainer.style.marginTop = '10px';
