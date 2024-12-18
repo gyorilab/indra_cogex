@@ -1108,25 +1108,3 @@ def test_is_cell_line_sensitive_to_drug():
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
 
-
-@pytest.mark.nonpublic
-def test_verify_examples():
-    client = _get_client()
-    print("\nTesting examples...")
-
-    # Test marker example
-    cell_type = ("cl", "0000020")
-    markers = list(get_markers_for_cell_type(cell_type, client=client))
-    print("\nMarkers result:", [m.grounding() for m in markers])
-"""
-    # Test publication example
-    publication = ("pubmed", "14334679")
-    journal = get_journal_for_publication(publication, client=client)
-    print("\nJournal result:", list(journal))
-
-    # Test journal example
-    journal = ("nlm", "0000201")
-    publications = get_publications_for_journal(journal, client=client)
-    print("\nPublications result:", list(publications))"""
-
-
