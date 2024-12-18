@@ -86,15 +86,15 @@ __all__ = [
     "get_projects_for_patent",
     "get_domains_for_gene",
     "get_genes_for_domain",
-    "has_domain",
+    "gene_has_domain",
     "get_phenotypes_for_variant_gwas",
     "get_variants_for_phenotype_gwas",
     "has_variant_phenotype_association",
     "get_indications_for_molecule",
     "get_molecules_for_indication",
-    "has_indication",
+    "molecule_has_indication",
     "get_codependents_for_gene",
-    "has_codependency",
+    "gene_has_codependency",
     "get_enzyme_activities_for_gene",
     "get_genes_for_enzyme_activity",
     "has_enzyme_activity",
@@ -2660,7 +2660,7 @@ def get_genes_for_domain(
 
 
 @autoclient()
-def has_domain(
+def gene_has_domain(
     gene: Tuple[str, str], domain: Tuple[str, str], *, client: Neo4jClient
 ) -> bool:
     """Check if a gene has the given protein domain.
@@ -2825,7 +2825,7 @@ def get_molecules_for_indication(
 
 
 @autoclient()
-def has_indication(
+def molecule_has_indication(
     molecule: Tuple[str, str], indication: Tuple[str, str], *, client: Neo4jClient
 ) -> List[Any]:
     """Check if a molecule is associated with an indication in ChEMBL data.
@@ -2882,7 +2882,7 @@ def get_codependents_for_gene(
 
 
 @autoclient()
-def has_codependency(
+def gene_has_codependency(
     gene1: Tuple[str, str], gene2: Tuple[str, str], *, client: Neo4jClient
 ) -> List[Any]:
     """Check if two genes are codependent according to DepMap data.
