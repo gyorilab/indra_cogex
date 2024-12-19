@@ -2,7 +2,7 @@ from flask import Flask
 from more_click import make_web_command
 
 from indra_cogex.apps.constants import INDRA_COGEX_EXTENSION
-from indra_cogex.apps.queries_web import api
+from indra_cogex.apps.rest_api import api
 from indra_cogex.client import Neo4jClient
 
 app = Flask(__name__)

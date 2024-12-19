@@ -3,7 +3,7 @@ import logging
 import time
 from collections import Counter, defaultdict
 from textwrap import dedent
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
 
 import networkx as nx
 from indra.statements import Agent, Evidence, Statement
@@ -47,13 +47,65 @@ __all__ = [
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
     "get_statements",
-    "is_gene_mutated",
-    "get_mutated_genes",
     "get_drugs_for_target",
     "get_drugs_for_targets",
     "get_targets_for_drug",
     "get_targets_for_drugs",
     "is_drug_target",
+    "get_markers_for_cell_type",
+    "get_cell_types_for_marker",
+    "is_marker_for_cell_type",
+    "get_phenotypes_for_disease",
+    "get_diseases_for_phenotype",
+    "has_phenotype",
+    "get_genes_for_phenotype",
+    "get_phenotypes_for_gene",
+    "has_phenotype_gene",
+    "get_publisher_for_journal",
+    "get_journals_for_publisher",
+    "is_journal_published_by",
+    "get_journal_for_publication",
+    "get_publications_for_journal",
+    "is_published_in_journal",
+    "get_diseases_for_gene",
+    "get_genes_for_disease",
+    "has_gene_disease_association",
+    "get_diseases_for_variant",
+    "get_variants_for_disease",
+    "has_variant_disease_association",
+    "get_genes_for_variant",
+    "get_variants_for_gene",
+    "has_variant_gene_association",
+    "get_publications_for_project",
+    "get_clinical_trials_for_project",
+    "get_patents_for_project",
+    "get_projects_for_publication",
+    "get_projects_for_clinical_trial",
+    "get_projects_for_patent",
+    "get_domains_for_gene",
+    "get_genes_for_domain",
+    "gene_has_domain",
+    "get_phenotypes_for_variant_gwas",
+    "get_variants_for_phenotype_gwas",
+    "has_variant_phenotype_association",
+    "get_indications_for_drug",
+    "get_drugs_for_indication",
+    "drug_has_indication",
+    "get_codependents_for_gene",
+    "gene_has_codependency",
+    "get_enzyme_activities_for_gene",
+    "get_genes_for_enzyme_activity",
+    "has_enzyme_activity",
+    "get_cell_lines_with_mutation",
+    "get_mutated_genes_in_cell_line",
+    "is_gene_mutated_in_cell_line",
+    "get_cell_lines_with_cna",
+    "get_cna_genes_in_cell_line",
+    "has_cna_in_cell_line",
+    "get_drugs_for_sensitive_cell_line",
+    "get_sensitive_cell_lines_for_drug",
+    "is_cell_line_sensitive_to_drug",
+
     # Summary functions
     "get_node_counter",
     "get_edge_counter",
@@ -1166,22 +1218,23 @@ def get_stmts_for_stmt_hashes(
 
     return rv, evidence_counts
 
+
 @autoclient()
 def get_statements(
-        agent: Union[str, Tuple[str, str]],
-        *,
-        client: Neo4jClient,
-        rel_types: Optional[Union[str, List[str]]] = None,
-        stmt_sources: Optional[Union[str, List[str]]] = None,
-        agent_role: Optional[str] = None,
-        other_agent: Optional[Union[str, Tuple[str, str]]] = None,
-        other_role: Optional[str] = None,
-        paper_term: Optional[Tuple[str, str]] = None,
-        mesh_term: Optional[Tuple[str, str]] = None,
-        include_child_terms: Optional[bool] = True,
-        limit: Optional[int] = 10,
-        evidence_limit: Optional[int] = None,
-        return_evidence_counts: bool = False,
+    agent: Union[str, Tuple[str, str]],
+    *,
+    client: Neo4jClient,
+    rel_types: Optional[Union[str, List[str]]] = None,
+    stmt_sources: Optional[Union[str, List[str]]] = None,
+    agent_role: Optional[str] = None,
+    other_agent: Optional[Union[str, Tuple[str, str]]] = None,
+    other_role: Optional[str] = None,
+    paper_term: Optional[Tuple[str, str]] = None,
+    mesh_term: Optional[Tuple[str, str]] = None,
+    include_child_terms: Optional[bool] = True,
+    limit: Optional[int] = 10,
+    evidence_limit: Optional[int] = None,
+    return_evidence_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
@@ -1281,7 +1334,6 @@ def get_statements(
             rel_types = [rel_types]
         where_clauses.append("r.stmt_type IN $rel_types")
 
-
     if stmt_sources:
         if isinstance(stmt_sources, str):
             stmt_sources = [stmt_sources]
@@ -1304,7 +1356,6 @@ def get_statements(
         params['stmt_sources'] = stmt_sources
     if paper_term:
         params['paper_parameter'] = paper_param
-
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
@@ -1334,6 +1385,7 @@ def get_statements(
     }
 
     return stmts, evidence_counts
+
 
 @autoclient()
 def enrich_statements(
@@ -1489,62 +1541,6 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
             label=edge.type,
         )
     return graph
-
-
-# CCLE
-
-
-@autoclient()
-def is_gene_mutated(
-    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
-) -> bool:
-    """Return True if the gene is mutated in the given cell line.
-
-    Parameters
-    ----------
-    client :
-        The Neo4j client.
-    gene :
-        The gene to query.
-    cell_line :
-        The cell line to query.
-
-    Returns
-    -------
-    :
-        True if the gene is mutated in the given cell line.
-    """
-    return client.has_relation(
-        gene,
-        cell_line,
-        relation="mutated_in",
-        source_type="BioEntity",
-        target_type="BioEntity",
-    )
-
-
-@autoclient()
-def get_mutated_genes(cell_line: Tuple[str, str], *, client: Neo4jClient) -> List[Node]:
-    """Return the list of genes that are mutated in a given cell line.
-
-    Parameters
-    ----------
-    client :
-        The Neo4j client.
-    cell_line :
-        The cell line to query.
-
-    Returns
-    -------
-    :
-        The list of genes that are mutated in the given cell line.
-    """
-    return client.get_sources(
-        target=cell_line,
-        relation="mutated_in",
-        source_type="BioEntity",
-        target_type="BioEntity",
-    )
 
 
 # Indra DB
@@ -1739,6 +1735,1447 @@ def _filter_out_medscan_evidence(
         for ev in ev_list
         if not (remove_medscan and ev["source_api"] == "medscan")
     ]
+
+
+# Cell marker functions
+@autoclient()
+def get_markers_for_cell_type(
+    cell_type: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the markers associated with the given cell type.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    cell_type :
+        The cell type to query (e.g., ("cl", "0000020"))
+
+    Returns
+    -------
+    :
+        The markers (genes) associated with the cell type
+    """
+    cell_id = f"{cell_type[0]}:{cell_type[1]}".lower()
+    query = """
+    MATCH (c:BioEntity {id: $cell_id})-[r:has_marker]->(m:BioEntity)
+    RETURN m
+    """
+    return client.query_nodes(query, cell_id=cell_id)
+
+
+@autoclient()
+def get_cell_types_for_marker(
+    marker: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the cell types associated with the given marker.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    marker :
+        The marker (gene) to query (e.g., ("HGNC", "11337"))
+
+    Returns
+    -------
+    :
+        The cell types associated with the marker
+    """
+    marker_id = f"{marker[0]}:{marker[1]}".lower()
+    query = """
+    MATCH (c:BioEntity)-[r:has_marker]->(m:BioEntity {id: $marker_id})
+    RETURN c
+    """
+    return client.query_nodes(query, marker_id=marker_id)
+
+
+@autoclient()
+def is_marker_for_cell_type(
+    marker: Tuple[str, str], cell_type: Tuple[str, str], *, client: Neo4jClient
+) -> List[Any]:
+    """Return True if the marker is associated with the given cell type.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    marker :
+        The marker to query
+    cell_type :
+        The cell type to query
+
+    Returns
+    -------
+    :
+        True if the marker is associated with the cell type
+    """
+    marker_id = f"{marker[0]}:{marker[1]}".lower()
+    cell_id = f"{cell_type[0]}:{cell_type[1]}".lower()
+    query = """
+    MATCH (c:BioEntity {id: $cell_id})-[r:has_marker]->(m:BioEntity {id: $marker_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, cell_id=cell_id, marker_id=marker_id, squeeze=True)[0]
+
+
+# HPOA Functions
+@autoclient()
+def get_phenotypes_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the phenotypes associated with the given disease.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    disease :
+        The disease to query (e.g., ("doid", "0040093"))
+
+    Returns
+    -------
+    :
+        The phenotypes associated with the disease
+    """
+    # Construct the full ID as it appears in database
+    disease_id = f"{disease[0]}:{disease[1]}"
+
+    # Use direct query since get_targets is returning an empty list
+    query = f"""
+    MATCH (d:BioEntity {{id: $disease_id}})-[r:has_phenotype]->(p:BioEntity)
+    RETURN p
+    """
+    return client.query_nodes(query, disease_id=disease_id)
+
+
+@autoclient()
+def get_diseases_for_phenotype(
+    phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the diseases associated with the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (e.g., ("hp", "0003138"))
+
+    Returns
+    -------
+    :
+        The diseases associated with the phenotype
+    """
+    phenotype_id = f"{phenotype[0]}:{phenotype[1]}".lower()
+    query = """
+    MATCH (d:BioEntity)-[r:has_phenotype]->(p:BioEntity {id: $phenotype_id})
+    RETURN d
+    """
+    return client.query_nodes(query, phenotype_id=phenotype_id)
+
+
+@autoclient()
+def has_phenotype(
+    disease: Tuple[str, str], phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> List[Any]:
+    """Return True if the disease has the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    disease :
+        The disease to query
+    phenotype :
+        The phenotype to query
+
+    Returns
+    -------
+    :
+        True if the disease has the phenotype
+    """
+    disease_id = f"{disease[0]}:{disease[1]}".lower()
+    phenotype_id = f"{phenotype[0]}:{phenotype[1]}".lower()
+    query = """
+    MATCH (d:BioEntity {id: $disease_id})-[r:has_phenotype]->(p:BioEntity {id: $phenotype_id})
+    RETURN COUNT(r) > 0
+    """
+    return client.query_tx(query, disease_id=disease_id, phenotype_id=phenotype_id, squeeze=True)[0]
+
+
+@autoclient()
+def get_genes_for_phenotype(
+    phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the genes associated with the given phenotype.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (MESH ID)
+
+    Returns
+    -------
+    :
+        The genes (HGNC) associated with the phenotype
+    """
+    return client.get_targets(
+        phenotype,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def get_phenotypes_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the phenotypes associated with the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    gene :
+        The gene to query (HGNC ID)
+
+    Returns
+    -------
+    :
+        The phenotypes (MESH) associated with the gene
+    """
+    return client.get_sources(
+        gene,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+@autoclient()
+def has_phenotype_gene(
+    phenotype: Tuple[str, str], gene: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Return True if the phenotype is associated with the given gene.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client
+    phenotype :
+        The phenotype to query (MESH ID)
+    gene :
+        The gene to query (HGNC ID)
+
+    Returns
+    -------
+    :
+        True if the phenotype is associated with the gene
+    """
+    return client.has_relation(
+        phenotype,
+        gene,
+        relation="phenotype_has_gene",
+        source_type="BioEntity",
+        target_type="BioEntity",
+    )
+
+
+# Wikidata functions
+@autoclient()
+def get_publisher_for_journal(
+    journal: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the publisher for the given journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "100972832"))
+
+    Returns
+    -------
+    :
+        The publisher nodes associated with the journal
+    """
+    journal_id = f"{journal[0]}:{journal[1]}".lower()
+    query = """
+    MATCH (j:Journal {id: $journal_id})-[r:published_by]->(p:Publisher)
+    RETURN p
+    """
+    return client.query_nodes(query, journal_id=journal_id)
+
+
+@autoclient()
+def get_journals_for_publisher(
+    publisher: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the journals for the given publisher.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publisher : Tuple[str, str]
+        The publisher to query (e.g., ("isni", "0000000080461210"))
+
+    Returns
+    -------
+    :
+        The journal nodes published by this publisher
+    """
+    publisher_id = f"{publisher[0]}:{publisher[1]}".lower()
+    query = """
+    MATCH (j:Journal)-[r:published_by]->(p:Publisher {id: $publisher_id})
+    RETURN j
+    """
+    return client.query_nodes(query, publisher_id=publisher_id)
+
+
+@autoclient()
+def is_journal_published_by(
+    journal: Tuple[str, str], publisher: Tuple[str, str], *, client: Neo4jClient
+) -> List[Any]:
+    """Check if a journal is published by a specific publisher.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "100972832"))
+    publisher : Tuple[str, str]
+        The publisher to query (e.g., ("isni", "0000000031304729"))
+
+    Returns
+    -------
+    :
+        True if the journal is published by the given publisher
+    """
+    journal_id = f"{journal[0]}:{journal[1]}".lower()
+    publisher_id = f"{publisher[0]}:{publisher[1]}".lower()
+    query = """
+    MATCH (j:Journal {id: $journal_id})-[r:published_by]->(p:Publisher {id: $publisher_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, journal_id=journal_id, publisher_id=publisher_id, squeeze=True)[0]
+
+
+@autoclient()
+def get_journal_for_publication(
+    publication: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the journal where the publication was published.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "14334679"))
+
+    Returns
+    -------
+    :
+        The journal nodes where this publication was published
+    """
+    return client.get_targets(
+        publication,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def get_publications_for_journal(
+    journal: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return the publications published in the given journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "0000201"))
+
+    Returns
+    -------
+    :
+        The publication nodes published in this journal
+    """
+    return client.get_sources(
+        journal,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def is_published_in_journal(
+    publication: Tuple[str, str], journal: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a publication was published in a specific journal.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "14334679"))
+    journal : Tuple[str, str]
+        The journal to query (e.g., ("nlm", "0000201"))
+
+    Returns
+    -------
+    :
+        True if the publication was published in the given journal
+    """
+    return client.has_relation(
+        publication,
+        journal,
+        relation="published_in",
+        source_type="Publication",
+        target_type="Journal"
+    )
+
+
+@autoclient()
+def get_diseases_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return diseases associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "57"))
+
+    Returns
+    -------
+    :
+        Disease nodes (DOID or MESH) associated with this gene
+    """
+    return client.get_targets(
+        gene,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "2738") or ("mesh", "D011561"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this disease
+    """
+    return client.get_sources(
+        disease,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_diseases_for_variant(
+    variant: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return diseases associated with the given variant.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+
+    Returns
+    -------
+    :
+        Disease nodes (DOID or UMLS) associated with this variant
+    """
+    return client.get_targets(
+        variant,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_gene_disease_association(
+    gene: Tuple[str, str], disease: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene is associated with a disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "57"))
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "DOID:2738"))
+
+    Returns
+    -------
+    :
+        True if the gene is associated with the disease
+    """
+    return client.has_relation(
+        gene,
+        disease,
+        relation="gene_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_variants_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return variants associated with the given disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "10652") or ("umls", "C4528257"))
+
+    Returns
+    -------
+    :
+        Variant nodes (DBSNP) associated with this disease
+    """
+    return client.get_sources(
+        disease,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_variant_disease_association(
+    variant: Tuple[str, str], disease: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a variant is associated with a disease.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs9994441"))
+    disease : Tuple[str, str]
+        The disease to query (e.g., ("doid", "DOID:10652"))
+
+    Returns
+    -------
+    :
+        True if the variant is associated with the disease
+    """
+    return client.has_relation(
+        variant,
+        disease,
+        relation="variant_disease_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_variant(
+    variant: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given variant.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this variant
+    """
+    return client.get_targets(
+        variant,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_variants_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return variants associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "12310"))
+
+    Returns
+    -------
+    :
+        Variant nodes (DBSNP) associated with this gene
+    """
+    return client.get_sources(
+        gene,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_variant_gene_association(
+    variant: Tuple[str, str], gene: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a variant is associated with a gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs74615166"))
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "12310"))
+
+    Returns
+    -------
+    :
+        True if the variant is associated with the gene
+    """
+    return client.has_relation(
+        variant,
+        gene,
+        relation="variant_gene_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+# nih_reporter
+@autoclient()
+def get_publications_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return publications associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "2106659"))
+
+    Returns
+    -------
+    :
+        Publication nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_publication",
+        source_type="ResearchProject",
+        target_type="Publication"
+    )
+
+
+@autoclient()
+def get_projects_for_publication(
+    publication: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a publication.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    publication : Tuple[str, str]
+        The publication to query (e.g., ("pubmed", "11818301"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this publication
+    """
+    return client.get_sources(
+        publication,
+        relation="has_publication",
+        source_type="ResearchProject",
+        target_type="Publication"
+    )
+
+
+@autoclient()
+def get_clinical_trials_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return clinical trials associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "6439077"))
+
+    Returns
+    -------
+    :
+        Clinical trial nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_clinical_trial",
+        source_type="ResearchProject",
+        target_type="ClinicalTrial"
+    )
+
+
+@autoclient()
+def get_projects_for_clinical_trial(
+    trial: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a clinical trial.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    trial : Tuple[str, str]
+        The clinical trial to query (e.g., ("clinicaltrials", "NCT00201240"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this clinical trial
+    """
+    return client.get_sources(
+        trial,
+        relation="has_clinical_trial",
+        source_type="ResearchProject",
+        target_type="ClinicalTrial"
+    )
+
+
+@autoclient()
+def get_patents_for_project(
+    project: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return patents associated with an NIH research project.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    project : Tuple[str, str]
+        The project to query (e.g., ("nihreporter.project", "2106676"))
+
+    Returns
+    -------
+    :
+        Patent nodes associated with this project
+    """
+    return client.get_targets(
+        project,
+        relation="has_patent",
+        source_type="ResearchProject",
+        target_type="Patent"
+    )
+
+
+@autoclient()
+def get_projects_for_patent(
+    patent: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return NIH research projects associated with a patent.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    patent : Tuple[str, str]
+        The patent to query (e.g., ("google.patent", "US5939275"))
+
+    Returns
+    -------
+    :
+        Research project nodes associated with this patent
+    """
+    return client.get_sources(
+        patent,
+        relation="has_patent",
+        source_type="ResearchProject",
+        target_type="Patent"
+    )
+
+
+#interpro
+@autoclient()
+def get_domains_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return protein domains associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "475"))
+
+    Returns
+    -------
+    :
+        Domain nodes (InterPro) associated with this gene
+    """
+    return client.get_targets(
+        gene,
+        relation="has_domain",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_domain(
+    domain: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given protein domain.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    domain : Tuple[str, str]
+        The domain to query (e.g., ("interpro", "IPR006047"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this domain
+    """
+    return client.get_sources(
+        domain,
+        relation="has_domain",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def gene_has_domain(
+    gene: Tuple[str, str], domain: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene has the given protein domain.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "475"))
+    domain : Tuple[str, str]
+        The domain to query (e.g., ("interpro", "IPR006047"))
+
+    Returns
+    -------
+    :
+        True if the gene has the given domain
+    """
+    return client.has_relation(
+        gene,
+        domain,
+        relation="has_domain",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+#gwas
+@autoclient()
+def get_phenotypes_for_variant_gwas(
+    variant: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return phenotypes associated with the given variant from GWAS.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs13015548"))
+
+    Returns
+    -------
+    :
+        Phenotype nodes (MESH, EFO, or DOID) associated with this variant
+    """
+    return client.get_targets(
+        variant,
+        relation="variant_phenotype_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_variants_for_phenotype_gwas(
+    phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return variants associated with the given phenotype from GWAS.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    phenotype : Tuple[str, str]
+        The phenotype to query (e.g., ("mesh", "D001827"))
+
+    Returns
+    -------
+    :
+        Variant nodes (DBSNP) associated with this phenotype
+    """
+    return client.get_sources(
+        phenotype,
+        relation="variant_phenotype_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_variant_phenotype_association(
+    variant: Tuple[str, str], phenotype: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a variant is associated with a phenotype in GWAS data.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    variant : Tuple[str, str]
+        The variant to query (e.g., ("dbsnp", "rs13015548"))
+    phenotype : Tuple[str, str]
+        The phenotype to query (e.g., ("mesh", "D001827"))
+
+    Returns
+    -------
+    :
+        True if the variant is associated with the phenotype
+    """
+    return client.has_relation(
+        variant,
+        phenotype,
+        relation="variant_phenotype_association",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+# chembl
+@autoclient()
+def get_indications_for_drug(
+    molecule: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return indications associated with the given molecule from ChEMBL.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    molecule : Tuple[str, str]
+        The molecule to query (e.g., ("chebi", "10001"))
+
+    Returns
+    -------
+    :
+        Disease nodes (MESH) associated with this molecule
+    """
+    molecule_id = f"{molecule[0]}:{molecule[1]}".lower()
+    query = """
+    MATCH (m:BioEntity {id: $molecule_id})-[r:has_indication]->(i:BioEntity)
+    RETURN i
+    """
+    return client.query_nodes(query, molecule_id=molecule_id)
+
+
+@autoclient()
+def get_drugs_for_indication(
+    indication: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return molecules associated with the given indication from ChEMBL.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    indication : Tuple[str, str]
+        The disease indication to query (e.g., ("mesh", "D002318"))
+
+    Returns
+    -------
+    :
+        Molecule nodes (CHEBI or CHEMBL) associated with this indication
+    """
+    indication_id = f"{indication[0]}:{indication[1]}" if indication[
+                                                              0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
+    query = """
+    MATCH (m:BioEntity)-[r:has_indication]->(i:BioEntity {id: $indication_id})
+    RETURN m
+    """
+    return client.query_nodes(query, indication_id=indication_id)
+
+
+@autoclient()
+def drug_has_indication(
+    molecule: Tuple[str, str], indication: Tuple[str, str], *, client: Neo4jClient
+) -> List[Any]:
+    """Check if a molecule is associated with an indication in ChEMBL data.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    molecule : Tuple[str, str]
+        The molecule to query (e.g., ("chebi", "10001"))
+    indication : Tuple[str, str]
+        The disease indication to query (e.g., ("mesh", "D002318"))
+
+    Returns
+    -------
+    :
+        True if the molecule is associated with the indication
+    """
+    molecule_id = f"{molecule[0]}:{molecule[1]}".lower()
+    indication_id = f"{indication[0]}:{indication[1]}" if indication[
+                                                              0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
+    query = """
+    MATCH (m:BioEntity {id: $molecule_id})-[r:has_indication]->(i:BioEntity {id: $indication_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, molecule_id=molecule_id, indication_id=indication_id, squeeze=True)[0]
+
+
+# depmap
+@autoclient()
+def get_codependents_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes that are codependent with the given gene from DepMap.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "1234"))
+
+    Returns
+    -------
+    :
+        Gene nodes that are codependent with the input gene
+    """
+    gene_id = f"{gene[0]}:{gene[1]}".lower()
+    query = """
+    MATCH (g1:BioEntity {id: $gene_id})-[r:codependent_with]->(g2:BioEntity)
+    RETURN g2
+    """
+    return client.query_nodes(query, gene_id=gene_id)
+
+
+@autoclient()
+def gene_has_codependency(
+    gene1: Tuple[str, str], gene2: Tuple[str, str], *, client: Neo4jClient
+) -> List[Any]:
+    """Check if two genes are codependent according to DepMap data.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene1 : Tuple[str, str]
+        First gene to query
+    gene2 : Tuple[str, str]
+        Second gene to query
+
+    Returns
+    -------
+    :
+        True if the genes are codependent
+    """
+    gene1_id = f"{gene1[0]}:{gene1[1]}".lower()
+    gene2_id = f"{gene2[0]}:{gene2[1]}".lower()
+    query = """
+    MATCH (g1:BioEntity {id: $gene1_id})-[r:codependent_with]->(g2:BioEntity {id: $gene2_id})
+    RETURN COUNT(r) > 0 as exists
+    """
+    return client.query_tx(query, gene1_id=gene1_id, gene2_id=gene2_id, squeeze=True)[0]
+
+
+# ec
+@autoclient()
+def get_enzyme_activities_for_gene(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return enzyme activities associated with the given gene.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "10007"))
+
+    Returns
+    -------
+    :
+        Enzyme activity nodes (ECCODE) associated with this gene
+    """
+    return client.get_targets(
+        gene,
+        relation="has_activity",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_genes_for_enzyme_activity(
+    enzyme: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes associated with the given enzyme activity.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    enzyme : Tuple[str, str]
+        The enzyme activity to query (e.g., ("ec-code", "3.4.21.105"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) associated with this enzyme activity
+    """
+    return client.get_sources(
+        enzyme,
+        relation="has_activity",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_enzyme_activity(
+    gene: Tuple[str, str], enzyme: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene has the given enzyme activity.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "10007"))
+    enzyme : Tuple[str, str]
+        The enzyme activity to query (e.g., ("ec-code", "3.4.21.105"))
+
+    Returns
+    -------
+    :
+        True if the gene has the given enzyme activity
+    """
+    return client.has_relation(
+        gene,
+        enzyme,
+        relation="has_activity",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+# cbioportal
+@autoclient()
+def get_cell_lines_with_mutation(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return cell lines where the given gene is mutated.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "11504"))
+
+    Returns
+    -------
+    :
+        Cell line nodes (CCLE) where this gene is mutated
+    """
+    return client.get_targets(
+        gene,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_mutated_genes_in_cell_line(
+    cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes that are mutated in the given cell line.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) that are mutated in this cell line
+    """
+    return client.get_sources(
+        cell_line,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def is_gene_mutated_in_cell_line(
+    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene is mutated in the given cell line.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "11504"))
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"))
+
+    Returns
+    -------
+    :
+        True if the gene is mutated in the cell line
+    """
+    return client.has_relation(
+        gene,
+        cell_line,
+        relation="mutated_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_cell_lines_with_cna(
+    gene: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return cell lines where the given gene has copy number alteration.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "11216"))
+
+    Returns
+    -------
+    :
+        Cell line nodes (CCLE) where this gene has copy number alteration
+    """
+    return client.get_targets(
+        gene,
+        relation="copy_number_altered_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_cna_genes_in_cell_line(
+    cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return genes that have copy number alteration in the given cell line.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"))
+
+    Returns
+    -------
+    :
+        Gene nodes (HGNC) that have copy number alteration in this cell line
+    """
+    return client.get_sources(
+        cell_line,
+        relation="copy_number_altered_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def has_cna_in_cell_line(
+    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a gene has copy number alteration in the given cell line.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    gene : Tuple[str, str]
+        The gene to query (e.g., ("hgnc", "11216"))
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"))
+
+    Returns
+    -------
+    :
+        True if the gene has copy number alteration in the cell line
+    """
+    return client.has_relation(
+        gene,
+        cell_line,
+        relation="copy_number_altered_in",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_drugs_for_sensitive_cell_line(
+    cell_line: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return drugs that the given cell line is sensitive to.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "RL952_ENDOMETRIUM"))
+
+    Returns
+    -------
+    :
+        Drug nodes (MESH or CHEBI) that this cell line is sensitive to
+    """
+    return client.get_targets(
+        cell_line,
+        relation="sensitive_to",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def get_sensitive_cell_lines_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return cell lines that are sensitive to the given drug.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    drug : Tuple[str, str]
+        The drug to query (e.g., ("mesh", "C586365") or ("chebi", "131174"))
+
+    Returns
+    -------
+    :
+        Cell line nodes (CCLE) that are sensitive to this drug
+    """
+    return client.get_sources(
+        drug,
+        relation="sensitive_to",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
+
+
+@autoclient()
+def is_cell_line_sensitive_to_drug(
+    cell_line: Tuple[str, str], drug: Tuple[str, str], *, client: Neo4jClient
+) -> bool:
+    """Check if a cell line is sensitive to the given drug.
+
+    Parameters
+    ----------
+    client : Neo4jClient
+        The Neo4j client
+    cell_line : Tuple[str, str]
+        The cell line to query (e.g., ("ccle", "RL952_ENDOMETRIUM"))
+    drug : Tuple[str, str]
+        The drug to query (e.g., ("mesh", "C586365"))
+
+    Returns
+    -------
+    :
+        True if the cell line is sensitive to the drug
+    """
+    return client.has_relation(
+        cell_line,
+        drug,
+        relation="sensitive_to",
+        source_type="BioEntity",
+        target_type="BioEntity"
+    )
 
 
 if __name__ == "__main__":

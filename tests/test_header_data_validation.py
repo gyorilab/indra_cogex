@@ -7,29 +7,31 @@ from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import validate_headers
 from indra_cogex.sources.processor_util import (
     data_validator,
-    DataTypeError,
-    UnknownTypeError
+    DataTypeError,  # If the value does not validate against the Neo4j data type
+    UnknownTypeError  # If data_type is not recognized as a Neo4j data type
 )
 
 
-def test_validator():
-    # test the validator function
+def test_header_validator():
+    # test the header validator
     validate_headers(["myint:int"])
     validate_headers(["myintarr:int[]"])
 
     try:
         validate_headers(["badint:integer"])
+        assert False, "Expected exception: integer should not be a valid type"
     except Exception as e:
         # Check correct error type and that type info is in the error message
-        assert isinstance(e, TypeError)
+        assert isinstance(e, TypeError), f"Unexpected exception: {type(e)} - {repr(e)}"
         assert "badint" in str(e)
         assert "integer" in str(e)
 
     try:
         validate_headers(["badintarr:integer[]"])
+        assert False, "Expected exception"
     except Exception as e:
         # Check correct error type and that type info is in the error message
-        assert isinstance(e, TypeError)
+        assert isinstance(e, TypeError), f"Unexpected exception: {type(e)} - {repr(e)}"
         assert "badintarr" in str(e)
         assert "integer[]" in str(e)
 
