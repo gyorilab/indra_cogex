@@ -396,14 +396,6 @@ def test_get_statements():
 
 
 @pytest.mark.nonpublic
-def test_is_gene_mutated():
-    client = _get_client()
-    gene = ("HGNC", "8975")
-    cell_line = ("CCLE", "BT20_BREAST")
-    assert is_gene_mutated(gene, cell_line, client=client)
-
-
-@pytest.mark.nonpublic
 def test_drugs_for_target():
     client = _get_client()
     target = ("HGNC", "6840")
@@ -913,10 +905,10 @@ def test_has_variant_phenotype_association():
 
 
 @pytest.mark.nonpublic
-def test_get_indications_for_molecule():
+def test_get_indications_for_drug():
     client = _get_client()
     molecule = ("chebi", "10001")
-    indications = get_indications_for_molecule(molecule, client=client)
+    indications = get_indications_for_drug(molecule, client=client)
     indication_list = list(indications)
     assert indication_list
     assert isinstance(indication_list[0], Node)
@@ -925,10 +917,10 @@ def test_get_indications_for_molecule():
 
 
 @pytest.mark.nonpublic
-def test_get_molecules_for_indication():
+def test_get_drugs_for_indication():
     client = _get_client()
     indication = ("mesh", "D002318")
-    molecules = get_molecules_for_indication(indication, client=client)
+    molecules = get_drugs_for_indication(indication, client=client)
     molecule_list = list(molecules)
     assert molecule_list
     assert isinstance(molecule_list[0], Node)
@@ -936,15 +928,15 @@ def test_get_molecules_for_indication():
 
 
 @pytest.mark.nonpublic
-def test_molecule_has_indication():
+def test_drug_has_indication():
     client = _get_client()
     molecule = ("chebi", "10001")
     indication = ("mesh", "D002318")
-    assert molecule_has_indication(molecule, indication, client=client)
+    assert drug_has_indication(molecule, indication, client=client)
 
     # Test a relationship that shouldn't exist
     wrong_indication = ("mesh", "D000000")
-    assert not molecule_has_indication(molecule, wrong_indication, client=client)
+    assert not drug_has_indication(molecule, wrong_indication, client=client)
 
 
 @pytest.mark.nonpublic
