@@ -28,49 +28,79 @@ from .helpers import ParseError, get_docstring, parse_json, process_result
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "search_ns",
-    "validation_ns",
-    "evidence_ns",
-    "relationship_ns",
-    "disease_ns",
-    "publication_ns",
+    "gene_expression_ns",
+    "go_terms_ns",
+    "clinical_trials_ns",
+    "biological_pathways_ns",
+    "drug_side_effects_ns",
     "ontology_ns",
-    "cell_line_ns",
-    "clinical_ns",
-    "mutation_ns",
+    "literature_metadata_ns",
+    "statements_ns",
+    "drug_targets_ns",
+    "cell_markers_ns",
+    "disease_phenotypes_ns",
+    "gene_disease_variant_ns",
+    "research_project_output_ns",
+    "gene_domains_ns",
+    "phenotype_variant_ns",
+    "drug_indications_ns",
+    "gene_codependence_ns",
+    "enzyme_activity_ns",
+    "cell_line_properties_ns",
     "analysis_ns",
-    "network_ns"
+    "subnetwork_ns"
 ]
 
 # Define category descriptions
 CATEGORY_DESCRIPTIONS = {
-    'search': "Find and retrieve data across genes, tissues, drugs, and pathways",
-    'validation': "Verify relationships and validate entity associations",
-    'evidence': "Access evidence and statement data supporting relationships",
-    'relationship': "Analyze connections between different biological entities",
-    'disease': "Explore disease-phenotype-gene relationships",
-    'publication': "Search and retrieve publication-related information",
-    'cell_line': "Query cell line mutations and drug sensitivity data",
-    'ontology': "Navigate ontology hierarchies and classifications",
-    'clinical': "Access clinical trial and drug indication data",
-    'mutation': "Analyze genetic mutations and their effects",
-    'network': "Explore biological network relationships and pathways",
+    'gene_expression': "Query and validate gene expression patterns across different tissues",
+    'go_terms': "Access and verify Gene Ontology term associations for genes",
+    'clinical_trials': "Retrieve information about clinical trials and their relationships with drugs and diseases",
+    'biological_pathways': "Explore relationships between genes and their biological pathways, including pathway "
+                           "sharing analysis",
+    'drug_side_effects': "Query and validate drug side effects and their associations",
+    'ontology': "Navigate hierarchical relationships in biological and medical ontologies",
+    'literature_metadata': "Access and search scientific literature, journal, and publisher metadata",
+    'statements': "Retrieve and analyze evidence statements and their associated metadata",
+    'drug_targets': "Explore and validate relationships between drugs and their molecular targets",
+    'cell_markers': "Query relationships between cell types and their molecular markers",
+    'disease_phenotypes': "Investigate associations between diseases and their phenotypic manifestations",
+    'gene_disease_variant': "Analyze interconnected relationships between genes, diseases, and their genetic variants",
+    'project_research_outputs': "Query bidirectional relationships between NIH research projects and their associated "
+                                "outputs (publications, clinical trials, patents)",
+    'gene_domains': "Query and validate protein domain associations for genes",
+    'phenotype_variant': "Explore relationships between genetic variants and phenotypes from GWAS studies",
+    'drug_indications': "Access information about therapeutic uses and indications for drugs",
+    'gene_codependence': "Analyze genetic dependencies and interactions between genes",
+    'enzyme_activity': "Query enzymatic activities associated with genes and proteins",
+    'cell_line_properties': "Explore cell line characteristics including mutations, copy number alterations, "
+                            "and drug sensitivity",
+    'subnetwork': "Explore biological subnetwork relationships and pathways",
     'analysis': "Perform statistical and biological data analysis"
 }
 
 # Define all namespaces
-search_ns = Namespace("Search Operations", CATEGORY_DESCRIPTIONS['search'], path="/api")
-validation_ns = Namespace("Validation Operations", CATEGORY_DESCRIPTIONS['validation'], path="/api")
-evidence_ns = Namespace("Evidence Operations", CATEGORY_DESCRIPTIONS['evidence'], path="/api")
-relationship_ns = Namespace("Relationship Operations", CATEGORY_DESCRIPTIONS['relationship'], path="/api")
-disease_ns = Namespace("Disease Operations", CATEGORY_DESCRIPTIONS['disease'], path="/api")
-publication_ns = Namespace("Publication Operations", CATEGORY_DESCRIPTIONS['publication'], path="/api")
-cell_line_ns = Namespace("Cell Line Operations", CATEGORY_DESCRIPTIONS['cell_line'], path="/api")
-ontology_ns = Namespace("Ontology Operations", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-clinical_ns = Namespace("Clinical Operations", CATEGORY_DESCRIPTIONS['clinical'], path="/api")
-mutation_ns = Namespace("Mutation Operations", CATEGORY_DESCRIPTIONS['mutation'], path="/api")
-network_ns = Namespace("Network Operations", CATEGORY_DESCRIPTIONS['network'], path="/api")
-analysis_ns = Namespace("Analysis Operations", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
+gene_expression_ns = Namespace("Gene Expression Queries", CATEGORY_DESCRIPTIONS['gene_expression'], path="/api")
+go_terms_ns = Namespace("GO Terms Queries", CATEGORY_DESCRIPTIONS['go_terms'], path="/api")
+clinical_trials_ns = Namespace("Clinical Trials Queries", CATEGORY_DESCRIPTIONS['clinical_trials'], path="/api")
+biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'], path="/api")
+drug_side_effects_ns = Namespace("Drug Side Effects Queries", CATEGORY_DESCRIPTIONS['drug_side_effects'], path="/api")
+ontology_ns = Namespace("Ontology Queries", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
+literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'], path="/api")
+statements_ns = Namespace("Statements Queries", CATEGORY_DESCRIPTIONS['statements'], path="/api")
+drug_targets_ns = Namespace("Drug Targets Queries", CATEGORY_DESCRIPTIONS['drug_targets'], path="/api")
+cell_markers_ns = Namespace("Cell Markers Queries", CATEGORY_DESCRIPTIONS['cell_markers'], path="/api")
+disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'], path="/api")
+gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries", CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
+research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'], path="/api")
+gene_domains_ns = Namespace("Gene Domain Queries", CATEGORY_DESCRIPTIONS['gene_domains'], path="/api")
+phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'], path="/api")
+drug_indications_ns = Namespace("Drug Indication Queries", CATEGORY_DESCRIPTIONS['drug_indications'], path="/api")
+gene_codependence_ns = Namespace("Gene Codependence Queries", CATEGORY_DESCRIPTIONS['gene_codependence'], path="/api")
+enzyme_activity_ns = Namespace("Enzyme Activity Queries", CATEGORY_DESCRIPTIONS['enzyme_activity'], path="/api")
+cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'], path="/api")
+analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
+subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
 
 
 def get_example_data():
@@ -84,55 +114,72 @@ def get_example_data():
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
 
 FUNCTION_CATEGORIES = {
-    'search': {
-        'namespace': search_ns,
+    'gene_expression': {
+        'namespace': gene_expression_ns,
         'functions': [
             "get_genes_in_tissue",
             "get_tissues_for_gene",
+            "is_gene_in_tissue"
+        ]
+    },
+    'go_terms': {
+        'namespace': go_terms_ns,
+        'functions': [
             "get_go_terms_for_gene",
             "get_genes_for_go_term",
+            "is_go_term_for_gene"
+        ]
+    },
+    'clinical_trials': {
+        'namespace': clinical_trials_ns,
+        'functions': [
             "get_trials_for_drug",
             "get_trials_for_disease",
             "get_drugs_for_trial",
-            "get_diseases_for_trial",
+            "get_diseases_for_trial"
+        ]
+    },
+    'biological_pathways': {
+        'namespace': biological_pathways_ns,
+        'functions': [
             "get_pathways_for_gene",
-            "get_genes_for_pathway",
             "get_shared_pathways_for_genes",
+            "get_genes_for_pathway",
+            "is_gene_in_pathway"
+        ]
+    },
+    'drug_side_effects': {
+        'namespace': drug_side_effects_ns,
+        'functions': [
             "get_side_effects_for_drug",
             "get_drugs_for_side_effect",
-            "get_markers_for_cell_type",
-            "get_cell_types_for_marker"
+            "is_side_effect_for_drug"
         ]
     },
-    'validation': {
-        'namespace': validation_ns,
+    'ontology': {
+        'namespace': ontology_ns,
         'functions': [
-            "is_gene_in_tissue",
-            "is_go_term_for_gene",
-            "is_gene_in_pathway",
-            "is_side_effect_for_drug",
-            "is_drug_target",
-            "is_marker_for_cell_type",
-            "is_journal_published_by",
-            "is_published_in_journal",
-            "is_gene_mutated",
-            "is_gene_mutated_in_cell_line",
-            "is_cell_line_sensitive_to_drug",
-            "gene_has_domain",
-            "has_enzyme_activity",
-            "molecule_has_indication",
-            "has_variant_phenotype_association",
-            "has_phenotype",
-            "has_phenotype_gene",
-            "has_gene_disease_association",
-            "has_variant_disease_association",
-            "has_variant_gene_association",
-            "gene_has_codependency",
-            "has_cna_in_cell_line"
+            "get_ontology_child_terms",
+            "get_ontology_parent_terms",
+            "isa_or_partof"
         ]
     },
-    'evidence': {
-        'namespace': evidence_ns,
+    'literature_metadata': {
+        'namespace': literature_metadata_ns,
+        'functions': [
+            "get_pmids_for_mesh",
+            "get_mesh_ids_for_pmid",
+            "get_mesh_ids_for_pmids",
+            "get_publisher_for_journal",
+            "get_journals_for_publisher",
+            "is_journal_published_by",
+            "get_journal_for_publication",
+            "get_publications_for_journal",
+            "is_published_in_journal"
+        ]
+    },
+    'statements': {
+        'namespace': statements_ns,
         'functions': [
             "get_evidences_for_mesh",
             "get_evidences_for_stmt_hash",
@@ -145,82 +192,111 @@ FUNCTION_CATEGORIES = {
             "get_statements"
         ]
     },
-    'relationship': {
-        'namespace': relationship_ns,
+    'drug_targets': {
+        'namespace': drug_targets_ns,
         'functions': [
             "get_drugs_for_target",
             "get_drugs_for_targets",
             "get_targets_for_drug",
             "get_targets_for_drugs",
-            "get_genes_for_variant",
-            "get_variants_for_gene",
-            "get_codependents_for_gene"
+            "is_drug_target"
         ]
     },
-    'disease': {
-        'namespace': disease_ns,
+    'cell_markers': {
+        'namespace': cell_markers_ns,
+        'functions': [
+            "get_markers_for_cell_type",
+            "get_cell_types_for_marker",
+            "is_marker_for_cell_type"
+        ]
+    },
+    'disease_phenotypes': {
+        'namespace': disease_phenotypes_ns,
         'functions': [
             "get_phenotypes_for_disease",
             "get_diseases_for_phenotype",
+            "has_phenotype",
             "get_genes_for_phenotype",
             "get_phenotypes_for_gene",
+            "has_phenotype_gene"
+        ]
+    },
+    'gene_disease_variant': {
+        'namespace': gene_disease_variant_ns,
+        'functions': [
             "get_diseases_for_gene",
             "get_genes_for_disease",
+            "has_gene_disease_association",
             "get_diseases_for_variant",
             "get_variants_for_disease",
-            "get_phenotypes_for_variant_gwas",
-            "get_variants_for_phenotype_gwas"
+            "has_variant_disease_association",
+            "get_genes_for_variant",
+            "get_variants_for_gene",
+            "has_variant_gene_association"
         ]
     },
-    'publication': {
-        'namespace': publication_ns,
+    'research_project_output': {
+        'namespace': research_project_output_ns,
         'functions': [
-            "get_pmids_for_mesh",
-            "get_mesh_ids_for_pmid",
-            "get_mesh_ids_for_pmids",
-            "get_publisher_for_journal",
-            "get_journals_for_publisher",
-            "get_journal_for_publication",
-            "get_publications_for_journal",
             "get_publications_for_project",
-            "get_patents_for_project"
+            "get_clinical_trials_for_project",
+            "get_patents_for_project",
+            "get_projects_for_publication",
+            "get_projects_for_clinical_trial",
+            "get_projects_for_patent"
         ]
     },
-    'cell_line': {
-        'namespace': cell_line_ns,
+    'gene_domains': {
+        'namespace': gene_domains_ns,
+        'functions': [
+            "get_domains_for_gene",
+            "get_genes_for_domain",
+            "gene_has_domain"
+        ]
+    },
+    'phenotype_variant': {
+        'namespace': phenotype_variant_ns,
+        'functions': [
+            "get_phenotypes_for_variant_gwas",
+            "get_variants_for_phenotype_gwas",
+            "has_variant_phenotype_association"
+        ]
+    },
+    'drug_indications': {
+        'namespace': drug_indications_ns,
+        'functions': [
+            "get_indications_for_drug",
+            "get_drugs_for_indication",
+            "drug_has_indication"
+        ]
+    },
+    'gene_codependence': {
+        'namespace': gene_codependence_ns,
+        'functions': [
+            "get_codependents_for_gene",
+            "gene_has_codependency"
+        ]
+    },
+    'enzyme_activity': {
+        'namespace': enzyme_activity_ns,
+        'functions': [
+            "get_enzyme_activities_for_gene",
+            "get_genes_for_enzyme_activity",
+            "has_enzyme_activity"
+        ]
+    },
+    'cell_line_properties': {
+        'namespace': cell_line_properties_ns,
         'functions': [
             "get_cell_lines_with_mutation",
             "get_mutated_genes_in_cell_line",
+            "is_gene_mutated_in_cell_line",
             "get_cell_lines_with_cna",
             "get_cna_genes_in_cell_line",
+            "has_cna_in_cell_line",
             "get_drugs_for_sensitive_cell_line",
-            "get_sensitive_cell_lines_for_drug"
-        ]
-    },
-    'ontology': {
-        'namespace': ontology_ns,
-        'functions': [
-            "get_ontology_child_terms",
-            "get_ontology_parent_terms",
-            "isa_or_partof",
-            "get_domains_for_gene",
-            "get_genes_for_domain",
-            "get_enzyme_activities_for_gene",
-            "get_genes_for_enzyme_activity"
-        ]
-    },
-    'clinical': {
-        'namespace': clinical_ns,
-        'functions': [
-            "get_clinical_trials_for_project",
-            "get_indications_for_molecule",
-            "get_molecules_for_indication"
-        ]
-    },
-    'mutation': {
-        'namespace': mutation_ns,
-        'functions': [
-            "get_mutated_genes"
+            "get_sensitive_cell_lines_for_drug",
+            "is_cell_line_sensitive_to_drug"
         ]
     },
     'analysis': {
@@ -232,8 +308,8 @@ FUNCTION_CATEGORIES = {
             "metabolite_discrete_analysis"
         ]
     },
-    'network': {
-        'namespace': network_ns,
+    'subnetwork': {
+        'namespace': subnetwork_ns,
         'functions': [
             "indra_subnetwork_relations",
             "indra_subnetwork_meta",
@@ -392,10 +468,6 @@ for module, func_name in module_functions:
         if func_name in info['functions']:
             target_ns = info['namespace']
             break
-
-    # If no category found, use search namespace as default
-    if target_ns is None:
-        target_ns = search_ns
 
     short_doc, fixed_doc = get_docstring(
         func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
