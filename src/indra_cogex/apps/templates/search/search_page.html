@@ -1,0 +1,372 @@
+{% extends "base_form.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.css">
+    <style>
+        .btn-role {
+            width: 115px;
+            height: 70px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        .btn-role img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .btn-role.active {
+            background-color: #e9ecef;
+            border-color: #0056b3;
+        }
+
+        .btn-role:hover {
+            background-color: #e9ecef;
+        }
+
+        .role-buttons-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .agent-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .blue-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #6fa8dcff;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .orange-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ff9900ff;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .choices__list--dropdown {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .cy-role {
+            pointer-events: none; /* Disable all node interactions */
+        }
+
+        .other-agent-container {
+            margin-top: 15px;
+            display: none;
+        }
+        #ground-results-container {
+            position: relative;
+            margin-top: 10px;
+        }
+        #ground-results {
+            width: 100%;
+        }
+        #ground-agent-button {
+        width: 200px;
+        }
+        #ground-mesh-button {
+        width: 200px;
+        }
+
+        /* Circle for the question mark */
+        .info-icon {
+            font-size: 12px;
+            color: #fff;
+            background: #007bff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Tooltip box */
+        .tooltip-box {
+            display: none;
+            position: absolute;
+            bottom: 19px; /* Increase this value to move the box down */
+            right: -100px; /* horizontal alignment */
+            background: #f8f9fa;
+            color: #333; /* Ensure text is visible */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            width: 240px;
+            z-index: 1000;
+        }
+
+
+        /* Keep tooltip visible on hover */
+        .info-icon:hover + .tooltip-box,
+        .tooltip-box:hover {
+            display: block;
+        }
+
+        .role-buttons-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .btn-role {
+            display: flex;
+            width: 120px;
+            height: 90px;
+            background-color: #fff;
+        }
+
+        .btn-role img {
+            max-width: 80%;
+        }
+
+        .role-text {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .agent-tooltip-box,
+        .agent-role-tooltip-box,
+        .other-agent-tooltip-box,
+        .filter-by-mesh-tooltip-box,
+        .relation-type-tooltip-box
+        {
+            display: none;
+            position: absolute;
+            bottom: 19px;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        /* make tooptip near the label */
+        .tooltip-label {
+            position: relative;
+        }
+
+        /* Show the tooltip when hovering over the label */
+        #agent-text:hover + .agent-tooltip-box,
+        #agent-role-text:hover + .agent-role-tooltip-box,
+        #other-agent-text:hover + .other-agent-tooltip-box,
+        #filter-by-mesh-text:hover + .filter-by-mesh-tooltip-box,
+        #relation-type-text:hover + .relation-type-tooltip-box{
+            display: block; /* Show tooltip when hovering over "Agent" text */
+        }
+
+    </style>
+
+    {{ super() }}
+{% endblock %}
+
+{% block container %}
+
+<div class="card card-body bg-light">
+    <h1 class="display-4">Statement Search</h1>
+    <p class="lead">This page allows you to search into 9.8 million statements assembled over 130 thousand entities
+        (genes, proteins, small molecules, biological processes, etc.) with a total of 5.1 million pieces of supporting evidence from literature and databases. </br>
+        Refine your search by specifying agents, relationship types, and roles.</p>
+
+    <form method="POST" id="agent-form">
+        <div class="form-group">
+            <label for="clickable-text" class="form-label">Example Usages:</label>
+            <ul style="padding-left: 20px;">
+                <li>
+                    <p id="clickable-text-example1" class="clickable-text" style="cursor: pointer; color: blue; text-decoration: underline; display: inline;">
+                        How does DUSP1 affect MAPK1?
+                    </p>
+                </li>
+                <li>
+                    <p id="clickable-text-example2" class="clickable-text" style="cursor: pointer; color: blue; text-decoration: underline; display: inline;">
+                        What does CDK12 phosphorylate?
+                    </p>
+                </li>
+                <li>
+                    <p id="clickable-text-example3" class="clickable-text" style="cursor: pointer; color: blue; text-decoration: underline; display: inline;">
+                        What is known to inhibit mTOR?
+                    </p>
+                </li>
+                <li>
+                    <p id="clickable-text-example4" class="clickable-text" style="cursor: pointer; color: blue; text-decoration: underline; display: inline;">
+                        Show all interactions involving PIK3CA.
+                    </p>
+                </li>
+                <li>
+                    <p id="clickable-text-example5" class="clickable-text" style="cursor: pointer; color: blue; text-decoration: underline; display: inline;">
+                        What does Seliciclib inhibit?
+                    </p>
+                </li>
+            </ul>
+        </div>
+        <!-- Agent Input -->
+        <div class="form-group agent-container">
+            <label for="agent-name" id="agent-label" class="tooltip-label">
+                <span id="agent-text">Agent</span>
+                <div class="agent-tooltip-box">
+                    (Required): This can be text or you can use the ‘Find Identifier’ feature to locate a unique identifier.
+                </div>
+                <span class="blue-dot" style="margin-left: 3px;"></span>
+            </label>
+            <div style="display: flex; align-items: center; position: relative;">
+                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
+
+                <select class="form-control" id="agent-select" name="agent_select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the agent name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;" id="tooltip-link">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Subject/Object Role Buttons -->
+        <div class="form-group">
+            <label for="role-buttons-container" class="tooltip-label">
+                <span id="agent-role-text">Agent Role</span>
+                <div class="agent-role-tooltip-box">
+                    (Optional): Specify the role of the agent in the statement. The default role is either ‘subject’ or ‘object’.
+                </div>
+            </label>
+            <div class="role-buttons-container" id="role-buttons-container">
+                <div class="btn-role" id="btn-either" data-role="either">
+                    <img src="{{ url_for('static', filename='search/images/role_button3.png') }}" alt="Either" />
+                    <div class="role-text">Subject/Object</div>
+                </div>
+                <div class="btn-role" id="btn-subject" data-role="subject">
+                    <img src="{{ url_for('static', filename='search/images/role_button2.png') }}" alt="Subject" />
+                    <div class="role-text">Subject</div>
+                </div>
+                <div class="btn-role" id="btn-object" data-role="object">
+                    <img src="{{ url_for('static', filename='search/images/role_button1.png') }}" alt="Object" />
+                    <div class="role-text">Object</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional Other Agent Input -->
+        <div class="form-group other-agent-container" id="other-agent-container">
+            <label for="other-agent-name" id="other-agent-label" class="tooltip-label">
+                <span id="other-agent-text">Other Agent</span>
+                <div class="other-agent-tooltip-box">
+                    (Optional): Promped when the agent role is selected.
+                </div>
+                <span class="orange-dot" style="margin-left: 3px;"></span>
+            </label>
+            <div style="display: flex; align-items: center; position: relative;">
+                <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
+
+                <select class="form-control" id="other-agent-select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-other-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the other agent name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Relationship Type Multiselect -->
+        <div class="form-group mt-4">
+            <label for="choices-multiple-remove-button" class="tooltip-label">
+                <span id="relation-type-text">Relationship Types</span>
+                <div class="relation-type-tooltip-box">
+                    (Optional): Can be a single type or multiple types.
+                </div>
+            </label>
+
+            <select id="choices-multiple-remove-button" name="rel_types[]" multiple></select>
+            <input type="hidden" id="rel-type-hidden" name="rel_type" value="">
+        </div>
+
+
+        <!-- Mesh Constraint -->
+        <div class="form-group mesh-container">
+            <label for="mesh-name" class="tooltip-label">
+                <span id="filter-by-mesh-text">Filter by Mesh Term</span>
+                <div class="filter-by-mesh-tooltip-box">
+                    (Optional): Filter by paper context using Mesh terms. Each term must be grounded using the provided button.
+                </div>
+            </label>
+
+            <div style="display: flex; align-items: center; position: relative;">
+                <!-- Input field for Mesh name -->
+                <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name">
+
+                <select class="form-control" id="mesh-select" style="display: none; margin-left: 10px;">
+                    <option value="" selected hidden>Grounded Results...</option>
+                </select>
+                <button type="button" id="ground-mesh-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
+                    <span style="position: relative;">
+                        Find Identifier
+                        <span class="info-icon" style="position: absolute; top: -5px; right: -20px;">?</span>
+                        <div class="tooltip-box">
+                            Use this button to ground the Mesh name into a unique identifier using
+                            <a href="https://grounding.indra.bio/" target="_blank" style="color: #007bff; text-decoration: underline;">Gilda</a>.
+                        </div>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden Inputs for Roles -->
+        <input type="hidden" id="agent-role" name="agent_role" value="">
+        <input type="hidden" id="other-agent-role" name="other_agent_role" value="">
+        <!-- Hidden Inputs for Agent -->
+        <input type="hidden" id="agent-tuple" name="agent_tuple" value="">
+        <input type="hidden" id="other-agent-tuple" name="other_agent_tuple" value="">
+
+        <input type="hidden" id="mesh-tuple" name="mesh_tuple" value="">
+
+
+        <button type="submit" class="btn btn-primary mt-4">Search</button>
+
+    </form>
+</div>
+
+<script id="stmt-types-json" type="application/json">
+    {{ stmt_types_json | safe }}
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
+<script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
+{% endblock %}

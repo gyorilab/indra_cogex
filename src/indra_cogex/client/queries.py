@@ -1225,7 +1225,7 @@ def get_statements(
     if paper_term:
         paper_param, paper_clause = generate_paper_clause(paper_term)
     else:
-        paper_clause = None
+        paper_clause = ""
 
     if mesh_term or paper_term:
         query = (f"MATCH (e:Evidence)-[:has_citation]->"
@@ -1308,6 +1308,7 @@ def get_statements(
 
     logger.info(f"Running query with constraints: rel_type={rel_types}, "
                 f"source={stmt_sources}, agent={agent}, other_agent={other_agent}, "
+                f"mesh = {mesh_all_term}"
                 f"agent_role={agent_role}, other_role={other_role}, limit={limit}")
     logger.info(query)
     rels = client.query_tx(query, **params)

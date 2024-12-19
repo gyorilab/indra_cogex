@@ -84,6 +84,7 @@
             </div>
         </div>
     </div>
+
     <div class="row" id="home-decks">
         {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
         <h3 class="text-center">Apps and Services using INDRA CoGEx</h3>
@@ -138,8 +139,18 @@
         <h3 class="text-center">Directed Exploration</h3>
         <div class="card-deck">
             <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for('static', filename='search/images/role_button3.png') }}">
+                <div class="card-body">
+                    <h5 class="card-title">Search assembled statements</h5>
+                    <p class="card-text">
+                        Search statements assembled from literature and databases by agents involved.
+                    </p>
+                </div>
+                {{ start_button('search.search', '/search/') }}
+            </div>
+            <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
-                     src="https://conceptdraw.com/a708c3/p1/preview/256/pict--metabolic-pathway-map-key-metabolic-processes-biochemical-pathway-map">
+                     src="{{ url_for("static", filename="pathway.png") }}">
                 <div class="card-body">
                     <h5 class="card-title">GO Pathway Explorer</h5>
                     <p class="card-text">
