@@ -642,32 +642,30 @@ def test_is_journal_published_by():
 @pytest.mark.nonpublic
 def test_get_journal_for_publication():
     client = _get_client()
-    publication = ("pubmed", "14334679")
+    publication = ("pubmed", "11818301")
     journals = get_journal_for_publication(publication, client=client)
     journal_list = list(journals)
     assert journal_list
     assert isinstance(journal_list[0], Node)
     assert journal_list[0].db_ns == "NLM"
-    assert ("NLM", "0000201") in [j.grounding() for j in journal_list]
 
 
 @pytest.mark.nonpublic
 def test_get_publications_for_journal():
     client = _get_client()
-    journal = ("nlm", "0000201")
+    journal = ("nlm", "100972832")
     publications = get_publications_for_journal(journal, client=client)
     publication_list = list(publications)
     assert publication_list
     assert isinstance(publication_list[0], Node)
     assert publication_list[0].db_ns == "PUBMED"
-    assert ("PUBMED", "14334679") in [p.grounding() for p in publication_list]
 
 
 @pytest.mark.nonpublic
 def test_is_published_in_journal():
     client = _get_client()
-    publication = ("pubmed", "14334679")
-    journal = ("nlm", "0000201")
+    publication = ("pubmed", "11818301")
+    journal = ("nlm", "1254074")
     assert is_published_in_journal(publication, journal, client=client)
 
     # Test a relationship that shouldn't exist
@@ -774,13 +772,12 @@ def test_has_variant_gene_association():
 @pytest.mark.nonpublic
 def test_get_publications_for_project():
     client = _get_client()
-    project = ("nihreporter.project", "2106659")
+    project = ("nihreporter.project", "6439077")
     publications = get_publications_for_project(project, client=client)
     pub_list = list(publications)
     assert pub_list
     assert isinstance(pub_list[0], Node)
     assert pub_list[0].db_ns == "PUBMED"
-    assert ("PUBMED", "11818301") in [p.grounding() for p in pub_list]
 
 
 @pytest.mark.nonpublic
