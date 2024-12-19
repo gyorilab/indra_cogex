@@ -47,8 +47,6 @@ __all__ = [
     "get_stmts_meta_for_stmt_hashes",
     "get_stmts_for_stmt_hashes",
     "get_statements",
-    "is_gene_mutated",
-    "get_mutated_genes",
     "get_drugs_for_target",
     "get_drugs_for_targets",
     "get_targets_for_drug",
@@ -90,9 +88,9 @@ __all__ = [
     "get_phenotypes_for_variant_gwas",
     "get_variants_for_phenotype_gwas",
     "has_variant_phenotype_association",
-    "get_indications_for_molecule",
-    "get_molecules_for_indication",
-    "molecule_has_indication",
+    "get_indications_for_drug",
+    "get_drugs_for_indication",
+    "drug_has_indication",
     "get_codependents_for_gene",
     "gene_has_codependency",
     "get_enzyme_activities_for_gene",
@@ -1545,62 +1543,6 @@ def get_schema_graph(*, client: Neo4jClient) -> nx.MultiDiGraph:
     return graph
 
 
-# CCLE
-
-
-@autoclient()
-def is_gene_mutated(
-    gene: Tuple[str, str], cell_line: Tuple[str, str], *, client: Neo4jClient
-) -> bool:
-    """Return True if the gene is mutated in the given cell line.
-
-    Parameters
-    ----------
-    client :
-        The Neo4j client.
-    gene :
-        The gene to query.
-    cell_line :
-        The cell line to query.
-
-    Returns
-    -------
-    :
-        True if the gene is mutated in the given cell line.
-    """
-    return client.has_relation(
-        gene,
-        cell_line,
-        relation="mutated_in",
-        source_type="BioEntity",
-        target_type="BioEntity",
-    )
-
-
-@autoclient()
-def get_mutated_genes(cell_line: Tuple[str, str], *, client: Neo4jClient) -> List[Node]:
-    """Return the list of genes that are mutated in a given cell line.
-
-    Parameters
-    ----------
-    client :
-        The Neo4j client.
-    cell_line :
-        The cell line to query.
-
-    Returns
-    -------
-    :
-        The list of genes that are mutated in the given cell line.
-    """
-    return client.get_sources(
-        target=cell_line,
-        relation="mutated_in",
-        source_type="BioEntity",
-        target_type="BioEntity",
-    )
-
-
 # Indra DB
 
 
@@ -2772,7 +2714,7 @@ def has_variant_phenotype_association(
 
 # chembl
 @autoclient()
-def get_indications_for_molecule(
+def get_indications_for_drug(
     molecule: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return indications associated with the given molecule from ChEMBL.
@@ -2798,7 +2740,7 @@ def get_indications_for_molecule(
 
 
 @autoclient()
-def get_molecules_for_indication(
+def get_drugs_for_indication(
     indication: Tuple[str, str], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return molecules associated with the given indication from ChEMBL.
@@ -2825,7 +2767,7 @@ def get_molecules_for_indication(
 
 
 @autoclient()
-def molecule_has_indication(
+def drug_has_indication(
     molecule: Tuple[str, str], indication: Tuple[str, str], *, client: Neo4jClient
 ) -> List[Any]:
     """Check if a molecule is associated with an indication in ChEMBL data.
