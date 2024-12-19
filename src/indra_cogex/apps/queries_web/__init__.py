@@ -254,7 +254,7 @@ examples_dict = {
         example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
     ),
     "disease": fields.List(fields.String, example=["doid", "0040093"]),
-    "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
+    "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00201240"]),
     "genes": fields.List(
         fields.List(fields.String),
         example=[["HGNC", "1097"], ["HGNC", "6407"]]
@@ -325,14 +325,14 @@ examples_dict = {
     "cell_type": fields.List(fields.String, example=["cl", "0000020"]),
     "marker": fields.List(fields.String, example=["hgnc", "11337"]),
     # Pubmed
-    "publication": fields.List(fields.String, example=["pubmed", "14334679"]),
-    "journal": fields.List(fields.String, example=["nlm", "0000201"]),
+    "publication": fields.List(fields.String, example=["pubmed", "11818301"]),
+    "journal": fields.List(fields.String, example=["nlm", "100972832"]),
     # Disgenet
     "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
-    "project": fields.List(fields.String, example=["nihreporter.project", "2106659"]),
+    "project": fields.List(fields.String, example=["nihreporter.project", "6439077"]),
     "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
     "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
