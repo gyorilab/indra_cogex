@@ -281,6 +281,12 @@ def get_evidence(stmt_hash):
         # Get the evidence counts
         ev_counts = {r.data["stmt_hash"]: r.data["evidence_count"] for r in relations}
 
+        # Get the source counts
+        source_counts = {
+            int(r.data["stmt_hash"]): json.loads(r.data["source_counts"])
+            for r in relations
+        }
+
         # Get curations from the curation cache
         curations = curation_cache.get_curations(
             pa_hash=[int(r.data["stmt_hash"]) for r in relations]
@@ -288,7 +294,11 @@ def get_evidence(stmt_hash):
 
         # Get the formatted evidence rows
         stmt_rows = format_stmts(
-            stmts=[stmt], evidence_counts=ev_counts, curations=curations
+            stmts=[stmt],
+            evidence_counts=ev_counts,
+            curations=curations,
+            remove_medscan=remove_medscan,
+            source_counts_per_hash=source_counts,
         )
 
         # Return the evidence json for the statement
