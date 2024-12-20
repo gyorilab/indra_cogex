@@ -296,9 +296,12 @@ def get_evidence(stmt_hash):
         # <Statement> expects this json structure:
         # resp_json.statements[hash].evidence
         # Note that 'stmt_hash' and 'source_hash' need to be strings
-        return jsonify(
-            {"statements": {str(stmt_hash): {"evidence": json.loads(stmt_rows[0][0])}}}
-        )
+        if stmt_rows:
+            return jsonify(
+                {"statements": {str(stmt_hash): {"evidence": json.loads(stmt_rows[0][0])}}}
+            )
+        else:
+            return jsonify({"statements": {str(stmt_hash): {"evidence": []}}})
     except Exception as err:
         logger.exception(err)
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Error fetching evidence")
