@@ -83,22 +83,29 @@ CATEGORY_DESCRIPTIONS = {
 gene_expression_ns = Namespace("Gene Expression Queries", CATEGORY_DESCRIPTIONS['gene_expression'], path="/api")
 go_terms_ns = Namespace("GO Terms Queries", CATEGORY_DESCRIPTIONS['go_terms'], path="/api")
 clinical_trials_ns = Namespace("Clinical Trials Queries", CATEGORY_DESCRIPTIONS['clinical_trials'], path="/api")
-biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'], path="/api")
+biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'],
+                                   path="/api")
 drug_side_effects_ns = Namespace("Drug Side Effects Queries", CATEGORY_DESCRIPTIONS['drug_side_effects'], path="/api")
 ontology_ns = Namespace("Ontology Queries", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'], path="/api")
+literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'],
+                                   path="/api")
 statements_ns = Namespace("Statements Queries", CATEGORY_DESCRIPTIONS['statements'], path="/api")
 drug_targets_ns = Namespace("Drug Targets Queries", CATEGORY_DESCRIPTIONS['drug_targets'], path="/api")
 cell_markers_ns = Namespace("Cell Markers Queries", CATEGORY_DESCRIPTIONS['cell_markers'], path="/api")
-disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'], path="/api")
-gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries", CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
-research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'], path="/api")
+disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'],
+                                  path="/api")
+gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries",
+                                    CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
+research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'],
+                                       path="/api")
 gene_domains_ns = Namespace("Gene Domain Queries", CATEGORY_DESCRIPTIONS['gene_domains'], path="/api")
-phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'], path="/api")
+phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'],
+                                 path="/api")
 drug_indications_ns = Namespace("Drug Indication Queries", CATEGORY_DESCRIPTIONS['drug_indications'], path="/api")
 gene_codependence_ns = Namespace("Gene Codependence Queries", CATEGORY_DESCRIPTIONS['gene_codependence'], path="/api")
 enzyme_activity_ns = Namespace("Enzyme Activity Queries", CATEGORY_DESCRIPTIONS['enzyme_activity'], path="/api")
-cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'], path="/api")
+cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'],
+                                    path="/api")
 analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
 
@@ -320,9 +327,34 @@ FUNCTION_CATEGORIES = {
     }
 }
 
+
+# Add MultiExample class for handling multiple examples
+class MultiExample:
+    def __init__(self, *examples):
+        self.examples = examples
+        self.current_index = 0
+
+    def get_example(self):
+        return self.examples[self.current_index]
+
+    def next_example(self):
+        self.current_index = (self.current_index + 1) % len(self.examples)
+        return self.get_example()
+
+    def try_all_examples(self):
+        """Generator to try all examples in sequence."""
+        for i in range(len(self.examples)):
+            yield self.examples[i]
+
+
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
-    "gene": fields.List(fields.String, example=["HGNC", "9896"]),
+    "gene": fields.List(fields.String,
+                        example=MultiExample(
+                            ["HGNC", "9896"],
+                            ["hgnc", "57"],
+                            ["hgnc", "10007"]
+                        ).get_example()),
     "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
     "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
     "drugs": fields.List(
@@ -362,7 +394,11 @@ examples_dict = {
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
-    "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
+    "cell_line": fields.List(fields.String,
+                             example=MultiExample(
+                                 ["ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"],
+                                 ["ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]
+                             ).get_example()),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
         fields.List(fields.String),
@@ -402,16 +438,35 @@ examples_dict = {
     "marker": fields.List(fields.String, example=["hgnc", "11337"]),
     # Pubmed
     "publication": fields.List(fields.String, example=["pubmed", "11818301"]),
-    "journal": fields.List(fields.String, example=["nlm", "100972832"]),
+    "journal": fields.List(fields.String,
+                           example=MultiExample(
+                               ["nlm", "100972832"],
+                               ["nlm", "1254074"]
+                           ).get_example()),
     # Disgenet
-    "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
+    "variant": fields.List(fields.String,
+                           example=MultiExample(
+                               ["dbsnp", "rs9994441"],
+                               ["dbsnp", "rs74615166"],
+                               ["dbsnp", "rs13015548"]
+                           ).get_example()),
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
-    "project": fields.List(fields.String, example=["nihreporter.project", "6439077"]),
+    "project": fields.List(fields.String,
+                           example=MultiExample(
+                               ["nihreporter.project", "6439077"],
+                               ["nihreporter.project", "2106676"]
+                           ).get_example()),
+
     "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
-    "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
+    "phenotype": fields.List(fields.String,
+                             example=MultiExample(
+                                 ["hp", "0003138"],
+                                 ["MESH", "D009264"],
+                                 ["mesh", "D001827"]
+                             ).get_example()),
     # For InterPro
     "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
     # For DepMap codependency
@@ -519,6 +574,20 @@ for module, func_name in module_functions:
             try:
                 parsed_query = parse_json(json_dict)
                 result = func_mapping[self.func_name](**parsed_query, client=client)
+
+                # If result is empty, try alternative examples
+                if not result:
+                    for param, value in parsed_query.items():
+                        if param in examples_dict and hasattr(examples_dict[param].example, 'try_all_examples'):
+                            # Try each example until we get a non-empty result
+                            for example in examples_dict[param].example.try_all_examples():
+                                parsed_query[param] = example
+                                result = func_mapping[self.func_name](**parsed_query, client=client)
+                                if result:
+                                    break
+                            if result:
+                                break
+
                 # Any 'is' type query
                 if isinstance(result, bool):
                     return jsonify({self.func_name: result})
