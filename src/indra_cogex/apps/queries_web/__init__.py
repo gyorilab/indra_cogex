@@ -83,29 +83,22 @@ CATEGORY_DESCRIPTIONS = {
 gene_expression_ns = Namespace("Gene Expression Queries", CATEGORY_DESCRIPTIONS['gene_expression'], path="/api")
 go_terms_ns = Namespace("GO Terms Queries", CATEGORY_DESCRIPTIONS['go_terms'], path="/api")
 clinical_trials_ns = Namespace("Clinical Trials Queries", CATEGORY_DESCRIPTIONS['clinical_trials'], path="/api")
-biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'],
-                                   path="/api")
+biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'], path="/api")
 drug_side_effects_ns = Namespace("Drug Side Effects Queries", CATEGORY_DESCRIPTIONS['drug_side_effects'], path="/api")
 ontology_ns = Namespace("Ontology Queries", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'],
-                                   path="/api")
+literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'], path="/api")
 statements_ns = Namespace("Statements Queries", CATEGORY_DESCRIPTIONS['statements'], path="/api")
 drug_targets_ns = Namespace("Drug Targets Queries", CATEGORY_DESCRIPTIONS['drug_targets'], path="/api")
 cell_markers_ns = Namespace("Cell Markers Queries", CATEGORY_DESCRIPTIONS['cell_markers'], path="/api")
-disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'],
-                                  path="/api")
-gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries",
-                                    CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
-research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'],
-                                       path="/api")
+disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'], path="/api")
+gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries", CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
+research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'], path="/api")
 gene_domains_ns = Namespace("Gene Domain Queries", CATEGORY_DESCRIPTIONS['gene_domains'], path="/api")
-phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'],
-                                 path="/api")
+phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'], path="/api")
 drug_indications_ns = Namespace("Drug Indication Queries", CATEGORY_DESCRIPTIONS['drug_indications'], path="/api")
 gene_codependence_ns = Namespace("Gene Codependence Queries", CATEGORY_DESCRIPTIONS['gene_codependence'], path="/api")
 enzyme_activity_ns = Namespace("Enzyme Activity Queries", CATEGORY_DESCRIPTIONS['enzyme_activity'], path="/api")
-cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'],
-                                    path="/api")
+cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'], path="/api")
 analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
 
