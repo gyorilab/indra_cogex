@@ -66,7 +66,8 @@ class GeneOntologyForm(FlaskForm):
         "Gene Ontology Term",
         validators=[DataRequired()],
         description="Choose a gene ontology term to explore (e.g., "
-                    '<a href="./GO:0003677">GO:0003677</a> for Apoptotic Process)',
+                    '<a href="#" onclick="event.preventDefault(); document.getElementById('
+                    '\'term\').value=\'GO:0003677\'">GO:0003677</a> for Apoptotic Process)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
@@ -155,7 +156,8 @@ class MeshDiseaseForm(FlaskForm):
     term = StringField(
         "MeSH Term",
         validators=[DataRequired()],
-        description='Choose a MeSH disease to explore (e.g., <a href="./D006009">D006009</a> for Pompe Disease)',
+        description='Choose a MeSH disease to explore (e.g., <a href="#" onclick="event.preventDefault(); '
+                    'document.getElementById(\'term\').value=\'D006009\'">D006009</a> for Pompe Disease)',
     )
     include_db_evidence = BooleanField('Include Database Evidence')
     submit = SubmitField("Submit")
@@ -571,14 +573,16 @@ class PaperForm(FlaskForm):
     identifier = StringField(
         "Publication identifier or CURIE",
         validators=[DataRequired()],
-        description="""\
-            This field accepts identifiers from PubMed, PubMed Central, and DOI
-            as either a CURIEs that looks like <code>pubmed:26186194</code>,
-            <code>PMC4617211</code>, or doi:<code>10.1016/J.CELL.2015.06.043</code>
-            <strong>or</strong> as a local unique identifier that looks like
-            <code>26186194</code>, <code>PMC4617211</code>, or
-            <code>10.1016/J.CELL.2015.06.043</code>.
-        """,
+        description="""
+                This field accepts identifiers from PubMed, PubMed Central, and DOI. Examples: 
+                <a href="#" onclick="event.preventDefault(); 
+                document.getElementById('identifier').value='pubmed:26186194'">pubmed:26186194</a>, 
+                <a href="#" onclick="event.preventDefault(); 
+                document.getElementById('identifier').value='PMC4617211'">PMC4617211</a>, or 
+                <a href="#" onclick="event.preventDefault(); 
+                document.getElementById('identifier').value='10.1016/J.CELL.2015.06.043'">
+                doi:10.1016/J.CELL.2015.06.043</a>
+                """
     )
     filter_curated = BooleanField(
         "Filter Curated Evidences",

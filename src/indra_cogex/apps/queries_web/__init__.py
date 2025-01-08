@@ -320,17 +320,27 @@ FUNCTION_CATEGORIES = {
     }
 }
 
+
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
-    "gene": fields.List(fields.String, example=["HGNC", "9896"]),
+    "gene": {
+        "get_enzyme_activities_for_gene": fields.List(fields.String, example=["hgnc", "10007"]),
+        "default": fields.List(fields.String, example=["HGNC", "9896"])
+    },
     "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
-    "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
+    "drug": {
+        "get_sensitive_cell_lines_for_drug": fields.List(fields.String, example=["mesh", "C586365"]),
+        "default": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"])
+    },
     "drugs": fields.List(
         fields.List(fields.String),
         example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
     ),
     "disease": fields.List(fields.String, example=["doid", "0040093"]),
-    "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00201240"]),
+    "trial": {
+        "get_drugs_for_trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
+        "default": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00201240"])
+    },
     "genes": fields.List(
         fields.List(fields.String),
         example=[["HGNC", "1097"], ["HGNC", "6407"]]
@@ -404,14 +414,25 @@ examples_dict = {
     "publication": fields.List(fields.String, example=["pubmed", "11818301"]),
     "journal": fields.List(fields.String, example=["nlm", "100972832"]),
     # Disgenet
-    "variant": fields.List(fields.String, example=["dbsnp", "rs9994441"]),
+    "variant": {
+        "get_phenotypes_for_variant_gwas": fields.List(fields.String, example=["dbsnp", "rs13015548"]),
+        "default": fields.List(fields.String, example=["dbsnp", "rs9994441"])
+    },
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
-    "project": fields.List(fields.String, example=["nihreporter.project", "6439077"]),
+    "project": {
+        "get_patents_for_project": fields.List(fields.String, example=["nihreporter.project", "2106676"]),
+        "default": fields.List(fields.String, example=["nihreporter.project", "6439077"])
+    },
+
     "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
-    "phenotype": fields.List(fields.String, example=["hp", "0003138"]),
+    "phenotype": {
+        "get_genes_for_phenotype": fields.List(fields.String, example=["MESH", "D009264"]),
+        "get_variants_for_phenotype_gwas": fields.List(fields.String, example=["mesh", "D001827"]),
+        "default": fields.List(fields.String, example=["hp", "0003138"])
+    },
     # For InterPro
     "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
     # For DepMap codependency
@@ -492,7 +513,13 @@ for module, func_name in module_functions:
     query_model = target_ns.model(
         model_name,
         {
-            param_name: examples_dict[param_name]
+            param_name: (
+                # If param has function-specific examples
+                examples_dict[param_name].get(func_name, examples_dict[param_name]["default"])
+                if isinstance(examples_dict[param_name], dict)
+                # If param has same example for all functions
+                else examples_dict[param_name]
+            )
             for param_name in param_names
             if param_name not in SKIP_GLOBAL
                and param_name not in SKIP_ARGUMENTS.get(func_name, [])
@@ -519,6 +546,7 @@ for module, func_name in module_functions:
             try:
                 parsed_query = parse_json(json_dict)
                 result = func_mapping[self.func_name](**parsed_query, client=client)
+
                 # Any 'is' type query
                 if isinstance(result, bool):
                     return jsonify({self.func_name: result})

@@ -6,5 +6,15 @@
 
 {% block lead %}
     This application lets you induce a subnetwork over a set of nodes and explore the resulting
-    statements using INDRA CoGEx. For example, try <code>FPLX:MEK,FPLX:ERK,FPLX:RAF</code>
+    statements using INDRA CoGEx. For example, try <a href="#" onClick="exampleSubnetwork()">FPLX:MEK,FPLX:ERK,FPLX:RAF</a>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        function exampleSubnetwork() {
+            // Fill the textarea with the example CURIEs
+            document.getElementById('curies').value = "FPLX:MEK,FPLX:ERK,FPLX:RAF";
+        }
+    </script>
 {% endblock %}
