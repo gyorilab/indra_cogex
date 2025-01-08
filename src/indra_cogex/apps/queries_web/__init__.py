@@ -321,41 +321,26 @@ FUNCTION_CATEGORIES = {
 }
 
 
-# Add MultiExample class for handling multiple examples
-class MultiExample:
-    def __init__(self, *examples):
-        self.examples = examples
-        self.current_index = 0
-
-    def get_example(self):
-        return self.examples[self.current_index]
-
-    def next_example(self):
-        self.current_index = (self.current_index + 1) % len(self.examples)
-        return self.get_example()
-
-    def try_all_examples(self):
-        """Generator to try all examples in sequence."""
-        for i in range(len(self.examples)):
-            yield self.examples[i]
-
-
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
-    "gene": fields.List(fields.String,
-                        example=MultiExample(
-                            ["HGNC", "9896"],
-                            ["hgnc", "57"],
-                            ["hgnc", "10007"]
-                        ).get_example()),
+    "gene": {
+        "get_enzyme_activities_for_gene": fields.List(fields.String, example=["hgnc", "10007"]),
+        "default": fields.List(fields.String, example=["HGNC", "9896"])
+    },
     "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
-    "drug": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"]),
+    "drug": {
+        "get_sensitive_cell_lines_for_drug": fields.List(fields.String, example=["mesh", "C586365"]),
+        "default": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"])
+    },
     "drugs": fields.List(
         fields.List(fields.String),
         example=[["CHEBI", "CHEBI:27690"], ["CHEBI", "CHEBI:114785"]]
     ),
     "disease": fields.List(fields.String, example=["doid", "0040093"]),
-    "trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00201240"]),
+    "trial": {
+        "get_drugs_for_trial": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00000114"]),
+        "default": fields.List(fields.String, example=["CLINICALTRIALS", "NCT00201240"])
+    },
     "genes": fields.List(
         fields.List(fields.String),
         example=[["HGNC", "1097"], ["HGNC", "6407"]]
@@ -387,11 +372,7 @@ examples_dict = {
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "include_db_evidence": fields.Boolean(example=True),
-    "cell_line": fields.List(fields.String,
-                             example=MultiExample(
-                                 ["ccle", "U266B1_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"],
-                                 ["ccle", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]
-                             ).get_example()),
+    "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": fields.List(
         fields.List(fields.String),
@@ -431,35 +412,27 @@ examples_dict = {
     "marker": fields.List(fields.String, example=["hgnc", "11337"]),
     # Pubmed
     "publication": fields.List(fields.String, example=["pubmed", "11818301"]),
-    "journal": fields.List(fields.String,
-                           example=MultiExample(
-                               ["nlm", "100972832"],
-                               ["nlm", "1254074"]
-                           ).get_example()),
+    "journal": fields.List(fields.String, example=["nlm", "100972832"]),
     # Disgenet
-    "variant": fields.List(fields.String,
-                           example=MultiExample(
-                               ["dbsnp", "rs9994441"],
-                               ["dbsnp", "rs74615166"],
-                               ["dbsnp", "rs13015548"]
-                           ).get_example()),
+    "variant": {
+        "get_phenotypes_for_variant_gwas": fields.List(fields.String, example=["dbsnp", "rs13015548"]),
+        "default": fields.List(fields.String, example=["dbsnp", "rs9994441"])
+    },
     # Wikidata
     "publisher": fields.List(fields.String, example=["isni", "0000000031304729"]),
     # NIH Reporter
-    "project": fields.List(fields.String,
-                           example=MultiExample(
-                               ["nihreporter.project", "6439077"],
-                               ["nihreporter.project", "2106676"]
-                           ).get_example()),
+    "project": {
+        "get_patents_for_project": fields.List(fields.String, example=["nihreporter.project", "2106676"]),
+        "default": fields.List(fields.String, example=["nihreporter.project", "6439077"])
+    },
 
     "patent": fields.List(fields.String, example=["google.patent", "US5939275"]),
     # HPOA
-    "phenotype": fields.List(fields.String,
-                             example=MultiExample(
-                                 ["hp", "0003138"],
-                                 ["MESH", "D009264"],
-                                 ["mesh", "D001827"]
-                             ).get_example()),
+    "phenotype": {
+        "get_genes_for_phenotype": fields.List(fields.String, example=["MESH", "D009264"]),
+        "get_variants_for_phenotype_gwas": fields.List(fields.String, example=["mesh", "D001827"]),
+        "default": fields.List(fields.String, example=["hp", "0003138"])
+    },
     # For InterPro
     "domain": fields.List(fields.String, example=["interpro", "IPR006047"]),
     # For DepMap codependency
@@ -540,7 +513,13 @@ for module, func_name in module_functions:
     query_model = target_ns.model(
         model_name,
         {
-            param_name: examples_dict[param_name]
+            param_name: (
+                # If param has function-specific examples
+                examples_dict[param_name].get(func_name, examples_dict[param_name]["default"])
+                if isinstance(examples_dict[param_name], dict)
+                # If param has same example for all functions
+                else examples_dict[param_name]
+            )
             for param_name in param_names
             if param_name not in SKIP_GLOBAL
                and param_name not in SKIP_ARGUMENTS.get(func_name, [])
@@ -567,19 +546,6 @@ for module, func_name in module_functions:
             try:
                 parsed_query = parse_json(json_dict)
                 result = func_mapping[self.func_name](**parsed_query, client=client)
-
-                # If result is empty, try alternative examples
-                if not result:
-                    for param, value in parsed_query.items():
-                        if param in examples_dict and hasattr(examples_dict[param].example, 'try_all_examples'):
-                            # Try each example until we get a non-empty result
-                            for example in examples_dict[param].example.try_all_examples():
-                                parsed_query[param] = example
-                                result = func_mapping[self.func_name](**parsed_query, client=client)
-                                if result:
-                                    break
-                            if result:
-                                break
 
                 # Any 'is' type query
                 if isinstance(result, bool):
