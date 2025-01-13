@@ -22,8 +22,10 @@ from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
+from ..search import search
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
+
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +191,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_mesh",
             "get_stmts_meta_for_stmt_hashes",
             "get_stmts_for_stmt_hashes",
-            "get_statements"
+            "get_statements",
+            "get_ora_statements"
         ]
     },
     'drug_targets': {
@@ -402,6 +405,7 @@ examples_dict = {
     "positive_genes": fields.List(fields.String, example=EXAMPLE_POSITIVE_HGNC_IDS),
     "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
+    "target_id": fields.String(example="go:0006955"),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
@@ -466,7 +470,8 @@ module_functions = (
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta", "indra_mediated_subnetwork",
                                  "indra_subnetwork_tissue", "indra_subnetwork_go"]] +
     [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]] +
+    [(search, fn) for fn in ["get_ora_statements"]]
 )
 
 # Maps function names to the actual functions
