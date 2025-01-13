@@ -1,4 +1,5 @@
 import json
+from typing import List, Optional, Mapping, Tuple
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_jwt_extended import jwt_required
@@ -9,10 +10,18 @@ from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
 from indra_cogex.apps.utils import render_statements, format_stmts
+from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
+from indra_cogex.representation import norm_id
+
 __all__ = ["search_blueprint"]
 
+from indra_cogex.client.queries import enrich_statements
+
+from indra_cogex.representation import indra_stmts_from_relations
+
 search_blueprint = Blueprint("search", __name__, url_prefix="/search")
+
 
 class SearchForm(FlaskForm):
     agent_name = StringField("Agent Name", validators=[DataRequired()])
@@ -29,7 +38,7 @@ class SearchForm(FlaskForm):
     submit = SubmitField("Search")
 
 
-@search_blueprint.route("/", methods=['GET','POST'])
+@search_blueprint.route("/", methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def search():
     stmt_types = {c.__name__ for c in get_all_descendants(Statement)}
@@ -105,9 +114,11 @@ def search():
         stmt_types_json=stmt_types_json,
     )
 
+
 from flask import current_app
 
-@search_blueprint.route("/gilda_ground", methods=["GET","POST"])
+
+@search_blueprint.route("/gilda_ground", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def gilda_ground_endpoint():
     data = request.get_json()
@@ -122,6 +133,7 @@ def gilda_ground_endpoint():
     except Exception as e:
         return {"error": str(e)}, 500
 
+
 def gilda_ground(agent_text):
     try:
         from gilda.api import ground
@@ -132,3 +144,152 @@ def gilda_ground(agent_text):
         return res.json()
     except Exception as e:
         return {"error": f"Grounding failed: {str(e)}"}
+
+
+@autoclient()
+def get_ora_statements(
+    target_id: str,
+    genes: List[str],
+    minimum_belief: float = 0.0,
+    evidence_limit: Optional[int] = None,
+    *,
+    client: Neo4jClient,
+) -> Tuple[List[Statement], Mapping[int, int]]:
+    """Get statements connecting input genes to target entity for ORA analysis.
+
+    Parameters
+    ----------
+    target_id : str
+        The ID of the target entity (e.g., 'GO:0006955')
+    genes : List[str]
+        List of gene IDs (e.g., ['HGNC:6019', 'HGNC:11876'])
+    minimum_belief : float
+        Minimum belief score for relationships
+    evidence_limit : Optional[int]
+        Maximum number of evidence entries per statement
+    client : Neo4jClient
+        The Neo4j client to use for querying
+
+    Returns
+    -------
+    :
+        A tuple containing:
+        - List of INDRA statements representing the relationships
+        - Dictionary mapping statement hashes to their evidence counts
+    """
+    print("\nDEBUG: Starting get_ora_statements")
+    print(f"Original inputs - target_id: {target_id}, genes: {genes}")
+
+    # Normalize IDs
+    normalized_target = target_id.lower()
+    normalized_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in genes]
+
+    print(f"Normalized IDs - target: {normalized_target}")
+    print(f"Normalized genes: {normalized_genes[:5]}... (showing first 5)")
+
+    # Check if target exists
+    verify_query = """
+   MATCH (d:BioEntity {id: $target_id})
+   RETURN d
+   """
+    target_result = client.query_tx(verify_query, target_id=normalized_target)
+    print(f"\nDEBUG: Target node exists?: {bool(target_result)}")
+
+    # Main query using filters from get_entity_to_targets/regulators
+    query = """
+   MATCH (d:BioEntity {id: $target_id})<-[r:indra_rel]-(u:BioEntity)
+   WHERE u.id STARTS WITH "hgnc"
+   AND NOT u.obsolete
+   AND r.stmt_type <> "Complex"
+   AND u.id IN $genes 
+   AND r.belief > $minimum_belief
+   RETURN r, u
+   """
+
+    params = {
+        "target_id": normalized_target,
+        "genes": normalized_genes,
+        "minimum_belief": minimum_belief
+    }
+
+    print("\nDEBUG: Executing main query:")
+    print(f"Query: {query}")
+    print(f"Parameters: {params}")
+
+    results = client.query_tx(query, **params)
+    print(f"\nDEBUG: Raw query results length: {len(results)}")
+
+    if results:
+        print(f"Sample result: {results[0]}")  # Show first result if any
+
+    flattened_rels = [client.neo4j_to_relation(i[0]) for rel in results for i in rel]
+    print(f"\nDEBUG: Number of flattened relations: {len(flattened_rels)}")
+
+    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
+    print(f"\nDEBUG: Number of statements before enrichment: {len(stmts)}")
+
+    if evidence_limit:
+        stmts = enrich_statements(
+            stmts,
+            client=client,
+            evidence_limit=evidence_limit,
+        )
+        print(f"DEBUG: Number of statements after enrichment: {len(stmts)}")
+
+    evidence_counts = {
+        stmt.get_hash(): (
+            min(rel.data["evidence_count"], evidence_limit)
+            if evidence_limit is not None
+            else rel.data["evidence_count"]
+        )
+        for rel, stmt in zip(flattened_rels, stmts)
+    }
+
+    print(f"\nDEBUG: Final output - Number of statements: {len(stmts)}")
+    print(f"DEBUG: Evidence counts: {evidence_counts}")
+
+    return stmts, evidence_counts
+
+
+@search_blueprint.route("/ora_statements/", methods=['GET'])
+@jwt_required(optional=True)
+def search_ora_statements():
+    """Endpoint to get INDRA statements connecting input genes to a target entity."""
+    target_id = request.args.get("target_id")
+    genes = request.args.getlist("genes")
+
+    # Add logging
+    print("Received parameters:")
+    print(f"target_id: {target_id}")
+    print(f"genes: {genes}")
+    print(f"minimum_evidence: {request.args.get('minimum_evidence')}")
+    print(f"minimum_belief: {request.args.get('minimum_belief')}")
+
+    try:
+        evidence_limit = int(request.args.get("minimum_evidence") or 2)
+        minimum_belief = float(request.args.get("minimum_belief") or 0.0)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid parameter values"}), 400
+
+    if not target_id or not genes:
+        return jsonify({"error": "target_id and genes are required"}), 400
+
+    try:
+        statements, evidence_counts = get_ora_statements(
+            target_id=target_id,
+            genes=genes,
+            minimum_belief=minimum_belief,
+            evidence_limit=evidence_limit
+        )
+
+        # Add logging
+        print(f"Number of statements found: {len(statements)}")
+
+        return render_statements(
+            stmts=statements,
+            evidence_count=evidence_counts
+        )
+
+    except Exception as e:
+        print(f"Error in get_ora_statements: {str(e)}")  # Add error logging
+        return jsonify({"error": str(e)}), 500
