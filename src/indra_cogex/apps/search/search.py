@@ -152,6 +152,7 @@ def get_ora_statements(
     genes: List[str],
     minimum_belief: float = 0.0,
     evidence_limit: Optional[int] = None,
+    is_downstream: bool = False,
     *,
     client: Neo4jClient,
 ) -> Tuple[List[Statement], Mapping[int, int]]:
@@ -159,8 +160,9 @@ def get_ora_statements(
 
     Parameters
     ----------
+    is_downstream
     target_id : str
-        The ID of the target entity (e.g., 'GO:0006955')
+        The ID of the target entity (e.g., 'GO:0006955', 'MESH:D007239')
     genes : List[str]
         List of gene IDs (e.g., ['HGNC:6019', 'HGNC:11876'])
     minimum_belief : float
@@ -172,83 +174,99 @@ def get_ora_statements(
 
     Returns
     -------
-    :
+    Tuple[List[Statement], Mapping[int, int]]
         A tuple containing:
         - List of INDRA statements representing the relationships
         - Dictionary mapping statement hashes to their evidence counts
     """
     print("\nDEBUG: Starting get_ora_statements")
-    print(f"Original inputs - target_id: {target_id}, genes: {genes}")
 
-    # Normalize IDs
-    normalized_target = target_id.lower()
+    # Normalize gene IDs
     normalized_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in genes]
 
-    print(f"Normalized IDs - target: {normalized_target}")
-    print(f"Normalized genes: {normalized_genes[:5]}... (showing first 5)")
+    # Handle different entity types and their relationships
+    namespace = target_id.split(':')[0].lower()
+    id_part = target_id.split(':')[1]
 
-    # Check if target exists
-    verify_query = """
-   MATCH (d:BioEntity {id: $target_id})
-   RETURN d
-   """
-    target_result = client.query_tx(verify_query, target_id=normalized_target)
-    print(f"\nDEBUG: Target node exists?: {bool(target_result)}")
+    if namespace == 'mesh':
+        normalized_target = f"mesh:{id_part}"
+        rel_types = ["indra_rel", "has_indication"]
+    elif namespace == 'fplx':
+        normalized_target = f"fplx:{id_part}"
+        rel_types = ["indra_rel", "isa"]
+    else:
+        normalized_target = target_id.lower()
+        rel_types = ["indra_rel"]
 
-    # Main query using filters from get_entity_to_targets/regulators
-    query = """
-   MATCH (d:BioEntity {id: $target_id})<-[r:indra_rel]-(u:BioEntity)
-   WHERE u.id STARTS WITH "hgnc"
-   AND NOT u.obsolete
-   AND r.stmt_type <> "Complex"
-   AND u.id IN $genes 
-   AND r.belief > $minimum_belief
-   RETURN r, u
-   """
+    # Query based on direction
+    if is_downstream:
+        # For downstream: gene->target (input genes regulate targets)
+        query = """
+        MATCH p = (u:BioEntity)-[r]->(d:BioEntity {id: $target_id})
+        WHERE type(r) IN $rel_types
+        AND u.id STARTS WITH "hgnc"
+        AND NOT u.obsolete
+        AND u.id IN $genes
+        AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
+        WITH distinct r.stmt_hash AS hash, collect(p) as pp
+        RETURN pp
+        """
+    else:
+        # For upstream: target->gene (targets regulate input genes)
+        query = """
+        MATCH p = (d:BioEntity {id: $target_id})-[r]->(u:BioEntity)
+        WHERE type(r) IN $rel_types
+        AND u.id STARTS WITH "hgnc"
+        AND NOT u.obsolete
+        AND u.id IN $genes
+        AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
+        WITH distinct r.stmt_hash AS hash, collect(p) as pp
+        RETURN pp
+        """
 
     params = {
         "target_id": normalized_target,
         "genes": normalized_genes,
+        "rel_types": rel_types,
         "minimum_belief": minimum_belief
     }
 
-    print("\nDEBUG: Executing main query:")
-    print(f"Query: {query}")
-    print(f"Parameters: {params}")
+    print(f"\nDEBUG: Executing main query with params: {params}")
 
     results = client.query_tx(query, **params)
     print(f"\nDEBUG: Raw query results length: {len(results)}")
 
-    if results:
-        print(f"Sample result: {results[0]}")  # Show first result if any
+    try:
+        # Process results like get_statements does
+        flattened_rels = [client.neo4j_to_relation(i[0]) for rel in results for i in rel]
+        print(f"\nDEBUG: Flattened relations: {len(flattened_rels)}")
 
-    flattened_rels = [client.neo4j_to_relation(i[0]) for rel in results for i in rel]
-    print(f"\nDEBUG: Number of flattened relations: {len(flattened_rels)}")
+        stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
+        print(f"\nDEBUG: Created statements: {len(stmts)}")
 
-    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
-    print(f"\nDEBUG: Number of statements before enrichment: {len(stmts)}")
+        if evidence_limit:
+            stmts = enrich_statements(
+                stmts,
+                client=client,
+                evidence_limit=evidence_limit,
+            )
 
-    if evidence_limit:
-        stmts = enrich_statements(
-            stmts,
-            client=client,
-            evidence_limit=evidence_limit,
-        )
-        print(f"DEBUG: Number of statements after enrichment: {len(stmts)}")
+        # Create evidence counts
+        evidence_counts = {
+            stmt.get_hash(): (
+                min(rel.data["evidence_count"], evidence_limit)
+                if evidence_limit is not None
+                else rel.data["evidence_count"]
+            )
+            for rel, stmt in zip(flattened_rels, stmts)
+        }
 
-    evidence_counts = {
-        stmt.get_hash(): (
-            min(rel.data["evidence_count"], evidence_limit)
-            if evidence_limit is not None
-            else rel.data["evidence_count"]
-        )
-        for rel, stmt in zip(flattened_rels, stmts)
-    }
+        return stmts, evidence_counts
 
-    print(f"\nDEBUG: Final output - Number of statements: {len(stmts)}")
-    print(f"DEBUG: Evidence counts: {evidence_counts}")
-
-    return stmts, evidence_counts
+    except Exception as e:
+        print(f"\nDEBUG: Error processing results: {str(e)}")
+        print(f"DEBUG: Error type: {type(e)}")
+        raise
 
 
 @search_blueprint.route("/ora_statements/", methods=['GET'])
@@ -257,13 +275,7 @@ def search_ora_statements():
     """Endpoint to get INDRA statements connecting input genes to a target entity."""
     target_id = request.args.get("target_id")
     genes = request.args.getlist("genes")
-
-    # Add logging
-    print("Received parameters:")
-    print(f"target_id: {target_id}")
-    print(f"genes: {genes}")
-    print(f"minimum_evidence: {request.args.get('minimum_evidence')}")
-    print(f"minimum_belief: {request.args.get('minimum_belief')}")
+    is_downstream = request.args.get("is_downstream", "").lower() == "true"
 
     try:
         evidence_limit = int(request.args.get("minimum_evidence") or 2)
@@ -279,11 +291,9 @@ def search_ora_statements():
             target_id=target_id,
             genes=genes,
             minimum_belief=minimum_belief,
-            evidence_limit=evidence_limit
+            evidence_limit=evidence_limit,
+            is_downstream=is_downstream
         )
-
-        # Add logging
-        print(f"Number of statements found: {len(statements)}")
 
         return render_statements(
             stmts=statements,
