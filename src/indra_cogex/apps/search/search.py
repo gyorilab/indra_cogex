@@ -9,7 +9,7 @@ from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
-from indra_cogex.apps.utils import render_statements, format_stmts
+from indra_cogex.apps.utils import render_statements
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
 from indra_cogex.representation import norm_id
@@ -102,7 +102,7 @@ def search():
             paper_term=paper_id,
             mesh_term=mesh_terms,
             limit=1000,
-            evidence_limit=1000,
+            minimum_evidence=1000,
             return_evidence_counts=True,
         )
         return render_statements(stmts=statements, evidence_count=evidence_count)
@@ -151,7 +151,7 @@ def get_ora_statements(
     target_id: str,
     genes: List[str],
     minimum_belief: float = 0.0,
-    evidence_limit: Optional[int] = None,
+    minimum_evidence: Optional[int] = None,
     is_downstream: bool = False,
     *,
     client: Neo4jClient,
@@ -160,29 +160,29 @@ def get_ora_statements(
 
     Parameters
     ----------
-    is_downstream
     target_id : str
         The ID of the target entity (e.g., 'GO:0006955', 'MESH:D007239')
     genes : List[str]
         List of gene IDs (e.g., ['HGNC:6019', 'HGNC:11876'])
     minimum_belief : float
         Minimum belief score for relationships
-    evidence_limit : Optional[int]
-        Maximum number of evidence entries per statement
+    minimum_evidence : Optional[int]
+        Minimum number of evidences required for a statement to be included
+    is_downstream : bool
+        Whether this is a downstream analysis
     client : Neo4jClient
         The Neo4j client to use for querying
 
     Returns
     -------
-    Tuple[List[Statement], Mapping[int, int]]
+    :
         A tuple containing:
         - List of INDRA statements representing the relationships
         - Dictionary mapping statement hashes to their evidence counts
     """
-    print("\nDEBUG: Starting get_ora_statements")
-
     # Normalize gene IDs
     normalized_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in genes]
+    print(f"DEBUG: Normalized genes: {normalized_genes[:5]}...")
 
     # Handle different entity types and their relationships
     namespace = target_id.split(':')[0].lower()
@@ -198,23 +198,21 @@ def get_ora_statements(
         normalized_target = target_id.lower()
         rel_types = ["indra_rel"]
 
-    # Query based on direction
+    # Main query for getting statements
+    query = """
+    MATCH p = (d:BioEntity {id: $target_id})-[r]->(u:BioEntity)
+    WHERE type(r) IN $rel_types
+    AND u.id STARTS WITH "hgnc"
+    AND NOT u.obsolete
+    AND u.id IN $genes
+    AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
+    WITH distinct r.stmt_hash AS hash, collect(p) as pp
+    RETURN pp
+    """
+
     if is_downstream:
-        # For downstream: gene->target (input genes regulate targets)
         query = """
         MATCH p = (u:BioEntity)-[r]->(d:BioEntity {id: $target_id})
-        WHERE type(r) IN $rel_types
-        AND u.id STARTS WITH "hgnc"
-        AND NOT u.obsolete
-        AND u.id IN $genes
-        AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
-        WITH distinct r.stmt_hash AS hash, collect(p) as pp
-        RETURN pp
-        """
-    else:
-        # For upstream: target->gene (targets regulate input genes)
-        query = """
-        MATCH p = (d:BioEntity {id: $target_id})-[r]->(u:BioEntity)
         WHERE type(r) IN $rel_types
         AND u.id STARTS WITH "hgnc"
         AND NOT u.obsolete
@@ -230,43 +228,31 @@ def get_ora_statements(
         "rel_types": rel_types,
         "minimum_belief": minimum_belief
     }
-
-    print(f"\nDEBUG: Executing main query with params: {params}")
-
     results = client.query_tx(query, **params)
-    print(f"\nDEBUG: Raw query results length: {len(results)}")
+    flattened_rels = [client.neo4j_to_relation(i[0]) for rel in results for i in rel]
 
-    try:
-        # Process results like get_statements does
-        flattened_rels = [client.neo4j_to_relation(i[0]) for rel in results for i in rel]
-        print(f"\nDEBUG: Flattened relations: {len(flattened_rels)}")
+    # Filter relations based on minimum_evidence
+    if minimum_evidence:
+        flattened_rels = [
+            rel for rel in flattened_rels
+            if rel.data.get("evidence_count", 0) >= minimum_evidence
+        ]
 
-        stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
-        print(f"\nDEBUG: Created statements: {len(stmts)}")
+    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
 
-        if evidence_limit:
-            stmts = enrich_statements(
-                stmts,
-                client=client,
-                evidence_limit=evidence_limit,
-            )
+    # Enrich statements with complete evidence (no limit)
+    stmts = enrich_statements(
+            stmts,
+            client=client
+    )
 
-        # Create evidence counts
-        evidence_counts = {
-            stmt.get_hash(): (
-                min(rel.data["evidence_count"], evidence_limit)
-                if evidence_limit is not None
-                else rel.data["evidence_count"]
-            )
+    # Create evidence count mapping
+    evidence_counts = {
+            stmt.get_hash(): rel.data.get("evidence_count", 0)
             for rel, stmt in zip(flattened_rels, stmts)
-        }
+    }
 
-        return stmts, evidence_counts
-
-    except Exception as e:
-        print(f"\nDEBUG: Error processing results: {str(e)}")
-        print(f"DEBUG: Error type: {type(e)}")
-        raise
+    return stmts, evidence_counts
 
 
 @search_blueprint.route("/ora_statements/", methods=['GET'])
@@ -278,7 +264,7 @@ def search_ora_statements():
     is_downstream = request.args.get("is_downstream", "").lower() == "true"
 
     try:
-        evidence_limit = int(request.args.get("minimum_evidence") or 2)
+        minimum_evidence = int(request.args.get("minimum_evidence") or 2)
         minimum_belief = float(request.args.get("minimum_belief") or 0.0)
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid parameter values"}), 400
@@ -291,7 +277,7 @@ def search_ora_statements():
             target_id=target_id,
             genes=genes,
             minimum_belief=minimum_belief,
-            evidence_limit=evidence_limit,
+            minimum_evidence=minimum_evidence,
             is_downstream=is_downstream
         )
 
@@ -301,5 +287,5 @@ def search_ora_statements():
         )
 
     except Exception as e:
-        print(f"Error in get_ora_statements: {str(e)}")  # Add error logging
+        print(f"Error in get_ora_statements: {str(e)}")
         return jsonify({"error": str(e)}), 500
