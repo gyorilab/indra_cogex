@@ -164,6 +164,8 @@ def discretize_analysis():
             errors=errors,
             method=form.correction.data,
             alpha=form.alpha.data,
+            minimum_evidence=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
             go_results=results["go"],
             wikipathways_results=results["wikipathways"],
             reactome_results=results["reactome"],
