@@ -407,6 +407,7 @@ examples_dict = {
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
     "target_id": fields.String(example="go:0006955"),
     "is_downstream": fields.Boolean(example=False),
+    "minimum_evidence": fields.Float(example=2),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
