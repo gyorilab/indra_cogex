@@ -215,7 +215,9 @@ def go_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
-    return _do_ora(get_go(client=client), query=gene_ids, count=count, **kwargs)
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
+    return _do_ora(get_go(client=client, background_gene_ids=bg_genes),
+                   query=gene_ids, count=count, **kwargs)
 
 
 def wikipathways_ora(
@@ -249,8 +251,10 @@ def wikipathways_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
     return _do_ora(
-        get_wikipathways(client=client), query=gene_ids, count=count, **kwargs
+        get_wikipathways(client=client, background_gene_ids=bg_genes),
+        query=gene_ids, count=count, **kwargs
     )
 
 
@@ -285,7 +289,9 @@ def reactome_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
-    return _do_ora(get_reactome(client=client), query=gene_ids, count=count, **kwargs)
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
+    return _do_ora(get_reactome(client=client, background_gene_ids=bg_genes),
+                   query=gene_ids, count=count, **kwargs)
 
 
 @autoclient()
@@ -321,8 +327,10 @@ def phenotype_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
     return _do_ora(
-        get_phenotype_gene_sets(client=client), query=gene_ids, count=count, **kwargs
+        get_phenotype_gene_sets(client=client, background_gene_ids=bg_genes),
+        query=gene_ids, count=count, **kwargs
     )
 
 
@@ -367,11 +375,13 @@ def indra_downstream_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
     return _do_ora(
         get_entity_to_regulators(
             client=client,
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
+            background_gene_ids=bg_genes
         ),
         query=gene_ids,
         count=count,
@@ -420,11 +430,13 @@ def indra_upstream_ora(
         if not background_gene_ids
         else len(background_gene_ids)
     )
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
     return _do_ora(
         get_entity_to_targets(
             client=client,
             minimum_evidence_count=minimum_evidence_count,
             minimum_belief=minimum_belief,
+            background_gene_ids=bg_genes
         ),
         query=gene_ids,
         count=count,

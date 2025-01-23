@@ -80,7 +80,8 @@ def discrete_analysis(
         )
 
     if background_gene_list:
-        background_gene_ids, _ = list(parse_gene_list(background_gene_list))
+        background_genes, _ = parse_gene_list(background_gene_list)
+        background_gene_ids = list(background_genes)
     else:
         background_gene_ids = None
 
@@ -97,7 +98,8 @@ def discrete_analysis(
         if analysis_name in {"go", "wikipathways", "reactome", "phenotype"}:
             analysis_result = analysis_func(
                 client=client, gene_ids=gene_set, method=method, alpha=alpha,
-                keep_insignificant=keep_insignificant
+                keep_insignificant=keep_insignificant,
+                background_gene_ids=background_gene_ids
             )
         else:
             # Run INDRA analysis if enabled
