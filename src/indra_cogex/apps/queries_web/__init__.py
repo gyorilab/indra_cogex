@@ -22,10 +22,8 @@ from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
-from indra_cogex.apps.search import search
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
-
 
 logger = logging.getLogger(__name__)
 
@@ -85,22 +83,29 @@ CATEGORY_DESCRIPTIONS = {
 gene_expression_ns = Namespace("Gene Expression Queries", CATEGORY_DESCRIPTIONS['gene_expression'], path="/api")
 go_terms_ns = Namespace("GO Terms Queries", CATEGORY_DESCRIPTIONS['go_terms'], path="/api")
 clinical_trials_ns = Namespace("Clinical Trials Queries", CATEGORY_DESCRIPTIONS['clinical_trials'], path="/api")
-biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'], path="/api")
+biological_pathways_ns = Namespace("Biological Pathways Queries", CATEGORY_DESCRIPTIONS['biological_pathways'],
+                                   path="/api")
 drug_side_effects_ns = Namespace("Drug Side Effects Queries", CATEGORY_DESCRIPTIONS['drug_side_effects'], path="/api")
 ontology_ns = Namespace("Ontology Queries", CATEGORY_DESCRIPTIONS['ontology'], path="/api")
-literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'], path="/api")
+literature_metadata_ns = Namespace("Literature Metadata Queries", CATEGORY_DESCRIPTIONS['literature_metadata'],
+                                   path="/api")
 statements_ns = Namespace("Statements Queries", CATEGORY_DESCRIPTIONS['statements'], path="/api")
 drug_targets_ns = Namespace("Drug Targets Queries", CATEGORY_DESCRIPTIONS['drug_targets'], path="/api")
 cell_markers_ns = Namespace("Cell Markers Queries", CATEGORY_DESCRIPTIONS['cell_markers'], path="/api")
-disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'], path="/api")
-gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries", CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
-research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'], path="/api")
+disease_phenotypes_ns = Namespace("Disease-Phenotypes Association Queries", CATEGORY_DESCRIPTIONS['disease_phenotypes'],
+                                  path="/api")
+gene_disease_variant_ns = Namespace("Gene-Disease-Variant Association Queries",
+                                    CATEGORY_DESCRIPTIONS['gene_disease_variant'], path="/api")
+research_project_output_ns = Namespace("Project-Research Queries", CATEGORY_DESCRIPTIONS['project_research_outputs'],
+                                       path="/api")
 gene_domains_ns = Namespace("Gene Domain Queries", CATEGORY_DESCRIPTIONS['gene_domains'], path="/api")
-phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'], path="/api")
+phenotype_variant_ns = Namespace("Phenotype-Variant Association Queries", CATEGORY_DESCRIPTIONS['phenotype_variant'],
+                                 path="/api")
 drug_indications_ns = Namespace("Drug Indication Queries", CATEGORY_DESCRIPTIONS['drug_indications'], path="/api")
 gene_codependence_ns = Namespace("Gene Codependence Queries", CATEGORY_DESCRIPTIONS['gene_codependence'], path="/api")
 enzyme_activity_ns = Namespace("Enzyme Activity Queries", CATEGORY_DESCRIPTIONS['enzyme_activity'], path="/api")
-cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'], path="/api")
+cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCRIPTIONS['cell_line_properties'],
+                                    path="/api")
 analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
 
@@ -191,8 +196,7 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_mesh",
             "get_stmts_meta_for_stmt_hashes",
             "get_stmts_for_stmt_hashes",
-            "get_statements",
-            "get_ora_statements"
+            "get_statements"
         ]
     },
     'drug_targets': {
@@ -323,7 +327,6 @@ FUNCTION_CATEGORIES = {
     }
 }
 
-
 examples_dict = {
     "tissue": fields.List(fields.String, example=["UBERON", "UBERON:0001162"]),
     "gene": {
@@ -405,7 +408,7 @@ examples_dict = {
     "positive_genes": fields.List(fields.String, example=EXAMPLE_POSITIVE_HGNC_IDS),
     "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
-    "target_id": fields.String(example="go:0006955"),
+    "target_id": fields.String(example="hgnc:646"),
     "is_downstream": fields.Boolean(example=False),
     "minimum_evidence": fields.Float(example=2),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
@@ -472,8 +475,7 @@ module_functions = (
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta", "indra_mediated_subnetwork",
                                  "indra_subnetwork_tissue", "indra_subnetwork_go"]] +
     [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]] +
-    [(search, fn) for fn in ["get_ora_statements"]]
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
 )
 
 # Maps function names to the actual functions
