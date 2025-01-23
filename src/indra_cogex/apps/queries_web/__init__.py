@@ -22,7 +22,7 @@ from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
 from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
-from ..search import search
+from indra_cogex.apps.search import search
 
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
