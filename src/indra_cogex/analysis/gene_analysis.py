@@ -46,7 +46,7 @@ def discrete_analysis(
     Parameters
     ----------
     gene_list : List[str]
-        A list of gene identifiers. Can be HGNC symbols or identifiers.
+        A list or iterable of gene identifiers. Can be HGNC symbols or identifiers.
     method : str, optional
         Statistical method to apply, by default 'fdr_bh'.
     alpha : float, optional
