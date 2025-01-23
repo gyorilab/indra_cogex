@@ -38,6 +38,7 @@ def discrete_analysis(
         minimum_evidence_count: int = 1,
         minimum_belief: float = 0,
         indra_path_analysis: bool = False,
+        background_gene_list: List[str] = None,
         *,
         client: Neo4jClient
 ) -> Dict[str, Union[pd.DataFrame, None]]:
@@ -59,6 +60,10 @@ def discrete_analysis(
         Minimum belief score for filtering, by default 0.
     indra_path_analysis : bool, optional
         Whether to perform INDRA pathway analysis, by default False.
+    background_gene_list : List[str], optional
+        A list of background genes of which the gene list is a part
+        to constrain the space of possible genes to consider
+        when calculating enrichment statistics.
     client : Neo4jClient, optional
         The Neo4j client, managed automatically by the autoclient decorator.
 
@@ -73,6 +78,11 @@ def discrete_analysis(
         logger.warning(
             f"Failed to parse the following gene identifiers: {', '.join(errors)}"
         )
+
+    if background_gene_list:
+        background_gene_ids, _ = list(parse_gene_list(background_gene_list))
+    else:
+        background_gene_ids = None
 
     results = {}
     for analysis_name, analysis_func in [
@@ -96,7 +106,8 @@ def discrete_analysis(
                     client=client, gene_ids=gene_set, method=method, alpha=alpha,
                     keep_insignificant=keep_insignificant,
                     minimum_evidence_count=minimum_evidence_count,
-                    minimum_belief=minimum_belief
+                    minimum_belief=minimum_belief,
+                    background_gene_ids=background_gene_ids
                 )
             else:
                 continue
