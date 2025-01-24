@@ -169,7 +169,7 @@ def get_ora_statements(
     is_downstream: bool = False,
     *,
     client: Neo4jClient,
-) -> Tuple[List[Statement], Mapping[int, int]]:
+) -> Tuple[List[Statement], Mapping[int, Mapping[str, int]]]:
     """Get statements connecting input genes to target entity for ORA analysis.
 
     Parameters
@@ -192,7 +192,7 @@ def get_ora_statements(
     :
         A tuple containing:
         - List of INDRA statements representing the relationships
-        - Dictionary mapping statement hashes to their evidence counts
+        - Dictionary mapping statement hashes to their source counts
     """
     # Normalize gene IDs
     normalized_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in genes]
@@ -255,18 +255,15 @@ def get_ora_statements(
     stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
 
     # Enrich statements with complete evidence (no limit)
-    stmts = enrich_statements(
-            stmts,
-            client=client
-    )
+    stmts = enrich_statements(stmts, client=client)
 
-    # Create evidence count mapping
-    evidence_counts = {
-            stmt.get_hash(): rel.data.get("evidence_count", 0)
-            for rel, stmt in zip(flattened_rels, stmts)
+    # Create source count mapping
+    source_counts = {
+        rel.data["stmt_hash"]: json.loads(rel.data["source_counts"])
+        for rel in flattened_rels
     }
 
-    return stmts, evidence_counts
+    return stmts, source_counts
 
 
 @search_blueprint.route("/ora_statements/", methods=['GET'])
@@ -287,17 +284,21 @@ def search_ora_statements():
         return jsonify({"error": "target_id and genes are required"}), 400
 
     try:
-        statements, evidence_counts = get_ora_statements(
+        statements, source_counts = get_ora_statements(
             target_id=target_id,
             genes=genes,
             minimum_belief=minimum_belief,
             minimum_evidence=minimum_evidence,
             is_downstream=is_downstream
         )
+        evidence_counts = {
+            k: sum(v.values()) for k, v in source_counts.items()
+        }
 
         return render_statements(
             stmts=statements,
-            evidence_count=evidence_counts
+            evidence_count=evidence_counts,
+            source_counts_dict=source_counts
         )
 
     except Exception as e:
