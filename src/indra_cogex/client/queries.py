@@ -801,7 +801,11 @@ def get_mesh_ids_for_pmids(
 
 @autoclient()
 def get_evidences_for_mesh(
-    mesh_term: Tuple[str, str], include_child_terms: bool = True, include_db_evidence: bool = True, *,
+    mesh_term: Tuple[str, str],
+    include_child_terms: bool = True,
+    include_db_evidence: bool = True,
+    remove_medscan: bool = True,
+    *,
     client: Neo4jClient
 ) -> Dict[int, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
@@ -816,6 +820,8 @@ def get_evidences_for_mesh(
         If True, also match against the child MESH terms of the given MESH ID
     include_db_evidence :
         If True, include and prioritize database evidence. If False, exclude it.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -859,7 +865,7 @@ def get_evidences_for_mesh(
     """ % (single_mesh_match, where_clause, db_filter, db_filter)
 
     result = client.query_tx(query, **query_params)
-    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=remove_medscan)
 
 
 @autoclient()
@@ -891,7 +897,6 @@ def get_evidences_for_stmt_hash(
     :
         The evidence objects for the given statement hash.
     """
-    remove_medscan = True  # Always remove medscan for now
     query_params = {"stmt_hash": stmt_hash}
     if remove_medscan:
         where_clause = "WHERE n.source_api <> $source_api\n"
@@ -918,7 +923,7 @@ def get_evidences_for_stmt_hash(
         query += "\nLIMIT %d" % limit
     ev_jsons = [json.loads(r) for r in
                 client.query_tx(query, squeeze=True, **query_params)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=remove_medscan)
 
 
 @autoclient()
@@ -1050,7 +1055,7 @@ def get_stmts_for_pmids(
 
 
 def _stmts_from_results(client, result, **kwargs) -> List[Statement]:
-    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+    evidence_map = _get_ev_dict_from_hash_ev_query(result, remove_medscan=kwargs.get("remove_medscan", True))
     stmt_hashes = set(evidence_map.keys())
     return get_stmts_for_stmt_hashes(
         stmt_hashes, evidence_map=evidence_map, client=client, **kwargs
