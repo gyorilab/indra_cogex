@@ -404,6 +404,7 @@ examples_dict = {
     "ec_code": fields.String(example="3.2.1.4"),
     # Example for /gene/discrete
     "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
+    "background_gene_list": fields.List(fields.String, example=[]),
     # Examples for positive_genes and negative_genes for /gene/signed
     "positive_genes": fields.List(fields.String, example=EXAMPLE_POSITIVE_HGNC_IDS),
     "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
