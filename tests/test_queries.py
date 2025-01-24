@@ -384,15 +384,19 @@ def test_get_statements():
         client=client,
         limit=1000,
         evidence_limit=500,
-        return_evidence_counts=True
+        return_evidence_counts=True,
+        return_source_counts=False  # Just to make sure we get evidence counts
     )
     assert stmts
     assert all(isinstance(stmt, Statement) for stmt in stmts)
     assert evidence_map
     stmt_hashes = {stmt.get_hash() for stmt in stmts}
     assert stmt_hashes == evidence_map.keys()
-    for stmt_hash, evidence_count in evidence_map.items():
-        assert evidence_count <= 500
+    for stmt in stmts:
+        assert stmt.get_hash() in evidence_map
+        # Note: the counts in the evidence_map still reflect the total number of
+        # evidences, since they are used for the badges displaying the evidence count
+        assert len(stmt.evidence) <= 500
 
 
 @pytest.mark.nonpublic
