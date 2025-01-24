@@ -1,7 +1,15 @@
 import json
 from typing import List, Optional, Mapping, Tuple
 
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    current_app,
+)
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement
@@ -11,14 +19,12 @@ from wtforms.validators import DataRequired
 
 from indra_cogex.apps.utils import render_statements
 from indra_cogex.client import Neo4jClient, autoclient
-from indra_cogex.client.queries import *
-from indra_cogex.representation import norm_id
+from indra_cogex.client.queries import enrich_statements, get_statements
+from indralab_auth_tools.auth import resolve_auth
+from indra_cogex.representation import norm_id, indra_stmts_from_relations
+
 
 __all__ = ["search_blueprint"]
-
-from indra_cogex.client.queries import enrich_statements
-
-from indra_cogex.representation import indra_stmts_from_relations
 
 search_blueprint = Blueprint("search", __name__, url_prefix="/search")
 
@@ -44,6 +50,8 @@ def search():
     stmt_types = {c.__name__ for c in get_all_descendants(Statement)}
     stmt_types -= {"Influence", "Event", "Unresolved"}
     stmt_types_json = json.dumps(sorted(list(stmt_types)))
+    user, roles = resolve_auth(dict(request.args))
+    remove_medscan = user is None
 
     form = SearchForm()
 
@@ -92,7 +100,7 @@ def search():
 
     # Fetch and display statements
     if agent or other_agent or rel_types:
-        statements, evidence_count = get_statements(
+        statements, source_count = get_statements(
             agent=agent,
             agent_role=agent_role,
             other_agent=other_agent,
@@ -103,9 +111,18 @@ def search():
             mesh_term=mesh_terms,
             limit=1000,
             evidence_limit=1000,
-            return_evidence_counts=True,
+            return_source_counts=True,
         )
-        return render_statements(stmts=statements, evidence_count=evidence_count)
+        # Create evidence count from source count
+        evidence_count = {
+            k: sum(v.values()) for k, v in source_count.items()
+        }
+        return render_statements(
+            stmts=statements,
+            evidence_counts=evidence_count,
+            remove_medscan=remove_medscan,
+            source_counts_dict=source_count,
+        )
 
     # Render the form page
     return render_template(
@@ -115,10 +132,7 @@ def search():
     )
 
 
-from flask import current_app
-
-
-@search_blueprint.route("/gilda_ground", methods=["GET", "POST"])
+@search_blueprint.route("/gilda_ground", methods=["POST"])
 @jwt_required(optional=True)
 def gilda_ground_endpoint():
     data = request.get_json()
