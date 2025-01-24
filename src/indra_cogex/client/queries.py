@@ -1235,7 +1235,12 @@ def get_statements(
     limit: Optional[int] = 10,
     evidence_limit: Optional[int] = None,
     return_evidence_counts: bool = False,
-) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
+    return_source_counts: bool = False,
+) -> Union[
+    List[Statement],
+    Tuple[List[Statement], Mapping[int, int]],
+    Tuple[List[Statement], Mapping[int, Mapping[str, int]]],
+]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
     Parameters
@@ -1267,12 +1272,27 @@ def get_statements(
         The optional maximum number of evidence entries to retrieve per statement.
     return_evidence_counts : bool, default: False
         Whether to include a mapping of statement hash to evidence count in the results.
+    return_source_counts : bool, default: False
+        Whether to include a mapping of statement hash to source counts in the results.
+        If both return_source_counts and return_evidence_counts are set to True,
+        a warning is logged and only source counts are returned. If neither are set to True,
+        only statements are returned
 
     Returns
     -------
-    List[Statement]
-        A list of statements filtered by the provided constraints.
+    :
+        A list of statements filtered by the provided constraints. If
+        return_source_counts is set to True, a tuple of (statements, source_counts) is
+        returned. If return_evidence_counts is set to True, a tuple of (statements,
+        evidence_counts) is returned. If both return_source_counts and
+        return_evidence_counts are set to True, a tuple of (statements, source_counts)
+        is returned. If neither are set to True, only statements are returned.
     """
+    if return_source_counts and return_evidence_counts:
+        logger.warning(
+            "Both return_source_counts and return_evidence_counts are set to True. "
+            "Returning source counts."
+        )
     where_clauses = []
     mesh_all_term, hash_in_rel = None, ""
     if paper_term:
@@ -1372,19 +1392,20 @@ def get_statements(
             evidence_limit=evidence_limit,
         )
 
-    if not return_evidence_counts:
-        return stmts
+    if return_source_counts:
+        source_counts = {
+            rel.data["stmt_hash"]: json.loads(rel.data["source_counts"])
+            for rel in flattened_rels
+        }
+        return stmts, source_counts
+    elif return_evidence_counts:
+        evidence_counts = {
+            rel.data["stmt_hash"]: int(rel.data["evidence_count"])
+            for rel in flattened_rels
+        }
+        return stmts, evidence_counts
 
-    evidence_counts = {
-        stmt.get_hash(): (
-            min(rel.data["evidence_count"], evidence_limit)
-            if evidence_limit is not None
-            else rel.data["evidence_count"]
-        )
-        for rel, stmt in zip(flattened_rels, stmts)
-    }
-
-    return stmts, evidence_counts
+    return stmts
 
 
 @autoclient()
