@@ -232,6 +232,8 @@ def signed_analysis_route():
             negative_genes=negative_genes,
             negative_errors=negative_errors,
             results=results,
+            minimum_evidence=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data
         )
     return flask.render_template(
         "gene_analysis/signed_form.html",
