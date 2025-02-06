@@ -140,6 +140,28 @@
                         ({{ name }})</a>
                 {% endfor %}
             </p>
+            <!-- Added Background section -->
+            <h4>Background</h4>
+            <p>
+                {% if background_genes %}
+                    Custom background set: {{ background_genes|length }} genes
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-toggle="collapse"
+                            data-target="#backgroundGenesList" aria-controls="backgroundGenesList">
+                        Show/Hide List
+                    </button>
+                    <div class="collapse" id="backgroundGenesList">
+                        <p class="mt-2">
+                            {% for hgnc_id, name in background_genes.items() %}
+                                <a class="badge badge-secondary" href="https://bioregistry.io/hgnc:{{ hgnc_id }}"
+                                   target="_blank">HGNC:{{ hgnc_id }} ({{ name }})</a>
+                            {% endfor %}
+                        </p>
+                    </div>
+                {% else %}
+                    Using all human genes as background
+                {% endif %}
+            </p>
+
             <h3>Over-Representation Analysis</h3>
             <div>
                 <!-- Nav tabs -->
@@ -193,6 +215,11 @@
                             <a href="http://geneontology.org/docs/go-annotations/">Gene Ontology</a>
                             via the <a href="http://geneontology.org/docs/go-annotations/">Gene
                             Ontology Annotations Database</a>.
+                            {% if background_genes %}
+                            Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                            {% else %}
+                            Analysis was performed using all human genes as background.
+                            {% endif %}
                         </p>
                         {{ render_table(go_results, "table-go") }}
                     </div>
@@ -200,8 +227,12 @@
                         <p>
                             These results are acquired by running over-representation analysis using Fisher's exact test
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
-                            the <a href="https://reactome.org/">Reactome</a>
-                            pathway database.
+                            the <a href="https://reactome.org/">Reactome</a> pathway database.
+                            {% if background_genes %}
+                            Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                            {% else %}
+                            Analysis was performed using all human genes as background.
+                            {% endif %}
                         </p>
                         {{ render_table(reactome_results, "table-reactome") }}
                     </div>
@@ -209,8 +240,12 @@
                         <p>
                             These results are acquired by running over-representation analysis using Fisher's exact test
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to pathways in
-                            the <a href="https://www.wikipathways.org/">WikiPathways</a>
-                            pathway database.
+                            the <a href="https://www.wikipathways.org/">WikiPathways</a> pathway database.
+                            {% if background_genes %}
+                            Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                            {% else %}
+                            Analysis was performed using all human genes as background.
+                            {% endif %}
                         </p>
                         {{ render_table(wikipathways_results, "table-wikipathways") }}
                     </div>
@@ -219,6 +254,11 @@
                             These results are acquired by running over-representation analysis using Fisher's exact test
                             and correcting using {{ method }} and α={{ alpha }} on the genes annotated to phenotypes in
                             the <a href="https://hpo.jax.org/">Human Phenotype Ontology annotation database</a>.
+                            {% if background_genes %}
+                            Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                            {% else %}
+                            Analysis was performed using all human genes as background.
+                            {% endif %}
                         </p>
                         {{ render_table(phenotype_results, "table-hpo") }}
                     </div>
@@ -231,8 +271,11 @@
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally downstream in
                                 one step from all entities in the INDRA Database.
-                            </p>
-                            <p>
+                                {% if background_genes %}
+                                Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                                {% else %}
+                                Analysis was performed using all human genes as background.
+                                {% endif %}
                             </p>
                             {{ render_indra_table(indra_downstream_results, "table-downstream") }}
                         </div>
@@ -244,6 +287,11 @@
                                 These results are acquired by running over-representation analysis using Fisher's exact test
                                 and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
                                 one step from all entities in the INDRA Database.
+                                {% if background_genes %}
+                                Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                                {% else %}
+                                Analysis was performed using all human genes as background.
+                                {% endif %}
                             </p>
                             {{ render_indra_table(indra_upstream_results, "table-upstream") }}
                         </div>
