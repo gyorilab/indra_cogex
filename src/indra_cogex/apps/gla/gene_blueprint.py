@@ -145,7 +145,13 @@ class ContinuousForm(FlaskForm):
 
 @gene_blueprint.route("/discrete", methods=["GET", "POST"])
 def discretize_analysis():
-    """Render the discrete gene analysis page and handle form submission."""
+    """Render the discrete gene analysis page and handle form submission.
+
+    Returns
+    -------
+    str
+        Rendered HTML template."""
+
     form = DiscreteForm()
     if form.validate_on_submit():
         genes, errors = form.parse_genes()
@@ -293,9 +299,6 @@ def continuous_analysis_route():
             "gene_analysis/continuous_results.html",
             source=form.source.data,
             results=results,
-            gene_names=df[gene_name_column].values.tolist(),
-            minimum_evidence=form.minimum_evidence.data,
-            minimum_belief=form.minimum_belief.data,
         )
     return flask.render_template(
         "gene_analysis/continuous_form.html",
