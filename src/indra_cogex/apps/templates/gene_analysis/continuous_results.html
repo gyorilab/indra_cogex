@@ -52,7 +52,7 @@
     </script>
 {% endblock %}
 
-{% macro render_table(df, table_id) -%}
+{% macro render_table(results, table_id) -%}
     <table class="table table-hover table-striped" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
@@ -62,10 +62,11 @@
             <th scope="col">NES</th>
             <th scope="col"><i>p</i>-value</th>
             <th scope="col"><i>q</i>-value</th>
+            <th scope="col">Statements</th>
         </tr>
         </thead>
         <tbody>
-        {% for curie, name, es, nes, p, q, geneset_size, matched_size in df.values %}
+        {% for curie, name, es, nes, p, q, geneset_size, matched_size in results.values %}
             <tr>
                 <td><a href="https://bioregistry.io/{{ curie }}" target="_blank">{{ curie }}</a></td>
                 <td>{{ name }}</td>
@@ -73,6 +74,15 @@
                 <td>{{ "{:.2f}".format(nes) }}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
+                <td>
+                    <a href="{{ url_for('search.search_continuous_statements',
+                        target_id=curie,
+                        genes=gene_names,
+                        minimum_evidence=minimum_evidence,
+                        minimum_belief=minimum_belief) }}"
+                        target="_blank"
+                        class="btn btn-primary btn-sm">View Statements</a>
+                </td>
             </tr>
         {% endfor %}
         </tbody>
