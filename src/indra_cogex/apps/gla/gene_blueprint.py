@@ -69,8 +69,7 @@ class DiscreteForm(FlaskForm):
     genes = genes_field
     background_genes = TextAreaField(
         "Background Genes (Optional)",
-        description='Enter background genes. If not provided, all human genes will be used. '
-                    'Click here for <a href="#" onclick="exampleBackgroundGenes()">an example list of human genes</a>.',
+        description='Enter background genes. If not provided, all human genes will be used. ',
         render_kw={"rows": 2, "cols": 50}
     )
     indra_path_analysis = indra_path_analysis_field
