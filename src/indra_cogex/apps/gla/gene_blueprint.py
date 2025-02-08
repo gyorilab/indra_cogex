@@ -9,6 +9,8 @@ from flask import url_for, abort
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField, TextAreaField, StringField
 from wtforms.validators import DataRequired
+import io
+
 
 from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
@@ -65,6 +67,11 @@ class DiscreteForm(FlaskForm):
     """A form for discrete gene set enrichment analysis."""
 
     genes = genes_field
+    background_genes = TextAreaField(
+        "Background Genes (Optional)",
+        description='Enter background genes. If not provided, all human genes will be used. ',
+        render_kw={"rows": 2, "cols": 50}
+    )
     indra_path_analysis = indra_path_analysis_field
     minimum_evidence = minimum_evidence_field
     minimum_belief = minimum_belief_field
@@ -78,6 +85,13 @@ class DiscreteForm(FlaskForm):
     def parse_genes(self) -> Tuple[Mapping[str, str], List[str]]:
         """Resolve the contents of the text field."""
         gene_set = parse_text_field(self.genes.data)
+        return parse_gene_list(gene_set)
+
+    def parse_background_genes(self) -> Tuple[Mapping[str, str], List[str]]:
+        """Resolve the contents of the background genes field."""
+        if not self.background_genes.data:
+            return {}, []
+        gene_set = parse_text_field(self.background_genes.data)
         return parse_gene_list(gene_set)
 
 
@@ -136,9 +150,15 @@ def discretize_analysis():
     -------
     str
         Rendered HTML template."""
+
     form = DiscreteForm()
     if form.validate_on_submit():
         genes, errors = form.parse_genes()
+        background_genes, background_errors = form.parse_background_genes()
+
+        # Combine any parsing errors
+        all_errors = errors + background_errors if background_errors else errors
+
         results = discrete_analysis(
             list(genes),
             client=client,
@@ -147,7 +167,8 @@ def discretize_analysis():
             keep_insignificant=form.keep_insignificant.data,
             minimum_evidence_count=form.minimum_evidence.data,
             minimum_belief=form.minimum_belief.data,
-            indra_path_analysis=form.indra_path_analysis.data
+            indra_path_analysis=form.indra_path_analysis.data,
+            background_gene_list=list(background_genes) if background_genes else None
         )
 
         if INDRA_COGEX_WEB_LOCAL and form.local_download.data:
@@ -161,7 +182,8 @@ def discretize_analysis():
         return flask.render_template(
             "gene_analysis/discrete_results.html",
             genes=genes,
-            errors=errors,
+            background_genes=background_genes,
+            errors=all_errors,
             method=form.correction.data,
             alpha=form.alpha.data,
             minimum_evidence=form.minimum_evidence.data,
@@ -231,14 +253,15 @@ def continuous_analysis_route():
     if form.validate_on_submit():
 
         # Get file path and read the data into a DataFrame
-        file_path = form.file.data.filename
+        file_name = form.file.data.filename
+        file = form.file.data
         gene_name_column = form.gene_name_column.data
         log_fold_change_column = form.log_fold_change_column.data
-        file_path = Path(file_path)
-        sep = "," if file_path.suffix.lower() == ".csv" else "\t"
+        sep = "," if file_name.endswith(".csv") else "\t"
 
         try:
-            df = pd.read_csv(file_path, sep=sep)
+            file_data = file.read().decode("utf-8")
+            df = pd.read_csv(io.StringIO(file_data), sep=sep)
         except Exception as e:
             abort(
                 HTTPStatus.BAD_REQUEST,
