@@ -298,7 +298,11 @@ def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]
             hgnc_ids.append(entry)
         else:  # probably a symbol
             hgnc_id = hgnc_client.get_current_hgnc_id(entry)
-            if hgnc_id:
+            # Handle special case where an outdated symbol
+            # corresponds to multiple current HGNC IDs
+            if isinstance(hgnc_id, list):
+                hgnc_ids.append(hgnc_id[0])
+            elif hgnc_id:
                 hgnc_ids.append(hgnc_id)
             else:
                 errors.append(entry)
