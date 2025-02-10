@@ -13,6 +13,7 @@ import os
 import json
 import logging
 from collections import defaultdict
+from typing import List, Tuple, Optional, Dict
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ from indra.statements import *
 from indra.databases import hgnc_client
 
 from indra_cogex.client import *
+from ..client.enrichment.discrete import indra_upstream_ora, go_ora, reactome_ora, wikipathways_ora
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +151,7 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
     return stmts_by_protein_df, stmts_by_protein_filtered_df_copy
 
 
-def plot_stmts_by_type(stmts_df, fname):
+def plot_stmts_by_type(stmts_df):
     """Visualize frequency of interaction types among proteins that have direct
        INDRA relationship to source
 
@@ -161,13 +163,13 @@ def plot_stmts_by_type(stmts_df, fname):
         Name of the file bar chart will be saved into.
     """
     # Plot bar chart based on "stmt_type" which are the interaction types
+    fig, ax = plt.subplots(figsize=(10, 6))
     type_counts = stmts_df["stmt_type"].value_counts()
-    type_counts.plot.bar()
-    plt.xlabel("Interaction Type")
-    plt.ylabel("Frequency")
-    plt.title("Frequency of Type of Interaction With Target")
-
-    plt.savefig(fname, bbox_inches="tight")
+    type_counts.plot.bar(ax=ax)
+    ax.set_xlabel("Interaction Type")
+    ax.set_ylabel("Frequency")
+    ax.set_title("Frequency of Type of Interaction With Target")
+    return fig
 
 
 def assemble_protein_stmt_htmls(stmts_df, output_path):
@@ -187,12 +189,13 @@ def assemble_protein_stmt_htmls(stmts_df, output_path):
         stmt = stmt_from_json(json.loads(row['stmt_json']))
         stmts_by_protein[row['name']].append(stmt)
 
+    html_content = {}
     for name, stmts in stmts_by_protein.items():
-        # uses HtmlAssembler to get html pages of INDRA statements for each gene
-        ha = HtmlAssembler(stmts, title='Statements for %s' % name,
+        ha = HtmlAssembler(stmts, title=f'Statements for {name}',
                            db_rest_url='https://db.indra.bio')
-        fname = os.path.join(output_path, '%s_statements.html' % name)
-        ha.save_model(fname)
+        html_content[name] = ha.make_model()
+
+    return html_content
 
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
@@ -313,249 +316,267 @@ def get_go_terms_for_source(source_hgnc_id):
     return source_go_terms, go_nodes
 
 
-def shared_upstream_bioentities_from_targets(stmts_by_protein_df, filename):
-    """Get a dataframe of upstream molecules intersecting with bioentities that target proteins with direct INDRA
-       relationships
+@autoclient()
+def shared_upstream_bioentities_from_targets(
+    stmts_by_protein_df: pd.DataFrame,
+    target_genes: List[str],
+    *,
+    client
+) -> Tuple[List[str], pd.DataFrame]:
+    """Get upstream molecules intersecting with bioentities.
 
     Parameters
     ----------
-    filename : str
-        Path to the CSV file containing upstream bioentities for gene sets.
-    stmts_by_protein_df : dataframe
-        Contains all bioentities target protien has a direct INDRA relationship
+    stmts_by_protein_df : pd.DataFrame
+        DataFrame containing INDRA statements
+    target_genes : List[str]
+        List of target gene symbols
+    client :
+        The client instance
 
     Returns
     -------
-    shared_proteins : list
-        list of shared bioentities between the indra_upstream results
-        and bioenties that have direct INDRA relationships with target protein
-    shared_entities : dataframe
-        The filtered the indra_upstream_df using the shared_protiens list
-        (can pick whether you want to filter the indra_upstream_df or
-        protein_df which contains all bioentities that target protein has a
-        direct INDRA relationship with)
+    Tuple[List[str], pd.DataFrame]
+        Shared proteins and detailed analysis results
     """
-    # load csv into dataframe
-    indra_upstream_df = pd.read_csv(filename)
+    # Get upstream analysis from database
+    upstream_df = indra_upstream_ora(
+        client=client,
+        gene_ids=target_genes
+    )
 
-    # list that are shared entities between indra_upstream for gene set and
-    # proteins that have a direct INDRA relationship with target protein
-    shared_proteins = list((set(indra_upstream_df["Name"].values)).intersection
-                           (set(stmts_by_protein_df["name"].values)))
+    # Find shared proteins
+    shared_proteins = list(set(upstream_df["name"].values).intersection(
+        set(stmts_by_protein_df["name"].values)))
 
     if shared_proteins:
-        shared_entities = indra_upstream_df[indra_upstream_df.Name.
-                                            isin(shared_proteins)]
-        logger.info("These are the shared upstream bioentities between the"
-                    "gene list and source_protein\n" + str(shared_entities))
-
-    # if there are no shared proteins
+        shared_entities = upstream_df[upstream_df.name.isin(shared_proteins)]
+        logger.info("Found shared upstream bioentities")
     else:
-        logger.info("There are no shared upstream bioentities between the "
-                    "targets and the source")
+        logger.info("No shared upstream bioentities found")
+        shared_entities = pd.DataFrame()
 
     return shared_proteins, shared_entities
 
 
-def find_shared_go_terms(source_go_terms, filename):
-    """Finds the shared GO terms between the gene list and the target proteins' GO terms.
-
-       The data is sourced from the CSV file obtained from discrete gene analysis.
+@autoclient()
+def find_shared_go_terms(source_go_terms: List[str], target_genes: List[str], *, client) -> Optional[pd.DataFrame]:
+    """Finds shared GO terms between the gene list and source protein's GO terms.
 
     Parameters
     ----------
-    source_go_terms : list
-        GO terms for the source proteins
-    filename : str
-        Path to the CSV file containing GO terms for the target proteins
+    source_go_terms : List[str]
+        GO terms for source protein
+    target_genes : List[str]
+        Target gene symbols
+    client :
+        The client instance
 
     Returns
     -------
-    shared_df : dataframe
-        Contains shared bioentities that have the same go terms
-        between the GO terms provided from the gene analysis and GO terms
-        associated with target protein
+    Optional[pd.DataFrame]
+        DataFrame with shared GO terms, or None if no shared terms found
     """
+    # Get GO terms data from database
+    go_df = go_ora(
+        client=client,
+        gene_ids=target_genes
+    )
 
-    # loads data fron csv file
-    go_terms_df = pd.read_csv(filename)
+    # Find shared terms
+    shared_go = list(set(go_df["CURIE"].values).intersection(set(source_go_terms)))
 
-    # gets list of shared go terms between protein list and target protien
-    shared_go = list((set(go_terms_df["CURIE"].values).
-                      intersection(set(source_go_terms))))
     if shared_go:
-        # filters the go terms dataframe by the id of the protiens in shared_go
-        shared_go_df = go_terms_df[go_terms_df.CURIE.isin(shared_go)]
-        logger.info("These are shared complexes between the gene list and the "
-                    "source_protein\n" + str(shared_go_df))
+        shared_go_df = go_df[go_df.CURIE.isin(shared_go)]
+        logger.info("Found shared GO terms between source and targets")
+        return shared_go_df
 
-    else:
-        logger.info("There are no shared go terms between the source and targets")
-        return None
-
-    return shared_go_df
+    logger.info("No shared GO terms found between source and targets")
+    return None
 
 
-def combine_target_gene_pathways(reactome_filename, wiki_filename):
-    """This method creates combined dataframe of REACTOME and Wikipathways
-    provided by gene analysis for gene list
+@autoclient()
+def combine_target_gene_pathways(source_id: str, target_ids: List[str], *, client) -> pd.DataFrame:
+    """Creates combined dataframe of REACTOME and Wikipathways pathway data.
 
     Parameters
     ----------
-    reactome_filename : str
-        The file path to the CSV file containing the REACTOME pathways data.
-    wiki_filename : str
-        The file path to the CSV file containing the WikiPathways data.
+    source_id : str
+        HGNC ID for source gene
+    target_ids : List[str]
+        List of HGNC IDs for target genes
+    client :
+        The client instance
 
     Returns
     -------
-    pathways_df : dataframe
-        This dataframe contains the combined wikipathways and reactome
-        pathways for the gene list
+    pd.DataFrame
+        Combined pathway information from REACTOME and WikiPathways
     """
-    reactome_df = pd.read_csv(reactome_filename)
-    wikipathways_df = pd.read_csv(wiki_filename)
-    pathways_df = pd.concat([reactome_df, wikipathways_df])
+    # Get all gene IDs
+    all_genes = [source_id] + target_ids
+
+    # Get pathway data using database calls
+    reactome_df = reactome_ora(
+        client=client,
+        gene_ids=all_genes
+    )
+
+    wiki_df = wikipathways_ora(
+        client=client,
+        gene_ids=all_genes
+    )
+
+    # Combine results
+    pathways_df = pd.concat([reactome_df, wiki_df])
 
     return pathways_df
 
 
-def graph_boxplots(shared_go_df, shared_entities, filename):
-    """Create boxplots to visualize p and q values
+def graph_boxplots(shared_go_df, shared_entities):
+    """Create boxplots to visualize p and q values.
 
     Parameters
     ----------
-    shared_complexes_df : dataframe
-        Contains shared bioentities that have the same go terms
-        between the GO terms provided from the gene analysis and GO terms
-        associated with source protein.
-    shared_entities : dataframe
-        The filtered the indra_upstream_df using the shared_protiens list
-        (you can pick whether you want to filter the indra_upstream_df or
-        protein_df which contains all bioentities that source protein has a
-        direct INDRA relationship with).
-    filename : string
-        name of the file chart will be downloaded under
-    """
+    shared_go_df : pd.DataFrame
+        DataFrame with GO terms analysis
+    shared_entities : pd.DataFrame
+        DataFrame with bioentities analysis
 
-    # plots boxplots for each type of graph
+    Returns
+    -------
+    plt.Figure
+        Figure containing the boxplots
+    """
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
 
-    axs[0, 0].set_title("P-values for Shared Go Terms")
-    shared_go_df.boxplot(column=["p-value"], ax=axs[0, 0])
+    if not shared_go_df.empty:
+        axs[0, 0].set_title("P-values for Shared Go Terms")
+        shared_go_df.boxplot(column=["p-value"], ax=axs[0, 0])
 
-    axs[0, 1].set_title("Q-values for Shared Go Terms")
-    shared_go_df.boxplot(column=["q-value"], ax=axs[0, 1])
+        axs[0, 1].set_title("Q-values for Shared Go Terms")
+        shared_go_df.boxplot(column=["q-value"], ax=axs[0, 1])
 
-    axs[1, 0].set_title("P-values for Shared Bioentities")
-    shared_entities.boxplot(column=["p-value"], ax=axs[1, 0])
+    if not shared_entities.empty:
+        axs[1, 0].set_title("P-values for Shared Bioentities")
+        shared_entities.boxplot(column=["p-value"], ax=axs[1, 0])
 
-    axs[1, 1].set_title("Q-values for Shared Bioentities")
-    shared_entities.boxplot(column=["q-value"], ax=axs[1, 1])
-    plt.savefig(filename, bbox_inches="tight")
+        axs[1, 1].set_title("Q-values for Shared Bioentities")
+        shared_entities.boxplot(column=["q-value"], ax=axs[1, 1])
+
+    plt.tight_layout()
+    return fig
 
 
 @autoclient()
-def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path, *, client):
-    """This method uses the HGNC ids of the source and targets
-        to pass into and call other methods
+def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
+    """Run complete downstream analysis.
 
     Parameters
     ----------
-    output_path : str
-        Path where output files such as visualizations and CSVs will be saved.
-    client : object
-        The client object used to handle database connections or API interactions.
-    source_hgnc_id : string
-        The HGNC id for the source protein
+    source_hgnc_id : str
+        HGNC ID for the source gene
     target_hgnc_ids : list
-        List of strings of HGNC ids for target proteins
+        List of HGNC IDs for target genes
+    client :
+        The client instance
+
+    Returns
+    -------
+    dict
+        Dictionary containing all analysis results
     """
-    # Get filtered dataframe by protiens that source has INDRA rel with
-    stmts_by_protein_df, stmts_by_protein_filtered_df = \
-        get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
+    # Initialize results dictionary
+    results = {}
 
-    # Visualize frequnecy of interaction types among protiens that have direct
-    # INDRA relationship to source
-    interaction_barchart_fname = os.path.join(output_path,
-                                              "interaction_barchart.png")
-    plot_stmts_by_type(stmts_by_protein_filtered_df,
-                       interaction_barchart_fname)
+    # 1. Get statements and create visualizations
+    stmts_df, filtered_df = get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
+    results['interaction_plot'] = plot_stmts_by_type(filtered_df)
+    results['statements'] = assemble_protein_stmt_htmls(filtered_df)
 
-    # Get INDRA statements for protiens that have direct INDRA rel
-    assemble_protein_stmt_htmls(stmts_by_protein_filtered_df, output_path)
-
-    hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id)
-                for hgnc_id in target_hgnc_ids}
+    # 2. Run discrete analysis
+    hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in target_hgnc_ids}
     discrete_result = discrete_analysis(hgnc_map, client=client)
-    for k, v in discrete_result.items():
-        # The values here are data frames
-        v.to_csv(os.path.join(output_path, f"{k}_discrete.csv"))
+    results['discrete_analysis'] = discrete_result
 
-    # Find shared pathways between users gene list and target protein
-    shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id],
-                                                               target_hgnc_ids)
-    # FIXME: Is a plain text file the right choice here?
-    with open(os.path.join(output_path, "shared_pathways.txt"), "w") as fh:
-        fh.write(str(shared_pathways_result))
+    # 3. Find shared pathways
+    shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id], target_hgnc_ids)
+    results['shared_pathways'] = shared_pathways_result
 
-    # Determine which proteins of interest are part of the same protien\
-    # family/complex as the target
+    # 4. Analyze protein families
     shared_families_result = shared_protein_families(target_hgnc_ids, source_hgnc_id)
-    # FIXME: Is a plain text file the right choice here?
-    with open(os.path.join(output_path, "shared_families.txt"), "w") as fh:
-        fh.write(str(shared_families_result))
+    results['protein_families'] = shared_families_result
 
-    # Get go term ids for target gene
-    source_go_terms, go_nodes = get_go_terms_for_source(source_hgnc_id)
+    # 5. GO terms analysis
+    source_go_terms, _ = get_go_terms_for_source(source_hgnc_id)
+    shared_go_df = find_shared_go_terms(source_go_terms, target_hgnc_ids)
+    results['go_terms'] = {
+        'source_terms': source_go_terms,
+        'shared_terms': shared_go_df
+    }
 
-    # FIXME: given the availability of the analysis module, the below
-    # and the associated functions e.g., shared_upstream_bioentities_from_targets
-    # should be named and documented more clearly to make sure we know
-    # what they do exactly
+    # 6. Additional analyses
+    shared_proteins, shared_entities = shared_upstream_bioentities_from_targets(stmts_df)
+    results['upstream'] = {
+        'shared_proteins': shared_proteins,
+        'shared_entities': shared_entities
+    }
 
-    # Find shared upstream bioentities between the target list and source protein
-    upstream_fname = os.path.join(output_path, "shared_upstream.csv")
-    shared_proteins, shared_entities = \
-        shared_upstream_bioentities_from_targets(stmts_by_protein_df,
-                                                 upstream_fname)
+    # 7. Get combined pathway analysis
+    pathways_df = combine_target_gene_pathways(source_hgnc_id, target_hgnc_ids)
+    results['combined_pathways'] = pathways_df
 
-    # Get shared bioentities between target list and source protein using GO terms
-    go_fname = os.path.join(output_path, "shared_go_terms.csv")
-    shared_go_df = find_shared_go_terms(source_go_terms, go_fname)
+    # 8. Create analysis visualizations
+    if not shared_go_df.empty and not shared_entities.empty:
+        results['analysis_plots'] = graph_boxplots(shared_go_df, shared_entities)
 
-    # Get a data frame of reactome and wikipathways for shared genes
-    reactome_fname = os.path.join(output_path, "shared_reactome.csv")
-    wiki_fname = os.path.join(output_path, "shared_wikipathways.csv")
-    pathways_df = combine_target_gene_pathways(reactome_fname, wiki_fname)
+    return results
 
-    # Visualizes p and q values for shared GO terms
-    go_graph_fname = os.path.join(output_path, 'shared_go_terms.png')
-    graph_boxplots(shared_go_df, shared_entities, go_graph_fname)
-    
 
 @autoclient()
-def explain_downstream(source, targets, output_path, *, client, id_type='hgnc.symbol'):
+def explain_downstream(
+    source: str,
+    targets: List[str],
+    *,
+    client,
+    id_type: str = 'hgnc.symbol'
+) -> Dict:
+    """High-level function that handles input validation and runs the analysis.
+
+    Parameters
+    ----------
+    source : str
+        Source identifier (either gene symbol or HGNC ID based on id_type)
+    targets : List[str]
+        List of target identifiers
+    client :
+        The client instance
+    id_type : str
+        Type of identifiers provided. Either 'hgnc.symbol' or 'hgnc'
+
+    Returns
+    -------
+    Dict
+        Complete analysis results
+    """
     if id_type == 'hgnc.symbol':
         source_hgnc_id = get_valid_gene_id(source)
         target_hgnc_ids = get_valid_gene_ids(targets)
 
         if not source_hgnc_id:
-            raise ValueError('Could not convert the source gene name to '
-                             'HGNC ID, aborting.')
-
+            raise ValueError('Could not convert the source gene name to HGNC ID')
         if not target_hgnc_ids:
-            raise ValueError('Could not convert any target gene names to '
-                             'HGNC IDs, aborting.')
+            raise ValueError('Could not convert any target gene names to HGNC IDs')
+
     elif id_type == 'hgnc':
         source_hgnc_id = source
         target_hgnc_ids = targets
     else:
-        raise ValueError('Invalid id_type, must be hgnc.symbol or hgnc.')
+        raise ValueError('Invalid id_type, must be hgnc.symbol or hgnc')
 
-    if not os.path.exists(output_path):
-        logger.info(f"Creating output directory {output_path}")
-        os.makedirs(output_path)
-    
-    return run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_path,
-                                           client=client)
+    # Run the main analysis with the validated IDs
+    return run_explain_downstream_analysis(
+        source_hgnc_id,
+        target_hgnc_ids,
+        client=client
+    )
