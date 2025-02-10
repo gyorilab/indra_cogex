@@ -1,10 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base_form.html" %}
+{% block title %}Source-Target Gene Analysis{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+    <script>
+        function exampleGenes() {
+            document.getElementById('{{ form.source_gene.name }}').value = "{{ example_source_gene }}";
+            document.getElementById('{{ form.target_genes.name }}').value = "{{ example_target_genes }}";
+        }
+    </script>
+{% endblock %}
+
+{% block header %}Source-Target Gene Analysis{% endblock %}
+
+{% block lead %}
+    This application analyzes relationships between a source gene and its downstream target genes using
+    INDRA CoGEx. The analysis reveals various types of biological relationships and shared mechanisms.<br>
+    <small>
+        The analysis includes:
+        <ul>
+            <li>INDRA statements showing direct relationships and evidence</li>
+            <li>Shared biological pathways from REACTOME and WikiPathways</li>
+            <li>Protein family relationships</li>
+            <li>Gene Ontology (GO) term analysis</li>
+            <li>Upstream regulatory mechanisms</li>
+        </ul>
+        This tool helps understand how genes interact and influence each other in biological networks.
+    </small>
+{% endblock %}
