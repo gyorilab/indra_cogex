@@ -21,6 +21,7 @@ from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
 from indra_cogex.apps.gla.gene_blueprint import gene_blueprint
 from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
+from indra_cogex.apps.gla.source_target_blueprint import source_target_blueprint
 from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.rest_api import api
 from indra_cogex.client.neo4j_client import Neo4jClient
@@ -39,6 +40,7 @@ app.register_blueprint(data_display_blueprint)
 app.register_blueprint(explorer_blueprint)
 app.register_blueprint(chat_blueprint)
 app.register_blueprint(search_blueprint)
+app.register_blueprint(source_target_blueprint)
 api.init_app(app)
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
