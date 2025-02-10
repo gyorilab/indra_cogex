@@ -177,6 +177,18 @@
                     <p class="card-text">&nbsp;</p>
                 </div>
             </div>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="{{ url_for("static", filename="source_target.png") }}"
+                     alt="Source Target Analysis">
+                <div class="card-body">
+                    <h5 class="card-title">Source-Target Gene Analysis</h5>
+                    <p class="card-text">
+                        Analyze relationships between a source gene and its downstream target genes.
+                    </p>
+                </div>
+                {{ start_button('sta.source_target_analysis_route', '/source_target/analysis') }}
+            </div>
         </div>
 
 
