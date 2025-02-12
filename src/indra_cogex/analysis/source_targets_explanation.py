@@ -8,25 +8,38 @@ determining if any of the proteins belong to the same protein family/complex
 as the target, and using gene set enrichment on intermediates between
 the source and the target.
 """
-import itertools
+# Standard library imports
 import os
 import json
+import base64
 import logging
+import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
 
+# Third-party imports
 import pandas as pd
+import matplotlib
+
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
+
+# INDRA imports
+from indra.databases import hgnc_client
 from indra.assemblers.html import HtmlAssembler
 from indra.statements import *
-from indra.databases import hgnc_client
 
+# Local imports
 from indra_cogex.client import *
-from ..client.enrichment.discrete import indra_upstream_ora, go_ora, reactome_ora, wikipathways_ora
+from ..client.enrichment.discrete import (
+    indra_upstream_ora,
+    go_ora,
+    reactome_ora,
+    wikipathways_ora
+)
+from .gene_analysis import discrete_analysis
 
 logger = logging.getLogger(__name__)
-
-from .gene_analysis import discrete_analysis
 
 
 def get_valid_gene_id(gene_name):
@@ -89,7 +102,9 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
 
     Parameters
     ----------
-    source_protein : string
+    source_ns
+    client
+    source_id : string
         The protein of interest in relation to protien list user enters
 
     target_proteins : list
@@ -123,23 +138,22 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
             "target_type": entry.target_ns,
             "target_id": entry.target_id,
             "stmt_type": entry.data["stmt_type"],
-            "evidence_count":entry.data["evidence_count"], 
-            "stmt_hash":entry.data["stmt_hash"]
-         }
+            "evidence_count": entry.data["evidence_count"],
+            "stmt_hash": entry.data["stmt_hash"]
+        }
         for entry in res
     ]
 
     stmts_by_protein_df = pd.DataFrame.from_records(records)
-    
-    
+
     # If there are target proteins filters data frame based on that list
     if target_proteins:
         stmts_by_protein_filtered_df = stmts_by_protein_df[
             stmts_by_protein_df.target_id.isin(target_proteins)]
-        
+
         evidences = []
         for hashes in stmts_by_protein_filtered_df["stmt_hash"].values:
-                evidences.append(get_evidences_for_stmt_hash(int(hashes)))
+            evidences.append(get_evidences_for_stmt_hash(int(hashes)))
         stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
         stmts_by_protein_filtered_df_copy["evidences"] = evidences
         logger.info("Dataframe of protiens that have INDRA relationships with source\
@@ -158,9 +172,7 @@ def plot_stmts_by_type(stmts_df):
     Parameters
     ----------
     stmts_df : pd.DataGrame
-        Contains INDRA statements represented as a data frame.
-    fname : str
-        Name of the file bar chart will be saved into.
+        Contains INDRA statements represented as a data frame..
     """
     # Plot bar chart based on "stmt_type" which are the interaction types
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -172,13 +184,11 @@ def plot_stmts_by_type(stmts_df):
     return fig
 
 
-def assemble_protein_stmt_htmls(stmts_df, output_path):
+def assemble_protein_stmt_htmls(stmts_df):
     """Assemble HTML page for each protein's INDRA statements in a data frame.
 
     Parameters
     ----------
-    output_path : str
-        Path to the directory where the generated HTML files will be saved.
     stmts_df : pd.DataFrame
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
@@ -243,12 +253,12 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
         the source
     """
     # adds hgnc: to the beginning of source id to format for query
-    source_hgnc_id = "hgnc:"+source_hgnc_id
+    source_hgnc_id = "hgnc:" + source_hgnc_id
 
     # iterates through target ids to format for query
     targets_list = []
     for ids in target_hgnc_ids:
-        target_id = "hgnc:"+ids
+        target_id = "hgnc:" + ids
         targets_list.append(target_id)
     target_ids = str(targets_list)
 
@@ -280,16 +290,6 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
             # creates new dataframe for shared complexes
             shared_families_df = target_df[target_df.id.isin(source_df["id"].values)]
             return shared_families_df
-
-        # if only the source or only the target returned results
-        else:
-            logger.info("There are no shared protein family complexes")
-            return None
-
-    # if the query didn't return results
-    else:
-        logger.info("There are no shared protein family complexes")
-        return None
 
 
 def get_go_terms_for_source(source_hgnc_id):
@@ -384,10 +384,10 @@ def find_shared_go_terms(source_go_terms: List[str], target_genes: List[str], *,
     )
 
     # Find shared terms
-    shared_go = list(set(go_df["CURIE"].values).intersection(set(source_go_terms)))
+    shared_go = list(set(go_df["curie"].values).intersection(set(source_go_terms)))
 
     if shared_go:
-        shared_go_df = go_df[go_df.CURIE.isin(shared_go)]
+        shared_go_df = go_df[go_df.curie.isin(shared_go)]
         logger.info("Found shared GO terms between source and targets")
         return shared_go_df
 
@@ -445,27 +445,51 @@ def graph_boxplots(shared_go_df, shared_entities):
 
     Returns
     -------
-    plt.Figure
-        Figure containing the boxplots
+    str
+        Base64 encoded string of the plot
     """
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
 
     if not shared_go_df.empty:
         axs[0, 0].set_title("P-values for Shared Go Terms")
-        shared_go_df.boxplot(column=["p-value"], ax=axs[0, 0])
+        shared_go_df.boxplot(column=["p"], ax=axs[0, 0])
 
         axs[0, 1].set_title("Q-values for Shared Go Terms")
-        shared_go_df.boxplot(column=["q-value"], ax=axs[0, 1])
+        shared_go_df.boxplot(column=["q"], ax=axs[0, 1])
 
     if not shared_entities.empty:
         axs[1, 0].set_title("P-values for Shared Bioentities")
-        shared_entities.boxplot(column=["p-value"], ax=axs[1, 0])
+        shared_entities.boxplot(column=["p"], ax=axs[1, 0])
 
         axs[1, 1].set_title("Q-values for Shared Bioentities")
-        shared_entities.boxplot(column=["q-value"], ax=axs[1, 1])
+        shared_entities.boxplot(column=["q"], ax=axs[1, 1])
 
     plt.tight_layout()
-    return fig
+
+    # Use temporary file instead of BytesIO
+    from tempfile import NamedTemporaryFile
+    with NamedTemporaryFile(suffix='.png') as tmpfile:
+        fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+        with open(tmpfile.name, 'rb') as f:
+            plot_data = base64.b64encode(f.read()).decode('utf-8')
+
+    plt.close(fig)
+    return plot_data
+
+
+def convert_plot_to_base64(fig):
+    """Helper function to convert matplotlib figure to base64 string."""
+    from tempfile import NamedTemporaryFile
+
+    # Save to temporary file
+    with NamedTemporaryFile(suffix='.png') as tmpfile:
+        fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+        # Read and encode
+        with open(tmpfile.name, 'rb') as f:
+            plot_data = base64.b64encode(f.read()).decode('utf-8')
+
+    plt.close(fig)
+    return plot_data
 
 
 @autoclient()
@@ -491,7 +515,11 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
 
     # 1. Get statements and create visualizations
     stmts_df, filtered_df = get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
-    results['interaction_plot'] = plot_stmts_by_type(filtered_df)
+
+    # Create and convert interaction plot
+    interaction_fig = plot_stmts_by_type(filtered_df)
+    results['interaction_plot'] = convert_plot_to_base64(interaction_fig)
+
     results['statements'] = assemble_protein_stmt_htmls(filtered_df)
 
     # 2. Run discrete analysis
@@ -516,7 +544,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
     }
 
     # 6. Additional analyses
-    shared_proteins, shared_entities = shared_upstream_bioentities_from_targets(stmts_df)
+    shared_proteins, shared_entities = shared_upstream_bioentities_from_targets(
+        stmts_df,
+        target_hgnc_ids
+    )
     results['upstream'] = {
         'shared_proteins': shared_proteins,
         'shared_entities': shared_entities
@@ -526,9 +557,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
     pathways_df = combine_target_gene_pathways(source_hgnc_id, target_hgnc_ids)
     results['combined_pathways'] = pathways_df
 
-    # 8. Create analysis visualizations
+    # 8. Create analysis plots
     if not shared_go_df.empty and not shared_entities.empty:
-        results['analysis_plots'] = graph_boxplots(shared_go_df, shared_entities)
+        # graph_boxplots now returns base64 string directly
+        results['analysis_plot'] = graph_boxplots(shared_go_df, shared_entities)
 
     return results
 
