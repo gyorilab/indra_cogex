@@ -69,7 +69,8 @@ class GeneOntologyForm(FlaskForm):
                     '<a href="#" onclick="event.preventDefault(); document.getElementById('
                     '\'term\').value=\'GO:0003677\'">GO:0003677</a> for Apoptotic Process)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence')
+    include_db_evidence = BooleanField('Include Database Evidence',
+                                       default=True)
     submit = SubmitField("Submit")
 
 
@@ -159,7 +160,8 @@ class MeshDiseaseForm(FlaskForm):
         description='Choose a MeSH disease to explore (e.g., <a href="#" onclick="event.preventDefault(); '
                     'document.getElementById(\'term\').value=\'D006009\'">D006009</a> for Pompe Disease)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence')
+    include_db_evidence = BooleanField('Include Database Evidence',
+                                       default=True)
     submit = SubmitField("Submit")
 
 
@@ -589,7 +591,8 @@ class PaperForm(FlaskForm):
         default=True,
         description="Do not show evidences that have been previously explored",
     )
-    include_db_evidence = BooleanField('Include Database Evidence')
+    include_db_evidence = BooleanField('Include Database Evidence',
+                                       default=True)
     submit = SubmitField("Submit")
 
     def get_term(self) -> Tuple[str, str]:
@@ -679,7 +682,8 @@ class NodesForm(FlaskForm):
         validators=[DataRequired()],
         description="Please enter INDRA-flavored CURIEs separated by commas or new lines.",
     )
-    include_db_evidence = BooleanField('Include Database Evidence')
+    include_db_evidence = BooleanField('Include Database Evidence',
+                                       default=True)
     submit = SubmitField("Submit")
 
     def get_nodes(self) -> List[Tuple[str, str]]:
@@ -744,7 +748,7 @@ def subnetwork():
 
     if form.validate_on_submit():  # Handle form submission
         nodes = form.get_nodes()
-        print(f"Processed nodes: {nodes}")
+        logger.info(f"Processed nodes: {nodes}")
 
         if len(nodes) > 30:
             flask.flash("Cannot query more than 30 nodes.")
@@ -752,13 +756,18 @@ def subnetwork():
 
         include_db_evidence = form.include_db_evidence.data
         # Redirect to the same route with query parameters
-        return redirect(url_for('.subnetwork',
-                                nodes=','.join([f"{prefix}:{identifier}" for prefix, identifier in nodes]),
-                                include_db_evidence=str(include_db_evidence).lower()))
+        nodes_arg = ','.join([f"{prefix}:{identifier}"
+                              for prefix, identifier in nodes])
+        return redirect(
+            url_for('.subnetwork',
+                    nodes=nodes_arg,
+                    include_db_evidence=str(include_db_evidence).lower()))
 
     # If it's a GET request or form is not valid
-    include_db_evidence = request.args.get('include_db_evidence', 'false').lower() == 'true'
-    nodes = [tuple(node.split(':')) for node in request.args.get('nodes', '').split(',') if node]
+    include_db_evidence = request.args.get('include_db_evidence',
+                                           'false').lower() == 'true'
+    nodes = [tuple(node.split(':', maxsplit=1))
+             for node in request.args.get('nodes', '').split(',') if node]
 
     if nodes:  # If nodes are provided in the URL, process them
 
@@ -794,7 +803,8 @@ def subnetwork():
         )
 
     # If no nodes provided, just render the form
-    form.include_db_evidence.data = include_db_evidence  # Set the checkbox state based on URL parameter
+    # Set the checkboxstate based on URL parameter
+    form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
 
 
