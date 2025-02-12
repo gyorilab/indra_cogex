@@ -12,14 +12,12 @@ from indra_cogex.analysis.source_targets_explanation import (
     get_valid_gene_id,
     get_valid_gene_ids,
 )
-print("Loading source_target_blueprint.py")
 
 __all__ = [
     "source_target_blueprint",
 ]
 
 source_target_blueprint = flask.Blueprint("sta", __name__, url_prefix="/source_target")
-print(f"Created blueprint with name: {source_target_blueprint.name}")
 
 
 class SourceTargetForm(FlaskForm):
@@ -45,30 +43,27 @@ def source_target_analysis_route():
     """Main analysis route."""
     form = SourceTargetForm()
     if form.validate_on_submit():
-        # Get raw input from form
         source = form.source_gene.data.strip()
         targets = [g.strip() for g in form.target_genes.data.split('\n') if g.strip()]
 
         try:
-            # Validate genes using analysis module functions
             source_id = get_valid_gene_id(source)
-            if not source_id:
-                flask.flash(f"Invalid source gene: {source}", "error")
-                return flask.redirect(flask.url_for("sta.source_target_analysis_route"))
-
             target_ids = get_valid_gene_ids(targets)
-            if not target_ids:
-                flask.flash("No valid target genes provided", "error")
+
+            if not source_id:
+                flask.flash(f"Invalid source gene: {source}")
                 return flask.redirect(flask.url_for("sta.source_target_analysis_route"))
 
-            # Run analysis
+            if not target_ids:
+                flask.flash("No valid target genes provided")
+                return flask.redirect(flask.url_for("sta.source_target_analysis_route"))
+
             results = run_explain_downstream_analysis(
                 source_id,
                 target_ids,
                 client=client
             )
 
-            # Render results
             return flask.render_template(
                 "source_target/source_target_results.html",
                 source=source,
@@ -86,4 +81,3 @@ def source_target_analysis_route():
         "source_target/source_target_form.html",
         form=form,
     )
-
