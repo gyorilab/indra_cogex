@@ -300,6 +300,9 @@ def continuous_analysis_route():
             "gene_analysis/continuous_results.html",
             source=form.source.data,
             results=results,
+            gene_names=df[gene_name_column].values.tolist(),
+            minimum_evidence=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
         )
     return flask.render_template(
         "gene_analysis/continuous_form.html",
