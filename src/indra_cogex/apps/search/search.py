@@ -1,5 +1,6 @@
 import json
 from typing import List, Optional, Mapping, Tuple
+import logging
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_jwt_extended import jwt_required
@@ -13,6 +14,8 @@ from indra_cogex.apps.utils import render_statements
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
 from indra_cogex.representation import norm_id
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["search_blueprint"]
 
@@ -242,14 +245,14 @@ def get_ora_statements(
 
     # Enrich statements with complete evidence (no limit)
     stmts = enrich_statements(
-            stmts,
-            client=client
+        stmts,
+        client=client
     )
 
     # Create evidence count mapping
     evidence_counts = {
-            stmt.get_hash(): rel.data.get("evidence_count", 0)
-            for rel, stmt in zip(flattened_rels, stmts)
+        stmt.get_hash(): rel.data.get("evidence_count", 0)
+        for rel, stmt in zip(flattened_rels, stmts)
     }
 
     return stmts, evidence_counts
@@ -289,3 +292,291 @@ def search_ora_statements():
     except Exception as e:
         print(f"Error in get_ora_statements: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@autoclient()
+def get_signed_statements(
+    target_id: str,
+    positive_genes: List[str],
+    negative_genes: List[str],
+    minimum_belief: float = 0.0,
+    minimum_evidence: Optional[int] = None,
+    *,
+    client: Neo4jClient,
+) -> Tuple[List[Statement], Mapping[int, int]]:
+    """Get statements showing signed relationships between genes and target.
+
+   Parameters
+   ----------
+   target_id : str
+       The ID of the target entity
+   positive_genes : List[str]
+       List of gene IDs that show positive correlation with target
+   negative_genes : List[str]
+       List of gene IDs that show negative correlation with target
+   minimum_belief : float, optional
+       Minimum belief score threshold for relationships, by default 0.0
+   minimum_evidence : Optional[int], optional
+       Minimum number of evidences required, by default None
+   client : Neo4jClient
+       The Neo4j client instance
+
+   Returns
+   -------
+   :
+       A tuple containing:
+       - List of INDRA statements representing the relationships
+       - Dictionary mapping statement hashes to evidence counts
+    """
+    pos_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in positive_genes]
+    neg_genes = [norm_id('HGNC', gene.split(':')[1]) for gene in negative_genes]
+
+    namespace = target_id.split(':')[0].lower()
+    id_part = target_id.split(':')[1]
+
+    if namespace == 'chebi':
+        normalized_target = f"chebi:{id_part}"
+        rel_types = ["indra_rel", "has_metabolite"]
+    elif namespace == 'mesh':
+        normalized_target = f"mesh:{id_part}"
+        rel_types = ["indra_rel", "has_indication"]
+    elif namespace == 'hgnc':
+        normalized_target = f"hgnc:{id_part}"
+        rel_types = ["indra_rel"]
+    elif namespace == 'fplx':
+        normalized_target = f"fplx:{id_part}"
+        rel_types = ["indra_rel", "isa"]
+    else:
+        normalized_target = target_id.lower()
+        rel_types = ["indra_rel"]
+
+    query = """
+        MATCH p = (gene:BioEntity)-[r]-(target:BioEntity)
+        WHERE target.id = $target_id
+        AND type(r) IN $rel_types
+        AND gene.id IN $gene_list
+        AND r.belief > $minimum_belief
+        AND r.evidence_count >= $minimum_evidence
+        AND NOT gene.obsolete
+        AND (
+            (startNode(r) = gene AND r.stmt_type IN $stmt_types_gene_to_target)
+            OR
+            (startNode(r) = target AND r.stmt_type IN $stmt_types_target_to_gene)
+        )
+        RETURN p
+        """
+
+    flattened_rels = []
+
+    if pos_genes:
+        pos_params = {
+            "target_id": normalized_target,
+            "gene_list": pos_genes,
+            "rel_types": rel_types,
+            "minimum_belief": minimum_belief,
+            "minimum_evidence": minimum_evidence,
+            "stmt_types_gene_to_target": [
+                'DecreaseAmount',
+                'Inhibition'
+            ],
+            "stmt_types_target_to_gene": [
+                'IncreaseAmount',
+                'Activation',
+                'Complex'
+            ]
+        }
+        pos_results = client.query_tx(query, **pos_params)
+        for result in pos_results:
+            path = result[0]
+            rel = client.neo4j_to_relation(path)
+            flattened_rels.append(rel)
+
+    if neg_genes:
+        neg_params = {
+            "target_id": normalized_target,
+            "gene_list": neg_genes,
+            "rel_types": rel_types,
+            "minimum_belief": minimum_belief,
+            "minimum_evidence": minimum_evidence,
+            "stmt_types_gene_to_target": [
+                'IncreaseAmount',
+                'Activation'
+            ],
+            "stmt_types_target_to_gene": [
+                'DecreaseAmount',
+                'Inhibition'
+            ]
+        }
+        neg_results = client.query_tx(query, **neg_params)
+        for result in neg_results:
+            path = result[0]
+            rel = client.neo4j_to_relation(path)
+            flattened_rels.append(rel)
+
+    stmts = indra_stmts_from_relations(flattened_rels, deduplicate=True)
+    stmts = enrich_statements(stmts, client=client)
+
+    evidence_counts = {
+        stmt.get_hash(): rel.data.get("evidence_count", 0)
+        for rel, stmt in zip(flattened_rels, stmts)
+    }
+
+    return stmts, evidence_counts
+
+
+@search_blueprint.route("/signed_statements/", methods=['GET'])
+@jwt_required(optional=True)
+def search_signed_statements():
+    target_id = request.args.get("target_id")
+    positive_genes = request.args.getlist("positive_genes")
+    negative_genes = request.args.getlist("negative_genes")
+    minimum_evidence = request.args.get("minimum_evidence", "1")
+    minimum_belief = request.args.get("minimum_belief", "0.0")
+
+    try:
+        minimum_evidence = int(minimum_evidence)
+        minimum_belief = float(minimum_belief)
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": "Invalid parameter values"}), 400
+
+    if not target_id or (not positive_genes and not negative_genes):
+        return jsonify({"error": "target_id and at least one gene list required"}), 400
+
+    statements, evidence_counts = get_signed_statements(
+        target_id=target_id,
+        positive_genes=positive_genes,
+        negative_genes=negative_genes,
+        minimum_belief=minimum_belief,
+        minimum_evidence=minimum_evidence
+    )
+
+    return render_statements(
+        stmts=statements,
+        evidence_count=evidence_counts
+    )
+
+
+@autoclient()
+def get_continuous_statements(
+    target_id: str,
+    gene_names: List[str],
+    source: str,
+    minimum_belief: float = 0.0,
+    minimum_evidence: Optional[int] = None,
+    *,
+    client: Neo4jClient,
+) -> Tuple[List[Statement], Mapping[int, int]]:
+    """Get statements for continuous analysis.
+
+    Parameters
+    ----------
+    target_id : str
+        The ID of the target entity
+    gene_names : List[str]
+        List of gene names
+    source : str
+        Type of analysis ('indra-upstream' or 'indra-downstream')
+    minimum_belief : float
+        Minimum belief score for relationships
+    minimum_evidence : Optional[int]
+        Minimum number of evidences required
+    client : Neo4jClient
+        The Neo4j client to use for querying
+    Returns
+    -------
+    :
+        A tuple containing:
+        - List of INDRA statements representing the relationships
+        - Dictionary mapping statement hashes to their evidence counts
+    """
+    prefix, entity = target_id.split(':', 1)
+    if prefix.lower() in ['fplx', 'mesh']:
+        normalized_target = f"{prefix.lower()}:{entity}"
+    else:
+        normalized_target = target_id.lower()
+
+    if source == 'indra-upstream':
+        query = """
+                MATCH path=(gene:BioEntity)-[r:indra_rel]-(target:BioEntity)
+                WHERE target.id = $target_id
+                AND gene.name IN $gene_names
+                AND r.belief > $minimum_belief
+                AND r.evidence_count >= $minimum_evidence
+                RETURN path
+                """
+    elif source == 'indra-downstream':
+        query = """
+                MATCH path=(regulator:BioEntity)-[r:indra_rel]-(gene:BioEntity)
+                WHERE regulator.id = $target_id
+                AND gene.name IN $gene_names
+                AND r.belief > $minimum_belief
+                AND r.evidence_count >= $minimum_evidence
+                RETURN path
+                """
+
+    params = {
+        "target_id": normalized_target,
+        "gene_names": gene_names,
+        "minimum_belief": minimum_belief,
+        "minimum_evidence": minimum_evidence if minimum_evidence is not None else 0
+    }
+
+    results = client.query_tx(query, **params)
+
+    all_relations = []
+    for result in results:
+        try:
+            rels = client.neo4j_to_relations(result[0])
+            all_relations.extend(rels)
+        except Exception:
+            continue
+
+    if not all_relations:
+        return [], {}
+
+    stmts = indra_stmts_from_relations(all_relations, deduplicate=True)
+    stmts = enrich_statements(stmts, client=client)
+
+    evidence_counts = {
+        stmt.get_hash(): rel.data.get("evidence_count", 0)
+        for rel, stmt in zip(all_relations, stmts)
+    }
+
+    return stmts, evidence_counts
+
+
+@search_blueprint.route("/continuous_statements/", methods=['GET'])
+@jwt_required(optional=True)
+def search_continuous_statements():
+    """Endpoint to get INDRA statements for continuous analysis results."""
+    target_id = request.args.get("target_id")
+    genes = request.args.getlist("genes")
+    source = request.args.get("source", "indra-upstream")
+
+    try:
+        minimum_evidence = int(request.args.get("minimum_evidence") or 1)
+        minimum_belief = float(request.args.get("minimum_belief") or 0.0)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid parameter values"}), 400
+
+    if not target_id or not genes:
+        return jsonify({"error": "target_id and genes are required"}), 400
+
+    try:
+        statements, evidence_counts = get_continuous_statements(
+            target_id=target_id,
+            gene_names=genes,
+            source=source,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence
+        )
+
+        return render_statements(
+            stmts=statements,
+            evidence_count=evidence_counts
+        )
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+
