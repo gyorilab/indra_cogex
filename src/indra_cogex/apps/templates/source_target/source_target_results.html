@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Source-Target Analysis Results{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
+          rel="stylesheet"/>
+    <style>
+        .datatable-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .badge {
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
+    <script>
+        const datatablesConf = {
+            pageLength: 10,
+            layout: {
+                bottomStart: {
+                    pageLength: {
+                        menu: [10, 25, 50, 75, 100],
+                    }
+                },
+                topStart: {
+                    buttons: [
+                        {
+                            extend: 'csv',
+                            text: 'Download full table as CSV',
+                            exportOptions: {
+                                modifier: {
+                                    search: 'none'
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        };
+        $(document).ready(function () {
+            $(".datatable").DataTable(datatablesConf);
+        });
+    </script>
+{% endblock %}
+
+{% macro render_table(df, table_id) -%}
+    <div class="datatable-wrapper">
+        <table class="table table-hover table-striped datatable" id="{{ table_id }}" style="width: 100%;">
+            <thead>
+            <tr>
+                {% for column in df.columns %}
+                    <th scope="col">{{ column }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in df.values %}
+                <tr>
+                    {% for value in row %}
+                        <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endmacro %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Source-Target Analysis Results</h1>
+
+        {% if errors %}
+            <h2>Errors</h2>
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div>
+            <h3>Query Genes</h3>
+            <h4>Source Gene</h4>
+            <p>
+                <a class="badge badge-primary" href="https://bioregistry.io/hgnc:{{ source_id }}" target="_blank">
+                    HGNC:{{ source_id }} ({{ source }})
+                </a>
+            </p>
+
+            <h4>Target Genes</h4>
+            <p>
+                {% for hgnc_id, name in target_genes.items() %}
+                    <a class="badge badge-info" href="https://bioregistry.io/hgnc:{{ hgnc_id }}" target="_blank">
+                        HGNC:{{ hgnc_id }} ({{ name }})
+                    </a>
+                {% endfor %}
+            </p>
+
+            {% if results.statements and results.statements.items() %}
+                <h3>INDRA Statements</h3>
+                <p>Direct relationships between source and target genes:</p>
+                {% for gene, statement in results.statements.items() %}
+                    <h4>{{ gene }}</h4>
+                    {{ statement | safe }}
+                {% endfor %}
+            {% endif %}
+
+            {% if results.interaction_plot %}
+                <h3>Interaction Types</h3>
+                <p>Distribution of different types of interactions found:</p>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ results.interaction_plot }}"
+                         alt="Interaction Types Distribution"
+                         class="img-fluid">
+                </div>
+            {% endif %}
+
+            {% if results.discrete_analysis and results.discrete_analysis.get('go') is not none
+                  and results.discrete_analysis.get('go').shape[0] > 0 %}
+                <h3>GO Analysis</h3>
+                <p>Gene Ontology enrichment analysis:</p>
+                {{ render_table(results.discrete_analysis.get('go'), "table-go") }}
+
+                {% if results.discrete_analysis.get('wikipathways') is not none
+                      and results.discrete_analysis.get('wikipathways').shape[0] > 0 %}
+                    <h3>WikiPathways Analysis</h3>
+                    {{ render_table(results.discrete_analysis.get('wikipathways'), "table-wiki") }}
+                {% endif %}
+            {% endif %}
+
+            {% if results.protein_families is not none and results.protein_families.shape[0] > 0 %}
+                <h3>Protein Families</h3>
+                <p>Shared protein family relationships:</p>
+                {{ render_table(results.protein_families, "table-families") }}
+            {% endif %}
+
+            {% if results.combined_pathways is not none and results.combined_pathways.shape[0] > 0 %}
+                <h3>Combined Pathway Analysis</h3>
+                <p>Combined REACTOME and WikiPathways analysis:</p>
+                {{ render_table(results.combined_pathways, "table-combined-pathways") }}
+            {% endif %}
+
+            {% if results.go_terms and results.go_terms.get('shared_terms') is not none
+                  and results.go_terms.get('shared_terms').shape[0] > 0 %}
+                <h3>GO Terms Analysis</h3>
+                <p>Shared Gene Ontology terms:</p>
+                {{ render_table(results.go_terms.get('shared_terms'), "table-shared-go") }}
+            {% endif %}
+
+            {% if results.upstream and results.upstream.get('shared_proteins') %}
+                <h3>Upstream Analysis</h3>
+                <p>Shared upstream regulatory mechanisms:</p>
+                <h4>Shared Proteins</h4>
+                <p>
+                {% for protein in results.upstream.get('shared_proteins') %}
+                    <span class="badge badge-primary">{{ protein }}</span>
+                {% endfor %}
+                </p>
+            {% endif %}
+
+            {% if results.analysis_plot %}
+                <h3>Statistical Analysis</h3>
+                <p>Distribution of p-values and q-values:</p>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ results.analysis_plot }}"
+                         alt="Statistical Analysis Plots"
+                         class="img-fluid">
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
