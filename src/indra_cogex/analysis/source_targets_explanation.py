@@ -9,7 +9,6 @@ as the target, and using gene set enrichment on intermediates between
 the source and the target.
 """
 # Standard library imports
-import os
 import json
 import base64
 import logging
@@ -209,30 +208,36 @@ def assemble_protein_stmt_htmls(stmts_df):
 
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
-    """Find shared pathways between list of target genes and source protien
+    """Find shared pathways between source and target genes.
 
     Parameters
     ----------
-    target_hgnc_ids : list
-        HGNC ids for a source set
     source_hgnc_ids : list
-        HGNC ids for a target set
+        HGNC ids for source genes
+    target_hgnc_ids : list
+        HGNC ids for target genes
 
     Returns
     -------
-    shared_pathways_list : list
-        Nested list of Relation objects describing the pathways shared for
-        a given pair of genes.
+    list
+        List of dictionaries containing pathway information
     """
     shared_pathways_list = []
     for source_id, target_id in itertools.product(source_hgnc_ids, target_hgnc_ids):
         result = get_shared_pathways_for_genes((
             ("HGNC", target_id), ("HGNC", source_id)))
         if result:
-            shared_pathways_list.append(result)
+            # Convert BioEntity objects to dictionaries
+            formatted_pathways = [{
+                'id': pathway.id,
+                'name': pathway.name,
+                'version': pathway.version
+            } for pathway in result]
+            shared_pathways_list.append(formatted_pathways)
+
     if not shared_pathways_list:
-        logger.info("There are no shared pathways between the "
-                    "source and targets")
+        logger.info("There are no shared pathways between the source and targets")
+
     return shared_pathways_list
 
 
