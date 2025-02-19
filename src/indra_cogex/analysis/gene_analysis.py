@@ -25,6 +25,7 @@ from indra_cogex.client.enrichment.discrete import (
     wikipathways_ora,
 )
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
+from indra.databases.hgnc_client import is_kinase, is_transcription_factor
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,7 @@ def discrete_analysis(
                 keep_insignificant=keep_insignificant,
                 background_gene_ids=background_gene_ids
             )
+            results[analysis_name] = analysis_result
         else:
             # Run INDRA analysis if enabled
             if indra_path_analysis:
@@ -111,10 +113,46 @@ def discrete_analysis(
                     minimum_belief=minimum_belief,
                     background_gene_ids=background_gene_ids
                 )
-            else:
-                continue
 
-        results[analysis_name] = analysis_result
+                # Process INDRA Upstream results to identify kinases and TFs
+                if analysis_name == "indra-upstream" and analysis_result is not None:
+                    results[analysis_name] = analysis_result  # Keep original results
+                    logger.info(f"Total INDRA upstream results: {len(analysis_result)}")
+
+                    # Create separate DataFrames for kinases and TFs
+                    kinase_results = pd.DataFrame(columns=analysis_result.columns)
+                    tf_results = pd.DataFrame(columns=analysis_result.columns)
+
+                    # Process each regulator
+                    for _, row in analysis_result.iterrows():
+                        try:
+                            # Check if it's a HGNC identifier
+                            if row['curie'].lower().startswith('hgnc:'):
+                                gene_name = row['name']
+
+                                # Check if it's a kinase
+                                if is_kinase(gene_name):
+                                    kinase_results = pd.concat([kinase_results, pd.DataFrame([row])], ignore_index=True)
+                                    logger.debug(f"Identified kinase: {gene_name}")
+
+                                # Check if it's a TF
+                                if is_transcription_factor(gene_name):
+                                    tf_results = pd.concat([tf_results, pd.DataFrame([row])], ignore_index=True)
+                                    logger.debug(f"Identified TF: {gene_name}")
+
+                        except Exception as e:
+                            logger.warning(f"Error processing regulator {row['curie']}: {str(e)}")
+                            continue
+
+                    logger.info(f"Identified {len(kinase_results)} kinases and {len(tf_results)} transcription factors")
+
+                    # Add results to the output dictionary
+                    if not kinase_results.empty:
+                        results["indra-upstream-kinases"] = kinase_results
+                    if not tf_results.empty:
+                        results["indra-upstream-tfs"] = tf_results
+                else:
+                    results[analysis_name] = analysis_result
 
     return results
 
