@@ -80,6 +80,8 @@
 
 {% macro render_indra_table(df, table_id) -%}
    {% set is_downstream = "downstream" in table_id %}
+   {% set is_kinase = "kinase" in table_id %}
+   {% set is_tf = "tf" in table_id %}
    <table class="table table-hover table-striped table-ora" id="indra-{{ table_id }}" style="width: 100%;">
        <thead>
        <tr>
@@ -107,7 +109,8 @@
                        genes=gene_list,
                        minimum_evidence=minimum_evidence,
                        minimum_belief=minimum_belief,
-                       is_downstream=is_downstream) }}"
+                       is_downstream=is_downstream,
+                       regulator_type='kinase' if is_kinase else 'tf' if is_tf else None) }}"
                        target="_blank"
                        class="btn btn-primary btn-sm">View Statements</a>
                </td>
