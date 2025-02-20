@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link 
+        rel="stylesheet" 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    /> 
+    <link
+        rel="stylesheet"
+        href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"
+    />
+    <style>   
+
+        /* Right-align table title headers */
+        .title-right {
+            text-align: right;
+        }
+        /* Adjust padding in header cells to accommodate the icons on the left */
+        #resultTabsContent .tab-pane table th {
+            padding-left: 20px; /* Adjust as needed */
+        }
+    </style>
+</head>
+<body>
+    <div class="container: 20px;" style="margin-top: 20px; margin-bottom: 20px;">
+        <h1>Protein Analysis Results</h1>
+        <ul class="nav nav-tabs", id="resultTabs" role="tablist">
+            {% set navigation_bar = [
+                ('evidences-tab','#evidences', 'INDRA Statements'), 
+                ('families-tab','#sharedfamilies','Shared Families'),
+                ('upstream-tab','#upstream','Shared Upstream Bioentities'),
+                ('pathways-tab', '#sharedpathways', 'Shared Pathways'),
+                ('goterms-tab', '#sharedgoterms', 'Shared Go Terms')
+                ] %}
+            {% for tab_id, href, caption in navigation_bar %}
+                <li class="nav-item">
+                    <a class="nav-link" id={{tab_id}} data-toggle="tab" href={{href}} role="tab">{{ caption }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="container: 20px;" style="margin-top: 20px; margin-bottom: 20px; margin-left: 30px; margin-right: 30px;">
+            <div class="tab-content", id="resultTabsContent">
+                <div class="tab-pane fade show active" id="evidences" role="tabpanel">
+                    <h2>INDRA Statements with Evidences</h2>
+                    <p>
+                        INDRA was used to automatically assemble a comprehensive set of statements with evidences to detail the 
+                        interactions between the source and target proteins by extracting information from scientific literature and 
+                        curated databases.
+                    </p>
+                    {% for html_page in result['indra_stmt_html_contents'] %}
+                        {{ html_page | safe }}
+                    {% endfor %}
+
+                    <h2> Bar Charts</h2>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <img src="{{ result['interaction_chart'] }}" width="400" height="400" alt="Interaction Chart">
+                            </div>
+                            <div class="col-md-4">
+                                <img src="{{ result['indra_rel_chart'] }}" width="400" height="400" alt="INDRA Relations Chart">
+                            </div>
+                        </div>
+                </div>
+                <div class="tab-pane fade" id="sharedfamilies" role="tabpanel">
+                    <h2>Shared Families</h2>
+                    <p>
+                        Shared protein families are derived using cypher queries to assess the hierarchical relationships 
+                        within the INDRA knowledge base, specifically examining "isa" and "partof" relationships to determine 
+                        protein family complexes between the source and target proteins. 
+                    </p>
+                    {{ result['shared_families'] | safe }}
+                </div>
+                <div class="tab-pane fade" id="upstream" role="tabpanel">
+                    <h2>Shared Upstream Bioentities from Target Proteins</h2>
+                    <p>
+                        Shared upstream bioentites explore the intersections between the upstream bioentities of the target proteins 
+                        and the bioentities that the target proteins have a direct INDRA relationship with. 
+                    </p>
+                    {{ result['upstream_entities'] | safe }}
+                    <h2>Boxplots for Shared Go Terms and Bioentities</h2>
+                    <img src="{{ result['stats_boxplot'] }}" alt="Stats Boxplot">
+                </div>
+                <div class="tab-pane fade" id="sharedpathways" role="tabpanel">
+                    <h2>Shared Pathways Between Source and Enriched Targets Set</h2>
+                    <p>
+                        The shared pathways analysis determines the shared Reactome and WikiPathways between the source and 
+                        target proteins to reveal potential functional overlaps and shared biological processes through pathway 
+                        membership. 
+                    </p>
+                    {{ result['shared_pathways'] | safe }}
+                    <h2>Bar Chart for Frequency of Shared Pathways by Protein</h2>
+                    <img src="{{ result['pathways_chart'] }}" width="400" height="400" alt="Pathways Chart">
+                </div>
+                <div class="tab-pane fade" id="sharedgoterms" role="tabpanel">
+                    <h2>Shared Go Terms Between Gene Sets</h2>
+                    <p>
+                        The shared GO terms analysis utlizes Gene Ontology (GO) terms associated with the source and target
+                         proteins by finding the intersection of GO terms to explore commonalities in molecular functions, 
+                         biological processes, or cellular locations. 
+                    </p>
+                    {{ result['shared_go_terms'] | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+   
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.12/c3.min.js"></script>
+
+    <script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+        setTimeout(function() {
+            $('#resultTabsContent .tab-pane table').DataTable();
+        }, 100);
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $($(e.target).attr('href') + ' table').DataTable();
+        });
+    });
+    </script>
+</body>
+</html>
