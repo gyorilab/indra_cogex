@@ -156,17 +156,6 @@
                 {{ render_table(results.go_terms.get('shared_terms'), "table-shared-go") }}
             {% endif %}
 
-            {% if results.upstream and results.upstream.get('shared_proteins') %}
-                <h3>Upstream Analysis</h3>
-                <p>Shared upstream regulatory mechanisms:</p>
-                <h4>Shared Proteins</h4>
-                <p>
-                {% for protein in results.upstream.get('shared_proteins') %}
-                    <span class="badge badge-primary">{{ protein }}</span>
-                {% endfor %}
-                </p>
-            {% endif %}
-
             {% if results.analysis_plot %}
                 <h3>Statistical Analysis</h3>
                 <p>Distribution of p-values and q-values:</p>
@@ -175,6 +164,17 @@
                          alt="Statistical Analysis Plots"
                          class="img-fluid">
                 </div>
+            {% endif %}
+
+            {% if results. Upstream and results.upstream.get('shared_proteins') %}
+                <h3>Upstream Analysis</h3>
+                <p>Shared upstream regulatory mechanisms:</p>
+                <h4>Shared Proteins</h4>
+                <p>
+                {% for protein in results.upstream.get('shared_proteins') %}
+                    <span class="badge badge-primary">{{ protein }}</span>
+                {% endfor %}
+                </p>
             {% endif %}
         </div>
     </div>
