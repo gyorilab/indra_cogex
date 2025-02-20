@@ -8,7 +8,6 @@ determining if any of the proteins belong to the same protein family/complex
 as the target, and using gene set enrichment on intermediates between
 the source and the target.
 """
-# Standard library imports
 import json
 import base64
 import logging
@@ -16,19 +15,16 @@ import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
 
-# Third-party imports
 import pandas as pd
 import matplotlib
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
-# INDRA imports
 from indra.databases import hgnc_client
 from indra.assemblers.html import HtmlAssembler
 from indra.statements import *
 
-# Local imports
 from indra_cogex.client import *
 from ..client.enrichment.discrete import (
     indra_upstream_ora,
@@ -101,8 +97,10 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
 
     Parameters
     ----------
-    source_ns
-    client
+    source_ns : str, optional
+        The namespace for the source protein identifier (default: 'HGNC')
+    client :
+        The client instance
     source_id : string
         The protein of interest in relation to protien list user enters
 
@@ -155,8 +153,6 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
             evidences.append(get_evidences_for_stmt_hash(int(hashes)))
         stmts_by_protein_filtered_df_copy = stmts_by_protein_filtered_df.copy()
         stmts_by_protein_filtered_df_copy["evidences"] = evidences
-        logger.info("Dataframe of protiens that have INDRA relationships with source\
-                    that have been filtered:\n" + str(stmts_by_protein_filtered_df_copy))
 
     else:
         stmts_by_protein_filtered_df_copy = stmts_by_protein_df
@@ -208,36 +204,30 @@ def assemble_protein_stmt_htmls(stmts_df):
 
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
-    """Find shared pathways between source and target genes.
+    """Find shared pathways between list of target genes and source protien
 
     Parameters
     ----------
-    source_hgnc_ids : list
-        HGNC ids for source genes
     target_hgnc_ids : list
-        HGNC ids for target genes
+        HGNC ids for a source set
+    source_hgnc_ids : list
+        HGNC ids for a target set
 
     Returns
     -------
-    list
-        List of dictionaries containing pathway information
+    shared_pathways_list : list
+        Nested list of Relation objects describing the pathways shared for
+        a given pair of genes.
     """
     shared_pathways_list = []
     for source_id, target_id in itertools.product(source_hgnc_ids, target_hgnc_ids):
         result = get_shared_pathways_for_genes((
             ("HGNC", target_id), ("HGNC", source_id)))
         if result:
-            # Convert BioEntity objects to dictionaries
-            formatted_pathways = [{
-                'id': pathway.id,
-                'name': pathway.name,
-                'version': pathway.version
-            } for pathway in result]
-            shared_pathways_list.append(formatted_pathways)
-
+            shared_pathways_list.append(result)
     if not shared_pathways_list:
-        logger.info("There are no shared pathways between the source and targets")
-
+        logger.info("There are no shared pathways between the "
+                    "source and targets")
     return shared_pathways_list
 
 
@@ -341,7 +331,7 @@ def shared_upstream_bioentities_from_targets(
 
     Returns
     -------
-    Tuple[List[str], pd.DataFrame]
+    :
         Shared proteins and detailed analysis results
     """
     # Get upstream analysis from database
@@ -379,7 +369,7 @@ def find_shared_go_terms(source_go_terms: List[str], target_genes: List[str], *,
 
     Returns
     -------
-    Optional[pd.DataFrame]
+    :
         DataFrame with shared GO terms, or None if no shared terms found
     """
     # Get GO terms data from database
@@ -415,7 +405,7 @@ def combine_target_gene_pathways(source_id: str, target_ids: List[str], *, clien
 
     Returns
     -------
-    pd.DataFrame
+    :
         Combined pathway information from REACTOME and WikiPathways
     """
     # Get all gene IDs
@@ -450,7 +440,7 @@ def graph_boxplots(shared_go_df, shared_entities):
 
     Returns
     -------
-    str
+    :
         Base64 encoded string of the plot
     """
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
@@ -512,7 +502,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
 
     Returns
     -------
-    dict
+    :
         Dictionary containing all analysis results
     """
     # Initialize results dictionary
@@ -593,7 +583,7 @@ def explain_downstream(
 
     Returns
     -------
-    Dict
+    :
         Complete analysis results
     """
     if id_type == 'hgnc.symbol':
