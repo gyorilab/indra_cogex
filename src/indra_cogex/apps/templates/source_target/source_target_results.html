@@ -176,22 +176,6 @@
                          class="img-fluid">
                 </div>
             {% endif %}
-
-            {% if results.shared_pathways %}
-                <h3>Shared Pathways</h3>
-                <p>Biological pathways shared between source and target genes:</p>
-                {% for pathway_set in results.shared_pathways %}
-                    <h4>Pathway Set {{ loop.index }}</h4>
-                    <ul>
-                    {% for pathway in pathway_set %}
-                       <li>
-                           <strong>{{ pathway.name }}</strong>
-                           <small class="text-muted">({{ pathway.id }})</small>
-                       </li>
-                    {% endfor %}
-                    </ul>
-                {% endfor %}
-            {% endif %}
         </div>
     </div>
 {% endblock %}
