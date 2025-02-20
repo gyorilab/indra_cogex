@@ -20,6 +20,11 @@
             "order": [[2, "asc"]],
             pageLength: 10,
             layout: {
+                // Full documentation of layout:
+                // https://datatables.net/reference/option/layout
+                // The placement of paging needs to be specified or it won't
+                // show up at all
+                // See: https://datatables.net/reference/feature/pageLength
                 bottomStart: {
                     pageLength: {
                         menu: [10, 25, 50, 75, 100],
@@ -28,6 +33,7 @@
                 topStart: {
                     buttons: [
                         {
+                            // CSV export, see: https://datatables.net/reference/button/csv#Examples
                             extend: 'csv',
                             text: 'Download full table as CSV',
                             exportOptions: {
@@ -139,6 +145,7 @@
                         ({{ name }})</a>
                 {% endfor %}
             </p>
+            <!-- Added Background section -->
             <h4>Background</h4>
             <p>
                 {% if background_genes %}
@@ -275,7 +282,7 @@
                     {% if indra_downstream_results is not none %}
                         <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
                             <p>
-                                <img class="d-block" style="max-height: 150px;" alt="Visual description of downstream analysis" src="{{ url_for('static', filename='indra_downstream.png') }}" />
+                                <img class="d-block" style="max-height: 150px;" alt="Visual description of downstream analysis" src="{{ url_for("static", filename="indra_downstream.png") }}" />
                             </p>
                             <p>
                                 These results are acquired by running over-representation analysis using Fisher's exact test
@@ -291,7 +298,7 @@
                         </div>
                         <div class="tab-pane" id="upstream" role="tabpanel" aria-labelledby="upstream-tab">
                             <p>
-                                <img style="display: block; max-height: 150px" alt="Visual description of upstream analysis" src="{{ url_for('static', filename='indra_upstream.png') }}" />
+                                <img style="display: block; max-height: 150px" alt="Visual description of upstream analysis" src="{{ url_for("static", filename="indra_upstream.png") }}" />
                             </p>
                             <p>
                                 These results are acquired by running over-representation analysis using Fisher's exact test
