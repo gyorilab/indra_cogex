@@ -4,6 +4,11 @@
 {% block scripts %}
 {{ super() }}
     <script>
+        function fillExampleTargetGenes() {
+            document.getElementById('{{ form.target_genes.name }}').value = "{{ example_target_genes }}";
+            return false;  // Prevent the link from navigating
+        }
+
         function exampleGenes() {
             document.getElementById('{{ form.source_gene.name }}').value = "{{ example_source_gene }}";
             document.getElementById('{{ form.target_genes.name }}').value = "{{ example_target_genes }}";
