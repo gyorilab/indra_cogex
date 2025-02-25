@@ -14,6 +14,7 @@ import logging
 import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
+import io
 
 import pandas as pd
 import matplotlib
@@ -326,7 +327,7 @@ def shared_upstream_bioentities_from_targets(
         DataFrame containing INDRA statements
     target_genes : List[str]
         List of target gene symbols
-    client :
+    client : Neo4jClient
         The client instance
 
     Returns
@@ -461,29 +462,22 @@ def graph_boxplots(shared_go_df, shared_entities):
 
     plt.tight_layout()
 
-    # Use temporary file instead of BytesIO
-    from tempfile import NamedTemporaryFile
-    with NamedTemporaryFile(suffix='.png') as tmpfile:
-        fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-        with open(tmpfile.name, 'rb') as f:
-            plot_data = base64.b64encode(f.read()).decode('utf-8')
-
-    plt.close(fig)
-    return plot_data
+    # Use the helper function to convert the figure to base64
+    return convert_plot_to_base64(fig)
 
 
 def convert_plot_to_base64(fig):
     """Helper function to convert matplotlib figure to base64 string."""
-    from tempfile import NamedTemporaryFile
-
-    # Save to temporary file
-    with NamedTemporaryFile(suffix='.png') as tmpfile:
-        fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-        # Read and encode
-        with open(tmpfile.name, 'rb') as f:
-            plot_data = base64.b64encode(f.read()).decode('utf-8')
-
+    # Save directly to BytesIO buffer
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png', bbox_inches='tight')
     plt.close(fig)
+
+    # Get base64 string
+    buffer.seek(0)
+    plot_data = base64.b64encode(buffer.read()).decode('utf-8')
+    buffer.close()
+
     return plot_data
 
 
