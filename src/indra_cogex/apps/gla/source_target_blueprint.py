@@ -30,11 +30,41 @@ class SourceTargetForm(FlaskForm):
 
     target_genes = TextAreaField(
         "Target Genes",
-        description="Enter target gene symbols, one per line",
+        description="Enter target gene symbols, separated by commas or new lines" 
+                    "or <a href=\"#\" onClick=\"fillExampleTargetGenes()\">click here for examples</a>",
         validators=[DataRequired()],
     )
 
     submit = SubmitField("Submit", render_kw={"id": "submit-btn"})
+
+
+def process_target_genes(target_genes_input):
+    """Process target genes from the form input.
+
+    Handles both comma-separated and newline-separated formats.
+
+    Parameters
+    ----------
+    target_genes_input : str
+        Raw input from the form
+
+    Returns
+    -------
+    list
+        List of cleaned gene symbols
+    """
+    # First check if there are commas in the input
+    if ',' in target_genes_input:
+        # Split by commas
+        genes = target_genes_input.split(',')
+    else:
+        # Split by newlines
+        genes = target_genes_input.splitlines()
+
+    # Clean up whitespace and empty entries
+    genes = [gene.strip() for gene in genes if gene.strip()]
+
+    return genes
 
 
 @source_target_blueprint.route("/analysis", methods=["GET", "POST"])
@@ -42,9 +72,13 @@ class SourceTargetForm(FlaskForm):
 def source_target_analysis_route():
     """Main analysis route."""
     form = SourceTargetForm()
+
+    # Define example genes for the template
+    example_target_genes = "TP53, PARP1, RAD51, CHEK2"
+
     if form.validate_on_submit():
         source = form.source_gene.data.strip()
-        targets = [g.strip() for g in form.target_genes.data.split('\n') if g.strip()]
+        targets = process_target_genes(form.target_genes.data)
 
         try:
             source_id = get_valid_gene_id(source)
@@ -80,4 +114,5 @@ def source_target_analysis_route():
     return flask.render_template(
         "source_target/source_target_form.html",
         form=form,
+        example_target_genes=example_target_genes,
     )
