@@ -234,7 +234,7 @@
             {% endif %}
 
             {% if results.combined_pathways is not none and results.combined_pathways.shape[0] > 0 %}
-                <h3>Combined Pathway Analysis</h3>
+                <h3>Pathway Analysis</h3>
                 <p>Shows combined pathway information from REACTOME and WikiPathways for the source and target genes.</p>
                 {{ render_table(results.combined_pathways, "table-combined-pathways") }}
             {% endif %}
