@@ -15,6 +15,23 @@
             margin-right: 0.3rem;
             margin-bottom: 0.3rem;
         }
+        /* Fix for potential footer overlap */
+        .card-body {
+            margin-bottom: 50px;
+        }
+
+        .container {
+            padding-bottom: 70px;
+        }
+
+        html, body {
+            position: relative;
+            min-height: 100%;
+        }
+
+        .plot-container {
+            margin-bottom: 20px;
+        }
     </style>
 {% endblock %}
 
@@ -22,31 +39,90 @@
     {{ super() }}
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
-        const datatablesConf = {
-            pageLength: 10,
-            layout: {
-                bottomStart: {
-                    pageLength: {
-                        menu: [10, 25, 50, 75, 100],
-                    }
-                },
-                topStart: {
-                    buttons: [
-                        {
-                            extend: 'csv',
-                            text: 'Download full table as CSV',
-                            exportOptions: {
-                                modifier: {
-                                    search: 'none'
-                                }
-                            }
-                        }
-                    ]
-                }
+        // Function to format number display as scientific notation
+        function formatNumberColumn(data, type) {
+            // For sorting, return the original numeric value
+            if (type === 'sort' || type === 'type') {
+                return data;
             }
-        };
+
+            // If data is a number or can be parsed as one
+            if (typeof data === 'number' || (typeof data === 'string' && !isNaN(parseFloat(data)))) {
+                var num = parseFloat(data);
+
+                // Format regular numbers normally
+                if (num >= 0.001 && num < 1000) {
+                    return num.toFixed(4);
+                }
+
+                // Format using scientific notation for very small or large numbers
+                return num.toExponential(4);
+            }
+            return data; // Return as is if not a number
+        }
+
         $(document).ready(function () {
-            $(".datatable").DataTable(datatablesConf);
+            $(".datatable").each(function() {
+                var qColumnIndex = -1;
+
+                // Find the q-value column index
+                $(this).find('thead th').each(function(index) {
+                    var headerText = $(this).text().trim().toLowerCase();
+                    if (headerText === 'q' || headerText === 'q-value') {
+                        qColumnIndex = index;
+                    }
+                });
+
+                // Define column definitions for formatting
+                var columnDefs = [];
+                $(this).find('thead th').each(function(index) {
+                    var headerText = $(this).text().trim().toLowerCase();
+                    if (headerText === 'p' || headerText === 'q' ||
+                        headerText === 'mlp' || headerText === 'mlq' ||
+                        headerText === 'p-value' || headerText === 'q-value') {
+                        columnDefs.push({
+                            targets: index,
+                            render: function(data, type, row) {
+                                return formatNumberColumn(data, type);
+                            }
+                        });
+                    }
+                });
+
+                // Initialize DataTable
+                var tableConfig = {
+                    pageLength: 10,
+                    order: [], // Start with no specific order
+                    columnDefs: columnDefs,
+                    layout: {
+                        bottomStart: {
+                            pageLength: {
+                                menu: [10, 25, 50, 75, 100],
+                            }
+                        },
+                        topStart: {
+                            buttons: [
+                                {
+                                    extend: 'csv',
+                                    text: 'Download full table as CSV',
+                                    exportOptions: {
+                                        modifier: {
+                                            search: 'none'
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                };
+
+                // If we found a q-value column, set it as the default sort column (ascending)
+                if (qColumnIndex !== -1) {
+                    tableConfig.order = [[qColumnIndex, "asc"]];
+                }
+
+                $(this).DataTable(tableConfig);
+            });
         });
     </script>
 {% endblock %}
@@ -108,10 +184,37 @@
             {% if results.statements and results.statements.items() %}
                 <h3>INDRA Statements</h3>
                 <p>Direct relationships between source and target genes:</p>
-                {% for gene, statement in results.statements.items() %}
-                    <h4>{{ gene }}</h4>
-                    {{ statement | safe }}
-                {% endfor %}
+
+                <!-- Database keys (shown only once) -->
+                <div class="db-keys mb-4">
+                    <div class="databases">
+                        <span class="badge badge-secondary">psp</span>
+                        <span class="badge badge-secondary">cbn</span>
+                        <span class="badge badge-secondary">pc</span>
+                        <!-- Add other database badges dynamically as needed -->
+                    </div>
+                </div>
+
+                <!-- Target genes statements -->
+                <div class="target-genes-statements">
+                    {% for gene, statement_html in results.statements.items() %}
+                        <div class="target-gene-section mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4>{{ gene }}</h4>
+                                <button class="btn btn-primary btn-sm expand-statements"
+                                        data-toggle="collapse"
+                                        data-target="#statements-{{ gene|replace(':', '-') }}">
+                                    Expand All
+                                </button>
+                            </div>
+
+                            <div id="statements-{{ gene|replace(':', '-') }}" class="collapse show">
+                                <!-- Extract just the statements from the HTML without headers -->
+                                {{ statement_html | safe }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
 
             {% if results.interaction_plot %}
@@ -124,35 +227,22 @@
                 </div>
             {% endif %}
 
-            {% if results.discrete_analysis and results.discrete_analysis.get('go') is not none
-                  and results.discrete_analysis.get('go').shape[0] > 0 %}
-                <h3>GO Analysis</h3>
-                <p>Gene Ontology enrichment analysis:</p>
-                {{ render_table(results.discrete_analysis.get('go'), "table-go") }}
-
-                {% if results.discrete_analysis.get('wikipathways') is not none
-                      and results.discrete_analysis.get('wikipathways').shape[0] > 0 %}
-                    <h3>WikiPathways Analysis</h3>
-                    {{ render_table(results.discrete_analysis.get('wikipathways'), "table-wiki") }}
-                {% endif %}
-            {% endif %}
-
             {% if results.protein_families is not none and results.protein_families.shape[0] > 0 %}
                 <h3>Protein Families</h3>
-                <p>Shared protein family relationships:</p>
+                <p>Identifies shared protein family complexes for the target proteins and the source protein.</p>
                 {{ render_table(results.protein_families, "table-families") }}
             {% endif %}
 
             {% if results.combined_pathways is not none and results.combined_pathways.shape[0] > 0 %}
                 <h3>Combined Pathway Analysis</h3>
-                <p>Combined REACTOME and WikiPathways analysis:</p>
+                <p>Shows combined pathway information from REACTOME and WikiPathways for the source and target genes.</p>
                 {{ render_table(results.combined_pathways, "table-combined-pathways") }}
             {% endif %}
 
             {% if results.go_terms and results.go_terms.get('shared_terms') is not none
                   and results.go_terms.get('shared_terms').shape[0] > 0 %}
-                <h3>GO Terms Analysis</h3>
-                <p>Shared Gene Ontology terms:</p>
+                <h3>GO Analysis</h3>
+                <p>Displays shared Gene Ontology (GO) terms between the source protein and target genes.</p>
                 {{ render_table(results.go_terms.get('shared_terms'), "table-shared-go") }}
             {% endif %}
 
@@ -166,7 +256,7 @@
                 </div>
             {% endif %}
 
-            {% if results. Upstream and results.upstream.get('shared_proteins') %}
+            {% if results.upstream and results.upstream.get('shared_proteins') %}
                 <h3>Upstream Analysis</h3>
                 <p>Shared upstream regulatory mechanisms:</p>
                 <h4>Shared Proteins</h4>
@@ -178,4 +268,6 @@
             {% endif %}
         </div>
     </div>
+    <!-- Add extra space at bottom to prevent footer overlap -->
+    <div style="height: 50px;"></div>
 {% endblock %}
