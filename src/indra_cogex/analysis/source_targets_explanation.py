@@ -14,7 +14,6 @@ import logging
 import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
-import io
 from io import BytesIO
 
 import pandas as pd
