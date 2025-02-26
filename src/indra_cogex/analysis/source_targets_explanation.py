@@ -15,6 +15,7 @@ import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
 import io
+from io import BytesIO
 
 import pandas as pd
 import matplotlib
@@ -469,7 +470,7 @@ def graph_boxplots(shared_go_df, shared_entities):
 def convert_plot_to_base64(fig):
     """Helper function to convert matplotlib figure to base64 string."""
     # Save directly to BytesIO buffer
-    buffer = io.BytesIO()
+    buffer = BytesIO()
     fig.savefig(buffer, format='png', bbox_inches='tight')
     plt.close(fig)
 
