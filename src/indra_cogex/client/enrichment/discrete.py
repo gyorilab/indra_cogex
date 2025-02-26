@@ -15,7 +15,7 @@ from indra_cogex.client.enrichment.utils import (
     get_go,
     get_phenotype_gene_sets,
     get_reactome,
-    get_wikipathways,
+    get_wikipathways, get_kinase_phosphosites,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.client.queries import get_genes_for_go_term
@@ -441,6 +441,76 @@ def indra_upstream_ora(
         query=gene_ids,
         count=count,
         **kwargs,
+    )
+
+
+@autoclient(cache=True)
+def count_phosphosites(*, client: Neo4jClient) -> int:
+    """Count the number of phosphosites in the Neo4j database.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+
+    Returns
+    -------
+    :
+        Number of phosphosites
+    """
+    query = """\
+        MATCH (p:Phosphosite)
+        RETURN count(p) as count
+    """
+    results = client.query_tx(query)
+    if results is None:
+        raise ValueError("No phosphosites found.")
+    return results[0][0]
+
+
+
+def kinase_ora(
+    client: Neo4jClient,
+    phosphosite_ids: Iterable[Tuple[str, str]],  # List of (gene_id, site) tuples
+    background_phosphosite_ids: Optional[Collection[Tuple[str, str]]] = None,
+    **kwargs,
+) -> pd.DataFrame:
+    """Perform over-representation analysis on kinase-phosphosite relationships.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    phosphosite_ids :
+        List of (gene, phosphosite) tuples.
+    background_phosphosite_ids :
+        List of (gene, phosphosite) tuples for the background set.
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora.
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie (kinase ID), name (kinase name), p (p-value), q (adjusted p-value), mlp (-log10 p), mlq (-log10 q).
+    """
+    count = (
+        count_phosphosites(client=client)
+        if not background_phosphosite_ids
+        else len(background_phosphosite_ids)
+    )
+
+    bg_phosphosites = (
+        frozenset(background_phosphosite_ids) if background_phosphosite_ids else None
+    )
+
+    kinase_to_phosphosites = get_kinase_phosphosites(client=client, background_phosphosites=bg_phosphosites)
+
+    return _do_ora(
+        curie_to_target_sets=kinase_to_phosphosites,
+        query=phosphosite_ids,
+        count=count,
+        **kwargs
     )
 
 
