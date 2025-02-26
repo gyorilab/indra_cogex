@@ -407,6 +407,41 @@ def get_reactome(
     )
 
 
+def get_kinase_phosphosites(client: Neo4jClient, background_phosphosites: Optional[Set[Tuple[str, str]]] = None) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+    """Retrieve kinase-to-phosphosite mappings from Neo4j, indexed by specific phosphosites.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    background_phosphosites :
+        Set of (gene, phosphosite) tuples to filter the results.
+
+    Returns
+    -------
+    :
+        Dictionary mapping (kinase_id, kinase_name) -> set of (gene, phosphosite).
+    """
+    query = """
+    MATCH (k:Kinase)-[:PHOSPHORYLATES]->(p:Phosphosite)
+    RETURN k.id AS kinase_id, k.name AS kinase_name, p.gene_id AS gene_id, p.site AS phosphosite
+    """
+    results = client.run(query)
+
+    kinase_map = {}
+    for record in results:
+        kinase_id = record["kinase_id"]
+        kinase_name = record["kinase_name"]
+        gene_id = record["gene_id"]  # Protein ID
+        phosphosite = record["phosphosite"]  # Modification site (e.g., "S78")
+
+        if (gene_id, phosphosite) in background_phosphosites or background_phosphosites is None:
+            kinase_map.setdefault((kinase_id, kinase_name), set()).add((gene_id, phosphosite))
+
+    return kinase_map
+
+
+
 @autoclient()
 def get_phenotype_gene_sets(
     *,
