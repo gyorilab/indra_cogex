@@ -32,6 +32,52 @@
         .plot-container {
             margin-bottom: 20px;
         }
+
+        /* Target gene section styling - improved spacing */
+        .gene-title {
+            margin-top: 15px;  /* Reduced from 20px */
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Keep spacing between sections */
+        .target-gene-section {
+            margin-bottom: 15px;  /* Reduced from 25px */
+            padding-bottom: 10px; /* Added padding at bottom */
+        }
+
+        /* Common database badges at top */
+        .common-db-keys {
+            margin-bottom: 10px;  /* Reduced from 15px */
+            padding: 8px;         /* Reduced from 10px */
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        /* Add separation between statements section and next section */
+        .statements-section {
+            margin-bottom: 25px;  /* Add margin at bottom of entire statements section */
+        }
+
+        /* Hide 'reading' text to reduce vertical space */
+        .reading {
+            display: none;
+        }
+
+        /* Make headers more compact */
+        .statements-container h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Ensure main INDRA Statements heading is visible */
+        .statements-section > h3 {
+            display: block !important;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
     </style>
 {% endblock %}
 
@@ -39,7 +85,7 @@
     {{ super() }}
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
-        // Function to format number display as scientific notation
+        // Function to format number display
         function formatNumberColumn(data, type) {
             // For sorting, return the original numeric value
             if (type === 'sort' || type === 'type') {
@@ -62,6 +108,7 @@
         }
 
         $(document).ready(function () {
+            // Initialize DataTables with proper formatting and sorting
             $(".datatable").each(function() {
                 var qColumnIndex = -1;
 
@@ -123,6 +170,44 @@
 
                 $(this).DataTable(tableConfig);
             });
+
+            // Process INDRA Statements to clean up redundancy
+            function processStatementsSection() {
+                // Clean up statements display
+                if ($('.statements-section').length > 0) {
+                    // Extract the first database badges section
+                    var firstDbSection = $('.statements-section .databases').first().clone();
+
+                    // Move database badges to the top
+                    $('#database-badges-container').append(firstDbSection);
+
+                    // Hide all the original database sections
+                    $('.statements-section .databases').hide();
+
+                    // Process each gene section
+                    $('.statements-section').find('h2:contains("Statements for")').each(function() {
+                        // Get the gene name from the heading
+                        var geneName = $(this).text().replace('Statements for ', '');
+
+                        // Create a better heading with the expand button to the right
+                        var expandButton = $(this).next().find('button').clone();
+                        var newHeading = $('<div class="gene-title"></div>');
+                        newHeading.append('<h4>' + geneName + '</h4>');
+                        newHeading.append(expandButton);
+
+                        // Replace the old heading
+                        $(this).after(newHeading);
+                        $(this).remove();
+                    });
+
+                    // Hide redundant "Statements" headers INSIDE the statements container
+                    // but NOT the main "INDRA Statements" heading
+                    $('.statements-container h3:contains("Statements")').hide();
+                }
+            }
+
+            // Call the function after a short delay to ensure all content is loaded
+            setTimeout(processStatementsSection, 500);
         });
     </script>
 {% endblock %}
@@ -182,38 +267,21 @@
             </p>
 
             {% if results.statements and results.statements.items() %}
-                <h3>INDRA Statements</h3>
-                <p>Direct relationships between source and target genes:</p>
+                <div class="statements-section">
+                    <h3>INDRA Statements</h3>
+                    <p>Direct relationships between source and target genes:</p>
 
-                <!-- Database keys (shown only once) -->
-                <div class="db-keys mb-4">
-                    <div class="databases">
-                        <span class="badge badge-secondary">psp</span>
-                        <span class="badge badge-secondary">cbn</span>
-                        <span class="badge badge-secondary">pc</span>
-                        <!-- Add other database badges dynamically as needed -->
-                    </div>
-                </div>
+                    <!-- Container for database badges -->
+                    <div id="database-badges-container" class="common-db-keys"></div>
 
-                <!-- Target genes statements -->
-                <div class="target-genes-statements">
-                    {% for gene, statement_html in results.statements.items() %}
-                        <div class="target-gene-section mb-4">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4>{{ gene }}</h4>
-                                <button class="btn btn-primary btn-sm expand-statements"
-                                        data-toggle="collapse"
-                                        data-target="#statements-{{ gene|replace(':', '-') }}">
-                                    Expand All
-                                </button>
-                            </div>
-
-                            <div id="statements-{{ gene|replace(':', '-') }}" class="collapse show">
-                                <!-- Extract just the statements from the HTML without headers -->
+                    <!-- Statements for each target gene -->
+                    <div class="statements-container">
+                        {% for gene, statement_html in results.statements.items() %}
+                            <div class="target-gene-section">
                                 {{ statement_html | safe }}
                             </div>
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 </div>
             {% endif %}
 
@@ -234,14 +302,14 @@
             {% endif %}
 
             {% if results.combined_pathways is not none and results.combined_pathways.shape[0] > 0 %}
-                <h3>Pathway Analysis</h3>
+                <h3>Combined Pathway Analysis</h3>
                 <p>Shows combined pathway information from REACTOME and WikiPathways for the source and target genes.</p>
                 {{ render_table(results.combined_pathways, "table-combined-pathways") }}
             {% endif %}
 
             {% if results.go_terms and results.go_terms.get('shared_terms') is not none
                   and results.go_terms.get('shared_terms').shape[0] > 0 %}
-                <h3>GO Analysis</h3>
+                <h3>GO Terms Analysis</h3>
                 <p>Displays shared Gene Ontology (GO) terms between the source protein and target genes.</p>
                 {{ render_table(results.go_terms.get('shared_terms'), "table-shared-go") }}
             {% endif %}
