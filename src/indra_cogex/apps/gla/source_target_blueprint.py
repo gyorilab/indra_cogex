@@ -31,7 +31,7 @@ class SourceTargetForm(FlaskForm):
     target_genes = TextAreaField(
         "Target Genes",
         description="Enter target gene symbols, separated by commas or new lines" 
-                    "or <a href=\"#\" onClick=\"fillExampleTargetGenes()\">click here for examples</a>",
+                    " or, <a href=\"#\" onClick=\"fillExampleTargetGenes()\">click here for examples</a>",
         validators=[DataRequired()],
     )
 
