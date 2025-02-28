@@ -5,7 +5,7 @@ import logging
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
-from indra.statements import get_all_descendants, Statement
+from indra.statements import get_all_descendants, Statement, Phosphorylation, IncreaseAmount, DecreaseAmount
 from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
@@ -265,17 +265,21 @@ def search_ora_statements():
     target_id = request.args.get("target_id")
     genes = request.args.getlist("genes")
     is_downstream = request.args.get("is_downstream", "").lower() == "true"
+    regulator_type = request.args.get("regulator_type")
 
+    # Validate required parameters
+    if not target_id or not genes:
+        return jsonify({"error": "target_id and genes are required"}), 400
+
+    # Parse numeric parameters
     try:
         minimum_evidence = int(request.args.get("minimum_evidence") or 2)
         minimum_belief = float(request.args.get("minimum_belief") or 0.0)
     except (ValueError, TypeError):
-        return jsonify({"error": "Invalid parameter values"}), 400
-
-    if not target_id or not genes:
-        return jsonify({"error": "target_id and genes are required"}), 400
+        return jsonify({"error": "Invalid minimum_evidence or minimum_belief value"}), 400
 
     try:
+        # Get all statements
         statements, evidence_counts = get_ora_statements(
             target_id=target_id,
             genes=genes,
@@ -284,13 +288,46 @@ def search_ora_statements():
             is_downstream=is_downstream
         )
 
+        logger.debug(f"Total statements before filtering: {len(statements)}")
+
+        # Filter statements based on regulator type
+        if regulator_type == 'kinase':
+            # Filter for phosphorylation statements
+            filtered_statements = [
+                stmt for stmt in statements
+                if isinstance(stmt, Phosphorylation) or
+                   "phosphorylation" in str(stmt).lower()
+            ]
+        elif regulator_type == 'tf':
+            # Filter for increase/decrease amount statements
+            filtered_statements = [
+                stmt for stmt in statements
+                if isinstance(stmt, (IncreaseAmount, DecreaseAmount)) or
+                   "increases amount" in str(stmt).lower() or
+                   "decreases amount" in str(stmt).lower()
+            ]
+        else:
+            # No filtering for other cases
+            filtered_statements = statements
+
+        # Update evidence counts to match filtered statements
+        filtered_evidence_counts = {
+            k: v for k, v in evidence_counts.items()
+            if k in [stmt.get_hash() for stmt in filtered_statements]
+        }
+
+        logger.debug(f"Statements after filtering: {len(filtered_statements)}")
+        if filtered_statements:
+            logger.debug(f"First filtered statement: {str(filtered_statements[0])}")
+
+        # Render the statements
         return render_statements(
-            stmts=statements,
-            evidence_count=evidence_counts
+            stmts=filtered_statements,
+            evidence_count=filtered_evidence_counts
         )
 
     except Exception as e:
-        print(f"Error in get_ora_statements: {str(e)}")
+        logger.error(f"Error in search_ora_statements: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -578,5 +615,3 @@ def search_continuous_statements():
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-
-

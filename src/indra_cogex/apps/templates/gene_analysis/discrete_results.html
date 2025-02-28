@@ -54,6 +54,8 @@
             {% if indra_downstream_results is not none %}
             $("#indra-table-downstream").DataTable(datatablesConf);
             $("#indra-table-upstream").DataTable(datatablesConf);
+            $("#indra-table-upstream-kinase").DataTable(datatablesConf);
+            $("#indra-table-upstream-tf").DataTable(datatablesConf);
             {% endif %}
         });
     </script>
@@ -84,6 +86,8 @@
 
 {% macro render_indra_table(df, table_id) -%}
    {% set is_downstream = "downstream" in table_id %}
+   {% set is_kinase = "kinase" in table_id %}
+   {% set is_tf = "tf" in table_id %}
    <table class="table table-hover table-striped table-ora" id="indra-{{ table_id }}" style="width: 100%;">
        <thead>
        <tr>
@@ -111,7 +115,8 @@
                        genes=gene_list,
                        minimum_evidence=minimum_evidence,
                        minimum_belief=minimum_belief,
-                       is_downstream=is_downstream) }}"
+                       is_downstream=is_downstream,
+                       regulator_type='kinase' if is_kinase else 'tf' if is_tf else None) }}"
                        target="_blank"
                        class="btn btn-primary btn-sm">View Statements</a>
                </td>
@@ -201,6 +206,18 @@
                             <a class="nav-link" id="upstream-tab" data-toggle="tab" href="#upstream" role="tab"
                                aria-controls="upstream" aria-selected="false">
                                 INDRA Upstream
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="upstream-kinase-tab" data-toggle="tab" href="#upstream-kinase" role="tab"
+                               aria-controls="upstream-kinase" aria-selected="false">
+                                INDRA Upstream Kinases
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="upstream-tf-tab" data-toggle="tab" href="#upstream-tf" role="tab"
+                               aria-controls="upstream-tf" aria-selected="false">
+                                INDRA Upstream TFs
                             </a>
                         </li>
                     {% endif %}
@@ -294,6 +311,38 @@
                                 {% endif %}
                             </p>
                             {{ render_indra_table(indra_upstream_results, "table-upstream") }}
+                        </div>
+                        <div class="tab-pane" id="upstream-kinase" role="tabpanel" aria-labelledby="upstream-kinase-tab">
+                            <p>
+                                <img style="display: block; max-height: 150px" alt="Visual description of upstream kinase analysis" src="{{ url_for('static', filename='indra_upstream.png') }}" />
+                            </p>
+                            <p>
+                                These results show kinase regulators identified by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
+                                one step from all entities in the INDRA Database. Only phosphorylation statements are included.
+                                {% if background_genes %}
+                                Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                                {% else %}
+                                Analysis was performed using all human genes as background.
+                                {% endif %}
+                            </p>
+                            {{ render_indra_table(indra_upstream_kinase_results, "table-upstream-kinase") }}
+                        </div>
+                        <div class="tab-pane" id="upstream-tf" role="tabpanel" aria-labelledby="upstream-tf-tab">
+                            <p>
+                                <img style="display: block; max-height: 150px" alt="Visual description of upstream tf analysis" src="{{ url_for('static', filename='indra_upstream.png') }}" />
+                            </p>
+                            <p>
+                                These results show transcription factor regulators identified by running over-representation analysis using Fisher's exact test
+                                and correcting using {{ method }} and α={{ alpha }} on genes causally upstream in
+                                one step from all entities in the INDRA Database. Only amount regulation statements are included.
+                                {% if background_genes %}
+                                Analysis was performed using a custom background set of {{ background_genes|length }} genes.
+                                {% else %}
+                                Analysis was performed using all human genes as background.
+                                {% endif %}
+                            </p>
+                            {{ render_indra_table(indra_upstream_tf_results, "table-upstream-tf") }}
                         </div>
                     {% endif %}
                 </div>

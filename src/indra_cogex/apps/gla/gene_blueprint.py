@@ -194,6 +194,8 @@ def discretize_analysis():
             phenotype_results=results["phenotype"],
             indra_downstream_results=results.get("indra-downstream"),
             indra_upstream_results=results.get("indra-upstream"),
+            indra_upstream_kinase_results=results.get("indra-upstream-kinases"),
+            indra_upstream_tf_results=results.get("indra-upstream-tfs"),
         )
 
     return flask.render_template(
