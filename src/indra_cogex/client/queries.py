@@ -1342,7 +1342,13 @@ def get_statements(
     if where_clauses:
         match_clause += " WHERE " + " AND ".join(where_clauses)
 
-    query += f"MATCH p = {match_clause} WITH distinct r.stmt_hash AS hash, collect(p) as pp RETURN pp LIMIT $limit"
+    query += f"""
+        MATCH p = {match_clause}
+        WITH distinct r.stmt_hash AS hash, r.evidence_count as ev_count, collect(p) as pp
+        RETURN pp
+        ORDER BY ev_count DESC
+        LIMIT $limit
+    """
     params = {
         "agent_constraint": agent_constraint,
         "rel_types": rel_types if isinstance(rel_types, list) else [rel_types],
