@@ -1,10 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base_form.html" %}
+
+{% block title %}Kinase Enrichment Analysis{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+    <script>
+        function examplePhosphosites() {
+            document.getElementById('{{ form.phosphosites.name }}').value = "{{ example_phosphosites }}";
+        }
+    </script>
+{% endblock %}
+
+{% block header %}Kinase Enrichment Analysis{% endblock %}
+
+{% block lead %}
+    This application performs kinase over-representation analysis to identify kinases that are
+    statistically enriched in a set of phosphosites based on known kinase-substrate relationships.<br>
+    <small>
+        The analysis uses phosphorylation data from the INDRA database to identify upstream kinases
+        that are likely responsible for the phosphorylation patterns in your dataset.
+    </small>
+{% endblock %}
