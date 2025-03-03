@@ -134,6 +134,18 @@
                 </div>
                 {{ start_button('mla.discrete_analysis_route', '/metabolite/discrete') }}
             </div>
+            <div class="card">
+                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="kinase.png") }}"
+                 alt="Kinase Enrichment Analysis">
+                 <div class="card-body">
+                     <h5 class="card-title">Kinase Enrichment Analysis</h5>
+                     <p class="card-text">
+                         Identify kinases that are statistically enriched in a set of phosphosites based on
+                         known kinase-substrate relationships.
+                     </p>
+                 </div>
+                 {{ start_button('gla.kinase_analysis_route', '/gene/kinase') }}
+            </div>
         </div>
 
         <h3 class="text-center">Directed Exploration</h3>
