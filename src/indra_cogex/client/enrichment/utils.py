@@ -35,6 +35,7 @@ __all__ = [
     "get_phenotype_gene_sets",
     "get_entity_to_targets",
     "get_entity_to_regulators",
+    "get_kinase_phosphosites"
 ]
 
 logger = logging.getLogger(__name__)
@@ -93,18 +94,18 @@ def collect_gene_sets(
     # If we are using caching and already have the cache loaded in memory and
     # we're not forcing a refresh
     if (
-            cache_file is not None and
-            not force_cache_refresh and
-            cache_file.as_posix() in GENE_SET_CACHE
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.as_posix() in GENE_SET_CACHE
     ):
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         res = GENE_SET_CACHE[cache_file.as_posix()]
     # If we are using caching but it's not in memory yet so we need to load
     # it from a file and we're not forcing a refresh
     elif (
-            cache_file is not None and
-            not force_cache_refresh and
-            cache_file.exists()
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.exists()
     ):
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
@@ -206,17 +207,17 @@ def collect_genes_with_confidence(
     """
     # If we are using caching and already have the cache loaded in memory
     if (
-            cache_file is not None and
-            not force_cache_refresh and
-            cache_file.as_posix() in GENE_SET_CACHE):
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.as_posix() in GENE_SET_CACHE):
         logger.info("Returning %s from in-memory cache" % cache_file.as_posix())
         res = GENE_SET_CACHE[cache_file.as_posix()]
     # If we are using caching but it's not in memory yet so we need to load
     # it from a file
     elif (
-            cache_file is not None and
-            not force_cache_refresh and
-            cache_file.exists()
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.exists()
     ):
         logger.info("Loading %s" % cache_file.as_posix())
         with open(cache_file, "rb") as fh:
@@ -407,39 +408,84 @@ def get_reactome(
     )
 
 
-def get_kinase_phosphosites(client: Neo4jClient, background_phosphosites: Optional[Set[Tuple[str, str]]] = None) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
-    """Retrieve kinase-to-phosphosite mappings from Neo4j, indexed by specific phosphosites.
+@autoclient(cache=True)
+def get_kinase_phosphosites(
+    *,
+    client: Neo4jClient,
+    background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
+    force_cache_refresh: bool = False,
+) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+    """Get a mapping from each kinase to the set of phosphosites it phosphorylates."""
+    query = dedent(
+        f"""\
+        MATCH (kinase:BioEntity)-[r:indra_rel]->(substrate:BioEntity)
+        WHERE
+            r.stmt_type = 'Phosphorylation'
+            AND substrate.id STARTS WITH "hgnc"
+            AND NOT substrate.obsolete
+            AND r.evidence_count >= {minimum_evidence_count}
+            AND r.belief >= {minimum_belief}
+        RETURN
+            kinase.id,
+            kinase.name,
+            substrate.id,
+            substrate.name,
+            r.stmt_json;
+        """
+    )
 
-    Parameters
-    ----------
-    client :
-        Neo4jClient
-    background_phosphosites :
-        Set of (gene, phosphosite) tuples to filter the results.
+    # Execute the query
+    raw_results = client.query_tx(query)
 
-    Returns
-    -------
-    :
-        Dictionary mapping (kinase_id, kinase_name) -> set of (gene, phosphosite).
-    """
-    query = """
-    MATCH (k:Kinase)-[:PHOSPHORYLATES]->(p:Phosphosite)
-    RETURN k.id AS kinase_id, k.name AS kinase_name, p.gene_id AS gene_id, p.site AS phosphosite
-    """
-    results = client.run(query)
+    if raw_results is None:
+        return {}
+
+    # Process results to extract phosphosite information
+    import json
 
     kinase_map = {}
-    for record in results:
-        kinase_id = record["kinase_id"]
-        kinase_name = record["kinase_name"]
-        gene_id = record["gene_id"]  # Protein ID
-        phosphosite = record["phosphosite"]  # Modification site (e.g., "S78")
 
-        if (gene_id, phosphosite) in background_phosphosites or background_phosphosites is None:
-            kinase_map.setdefault((kinase_id, kinase_name), set()).add((gene_id, phosphosite))
+    for row in raw_results:
+        kinase_id, kinase_name, substrate_id, substrate_name, stmt_json = row
+
+        # Create the kinase key
+        kinase_key = (kinase_id, kinase_name)
+
+        if kinase_key not in kinase_map:
+            kinase_map[kinase_key] = set()
+
+        # Extract phosphosite details from stmt_json
+        try:
+            if stmt_json:
+                stmt_data = json.loads(stmt_json)
+
+                # Collect residue and position if available
+                residue = stmt_data.get('residue')
+                position = stmt_data.get('position')
+
+                if residue and position:
+                    # Use the substrate name directly (not ID)
+                    phosphosite = (substrate_name, f"{residue}{position}")
+                    kinase_map[kinase_key].add(phosphosite)
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            continue
+
+    # Apply background filtering if provided
+    if background_phosphosites:
+        for key in list(kinase_map.keys()):
+            filtered_set = {
+                phosphosite for phosphosite in kinase_map[key]
+                if phosphosite in background_phosphosites
+            }
+
+            if filtered_set:
+                kinase_map[key] = filtered_set
+            else:
+                del kinase_map[key]
 
     return kinase_map
-
 
 
 @autoclient()
@@ -848,6 +894,7 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(
         description="Build caches for gene set enrichment analysis."
     )
