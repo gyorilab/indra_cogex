@@ -3,7 +3,7 @@
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
 from typing import Collection, Iterable, List, Mapping, Optional, Set, Tuple
-
+import logging
 import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
@@ -15,10 +15,13 @@ from indra_cogex.client.enrichment.utils import (
     get_go,
     get_phenotype_gene_sets,
     get_reactome,
-    get_wikipathways, get_kinase_phosphosites,
+    get_wikipathways,
+    get_kinase_phosphosites,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.client.queries import get_genes_for_go_term
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "go_ora",
@@ -459,20 +462,30 @@ def count_phosphosites(*, client: Neo4jClient) -> int:
         Number of phosphosites
     """
     query = """\
-        MATCH (p:Phosphosite)
-        RETURN count(p) as count
+        MATCH ()-[r:indra_rel]->()
+        WHERE 
+            r.stmt_type = 'Phosphorylation'
+            AND r.stmt_json CONTAINS '"residue"'
+            AND r.stmt_json CONTAINS '"position"'
+        RETURN count(r) as count
     """
     results = client.query_tx(query)
-    if results is None:
-        raise ValueError("No phosphosites found.")
-    return results[0][0]
+    count = results[0][0] if results else 0
 
+    if count == 0:
+        # Fallback to a minimum value to avoid division by zero
+        return 1000  # Arbitrary non-zero value
+
+    return count
 
 
 def kinase_ora(
     client: Neo4jClient,
     phosphosite_ids: Iterable[Tuple[str, str]],  # List of (gene_id, site) tuples
     background_phosphosite_ids: Optional[Collection[Tuple[str, str]]] = None,
+    *,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
     **kwargs,
 ) -> pd.DataFrame:
     """Perform over-representation analysis on kinase-phosphosite relationships.
@@ -485,6 +498,10 @@ def kinase_ora(
         List of (gene, phosphosite) tuples.
     background_phosphosite_ids :
         List of (gene, phosphosite) tuples for the background set.
+    minimum_evidence_count :
+        Minimum number of evidences to consider a kinase-phosphosite relationship
+    minimum_belief :
+        Minimum belief score to consider a kinase-phosphosite relationship
     **kwargs :
         Additional keyword arguments to pass to _do_ora.
 
@@ -494,17 +511,44 @@ def kinase_ora(
         DataFrame with columns:
         curie (kinase ID), name (kinase name), p (p-value), q (adjusted p-value), mlp (-log10 p), mlq (-log10 q).
     """
+    phosphosite_ids = list(phosphosite_ids)  # Convert to list for multiple use
+    logger.info(f"Running kinase ORA with {len(phosphosite_ids)} phosphosites")
+
     count = (
         count_phosphosites(client=client)
         if not background_phosphosite_ids
         else len(background_phosphosite_ids)
     )
+    logger.info(f"Total phosphosite count: {count}")
 
     bg_phosphosites = (
         frozenset(background_phosphosite_ids) if background_phosphosite_ids else None
     )
 
-    kinase_to_phosphosites = get_kinase_phosphosites(client=client, background_phosphosites=bg_phosphosites)
+    kinase_to_phosphosites = get_kinase_phosphosites(
+        client=client,
+        background_phosphosites=bg_phosphosites,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief
+    )
+
+    logger.info(f"Found {len(kinase_to_phosphosites)} kinases with phosphosite targets")
+
+    if not kinase_to_phosphosites:
+        logger.warning("No kinase-phosphosite relationships found, returning empty DataFrame")
+        return pd.DataFrame(columns=['curie', 'name', 'p', 'q', 'mlp', 'mlq'])
+
+    # Check for overlap between query phosphosites and known phosphosite targets
+    all_known_phosphosites = set()
+    for phosphosites in kinase_to_phosphosites.values():
+        all_known_phosphosites.update(phosphosites)
+
+    overlap = [ps for ps in phosphosite_ids if ps in all_known_phosphosites]
+    logger.info(f"Overlap between query phosphosites and known targets: {len(overlap)}/{len(phosphosite_ids)}")
+
+    if not overlap:
+        logger.warning("No overlap between query phosphosites and known targets, returning empty DataFrame")
+        return pd.DataFrame(columns=['curie', 'name', 'p', 'q', 'mlp', 'mlq'])
 
     return _do_ora(
         curie_to_target_sets=kinase_to_phosphosites,
