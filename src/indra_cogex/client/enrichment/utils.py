@@ -20,6 +20,8 @@ from typing import (
 )
 
 import pystow
+
+from indra.databases.hgnc_client import is_kinase
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
 from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS
@@ -449,6 +451,11 @@ def get_kinase_phosphosites(
 
     for row in raw_results:
         kinase_id, kinase_name, substrate_id, substrate_name, stmt_json = row
+
+        # Skip non-kinases using the is_kinase function
+        # For family-level entities (fplx), keep them as they often represent kinase families
+        if not (kinase_id.startswith('fplx:') or is_kinase(kinase_name)):
+            continue
 
         # Create the kinase key
         kinase_key = (kinase_id, kinase_name)
