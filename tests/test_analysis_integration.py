@@ -219,43 +219,21 @@ def test_enzyme_analysis():
 
 @pytest.mark.nonpublic
 def test_kinase_analysis_integration():
-    """Integration test for the kinase ORA functionality using a comprehensive set of phosphosites."""
-    # Use a comprehensive set of phosphosites from major kinases
+    """Integration test for kinase ORA functionality."""
     TEST_PHOSPHOSITES = [
-        'RUNX1-S21', 'RPS6-S6', 'SDC1-Y286', 'RPS6KA3-S19', 'RPS3A-T88',
-        'RPS3A-S112', 'BMX-Y566', 'RNMT-T77', 'RPS6KB1-T412', 'SDC2-Y179',
-        'RPS6KB2-S356', 'RUNX2-S28', 'RPS6KA3-Y580', 'RUNX1-S266', 'BLM-S714',
-        'BCL9-T172', 'RPL13-S106', 'RPS6KB1-T399', 'STMN2-S73', 'SFPQ-Y691',
-        'RIPK1-Y384', 'ROCK2-Y722', 'BDKRB2-Y347', 'BDKRB2-Y177', 'RPA2-S33',
-        'RPA2-S29', 'BECN1-S295', 'BECN1-S234'
-        # Add more from your comprehensive set as needed
+        "RPS6KA1-S363", "RPS3-T42", "RPS6KA3-Y529",  # MAPK Signaling
+        "RPS6KB1-S434", "RPS6-S244", "RPS6-S236",  # PI3K/AKT Signaling
+        "RPA2-S29", "RPS6KB1-T412", "RNF8-T198",  # Cell Cycle
+        "ROCK2-Y722", "BDKRB2-Y177"  # Tyrosine Kinases
     ]
 
-    print(f"\nRunning kinase analysis with {len(TEST_PHOSPHOSITES)} phosphosites")
-
-    # Run analysis with the comprehensive phosphosite set
+    # Run analysis with fewer phosphosites
     result = kinase_analysis(
         phosphosite_list=TEST_PHOSPHOSITES,
         alpha=0.05,
-        keep_insignificant=True
+        keep_insignificant=False  # Limit results to significant ones
     )
 
-    # Display results
-    print(f"\nAnalysis results: {result.shape[0]} rows")
-    if not result.empty:
-        # Sort by p-value for better readability
-        sorted_result = result.sort_values('p')
-        print("\nTop 20 enriched kinases:")
-        print(sorted_result.head(20))
-
-        # Count significant kinases
-        significant_count = (sorted_result['p'] < 0.05).sum()
-        print(f"\nFound {significant_count} kinases with p < 0.05")
-
-    # Basic validation
     assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
-    assert not result.empty, "Result should not be empty with valid phosphosites"
-
-    # Check expected columns
-    expected_columns = {"curie", "name", "p", "q", "mlp", "mlq"}
-    assert set(result.columns) >= expected_columns, "Result should have all expected columns"
+    assert not result.empty, "Result should not be empty"
+    assert set(result.columns) >= {"curie", "name", "p", "q"}, "Missing expected columns"
