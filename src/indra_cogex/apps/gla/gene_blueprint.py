@@ -155,7 +155,7 @@ class KinaseAnalysisForm(FlaskForm):
     )
     background_phosphosites = TextAreaField(
         "Background Phosphosites (Optional)",
-        description='Enter background phosphosites. If not provided, all phosphosites will be used.',
+        description='Enter background phosphosites. If not provided, all phosphosites in the database will be used.',
         render_kw={"rows": 2, "cols": 50}
     )
     minimum_evidence = minimum_evidence_field
