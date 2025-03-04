@@ -17,7 +17,7 @@
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
         const datatablesConf = {
-            "order": [[4, "desc"]],  // Sort by mlp (negative log p-value) by default
+            "order": [[3, "desc"]],  // Sort by p-value by default
             pageLength: 10,
             layout: {
                 bottomStart: {
@@ -46,8 +46,8 @@
     </script>
 {% endblock %}
 
-{% macro render_kinase_table(df, table_id) -%}
-    <table class="table table-hover table-striped" id="{{ table_id }}" style="width: 100%;">
+{% macro render_kinase_table(df, table_id, phosphosites, minimum_evidence, minimum_belief) -%}
+    <table class="table table-hover table-striped table-ora" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
             <th scope="col">CURIE</th>
@@ -56,6 +56,7 @@
             <th scope="col"><i>q</i>-value</th>
             <th scope="col">-log<sub>10</sub>(<i>p</i>)</th>
             <th scope="col">-log<sub>10</sub>(<i>q</i>)</th>
+            <th scope="col">Statements</th>
         </tr>
         </thead>
         <tbody>
@@ -67,6 +68,14 @@
                 <td>{{ "{:.2e}".format(q) }}</td>
                 <td>{{ "{:.2f}".format(mlp) }}</td>
                 <td>{{ "{:.2f}".format(mlq) }}</td>
+                <td>
+                    <a href="{{ url_for('search.search_kinase_statements',
+                                        kinase_id=curie,
+                                        minimum_evidence=minimum_evidence,
+                                        minimum_belief=minimum_belief) }}{% for site in phosphosites %}&phosphosites={{ site }}{% endfor %}"
+                        target="_blank"
+                        class="btn btn-primary btn-sm">View Statements</a>
+                </td>
             </tr>
         {% endfor %}
         </tbody>
@@ -107,7 +116,7 @@
                     Kinases with lower p-values are more likely to be involved in regulating the phosphorylation
                     patterns in your dataset.
                 </p>
-                {{ render_kinase_table(results, "table-kinase") }}
+                {{ render_kinase_table(results, "table-kinase", phosphosites, minimum_evidence, minimum_belief) }}
             </div>
         </div>
     </div>
