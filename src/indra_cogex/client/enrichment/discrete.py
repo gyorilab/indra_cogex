@@ -30,6 +30,7 @@ __all__ = [
     "phenotype_ora",
     "indra_downstream_ora",
     "indra_upstream_ora",
+    "kinase_ora",
     "EXAMPLE_GENE_IDS",
 ]
 
@@ -512,14 +513,12 @@ def kinase_ora(
         curie (kinase ID), name (kinase name), p (p-value), q (adjusted p-value), mlp (-log10 p), mlq (-log10 q).
     """
     phosphosite_ids = list(phosphosite_ids)  # Convert to list for multiple use
-    logger.info(f"Running kinase ORA with {len(phosphosite_ids)} phosphosites")
 
     count = (
         count_phosphosites(client=client)
         if not background_phosphosite_ids
         else len(background_phosphosite_ids)
     )
-    logger.info(f"Total phosphosite count: {count}")
 
     bg_phosphosites = (
         frozenset(background_phosphosite_ids) if background_phosphosite_ids else None
@@ -532,8 +531,6 @@ def kinase_ora(
         minimum_belief=minimum_belief
     )
 
-    logger.info(f"Found {len(kinase_to_phosphosites)} kinases with phosphosite targets")
-
     if not kinase_to_phosphosites:
         logger.warning("No kinase-phosphosite relationships found, returning empty DataFrame")
         return pd.DataFrame(columns=['curie', 'name', 'p', 'q', 'mlp', 'mlq'])
@@ -544,7 +541,6 @@ def kinase_ora(
         all_known_phosphosites.update(phosphosites)
 
     overlap = [ps for ps in phosphosite_ids if ps in all_known_phosphosites]
-    logger.info(f"Overlap between query phosphosites and known targets: {len(overlap)}/{len(phosphosite_ids)}")
 
     if not overlap:
         logger.warning("No overlap between query phosphosites and known targets, returning empty DataFrame")

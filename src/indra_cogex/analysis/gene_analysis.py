@@ -22,7 +22,8 @@ from indra_cogex.client.enrichment.discrete import (
     indra_upstream_ora,
     phenotype_ora,
     reactome_ora,
-    wikipathways_ora, kinase_ora,
+    wikipathways_ora,
+    kinase_ora,
 )
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 from indra.databases.hgnc_client import is_kinase, is_transcription_factor
