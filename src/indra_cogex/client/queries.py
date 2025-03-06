@@ -953,7 +953,7 @@ def get_evidences_for_stmt_hashes(
     """
     limit_box = "" if limit is None else f"[..{limit}]"
 
-    mesh_filter = ""
+    mesh_filter, mesh_pattern = "", ""
     if mesh_terms:
         mesh_filter = "AND mesh_term.id IN $mesh_terms"
         mesh_pattern = "-[:has_citation]->(pub:Publication)-[:annotated_with]->(mesh_term:BioEntity)"
