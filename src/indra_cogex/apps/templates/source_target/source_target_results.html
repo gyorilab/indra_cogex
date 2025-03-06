@@ -57,6 +57,7 @@
             font-size: 1rem;
             color: #495057 !important;
             font-weight: normal !important;
+        }
 
         /* Add some spacing between gene sections */
         #gene-statements-container > hr {
@@ -188,6 +189,32 @@
             $('h3').filter(function() {
                 return $(this).text().trim() === 'Statements';
             }).addClass('statements-header');
+
+            // Initialize DataTables for the upstream tables with the same config as other tables
+            $("#upstream-table, #shared-proteins-table").DataTable({
+                pageLength: 10,
+                order: [],
+                layout: {
+                    bottomStart: {
+                        pageLength: {
+                            menu: [10, 25, 50, 75, 100],
+                        }
+                    },
+                    topStart: {
+                        buttons: [
+                            {
+                                extend: 'csv',
+                                text: 'Download full table as CSV',
+                                exportOptions: {
+                                    modifier: {
+                                        search: 'none'
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            });
         });
     </script>
 {% endblock %}
@@ -254,9 +281,9 @@
                 <div id="gene-statements-container">
                     {% for gene, statement in results.statements.items() %}
                         <h3>{{ gene }}</h3>
-<!--                        {% if gene != 'database_badges' %}-->
+                        {% if gene != 'database_badges' %}
                             {{ statement | safe }}
-<!--                        {% endif %}-->
+                        {% endif %}
                     {% endfor %}
                 </div>
             {% endif %}
@@ -302,13 +329,89 @@
 
             {% if results.upstream and results.upstream.get('shared_proteins') %}
                 <h3>Upstream Analysis</h3>
-                <p>Shared upstream regulatory mechanisms:</p>
-                <h4>Shared Proteins</h4>
-                <p>
-                {% for protein in results.upstream.get('shared_proteins') %}
-                    <span class="badge badge-primary">{{ protein }}</span>
-                {% endfor %}
-                </p>
+                <p>Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.</p>
+
+                {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+                    <!-- Display enrichment results as a table with pagination -->
+                    <h4>Enriched Upstream Regulators</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="upstream-table">
+                            <thead>
+                                <tr>
+                                    <th>Regulator</th>
+                                    <th>p-value</th>
+                                    <th>q-value</th>
+                                    <th>-log(p)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for _, row in results.upstream.get('shared_entities').iterrows() %}
+                                    <tr>
+                                        <td>{{ row.name }}</td>
+                                        <td>{{ '%.4g'|format(row.p) if 'p' in row else 'N/A' }}</td>
+                                        <td>{{ '%.4g'|format(row.q) if 'q' in row else 'N/A' }}</td>
+                                        <td>{{ '%.2f'|format(row.mlp) if 'mlp' in row else 'N/A' }}</td>
+                                        <td>
+                                            <!-- Multiple search options -->
+                                            <a href="{{ url_for('search.search', agent=row.name) }}"
+                                               class="btn btn-sm btn-outline-primary mr-1"
+                                               title="View all statements with {{ row.name }}"
+                                               target="_blank">All</a>
+                                            <a href="{{ url_for('search.search', agent=row.name, agent_role='subject', other_agent=source) }}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="View statements where {{ row.name }} regulates {{ source }}"
+                                               target="_blank">Regulation</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <!-- Display proteins with pagination using DataTables -->
+                    <h4>Shared Proteins</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="shared-proteins-table">
+                            <thead>
+                                <tr>
+                                    <th>Regulator</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for protein in results.upstream.get('shared_proteins') %}
+                                    <tr>
+                                        <td>{{ protein }}</td>
+                                        <td>
+                                            <a href="{{ url_for('search.search', agent=protein) }}"
+                                               class="btn btn-sm btn-outline-primary mr-1"
+                                               title="View all statements with {{ protein }}"
+                                               target="_blank">All</a>
+                                            <a href="{{ url_for('search.search', agent=protein, agent_role='subject', other_agent=source) }}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="View statements where {{ protein }} regulates {{ source }}"
+                                               target="_blank">Regulation</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Also add badge list for quick access -->
+                    <div class="mt-3">
+                        <p><strong>Quick access:</strong></p>
+                        <p>
+                            {% for protein in results.upstream.get('shared_proteins') %}
+                                <a href="{{ url_for('search.search', agent=protein) }}"
+                                   class="badge badge-primary"
+                                   title="View all statements with {{ protein }}"
+                                   target="_blank">{{ protein }}</a>
+                            {% endfor %}
+                        </p>
+                    </div>
+                {% endif %}
             {% endif %}
         </div>
     </div>
