@@ -54,23 +54,19 @@
             <th scope="col">Name</th>
             <th scope="col"><i>p</i>-value</th>
             <th scope="col"><i>q</i>-value</th>
-            <th scope="col">-log<sub>10</sub>(<i>p</i>)</th>
-            <th scope="col">-log<sub>10</sub>(<i>q</i>)</th>
             <th scope="col">Statements</th>
         </tr>
         </thead>
         <tbody>
-        {% for curie, name, p, q, mlp, mlq in df.values %}
+        {% for row in df.values %}
             <tr>
-                <td><a href="https://bioregistry.io/{{ curie }}" target="_blank">{{ curie }}</a></td>
-                <td>{{ name }}</td>
-                <td>{{ "{:.2e}".format(p) }}</td>
-                <td>{{ "{:.2e}".format(q) }}</td>
-                <td>{{ "{:.2f}".format(mlp) }}</td>
-                <td>{{ "{:.2f}".format(mlq) }}</td>
+                <td><a href="https://bioregistry.io/{{ row[0] }}" target="_blank">{{ row[0] }}</a></td>
+                <td>{{ row[1] }}</td>
+                <td>{{ "{:.2e}".format(row[2]) }}</td>
+                <td>{{ "{:.2e}".format(row[4]) }}</td>
                 <td>
                     <a href="{{ url_for('search.search_kinase_statements',
-                                        kinase_id=curie,
+                                        kinase_id=row[0],
                                         minimum_evidence=minimum_evidence,
                                         minimum_belief=minimum_belief) }}{% for site in phosphosites %}&phosphosites={{ site }}{% endfor %}"
                         target="_blank"
@@ -81,7 +77,6 @@
         </tbody>
     </table>
 {% endmacro %}
-
 {% block container %}
     <div class="card card-body bg-light">
         <h1 class="display-3">Kinase Enrichment Analysis</h1>
