@@ -89,72 +89,72 @@
         {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
         <h3 class="text-center">Apps and Services using INDRA CoGEx</h3>
         <!-- First row with three cards -->
-    <div class="card-deck mb-4">
-        <div class="card">
-            <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}"
-                 alt="Over-representation analysis">
-            <div class="card-body">
-                <h5 class="card-title">Discrete Gene List Analysis</h5>
-                <p class="card-text">
-                    Performs gene set enrichment analysis using INDRA CoGEx.
-                </p>
+        <div class="card-deck mb-4">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="ora.png") }}"
+                     alt="Over-representation analysis">
+                <div class="card-body">
+                    <h5 class="card-title">Discrete Gene List Analysis</h5>
+                    <p class="card-text">
+                        Performs gene set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                {{ start_button('gla.discretize_analysis', '/gene/discrete') }}
             </div>
-            {{ start_button('gla.discretize_analysis', '/gene/discrete') }}
-        </div>
-        <div class="card">
-            <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="rcr.png") }}"
-                 alt="Reverse Causal Reasoning">
-            <div class="card-body">
-                <h5 class="card-title">Signed Gene List Analysis</h5>
-                <p class="card-text">
-                    Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
-                    Reasoning algorithm.
-                </p>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="rcr.png") }}"
+                     alt="Reverse Causal Reasoning">
+                <div class="card-body">
+                    <h5 class="card-title">Signed Gene List Analysis</h5>
+                    <p class="card-text">
+                        Perform signed gene set enrichment analysis using INDRA CoGEx and the Reverse Causal
+                        Reasoning algorithm.
+                    </p>
+                </div>
+                {{ start_button('gla.signed_analysis_route', '/gene/signed') }}
             </div>
-            {{ start_button('gla.signed_analysis_route', '/gene/signed') }}
-        </div>
-        <div class="card">
-            <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
-                 alt="GSEA">
-            <div class="card-body">
-                <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
-                <p class="card-text">
-                    Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
-                </p>
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="gsea.png") }}"
+                     alt="GSEA">
+                <div class="card-body">
+                    <h5 class="card-title">Continuous Gene Set Enrichment Analysis</h5>
+                    <p class="card-text">
+                        Perform gene set enrichment analysis on continuous data using INDRA CoGEx.
+                    </p>
+                </div>
+                {{ start_button('gla.continuous_analysis_route', '/gene/continuous') }}
             </div>
-            {{ start_button('gla.continuous_analysis_route', '/gene/continuous') }}
         </div>
-    </div>
 
-    <!-- Second row with two cards -->
-    <div class="card-deck">
-        <div class="card">
-            <img class="card-img-top" style="max-height: 100px"
-                 src="{{ url_for("static", filename="msea.png") }}" alt="Metabolite set enrichment analysis">
-            <div class="card-body">
-                <h5 class="card-title">Discrete Metabolite List Analysis</h5>
-                <p class="card-text">
-                    Perform metabolite set enrichment analysis using INDRA CoGEx.
-                </p>
+        <!-- Second row with two cards -->
+        <div class="card-deck">
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px"
+                     src="{{ url_for("static", filename="msea.png") }}" alt="Metabolite set enrichment analysis">
+                <div class="card-body">
+                    <h5 class="card-title">Discrete Metabolite List Analysis</h5>
+                    <p class="card-text">
+                        Perform metabolite set enrichment analysis using INDRA CoGEx.
+                    </p>
+                </div>
+                {{ start_button('mla.discrete_analysis_route', '/metabolite/discrete') }}
             </div>
-            {{ start_button('mla.discrete_analysis_route', '/metabolite/discrete') }}
+            <div class="card">
+                <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="kinase_enrichment.png") }}"
+                 alt="Kinase Enrichment Analysis">
+                 <div class="card-body">
+                     <h5 class="card-title">Kinase Enrichment Analysis</h5>
+                     <p class="card-text">
+                         Identify kinases that are statistically enriched in a set of phosphosites based on
+                         known kinase-substrate relationships.
+                     </p>
+                 </div>
+                 {{ start_button('gla.kinase_analysis_route', '/gene/kinase') }}
+            </div>
+            <!-- Empty card for alignment in the second row -->
+            <div class="card" style="visibility: hidden;"></div>
         </div>
-        <div class="card">
-             <img class="card-img-top" style="max-height: 100px" src="{{ url_for("static", filename="kinase_enrichment.png") }}"
-             alt="Kinase Enrichment Analysis">
-             <div class="card-body">
-                 <h5 class="card-title">Kinase Enrichment Analysis</h5>
-                 <p class="card-text">
-                     Identify kinases that are statistically enriched in a set of phosphosites based on
-                     known kinase-substrate relationships.
-                 </p>
-             </div>
-             {{ start_button('gla.kinase_analysis_route', '/gene/kinase') }}
-        </div>
-        <!-- Empty card for alignment in the second row -->
-        <div class="card" style="visibility: hidden;"></div>
     </div>
-</div>
 
         <h3 class="text-center">Directed Exploration</h3>
         <div class="card-deck">
