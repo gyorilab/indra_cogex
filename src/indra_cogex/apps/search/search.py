@@ -66,6 +66,7 @@ def search():
             "mesh_tuple": request.form.get("mesh_tuple"),
         }
         query_params = {k: v for k, v in query_params.items() if v}
+        print(form.mesh_terms.data, request.form.get('mesh_tuple'))
         return redirect(url_for("search.search", **query_params))
 
     # GET Request: Extract query parameters and fetch statements
@@ -92,7 +93,7 @@ def search():
     if mesh_tuple:
         source_db, source_id = json.loads(mesh_tuple)
         mesh_terms = (source_db, source_id)
-
+    print(mesh_terms, mesh_tuple)
     # Fetch and display statements
     if agent or other_agent or rel_types:
         statements, evidence_count = get_statements(

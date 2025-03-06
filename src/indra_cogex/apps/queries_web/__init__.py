@@ -377,6 +377,7 @@ examples_dict = {
     "other_role": fields.String(example="Object"),
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
+    "mesh_terms": fields.List(fields.String, example=None),
     "include_db_evidence": fields.Boolean(example=True),
     "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
