@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement, Phosphorylation, IncreaseAmount, DecreaseAmount
+from indra.statements.validate import assert_valid_id, BioregistryValidator
 from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
@@ -71,12 +72,22 @@ def search():
 
     # GET Request: Extract query parameters and fetch statements
     agent = request.args.get("agent")
+
+    #Check if the agnet is in CURIE form
+    if agent:
+        agent = check_and_convert(agent)
+
     agent_tuple = request.args.get("agent_tuple")
     if agent_tuple:
         source_db, source_id = json.loads(agent_tuple)
         agent = (source_db, source_id)
 
     other_agent = request.args.get("other_agent")
+
+    # Check if the other_agnet is in CURIE form
+    if other_agent:
+        other_agent = check_and_convert(other_agent)
+
     other_agent_tuple = request.args.get("other_agent_tuple")
     if other_agent_tuple:
         source_db, source_id = json.loads(other_agent_tuple)
@@ -89,6 +100,11 @@ def search():
     other_role = request.args.get("other_role")
     paper_id = request.args.get("paper_id")
     mesh_terms = request.args.get("mesh_terms")
+
+    # Check if the mesh_terms is in CURIE form
+    if mesh_terms:
+        mesh_terms = check_and_convert(mesh_terms)
+
     mesh_tuple = request.args.get("mesh_tuple")
     if mesh_tuple:
         source_db, source_id = json.loads(mesh_tuple)
@@ -137,6 +153,22 @@ def gilda_ground_endpoint():
     except Exception as e:
         return {"error": str(e)}, 500
 
+def is_valid_curie(namespace, identifier, validator):
+    """Check if a given namespace is valid"""
+    try:
+        assert_valid_id(namespace, identifier, validator=validator)
+        return True
+    except ValueError:
+        return False
+
+def check_and_convert(text):
+    if ":" in text:
+        validator = BioregistryValidator()
+        curie_validate_namespace, curie_validate_id = text.split(":", 1)
+        if is_valid_curie(curie_validate_namespace, curie_validate_id, validator):
+            result = (curie_validate_namespace, curie_validate_id)
+            return result
+    return text
 
 def gilda_ground(agent_text):
     try:
