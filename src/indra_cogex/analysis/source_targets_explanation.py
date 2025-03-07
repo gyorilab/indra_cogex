@@ -317,7 +317,9 @@ def shared_upstream_bioentities_from_targets(
     stmts_by_protein_df: pd.DataFrame,
     target_genes: List[str],
     *,
-    client
+    client,
+    q_value_threshold: float = 0.05,
+    max_regulators: int = 50
 ) -> Tuple[List[str], pd.DataFrame]:
     """Get upstream molecules intersecting with bioentities.
 
@@ -329,6 +331,10 @@ def shared_upstream_bioentities_from_targets(
         List of target gene symbols
     client : Neo4jClient
         The client instance
+    q_value_threshold : float, optional
+        Maximum q-value for statistical significance filtering, default=0.05
+    max_regulators : int, optional
+        Maximum number of regulators to return, ordered by significance, default=50
 
     Returns
     -------
@@ -341,18 +347,57 @@ def shared_upstream_bioentities_from_targets(
         gene_ids=target_genes
     )
 
+    # Ensure upstream_df has proper CURIE format
+    if 'curie' in upstream_df.columns:
+        # Check if CURIEs have namespace prefix (like "hgnc:")
+        has_prefix = upstream_df['curie'].str.contains(':', na=False)
+
+        # For those without prefix, add appropriate namespace
+        if not all(has_prefix):
+            # Add HGNC namespace to numeric IDs that don't have a prefix
+            numeric_without_prefix = (~has_prefix) & upstream_df['curie'].str.match(r'^\d+$', na=False)
+            upstream_df.loc[numeric_without_prefix, 'curie'] = 'hgnc:' + upstream_df.loc[
+                numeric_without_prefix, 'curie']
+
+            # Log the corrections
+            prefix_count = numeric_without_prefix.sum()
+            if prefix_count > 0:
+                logger.info(f"Added namespace prefix to {prefix_count} CURIEs")
+
     # Find shared proteins
     shared_proteins = list(set(upstream_df["name"].values).intersection(
         set(stmts_by_protein_df["name"].values)))
 
     if shared_proteins:
+        # Get the entities data for these proteins
         shared_entities = upstream_df[upstream_df.name.isin(shared_proteins)]
-        logger.info("Found shared upstream bioentities")
+        logger.info(f"Found {len(shared_proteins)} shared upstream bioentities")
+
+        # Apply statistical filtering
+        if 'q' in shared_entities.columns:
+            significant_entities = shared_entities[shared_entities.q <= q_value_threshold]
+            logger.info(
+                f"After filtering, {len(significant_entities)} regulators are significant at q≤{q_value_threshold}")
+        else:
+            significant_entities = shared_entities
+
+        # Sort by significance
+        if 'q' in significant_entities.columns:
+            sorted_entities = significant_entities.sort_values('q')
+        elif 'p' in significant_entities.columns:
+            sorted_entities = significant_entities.sort_values('p')
+        else:
+            sorted_entities = significant_entities
+
+        # Limit to top N regulators
+        limited_entities = sorted_entities.head(max_regulators)
+        limited_proteins = limited_entities.name.tolist()
+
+        logger.info(f"Returning top {len(limited_proteins)} regulators")
+        return limited_proteins, limited_entities
     else:
         logger.info("No shared upstream bioentities found")
-        shared_entities = pd.DataFrame()
-
-    return shared_proteins, shared_entities
+        return [], pd.DataFrame()
 
 
 @autoclient()
