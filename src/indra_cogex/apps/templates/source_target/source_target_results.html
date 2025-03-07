@@ -328,91 +328,92 @@
             {% endif %}
 
             {% if results.upstream and results.upstream.get('shared_proteins') %}
-                <h3>Upstream Analysis</h3>
-                <p>Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.</p>
+    <h3>Upstream Analysis</h3>
+    <p>
+        Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
+        {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+            Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
+        {% endif %}
+    </p>
 
-                {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
-                    <!-- Display enrichment results as a table with pagination -->
-                    <h4>Enriched Upstream Regulators</h4>
-                    <div class="datatable-wrapper">
-                        <table class="table table-sm table-hover datatable" id="upstream-table">
-                            <thead>
-                                <tr>
-                                    <th>Regulator</th>
-                                    <th>p-value</th>
-                                    <th>q-value</th>
-                                    <th>-log(p)</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for _, row in results.upstream.get('shared_entities').iterrows() %}
-                                    <tr>
-                                        <td>{{ row.name }}</td>
-                                        <td>{{ '%.4g'|format(row.p) if 'p' in row else 'N/A' }}</td>
-                                        <td>{{ '%.4g'|format(row.q) if 'q' in row else 'N/A' }}</td>
-                                        <td>{{ '%.2f'|format(row.mlp) if 'mlp' in row else 'N/A' }}</td>
-                                        <td>
-                                            <!-- Multiple search options -->
-                                            <a href="{{ url_for('search.search', agent=row.name) }}"
-                                               class="btn btn-sm btn-outline-primary mr-1"
-                                               title="View all statements with {{ row.name }}"
-                                               target="_blank">All</a>
-                                            <a href="{{ url_for('search.search', agent=row.name, agent_role='subject', other_agent=source) }}"
-                                               class="btn btn-sm btn-outline-info"
-                                               title="View statements where {{ row.name }} regulates {{ source }}"
-                                               target="_blank">Regulation</a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <!-- Display proteins with pagination using DataTables -->
-                    <h4>Shared Proteins</h4>
-                    <div class="datatable-wrapper">
-                        <table class="table table-sm table-hover datatable" id="shared-proteins-table">
-                            <thead>
-                                <tr>
-                                    <th>Regulator</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for protein in results.upstream.get('shared_proteins') %}
-                                    <tr>
-                                        <td>{{ protein }}</td>
-                                        <td>
-                                            <a href="{{ url_for('search.search', agent=protein) }}"
-                                               class="btn btn-sm btn-outline-primary mr-1"
-                                               title="View all statements with {{ protein }}"
-                                               target="_blank">All</a>
-                                            <a href="{{ url_for('search.search', agent=protein, agent_role='subject', other_agent=source) }}"
-                                               class="btn btn-sm btn-outline-info"
-                                               title="View statements where {{ protein }} regulates {{ source }}"
-                                               target="_blank">Regulation</a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Also add badge list for quick access -->
-                    <div class="mt-3">
-                        <p><strong>Quick access:</strong></p>
-                        <p>
-                            {% for protein in results.upstream.get('shared_proteins') %}
-                                <a href="{{ url_for('search.search', agent=protein) }}"
-                                   class="badge badge-primary"
-                                   title="View all statements with {{ protein }}"
-                                   target="_blank">{{ protein }}</a>
-                            {% endfor %}
-                        </p>
-                    </div>
-                {% endif %}
-            {% endif %}
+    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+        <!-- Display enrichment results as a table with pagination -->
+        <h4>Enriched Upstream Regulators</h4>
+        <div class="datatable-wrapper">
+            <table class="table table-sm table-hover datatable" id="upstream-table">
+                <thead>
+                    <tr>
+                        <th>CURIE</th>
+                        <th>Name</th>
+                        <th>p-value</th>
+                        <th>q-value</th>
+                        <th>Statements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for _, row in results.upstream.get('shared_entities').iterrows() %}
+                        <tr>
+                            <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
+                            <td>{{ row.name }}</td>
+                            <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
+                            <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
+                            <td>
+                                {% if 'curie' in row and row.curie and ':' in row.curie %}
+                                    <!-- Using full CURIE format with namespace:id -->
+                                    {% set namespace = row.curie.split(':')[0] %}
+                                    {% set id = row.curie.split(':')[1] %}
+                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% else %}
+                                    <!-- Fallback to name-based search -->
+                                    <a href="{{ url_for('search.search', agent=row.name) }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Display proteins with pagination using DataTables -->
+        <h4>Shared Proteins</h4>
+        <div class="datatable-wrapper">
+            <table class="table table-sm table-hover datatable" id="shared-proteins-table">
+                <thead>
+                    <tr>
+                        <th>Regulator</th>
+                        <th>Statements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for protein in results.upstream.get('shared_proteins') %}
+                        <tr>
+                            <td>{{ protein }}</td>
+                            <td>
+                                {% if ':' in protein|string %}
+                                    <!-- Protein is a CURIE with namespace:id format -->
+                                    {% set namespace = protein.split(':')[0] %}
+                                    {% set id = protein.split(':')[1] %}
+                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% else %}
+                                    <!-- Protein is a name -->
+                                    <a href="{{ url_for('search.search', agent=protein) }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endif %}
         </div>
     </div>
     <!-- Add extra space at bottom to prevent footer overlap -->
