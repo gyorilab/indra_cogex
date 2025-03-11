@@ -33,16 +33,16 @@ logger = logging.getLogger(__name__)
 
 @autoclient()
 def discrete_analysis(
-        gene_list: List[str],
-        method: str = 'fdr_bh',
-        alpha: float = 0.05,
-        keep_insignificant: bool = False,
-        minimum_evidence_count: int = 1,
-        minimum_belief: float = 0,
-        indra_path_analysis: bool = False,
-        background_gene_list: List[str] = None,
-        *,
-        client: Neo4jClient
+    gene_list: List[str],
+    method: str = 'fdr_bh',
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0,
+    indra_path_analysis: bool = False,
+    background_gene_list: List[str] = None,
+    *,
+    client: Neo4jClient
 ) -> Dict[str, Union[pd.DataFrame, None]]:
     """Perform discrete analysis on the provided genes.
 
@@ -219,17 +219,17 @@ def signed_analysis(
 
 @autoclient()
 def continuous_analysis(
-        gene_names: List[str],
-        log_fold_change: List[str],
-        species: str,
-        permutations: int,
-        source: str,
-        alpha: float = 0.05,
-        keep_insignificant: bool = False,
-        minimum_evidence_count: int = 1,
-        minimum_belief: float = 0,
-        *,
-        client: Neo4jClient
+    gene_names: List[str],
+    log_fold_change: List[str],
+    species: str,
+    permutations: int,
+    source: str,
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0,
+    *,
+    client: Neo4jClient
 ) -> pd.DataFrame:
     """Perform continuous gene set analysis on gene expression data.
 
@@ -364,16 +364,28 @@ def kinase_analysis(
         - name (kinase name)
         - p (p-value)
         - q (adjusted p-value)
-        - mlp (-log10 p)
-        - mlq (-log10 q)
     """
-    # Parse input into (gene, site) tuples
-    parsed_phosphosites: List[Tuple[str, str]] = [tuple(site.split("-")) for site in phosphosite_list]
+    # Parse input into (identifier, site) tuples
+    raw_phosphosites = [tuple(site.split("-")) for site in phosphosite_list if "-" in site]
 
     # Parse background if provided
-    parsed_background: Optional[List[Tuple[str, str]]] = None
+    raw_background = None
     if background:
-        parsed_background = [tuple(site.split("-")) for site in background]
+        raw_background = [tuple(site.split("-")) for site in background if "-" in background]
+
+    # Process phosphosites with validation and UniProt conversion
+    parsed_phosphosites, input_errors = parse_phosphosite_list(raw_phosphosites, client)
+
+    if input_errors:
+        logger.warning(f"Failed to parse the following phosphosites: {', '.join(input_errors)}")
+
+    # Process background phosphosites if provided
+    parsed_background = None
+    if raw_background:
+        parsed_background, background_errors = parse_phosphosite_list(raw_background, client)
+
+        if background_errors:
+            logger.warning(f"Failed to parse the following background phosphosites: {', '.join(background_errors)}")
 
     return kinase_ora(
         client=client,
@@ -419,16 +431,56 @@ def is_valid_phosphosite(site: str) -> bool:
     return isinstance(site, str) and site[0] in {'S', 'T', 'Y', 'H'} and site[1:].isdigit()
 
 
-def parse_phosphosite_list(phosphosite_list: Iterable[Tuple[str, str]]) -> Tuple[List[Tuple[str, str]], List[str]]:
-    """Parse phosphosite list into (gene, phosphosite) pairs."""
+def is_valid_uniprot(identifier: str) -> bool:
+    """Validate if the identifier appears to be a UniProt ID."""
+    # Basic validation for UniProt ID format (starts with uppercase letter and contains digits)
+    return (isinstance(identifier, str) and len(identifier) > 0 and
+            identifier[0].isupper() and any(c.isdigit() for c in identifier))
+
+
+def uniprot_to_hgnc_symbol(uniprot_id: str, *, client: Neo4jClient) -> Optional[str]:
+    """Convert a UniProt ID to HGNC gene symbol."""
+    # Ensure UniProt ID has the correct prefix
+    if not uniprot_id.startswith('uniprot:'):
+        uniprot_id = f"uniprot:{uniprot_id}"
+
+    query = """
+    MATCH (g:BioEntity)-[:xref]->(u:BioEntity)
+    WHERE g.id STARTS WITH 'hgnc:' AND NOT g.obsolete
+    AND u.id = $uniprot_id
+    RETURN g.name as gene_symbol
+    LIMIT 1
+    """
+
+    result = client.query_tx(query, uniprot_id=uniprot_id)
+    return result[0][0] if result and result[0] else None
+
+
+def parse_phosphosite_list(phosphosite_list: Iterable[Tuple[str, str]], client: Neo4jClient = None) -> Tuple[
+    List[Tuple[str, str]], List[str]]:
+    """Parse phosphosite list into (gene, phosphosite) pairs, converting UniProt IDs if needed."""
     phosphosites = []
     errors = []
+    uniprot_cache = {}  # Cache for UniProt to gene symbol conversions
 
-    for gene, site in phosphosite_list:
-        if is_valid_gene(gene) and is_valid_phosphosite(site):
-            phosphosites.append((gene, site))
+    for identifier, site in phosphosite_list:
+        # Check if it's a UniProt ID
+        if is_valid_uniprot(identifier) and is_valid_phosphosite(site) and client is not None:
+            # Convert UniProt ID to gene symbol
+            if identifier in uniprot_cache:
+                gene_symbol = uniprot_cache[identifier]
+            else:
+                gene_symbol = uniprot_to_hgnc_symbol(identifier, client=client)
+                uniprot_cache[identifier] = gene_symbol
+
+            if gene_symbol and is_valid_gene(gene_symbol):
+                phosphosites.append((gene_symbol, site))
+            else:
+                errors.append(f"{identifier}:{site}")
+        # Check if it's a valid gene and phosphosite
+        elif is_valid_gene(identifier) and is_valid_phosphosite(site):
+            phosphosites.append((identifier, site))
         else:
-            errors.append(f"{gene}:{site}")
+            errors.append(f"{identifier}:{site}")
 
     return phosphosites, errors
-
