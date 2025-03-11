@@ -27,6 +27,8 @@ from indra_cogex.client.enrichment.discrete import (
 )
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 from indra.databases.hgnc_client import is_kinase, is_transcription_factor
+from indra.databases import uniprot_client
+
 
 logger = logging.getLogger(__name__)
 
@@ -438,24 +440,6 @@ def is_valid_uniprot(identifier: str) -> bool:
             identifier[0].isupper() and any(c.isdigit() for c in identifier))
 
 
-def uniprot_to_hgnc_symbol(uniprot_id: str, *, client: Neo4jClient) -> Optional[str]:
-    """Convert a UniProt ID to HGNC gene symbol."""
-    # Ensure UniProt ID has the correct prefix
-    if not uniprot_id.startswith('uniprot:'):
-        uniprot_id = f"uniprot:{uniprot_id}"
-
-    query = """
-    MATCH (g:BioEntity)-[:xref]->(u:BioEntity)
-    WHERE g.id STARTS WITH 'hgnc:' AND NOT g.obsolete
-    AND u.id = $uniprot_id
-    RETURN g.name as gene_symbol
-    LIMIT 1
-    """
-
-    result = client.query_tx(query, uniprot_id=uniprot_id)
-    return result[0][0] if result and result[0] else None
-
-
 def parse_phosphosite_list(phosphosite_list: Iterable[Tuple[str, str]], client: Neo4jClient = None) -> Tuple[
     List[Tuple[str, str]], List[str]]:
     """Parse phosphosite list into (gene, phosphosite) pairs, converting UniProt IDs if needed."""
@@ -470,7 +454,7 @@ def parse_phosphosite_list(phosphosite_list: Iterable[Tuple[str, str]], client: 
             if identifier in uniprot_cache:
                 gene_symbol = uniprot_cache[identifier]
             else:
-                gene_symbol = uniprot_to_hgnc_symbol(identifier, client=client)
+                gene_symbol = uniprot_client.get_gene_name(identifier)
                 uniprot_cache[identifier] = gene_symbol
 
             if gene_symbol and is_valid_gene(gene_symbol):
