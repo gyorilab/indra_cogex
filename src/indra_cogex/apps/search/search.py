@@ -73,7 +73,7 @@ def search():
     # GET Request: Extract query parameters and fetch statements
     agent = request.args.get("agent")
 
-    #Check if the agnet is in CURIE form
+    #Check if the agent is in CURIE form
     if agent:
         agent = check_and_convert(agent)
 
@@ -84,7 +84,7 @@ def search():
 
     other_agent = request.args.get("other_agent")
 
-    # Check if the other_agnet is in CURIE form
+    # Check if the other_agent is in CURIE form
     if other_agent:
         other_agent = check_and_convert(other_agent)
 
