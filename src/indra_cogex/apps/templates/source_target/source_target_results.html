@@ -95,6 +95,11 @@
 
         $(document).ready(function () {
             $(".datatable").each(function() {
+                // Skip if already initialized
+                if ($.fn.DataTable.isDataTable(this)) {
+                    return;
+                }
+
                 var qColumnIndex = -1;
 
                 // Find the q-value column index
@@ -189,32 +194,6 @@
             $('h3').filter(function() {
                 return $(this).text().trim() === 'Statements';
             }).addClass('statements-header');
-
-            // Initialize DataTables for the upstream tables with the same config as other tables
-            $("#upstream-table, #shared-proteins-table").DataTable({
-                pageLength: 10,
-                order: [],
-                layout: {
-                    bottomStart: {
-                        pageLength: {
-                            menu: [10, 25, 50, 75, 100],
-                        }
-                    },
-                    topStart: {
-                        buttons: [
-                            {
-                                extend: 'csv',
-                                text: 'Download full table as CSV',
-                                exportOptions: {
-                                    modifier: {
-                                        search: 'none'
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            });
         });
     </script>
 {% endblock %}
