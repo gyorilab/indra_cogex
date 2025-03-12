@@ -316,10 +316,10 @@ def get_go_terms_for_source(source_hgnc_id):
 def shared_upstream_bioentities_from_targets(
     stmts_by_protein_df: pd.DataFrame,
     target_genes: List[str],
-    *,
-    client,
     q_value_threshold: float = 0.05,
-    max_regulators: int = 50
+    max_regulators: int = 50,
+    *,
+    client
 ) -> Tuple[List[str], pd.DataFrame]:
     """Get upstream molecules intersecting with bioentities.
 
@@ -359,11 +359,6 @@ def shared_upstream_bioentities_from_targets(
             upstream_df.loc[numeric_without_prefix, 'curie'] = 'hgnc:' + upstream_df.loc[
                 numeric_without_prefix, 'curie']
 
-            # Log the corrections
-            prefix_count = numeric_without_prefix.sum()
-            if prefix_count > 0:
-                logger.info(f"Added namespace prefix to {prefix_count} CURIEs")
-
     # Find shared proteins
     shared_proteins = list(set(upstream_df["name"].values).intersection(
         set(stmts_by_protein_df["name"].values)))
@@ -371,32 +366,19 @@ def shared_upstream_bioentities_from_targets(
     if shared_proteins:
         # Get the entities data for these proteins
         shared_entities = upstream_df[upstream_df.name.isin(shared_proteins)]
-        logger.info(f"Found {len(shared_proteins)} shared upstream bioentities")
 
-        # Apply statistical filtering
-        if 'q' in shared_entities.columns:
-            significant_entities = shared_entities[shared_entities.q <= q_value_threshold]
-            logger.info(
-                f"After filtering, {len(significant_entities)} regulators are significant at q≤{q_value_threshold}")
-        else:
-            significant_entities = shared_entities
+        # Apply statistical filtering (assuming 'q' column always exists)
+        significant_entities = shared_entities[shared_entities.q <= q_value_threshold]
 
-        # Sort by significance
-        if 'q' in significant_entities.columns:
-            sorted_entities = significant_entities.sort_values('q')
-        elif 'p' in significant_entities.columns:
-            sorted_entities = significant_entities.sort_values('p')
-        else:
-            sorted_entities = significant_entities
+        # Sort by significance (assuming 'q' column always exists)
+        sorted_entities = significant_entities.sort_values('q')
 
         # Limit to top N regulators
         limited_entities = sorted_entities.head(max_regulators)
         limited_proteins = limited_entities.name.tolist()
 
-        logger.info(f"Returning top {len(limited_proteins)} regulators")
         return limited_proteins, limited_entities
     else:
-        logger.info("No shared upstream bioentities found")
         return [], pd.DataFrame()
 
 
