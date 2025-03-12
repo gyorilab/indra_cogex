@@ -126,7 +126,7 @@ def search():
         evidence_count = {h: sum(v.values()) for h, v in source_counts.items()}
         return render_statements(
             stmts=statements,
-            evidence_count=evidence_count,
+            evidence_counts=evidence_count,
             source_counts_dict=source_counts
         )
 
