@@ -110,7 +110,7 @@ def search():
         mesh_terms = (source_db, source_id)
     # Fetch and display statements
     if agent or other_agent or rel_types:
-        statements, evidence_count = get_statements(
+        statements, source_counts = get_statements(
             agent=agent,
             agent_role=agent_role,
             other_agent=other_agent,
@@ -121,9 +121,14 @@ def search():
             mesh_term=mesh_terms,
             limit=1000,
             evidence_limit=1000,
-            return_evidence_counts=True,
+            return_source_counts=True,
         )
-        return render_statements(stmts=statements, evidence_count=evidence_count)
+        evidence_count = {h: sum(v.values()) for h, v in source_counts.items()}
+        return render_statements(
+            stmts=statements,
+            evidence_count=evidence_count,
+            source_counts_dict=source_counts
+        )
 
     # Render the form page
     return render_template(

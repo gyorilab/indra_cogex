@@ -1250,7 +1250,7 @@ def get_statements(
     include_child_terms: Optional[bool] = True,
     limit: Optional[int] = 10,
     evidence_limit: Optional[int] = None,
-    return_evidence_counts: bool = False,
+    return_source_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
@@ -1281,8 +1281,8 @@ def get_statements(
         The maximum number of statements to return.
     evidence_limit : Optional[int], default: None
         The optional maximum number of evidence entries to retrieve per statement.
-    return_evidence_counts : bool, default: False
-        Whether to include a mapping of statement hash to evidence count in the results.
+    return_source_counts : bool, default: False
+        Whether to include a mapping of statement hash to source counts in the results.
 
     Returns
     -------
@@ -1395,19 +1395,15 @@ def get_statements(
             mesh_terms=mesh_all_term,
         )
 
-    if not return_evidence_counts:
+    if not return_source_counts:
         return stmts
 
-    evidence_counts = {
-        stmt.get_hash(): (
-            min(rel.data["evidence_count"], evidence_limit)
-            if evidence_limit is not None
-            else rel.data["evidence_count"]
-        )
-        for rel, stmt in zip(flattened_rels, stmts)
+    source_counts = {
+        int(rel.data["stmt_hash"]): json.loads(rel.data["source_counts"])
+        for rel in flattened_rels
     }
 
-    return stmts, evidence_counts
+    return stmts, source_counts
 
 
 @autoclient()
