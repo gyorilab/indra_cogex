@@ -312,7 +312,8 @@ FUNCTION_CATEGORIES = {
             "discrete_analysis",
             "signed_analysis",
             "continuous_analysis",
-            "metabolite_discrete_analysis"
+            "metabolite_discrete_analysis",
+            "kinase_analysis"
         ]
     },
     'subnetwork': {
@@ -406,6 +407,13 @@ examples_dict = {
     # Example for /gene/discrete
     "gene_list": fields.List(fields.String, example=EXAMPLE_GENE_IDS),
     "background_gene_list": fields.List(fields.String, example=[]),
+    "phosphosite_list": fields.List(fields.String, example=[
+        "RPS6KA1-S363", "RPS3-T42", "RPS6KA3-Y529",
+        "RPS6KB1-S434", "RPS6-S244", "RPS6-S236",
+        "RPA2-S29", "RPS6KB1-T412", "RNF8-T198",
+        "ROCK2-Y722", "BDKRB2-Y177", "BECN1-Y333"
+    ]),
+    "background": fields.List(fields.String, example=[]),
     # Examples for positive_genes and negative_genes for /gene/signed
     "positive_genes": fields.List(fields.String, example=EXAMPLE_POSITIVE_HGNC_IDS),
     "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
@@ -477,7 +485,7 @@ module_functions = (
     [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta", "indra_mediated_subnetwork",
                                  "indra_subnetwork_tissue", "indra_subnetwork_go"]] +
     [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis"]]
+    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis", "kinase_analysis"]]
 )
 
 # Maps function names to the actual functions
