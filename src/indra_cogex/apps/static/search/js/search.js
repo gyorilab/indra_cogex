@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         source_db: result.term.db,
                         source_id: result.term.id,
                     });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
                     agentSelect.appendChild(option);
                 });
                 agentSelect.style.display = 'block';
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         source_db: result.term.db,
                         source_id: result.term.id,
                     });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
                     otherAgentSelect.appendChild(option);
                 });
 
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         source_db: result.term.db,
                         source_id: result.term.id,
                     });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
                     meshSelect.appendChild(option);
                 });
 

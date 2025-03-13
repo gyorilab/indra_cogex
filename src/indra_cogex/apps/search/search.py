@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement, Phosphorylation, IncreaseAmount, DecreaseAmount
+from indra.statements.validate import assert_valid_id, BioregistryValidator
 from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
@@ -70,12 +71,22 @@ def search():
 
     # GET Request: Extract query parameters and fetch statements
     agent = request.args.get("agent")
+
+    #Check if the agent is in CURIE form
+    if agent:
+        agent = check_and_convert(agent)
+
     agent_tuple = request.args.get("agent_tuple")
     if agent_tuple:
         source_db, source_id = json.loads(agent_tuple)
         agent = (source_db, source_id)
 
     other_agent = request.args.get("other_agent")
+
+    # Check if the other_agent is in CURIE form
+    if other_agent:
+        other_agent = check_and_convert(other_agent)
+
     other_agent_tuple = request.args.get("other_agent_tuple")
     if other_agent_tuple:
         source_db, source_id = json.loads(other_agent_tuple)
@@ -88,14 +99,18 @@ def search():
     other_role = request.args.get("other_role")
     paper_id = request.args.get("paper_id")
     mesh_terms = request.args.get("mesh_terms")
+
+    # Check if the mesh_terms is in CURIE form
+    if mesh_terms:
+        mesh_terms = check_and_convert(mesh_terms)
+
     mesh_tuple = request.args.get("mesh_tuple")
     if mesh_tuple:
         source_db, source_id = json.loads(mesh_tuple)
         mesh_terms = (source_db, source_id)
-
     # Fetch and display statements
     if agent or other_agent or rel_types:
-        statements, evidence_count = get_statements(
+        statements, source_counts = get_statements(
             agent=agent,
             agent_role=agent_role,
             other_agent=other_agent,
@@ -106,9 +121,14 @@ def search():
             mesh_term=mesh_terms,
             limit=1000,
             evidence_limit=1000,
-            return_evidence_counts=True,
+            return_source_counts=True,
         )
-        return render_statements(stmts=statements, evidence_count=evidence_count)
+        evidence_count = {h: sum(v.values()) for h, v in source_counts.items()}
+        return render_statements(
+            stmts=statements,
+            evidence_counts=evidence_count,
+            source_counts_dict=source_counts
+        )
 
     # Render the form page
     return render_template(
@@ -136,6 +156,22 @@ def gilda_ground_endpoint():
     except Exception as e:
         return {"error": str(e)}, 500
 
+def is_valid_curie(namespace, identifier, validator):
+    """Check if a given namespace is valid"""
+    try:
+        assert_valid_id(namespace, identifier, validator=validator)
+        return True
+    except ValueError:
+        return False
+
+def check_and_convert(text):
+    if ":" in text:
+        validator = BioregistryValidator()
+        curie_validate_namespace, curie_validate_id = text.split(":", 1)
+        if is_valid_curie(curie_validate_namespace, curie_validate_id, validator):
+            result = (curie_validate_namespace, curie_validate_id)
+            return result
+    return text
 
 def gilda_ground(agent_text):
     try:

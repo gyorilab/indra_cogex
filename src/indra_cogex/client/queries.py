@@ -928,6 +928,7 @@ def get_evidences_for_stmt_hashes(
     client: Neo4jClient,
     limit: Optional[str] = None,
     remove_medscan: bool = True,
+    mesh_terms: Optional[List[str]] = None,
 ) -> Dict[int, List[Evidence]]:
     """Return the matching evidence objects for the given statement hashes.
 
@@ -941,6 +942,8 @@ def get_evidences_for_stmt_hashes(
         The optional maximum number of evidences returned for each statement hash
     remove_medscan :
         If True, remove the MedScan evidence from the results.
+    mesh_terms:
+        A list of MeSH term IDs to filter evidence by linked publications.
 
     Returns
     -------
@@ -949,16 +952,29 @@ def get_evidences_for_stmt_hashes(
         statement hashes.
     """
     limit_box = "" if limit is None else f"[..{limit}]"
+
+    mesh_filter, mesh_pattern = "", ""
+    if mesh_terms:
+        mesh_filter = "AND mesh_term.id IN $mesh_terms"
+        mesh_pattern = "-[:has_citation]->(pub:Publication)-[:annotated_with]->(mesh_term:BioEntity)"
+
     query = f"""\
-        MATCH (n:Evidence)
+        MATCH (n:Evidence){mesh_pattern}
         WHERE
             n.stmt_hash IN $stmt_hashes
-            AND n.source_api <> $source_api
+            AND n.source_api <> $source_api {mesh_filter}
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
-    result = client.query_tx(
-        query, stmt_hashes=stmt_hashes, source_api="medscan"
-    )
+
+    query_params = {
+        "stmt_hashes": list(stmt_hashes),
+        "source_api": "medscan",
+    }
+    if mesh_terms:
+        query_params["mesh_terms"] = mesh_terms
+
+    result = client.query_tx(query, **query_params)
+
     return {
         stmt_hash: _filter_out_medscan_evidence(
             (json.loads(evidence_str) for evidence_str in evidences),
@@ -1234,7 +1250,7 @@ def get_statements(
     include_child_terms: Optional[bool] = True,
     limit: Optional[int] = 10,
     evidence_limit: Optional[int] = None,
-    return_evidence_counts: bool = False,
+    return_source_counts: bool = False,
 ) -> Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
     """Return the statements based on optional constraints on relationship type and source(s).
 
@@ -1265,8 +1281,8 @@ def get_statements(
         The maximum number of statements to return.
     evidence_limit : Optional[int], default: None
         The optional maximum number of evidence entries to retrieve per statement.
-    return_evidence_counts : bool, default: False
-        Whether to include a mapping of statement hash to evidence count in the results.
+    return_source_counts : bool, default: False
+        Whether to include a mapping of statement hash to source counts in the results.
 
     Returns
     -------
@@ -1376,21 +1392,18 @@ def get_statements(
             stmts,
             client=client,
             evidence_limit=evidence_limit,
+            mesh_terms=mesh_all_term,
         )
 
-    if not return_evidence_counts:
+    if not return_source_counts:
         return stmts
 
-    evidence_counts = {
-        stmt.get_hash(): (
-            min(rel.data["evidence_count"], evidence_limit)
-            if evidence_limit is not None
-            else rel.data["evidence_count"]
-        )
-        for rel, stmt in zip(flattened_rels, stmts)
+    source_counts = {
+        int(rel.data["stmt_hash"]): json.loads(rel.data["source_counts"])
+        for rel in flattened_rels
     }
 
-    return stmts, evidence_counts
+    return stmts, source_counts
 
 
 @autoclient()
@@ -1400,6 +1413,7 @@ def enrich_statements(
     client: Neo4jClient,
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     evidence_limit: Optional[int] = None,
+    mesh_terms: Optional[List[str]] = None,
 ) -> List[Statement]:
     """Add additional evidence to the statements using the evidence graph."""
     # If the evidence_map is provided, check if it covers all the hashes
@@ -1417,6 +1431,7 @@ def enrich_statements(
             missing_stmt_hashes,
             client=client,
             limit=evidence_limit,
+            mesh_terms= mesh_terms,
         )
         evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(

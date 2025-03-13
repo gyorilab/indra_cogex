@@ -372,7 +372,7 @@ def test_get_stmts_by_hashes():
 @pytest.mark.nonpublic
 def test_get_statements():
     client = _get_client()
-    stmts, evidence_map = get_statements(
+    stmts, source_counts = get_statements(
         agent="MEK",
         other_agent="ERK",
         agent_role='subject',
@@ -384,15 +384,15 @@ def test_get_statements():
         client=client,
         limit=1000,
         evidence_limit=500,
-        return_evidence_counts=True
+        return_source_counts=True
     )
     assert stmts
     assert all(isinstance(stmt, Statement) for stmt in stmts)
-    assert evidence_map
+    assert source_counts
     stmt_hashes = {stmt.get_hash() for stmt in stmts}
-    assert stmt_hashes == evidence_map.keys()
-    for stmt_hash, evidence_count in evidence_map.items():
-        assert evidence_count <= 500
+    assert stmt_hashes == source_counts.keys()
+    for stmt_hash, sc in source_counts.items():
+        assert all(v > 0 for v in sc.values())
 
 
 @pytest.mark.nonpublic
