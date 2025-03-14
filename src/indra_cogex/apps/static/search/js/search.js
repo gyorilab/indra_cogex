@@ -1,22 +1,32 @@
 document.addEventListener('DOMContentLoaded', function () {
         const agentNameInput = document.getElementById('agent-name');
+        const agentDisplay = document.getElementById('agent-display');
+        const agentSelect = document.getElementById('agent-select');
+        const groundAgentButton = document.getElementById('ground-agent-button');
+        const cancelAgentButton = document.getElementById('cancel-agent-button');
+
         const otherAgentInput = document.getElementById('other-agent-name');
+        const otherAgentDisplay = document.getElementById('other-agent-display');
+        const otherAgentSelect = document.getElementById('other-agent-select');
+        const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
+        const cancelOtherAgentButton = document.getElementById('cancel-other-agent-button');
         const otherAgentLabeltext = document.getElementById('other-agent-text');
-        const roleButtons = document.querySelectorAll('.btn-role');
+        const otherAgentContainer = document.getElementById('other-agent-container');
+
+        const meshNameInput = document.getElementById('mesh-name');
+        const meshDisplay = document.getElementById('mesh-display');
+        const meshSelect = document.getElementById('mesh-select');
+        const groundMeshButton = document.getElementById('ground-mesh-button');
+        const cancelMeshButton = document.getElementById('cancel-mesh-button');
+
         const agentRoleInput = document.getElementById('agent-role');
         const otherAgentRoleInput = document.getElementById('other-agent-role');
-        const otherAgentContainer = document.getElementById('other-agent-container');
-        const agentSelect = document.getElementById('agent-select');
-        const otherAgentSelect = document.getElementById('other-agent-select');
-        const meshSelect = document.getElementById('mesh-select');
-        const meshNameInput = document.getElementById('mesh-name');
+
+        const roleButtons = document.querySelectorAll('.btn-role');
+
         const stmtTypes = JSON.parse(document.getElementById('stmt-types-json').textContent);
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const RelhiddenInput = document.getElementById('rel-type-hidden');
-        const groundAgentButton = document.getElementById('ground-agent-button');
-        const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
-
-        const groundMeshButton = document.getElementById('ground-mesh-button');
 
         const exampleText1 = document.getElementById('clickable-text-example1');
         const exampleText2 = document.getElementById('clickable-text-example2');
@@ -40,110 +50,110 @@ document.addEventListener('DOMContentLoaded', function () {
         firstButton.click();
         }
 
+        async function groundEntity(inputElement, displayElement, selectElement, groundButton, cancelButton, tupleId, entityType) {
+            const entityText = inputElement.value.trim();
+            if (!entityText) {
+                alert(`Please enter a ${entityType} name to ground.`);
+                return;
+            }
 
-        groundAgentButton.addEventListener('click', async function () {
-            const agentText = agentNameInput.value.trim();
-            if (event.target.closest('.tooltip-box')) {
-                return;
-            }
-            if (!agentText) {
-                alert("Please enter an agent name to ground.");
-                return;
-            }
             try {
                 const response = await fetch('/search/gilda_ground', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ agent: agentText }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent: entityText }),
                 });
-                if (!response.ok) throw new Error('Failed to ground the agent.');
+
+                if (!response.ok) throw new Error(`Failed to ground the ${entityType}.`);
                 const data = await response.json();
 
                 if (!data || data.length === 0) {
-                    alert("No grounding results found.");
+                    alert(`No grounding results found for ${entityType}.`);
                     return;
                 }
-                agentSelect.innerHTML = '';
-                const placeholderOption = document.createElement('option');
-                placeholderOption.textContent = 'Grounded Results...';
-                placeholderOption.value = '';
-                placeholderOption.hidden = true; // non-selectable
-                placeholderOption.selected = true; // Show as default selected
-                agentSelect.appendChild(placeholderOption);
-                data.forEach(result => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify({
-                        source_db: result.term.db,
-                        source_id: result.term.id,
+
+                selectElement.innerHTML = '';
+
+                if (data.length === 1) {
+                    // Single result: Hide input, show display
+                    const singleResult = data[0];
+                    inputElement.style.display = 'none';
+                    displayElement.textContent = `${singleResult.term.entry_name} (${singleResult.term.db}:${singleResult.term.id}, Score: ${singleResult.score.toFixed(2)})`;
+                    displayElement.style.display = 'inline-block';
+                    document.getElementById(tupleId).value = JSON.stringify([singleResult.term.db, singleResult.term.id]);
+                    selectElement.style.display = 'none';
+                } else {
+                    // Multiple results: Create dropdown
+                    data.forEach((result, index) => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify({
+                            source_db: result.term.db,
+                            source_id: result.term.id,
+                        });
+                        option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
+                        if (index === 0) {
+                            option.selected = true;
+                            document.getElementById(tupleId).value = JSON.stringify([result.term.db, result.term.id]);
+                        }
+                        selectElement.appendChild(option);
                     });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
-                    agentSelect.appendChild(option);
-                });
-                agentSelect.style.display = 'block';
+                    selectElement.style.display = 'block';
+                    inputElement.style.display = 'none';
+                }
+
+                groundButton.style.display = 'none';
+                cancelButton.style.display = 'inline-block';
+
             } catch (error) {
-                console.error("Error grounding agent:", error);
-                alert("An error occurred while grounding the agent.");
+                console.error(`Error grounding ${entityType}:`, error);
+                alert(`An error occurred while grounding the ${entityType}.`);
             }
+        }
+
+        function cancelGrounding(inputElement, displayElement, selectElement, groundButton, cancelButton, tupleId) {
+            inputElement.value = '';
+            inputElement.style.display = 'inline-block';
+            displayElement.textContent = '';
+            displayElement.style.display = 'none';
+
+            selectElement.innerHTML = '';
+            selectElement.style.display = 'none';
+            document.getElementById(tupleId).value = '';
+
+            groundButton.style.display = 'inline-block';
+            cancelButton.style.display = 'none';
+        }
+
+        groundAgentButton.addEventListener('click', function () {
+            groundEntity(agentNameInput, agentDisplay, agentSelect, groundAgentButton, cancelAgentButton, 'agent-tuple', "Agent");
         });
 
+        cancelAgentButton.addEventListener('click', function () {
+            cancelGrounding(agentNameInput, agentDisplay, agentSelect, groundAgentButton, cancelAgentButton, 'agent-tuple');
+        });
+
+        groundOtherAgentButton.addEventListener('click', function () {
+            groundEntity(otherAgentInput, otherAgentDisplay, otherAgentSelect, groundOtherAgentButton, cancelOtherAgentButton, 'other-agent-tuple', "Other Agent");
+        });
+
+        cancelOtherAgentButton.addEventListener('click', function () {
+            cancelGrounding(otherAgentInput, otherAgentDisplay, otherAgentSelect, groundOtherAgentButton, cancelOtherAgentButton, 'other-agent-tuple');
+        });
+
+        groundMeshButton.addEventListener('click', function () {
+            groundEntity(meshNameInput, meshDisplay, meshSelect, groundMeshButton, cancelMeshButton, 'mesh-tuple', "Mesh");
+        });
+
+        cancelMeshButton.addEventListener('click', function () {
+            cancelGrounding(meshNameInput, meshDisplay, meshSelect, groundMeshButton, cancelMeshButton, 'mesh-tuple');
+        });
+
+        /* ========================== DROPDOWN CHANGE EVENT LISTENERS ========================== */
         agentSelect.addEventListener('change', function () {
             const selectedOption = agentSelect.options[agentSelect.selectedIndex];
             if (selectedOption) {
                 const { source_db, source_id } = JSON.parse(selectedOption.value);
                 document.getElementById('agent-tuple').value = JSON.stringify([source_db, source_id]);
-            }
-        });
-
-        groundOtherAgentButton.addEventListener('click', async function () {
-            const otherAgentText = otherAgentInput.value.trim();
-            if (event.target.closest('.tooltip-box')) {
-                return;
-            }
-            if (!otherAgentText) {
-                alert("Please enter an Other Agent name to ground.");
-                return;
-            }
-            try {
-                const response = await fetch('/search/gilda_ground', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ agent: otherAgentText }),
-                });
-                if (!response.ok) throw new Error('Failed to ground the Other Agent.');
-                const data = await response.json();
-
-                if (!data || data.length === 0) {
-                    alert("No grounding results found.");
-                    return;
-                }
-
-                otherAgentSelect.innerHTML = '';
-                const placeholderOption = document.createElement('option');
-                placeholderOption.textContent = 'Grounded Results...';
-                placeholderOption.value = '';
-                placeholderOption.hidden = true; // non-selectable
-                placeholderOption.selected = true; // Show as default selected
-                otherAgentSelect.appendChild(placeholderOption);
-
-                data.forEach(result => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify({
-                        source_db: result.term.db,
-                        source_id: result.term.id,
-                    });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
-                    otherAgentSelect.appendChild(option);
-                });
-
-                // Show the dropdown
-                otherAgentSelect.style.display = 'block';
-            } catch (error) {
-                console.error("Error grounding Other Agent:", error);
-                alert("An error occurred while grounding the Other Agent.");
             }
         });
 
@@ -154,6 +164,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('other-agent-tuple').value = JSON.stringify([source_db, source_id]);
             }
         });
+
+        meshSelect.addEventListener('change', function () {
+            const selectedOption = meshSelect.options[meshSelect.selectedIndex];
+            if (selectedOption) {
+                const { source_db, source_id } = JSON.parse(selectedOption.value);
+                document.getElementById('mesh-tuple').value = JSON.stringify([source_db, source_id]);
+            }
+        });
+
+
 
         // Role Button Click Handlers
         roleButtons.forEach(button => {
@@ -211,160 +231,81 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-        exampleText1.addEventListener('click', function () {
+        function resetExampleValues(agentText, otherAgentText, role, selectedChoiceValues) {
+            // Clear selected items in Choices.js
             choices.removeActiveItems();
-            agentNameInput.value = '';
-            otherAgentInput.value = '';
-            // Update agent and other agent
-            agentNameInput.value = 'DUSP1';
-            otherAgentInput.value = 'MAPK1';
 
-            // Update roles (select the second button)
+            // Reset agent and other agent inputs
+            agentNameInput.value = agentText || '';
+            otherAgentInput.value = otherAgentText || '';
+
+            // Reset roles and button states
             roleButtons.forEach(button => button.classList.remove('active'));
-            const subjectButton = document.getElementById('btn-subject');
-            subjectButton.classList.add('active');
-            agentRoleInput.value = 'subject';
-            otherAgentRoleInput.value = 'object';
+            const targetRoleButton = document.getElementById(`btn-${role}`);
+            if (targetRoleButton) targetRoleButton.classList.add('active');
+
+            // Update agent roles
+            agentRoleInput.value = role === 'subject' ? 'subject' : 'object';
+            otherAgentRoleInput.value = role === 'subject' ? 'object' : 'subject';
+
+            // Update labels and container visibility
             otherAgentLabeltext.textContent = 'Other Agent';
             otherAgentContainer.style.display = 'block';
             otherAgentContainer.style.marginTop = '10px';
 
-        RelhiddenInput.value = JSON.stringify(selectedValues);
+            // Update Choices.js with selected values
+            if (selectedChoiceValues && selectedChoiceValues.length > 0) {
+                choices.setChoiceByValue(selectedChoiceValues);
+                RelhiddenInput.value = JSON.stringify(selectedChoiceValues);
+            }
 
+            // Hide the cancel button and show the ground button
+            cancelAgentButton.style.display = 'none';
+            groundAgentButton.style.display = 'inline-block';
+            cancelOtherAgentButton.style.display = 'none';
+            groundOtherAgentButton.style.display = 'inline-block';
+            cancelMeshButton.style.display = 'none';
+            groundMeshButton.style.display = 'inline-block';
+
+            // Show the text input
+            agentNameInput.style.display = 'inline-block';
+            agentDisplay.style.display = 'none';
+            otherAgentInput.style.display = 'inline-block';
+            otherAgentDisplay.style.display = 'none';
+            meshNameInput.style.display = 'inline-block';
+            meshDisplay.style.display = 'none';
+
+            // Hide grounding result dropdowns
+            agentSelect.style.display = 'none';
+            otherAgentSelect.style.display = 'none';
+            meshSelect.style.display = 'none';
+
+            // Empty the tuple values
+            document.getElementById('agent-tuple').value = '';
+            document.getElementById('other-agent-tuple').value = '';
+            document.getElementById('mesh-tuple').value = '';
+        }
+
+        exampleText1.addEventListener('click', function () {
+            resetExampleValues('DUSP1', 'MAPK1', 'subject', []);
         });
 
-
         exampleText2.addEventListener('click', function () {
-            choices.removeActiveItems();
-            agentNameInput.value = '';
-            otherAgentInput.value = '';
-            agentNameInput.value = 'CDK12';
-            roleButtons.forEach(button => button.classList.remove('active'));
-            const subjectButton = document.getElementById('btn-subject');
-            subjectButton.classList.add('active');
-            agentRoleInput.value = 'subject';
-            otherAgentContainer.style.display = 'block';
-            otherAgentContainer.style.marginTop = '10px';
-        choices.setChoiceByValue('Phosphorylation');
-        const selectedValues = ['Phosphorylation'];
-        RelhiddenInput.value = JSON.stringify(selectedValues);
-
+            resetExampleValues('CDK12', '', 'subject', ['Phosphorylation']);
         });
 
         exampleText3.addEventListener('click', function () {
-            choices.removeActiveItems();
-            agentNameInput.value = '';
-            otherAgentInput.value = '';
-            agentNameInput.value = 'MTOR';
-            roleButtons.forEach(button => button.classList.remove('active'));
-            const objectButton = document.getElementById('btn-object');
-            objectButton.classList.add('active');
-            agentRoleInput.value = 'object';
-            otherAgentContainer.style.display = 'block';
-            otherAgentContainer.style.marginTop = '10px';
-        choices.setChoiceByValue('Inhibition');
-        const selectedValues = ['Inhibition'];
-        RelhiddenInput.value = JSON.stringify(selectedValues);
+            resetExampleValues('MTOR', '', 'object', ['Inhibition']);
         });
 
         exampleText4.addEventListener('click', function () {
-            choices.removeActiveItems();
-            agentNameInput.value = '';
-            otherAgentInput.value = '';
-            agentNameInput.value = 'PIK3CA';
-            roleButtons.forEach(button => button.classList.remove('active'));
-            const objectButton = document.getElementById('btn-either');
-            objectButton.classList.add('active');
-            agentRoleInput.value = null;
-            otherAgentContainer.style.display = 'block';
-            otherAgentContainer.style.marginTop = '10px';
-        RelhiddenInput.value = JSON.stringify(selectedValues);
+            resetExampleValues('PIK3CA', '', 'either', []);
         });
 
         exampleText5.addEventListener('click', function () {
-            choices.removeActiveItems();
-            agentNameInput.value = '';
-            otherAgentInput.value = '';
-            agentNameInput.value = 'seliciclib';
-            roleButtons.forEach(button => button.classList.remove('active'));
-            const subjectButton = document.getElementById('btn-subject');
-            subjectButton.classList.add('active');
-            agentRoleInput.value = 'subject';
-            otherAgentContainer.style.display = 'block';
-            otherAgentContainer.style.marginTop = '10px';
-        choices.setChoiceByValue('Inhibition');
-        const selectedValues = ['Inhibition'];
-        RelhiddenInput.value = JSON.stringify(selectedValues);
+            resetExampleValues('seliciclib', '', 'subject', ['Inhibition']);
         });
 
-        groundMeshButton.addEventListener('click', async function () {
-            const meshText = meshNameInput.value.trim();
-            if (event.target.closest('.tooltip-box')) {
-                return;
-            }
-            if (!meshText) {
-                alert("Please enter a Mesh name to ground.");
-                return;
-            }
-            try {
-                const response = await fetch('/search/gilda_ground', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ agent: meshText }),
-                });
-                if (!response.ok) throw new Error('Failed to ground the Mesh.');
-                const data = await response.json();
-
-                if (!data || data.length === 0) {
-                    alert("No grounding results found.");
-                    return;
-                }
-
-                const meshResults = data.filter(result => result.term.db === "MESH");
-                if (meshResults.length === 0) {
-                    alert("No Mesh grounding results found.");
-                    return;
-                }
-
-                meshSelect.innerHTML = '';
-                const placeholderOption = document.createElement('option');
-                placeholderOption.textContent = 'Grounded Results...';
-                placeholderOption.value = '';
-                placeholderOption.hidden = true; // non-selectable
-                placeholderOption.selected = true; // Show as default selected
-                meshSelect.appendChild(placeholderOption);
-
-                meshResults.forEach(result => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify({
-                        source_db: result.term.db,
-                        source_id: result.term.id,
-                    });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
-                    meshSelect.appendChild(option);
-                });
-
-                // Show the dropdown
-                meshSelect.style.display = 'block';
-            } catch (error) {
-                console.error("Error grounding Mesh:", error);
-                alert("An error occurred while grounding the Mesh.");
-            }
-        });
-
-        meshSelect.addEventListener('change', function () {
-            const selectedOption = meshSelect.options[meshSelect.selectedIndex];
-            if (selectedOption) {
-                const { source_db, source_id } = JSON.parse(selectedOption.value);
-
-                meshNameInput.value = selectedOption.textContent;
-                meshNameInput.readOnly = true;
-
-                document.getElementById('mesh-tuple').value = JSON.stringify([source_db, source_id]);
-            }
-        });
 
 
         // Show/hide tooltip when the icon is clicked
