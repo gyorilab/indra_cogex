@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         groundAgentButton.addEventListener('click', async function () {
+            // Prevent clicks on the tooltip from triggering
+            if (event.target.closest('.tooltip-box')) return;
+
             const agentText = agentNameInput.value.trim();
             if (event.target.closest('.tooltip-box')) {
                 return;
@@ -66,22 +69,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 agentSelect.innerHTML = '';
-                const placeholderOption = document.createElement('option');
-                placeholderOption.textContent = 'Grounded Results...';
-                placeholderOption.value = '';
-                placeholderOption.hidden = true; // non-selectable
-                placeholderOption.selected = true; // Show as default selected
-                agentSelect.appendChild(placeholderOption);
-                data.forEach(result => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify({
-                        source_db: result.term.db,
-                        source_id: result.term.id,
+                if (data.length === 1) {
+                    const singleResult = data[0];
+                    agentNameInput.value = `${singleResult.term.entry_name} (${singleResult.term.db}:${singleResult.term.id}, Score: ${singleResult.score.toFixed(2)})`;
+                    document.getElementById('agent-tuple').value = JSON.stringify([singleResult.term.db, singleResult.term.id]);
+                    agentSelect.style.display = 'none';
+                }
+                // Multiple results => build the dropdown
+                else {
+                    data.forEach((result, index) => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify({
+                            source_db: result.term.db,
+                            source_id: result.term.id,
+                        });
+                        option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
+                        // The first option will be selected by default
+                        if (index === 0) {
+                            option.selected = true;
+                            // Fill the hidden input with the first result
+                            document.getElementById('agent-tuple').value = JSON.stringify([result.term.db, result.term.id]);
+                        }
+                        agentSelect.appendChild(option);
                     });
-                    option.textContent = `${result.term.entry_name} (${result.term.db}:${result.term.id}, Score: ${result.score.toFixed(2)})`;
-                    agentSelect.appendChild(option);
-                });
-                agentSelect.style.display = 'block';
+                    agentSelect.style.display = 'block';
+                    agentNameInput.style.display = 'none'
+                }
+//                const placeholderOption = document.createElement('option');
+//                placeholderOption.textContent = 'Grounded Results...';
+//                placeholderOption.value = '';
+//                placeholderOption.hidden = true; // non-selectable
+//                placeholderOption.selected = true; // Show as default selected
+//                agentSelect.appendChild(placeholderOption);
+//                data.forEach(result => {
+//                    const option = document.createElement('option');
+//                    option.value = JSON.stringify({
+//                        source_db: result.term.db,
+//                        source_id: result.term.id,
+//                    });
+//                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
+//                    agentSelect.appendChild(option);
+//                });
+//                agentSelect.style.display = 'block';
+
             } catch (error) {
                 console.error("Error grounding agent:", error);
                 alert("An error occurred while grounding the agent.");
