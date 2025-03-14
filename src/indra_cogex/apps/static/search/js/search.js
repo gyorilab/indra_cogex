@@ -1,29 +1,32 @@
 document.addEventListener('DOMContentLoaded', function () {
         const agentNameInput = document.getElementById('agent-name');
         const agentDisplay = document.getElementById('agent-display');
-        const otherAgentDisplay = document.getElementById('other-agent-display');
-        const meshDisplay = document.getElementById('mesh-display');
+        const agentSelect = document.getElementById('agent-select');
+        const groundAgentButton = document.getElementById('ground-agent-button');
+        const cancelAgentButton = document.getElementById('cancel-agent-button');
 
         const otherAgentInput = document.getElementById('other-agent-name');
+        const otherAgentDisplay = document.getElementById('other-agent-display');
+        const otherAgentSelect = document.getElementById('other-agent-select');
+        const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
+        const cancelOtherAgentButton = document.getElementById('cancel-other-agent-button');
         const otherAgentLabeltext = document.getElementById('other-agent-text');
-        const roleButtons = document.querySelectorAll('.btn-role');
+        const otherAgentContainer = document.getElementById('other-agent-container');
+
+        const meshNameInput = document.getElementById('mesh-name');
+        const meshDisplay = document.getElementById('mesh-display');
+        const meshSelect = document.getElementById('mesh-select');
+        const groundMeshButton = document.getElementById('ground-mesh-button');
+        const cancelMeshButton = document.getElementById('cancel-mesh-button');
+
         const agentRoleInput = document.getElementById('agent-role');
         const otherAgentRoleInput = document.getElementById('other-agent-role');
-        const otherAgentContainer = document.getElementById('other-agent-container');
-        const agentSelect = document.getElementById('agent-select');
-        const otherAgentSelect = document.getElementById('other-agent-select');
-        const meshSelect = document.getElementById('mesh-select');
-        const meshNameInput = document.getElementById('mesh-name');
+
+        const roleButtons = document.querySelectorAll('.btn-role');
+
         const stmtTypes = JSON.parse(document.getElementById('stmt-types-json').textContent);
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const RelhiddenInput = document.getElementById('rel-type-hidden');
-        const groundAgentButton = document.getElementById('ground-agent-button');
-        const cancelAgentButton = document.getElementById('cancel-agent-button');
-        const cancelOtherAgentButton = document.getElementById('cancel-other-agent-button');
-        const cancelMeshButton = document.getElementById('cancel-mesh-button');
-        const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
-
-        const groundMeshButton = document.getElementById('ground-mesh-button');
 
         const exampleText1 = document.getElementById('clickable-text-example1');
         const exampleText2 = document.getElementById('clickable-text-example2');
