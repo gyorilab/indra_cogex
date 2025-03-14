@@ -1,5 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
         const agentNameInput = document.getElementById('agent-name');
+        const agentDisplay = document.getElementById('agent-display');
+        const otherAgentDisplay = document.getElementById('other-agent-display');
+        const meshDisplay = document.getElementById('mesh-display');
+        const agentDisplay = document.getElementById('agent-display');
+        const otherAgentDisplay = document.getElementById('other-agent-display');
+        const meshDisplay = document.getElementById('mesh-display');
+
         const otherAgentInput = document.getElementById('other-agent-name');
         const otherAgentLabeltext = document.getElementById('other-agent-text');
         const roleButtons = document.querySelectorAll('.btn-role');
@@ -14,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectElement = document.getElementById('choices-multiple-remove-button');
         const RelhiddenInput = document.getElementById('rel-type-hidden');
         const groundAgentButton = document.getElementById('ground-agent-button');
+        const cancelAgentButton = document.getElementById('cancel-agent-button');
+        const cancelOtherAgentButton = document.getElementById('cancel-other-agent-button');
+        const cancelMeshButton = document.getElementById('cancel-mesh-button');
         const groundOtherAgentButton = document.getElementById('ground-other-agent-button');
 
         const groundMeshButton = document.getElementById('ground-mesh-button');
@@ -71,7 +81,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 agentSelect.innerHTML = '';
                 if (data.length === 1) {
                     const singleResult = data[0];
-                    agentNameInput.value = `${singleResult.term.entry_name} (${singleResult.term.db}:${singleResult.term.id}, Score: ${singleResult.score.toFixed(2)})`;
+                    agentNameInput.style.display = 'none'
+                    agentDisplay.textContent = `${singleResult.term.entry_name} (${singleResult.term.db}:${singleResult.term.id}, Score: ${singleResult.score.toFixed(2)})`;
+                    agentDisplay.style.display = 'inline-block';
+                    agentDisplay.readOnly = true;
                     document.getElementById('agent-tuple').value = JSON.stringify([singleResult.term.db, singleResult.term.id]);
                     agentSelect.style.display = 'none';
                 }
@@ -87,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         // The first option will be selected by default
                         if (index === 0) {
                             option.selected = true;
-                            // Fill the hidden input with the first result
                             document.getElementById('agent-tuple').value = JSON.stringify([result.term.db, result.term.id]);
                         }
                         agentSelect.appendChild(option);
@@ -95,22 +107,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     agentSelect.style.display = 'block';
                     agentNameInput.style.display = 'none'
                 }
-//                const placeholderOption = document.createElement('option');
-//                placeholderOption.textContent = 'Grounded Results...';
-//                placeholderOption.value = '';
-//                placeholderOption.hidden = true; // non-selectable
-//                placeholderOption.selected = true; // Show as default selected
-//                agentSelect.appendChild(placeholderOption);
-//                data.forEach(result => {
-//                    const option = document.createElement('option');
-//                    option.value = JSON.stringify({
-//                        source_db: result.term.db,
-//                        source_id: result.term.id,
-//                    });
-//                    option.textContent = `${result.term.entry_name} (${result.term.db}, Score: ${result.score.toFixed(2)})`;
-//                    agentSelect.appendChild(option);
-//                });
-//                agentSelect.style.display = 'block';
+                groundAgentButton.style.display = 'none';
+                cancelAgentButton.style.display = 'inline-block';
 
             } catch (error) {
                 console.error("Error grounding agent:", error);
@@ -124,6 +122,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 const { source_db, source_id } = JSON.parse(selectedOption.value);
                 document.getElementById('agent-tuple').value = JSON.stringify([source_db, source_id]);
             }
+        });
+
+
+        cancelAgentButton.addEventListener('click', function () {
+            agentNameInput.value = '';
+            agentNameInput.style.display = 'inline-block';
+            agentDisplay.textContent = '';
+            agentDisplay.style.display = 'none';
+
+            agentSelect.innerHTML = '';
+            agentSelect.style.display = 'none';
+            document.getElementById('agent-tuple').value = '';
+
+            cancelAgentButton.style.display = 'none';
+            groundAgentButton.style.display = 'inline-block';
+
         });
 
         groundOtherAgentButton.addEventListener('click', async function () {
