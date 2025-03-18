@@ -450,7 +450,11 @@ def indra_upstream_ora(
 
 @autoclient(cache=True)
 def count_phosphosites(*, client: Neo4jClient) -> int:
-    """Count the number of phosphosites in the Neo4j database.
+    """Count the number of unique phosphosites in the Neo4j database.
+
+    A phosphosite is defined as a unique combination of target protein,
+    residue, and position. This function counts distinct phosphosites
+    rather than all phosphorylation statements.
 
     Parameters
     ----------
@@ -460,18 +464,35 @@ def count_phosphosites(*, client: Neo4jClient) -> int:
     Returns
     -------
     :
-        Number of phosphosites
+        Number of unique phosphosites
     """
+    # Query to get all target, residue, position combinations
     query = """\
-        MATCH ()-[r:indra_rel]->()
-        WHERE 
-            r.stmt_type = 'Phosphorylation'
-            AND r.stmt_json CONTAINS '"residue"'
-            AND r.stmt_json CONTAINS '"position"'
-        RETURN count(r) as count
+        MATCH (s:BioEntity)-[r:indra_rel]->(t:BioEntity) 
+        WHERE r.stmt_type = 'Phosphorylation' 
+          AND r.stmt_json CONTAINS '"residue"' 
+          AND r.stmt_json CONTAINS '"position"'
+        RETURN DISTINCT t.id as target_id, 
+                        r.stmt_json as json_string
     """
+
     results = client.query_tx(query)
-    count = results[0][0] if results else 0
+
+    # Process the results to extract unique phosphosites
+    unique_sites = set()
+    import json
+
+    for target_id, json_string in results:
+        try:
+            stmt_json = json.loads(json_string)
+            residue = stmt_json.get("residue")
+            position = stmt_json.get("position")
+            if residue and position:
+                unique_sites.add((target_id, residue, position))
+        except json.JSONDecodeError:
+            continue
+
+    count = len(unique_sites)
 
     if count == 0:
         # Fallback to a minimum value to avoid division by zero
