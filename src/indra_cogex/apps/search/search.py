@@ -11,6 +11,7 @@ from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
+from indra_cogex.analysis.gene_analysis import parse_phosphosite_list
 from indra_cogex.apps.utils import render_statements
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
@@ -669,7 +670,8 @@ def get_kinase_phosphosite_statements(
     kinase_id : str
         The ID of the kinase (e.g., 'hgnc:1722', 'fplx:MAPK')
     phosphosites : List[str]
-        List of phosphosites in the format "gene-site" (e.g., "MAPK1-T202")
+        List of phosphosites in the format "gene-site" (e.g., "MAPK1-T202") or
+        "uniprot-site" (e.g., "P28482-T202")
     minimum_belief : float
         Minimum belief score for relationships
     minimum_evidence : Optional[int]
@@ -695,8 +697,14 @@ def get_kinase_phosphosite_statements(
     else:
         normalized_kinase = kinase_id.lower()
 
-    # Parse phosphosites into gene names
-    gene_names = [ps.split('-')[0] for ps in phosphosites if '-' in ps]
+    # Parse phosphosites and convert UniProt IDs if needed
+    raw_phosphosites = [tuple(site.split("-")) for site in phosphosites if "-" in site]
+    processed_phosphosites, errors = parse_phosphosite_list(raw_phosphosites)
+
+    if errors:
+        logger.debug(f"Some phosphosites could not be parsed: {errors}")
+
+    gene_names = [gene for gene, _ in processed_phosphosites]
 
     if not gene_names:
         return [], {}
