@@ -218,7 +218,7 @@ def test_enzyme_analysis():
 
 
 @pytest.mark.nonpublic
-def test_kinase_analysis_integration():
+def test_kinase_analysis():
     """Integration test for kinase ORA functionality."""
     TEST_PHOSPHOSITES = [
         "RPS6KA1-S363", "RPS3-T42", "RPS6KA3-Y529",  # MAPK Signaling
