@@ -53,6 +53,7 @@ TO_REGULATORS_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="to_regs.pkl")
 TO_TARGETS_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="to_targets.pkl")
 NEGATIVES_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="negatives.pkl")
 POSITIVES_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="positives.pkl")
+KINASE_PHOSPHOSITE_PATH = APP_CACHE_MODULE.join(name="kinase_phosphosites.pkl")
 
 GENE_SET_CACHE: Dict[str, Any] = {}
 
@@ -282,6 +283,165 @@ def collect_genes_with_confidence(
     return res
 
 
+def collect_phosphosite_sets(
+    client: Neo4jClient,
+    query: str,
+    cache_file: Optional[Path] = None,
+    background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
+    force_cache_refresh: bool = False,
+) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+    """Collect phosphosite sets based on the given query.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    query :
+        A cypher query that returns rows with (kinase.id, kinase.name, substrate.id, substrate.name, r.stmt_json)
+    cache_file :
+        The path to the cache file.
+    background_phosphosites :
+        Set of (gene, site) tuples to filter the results.
+    force_cache_refresh :
+        If True, the cache will be ignored and the query will be run again.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys are 2-tuples of entity ID and name,
+        and whose values are sets of (gene, site) tuples.
+    """
+    # If we are using caching and already have the cache loaded in memory
+    if (
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.as_posix() in GENE_SET_CACHE
+    ):
+        logger.info("Returning %s from in-memory cache", cache_file.as_posix())
+        res = GENE_SET_CACHE[cache_file.as_posix()]
+    # If we are using caching but need to load from file
+    elif (
+        cache_file is not None and
+        not force_cache_refresh and
+        cache_file.exists()
+    ):
+        logger.info("Loading %s", cache_file.as_posix())
+        with open(cache_file, "rb") as fh:
+            res = pickle.load(fh)
+        GENE_SET_CACHE[cache_file.as_posix()] = res
+    # Otherwise run the query
+    else:
+        if cache_file is not None:
+            logger.info(
+                "Running new query and caching results into %s", cache_file.as_posix()
+            )
+
+        # Execute the query
+        raw_results = client.query_tx(query)
+
+        if raw_results is None:
+            return {}
+
+        # Process results to extract phosphosite information
+        import json
+        kinase_map = {}
+
+        # Cache for fplx entities to avoid repeated lookups
+        fplx_kinase_cache = {}
+
+        for row in raw_results:
+            kinase_id, kinase_name, substrate_id, substrate_name, stmt_json = row
+
+            # Check if entity is a kinase (HGNC) or kinase family (FPLX)
+            if kinase_id.startswith('hgnc:'):
+                if not is_kinase(kinase_name):
+                    continue
+            elif kinase_id.startswith('fplx:'):
+                # Check cache first
+                if kinase_id in fplx_kinase_cache:
+                    if not fplx_kinase_cache[kinase_id]:
+                        continue
+                else:
+                    # Query for members using the isa relationship
+                    fplx_query = f"""
+                    MATCH (gene:BioEntity)-[:isa]->(family:BioEntity)
+                    WHERE family.id = '{kinase_id}' AND gene.id STARTS WITH 'hgnc:'
+                    RETURN gene.name
+                    """
+                    member_results = client.query_tx(fplx_query)
+
+                    if not member_results or len(member_results) == 0:
+                        fplx_kinase_cache[kinase_id] = False
+                        continue
+
+                    # Check if at least 50% of members are kinases
+                    kinase_count = 0
+                    total_count = len(member_results)
+
+                    for row in member_results:
+                        gene_name = row[0]  # Get gene name from query result
+                        if is_kinase(gene_name):
+                            kinase_count += 1
+
+                    # Consider it a kinase family if the majority of members are kinases
+                    is_kinase_family = (kinase_count / total_count) >= 0.5
+                    fplx_kinase_cache[kinase_id] = is_kinase_family
+
+                    if not is_kinase_family:
+                        continue
+            else:
+                continue
+
+            # Create the kinase key
+            kinase_key = (kinase_id, kinase_name)
+
+            if kinase_key not in kinase_map:
+                kinase_map[kinase_key] = set()
+
+            # Extract phosphosite details from stmt_json
+            try:
+                if stmt_json:
+                    stmt_data = json.loads(stmt_json)
+
+                    # Collect residue and position if available
+                    residue = stmt_data.get('residue')
+                    position = stmt_data.get('position')
+
+                    if residue and position:
+                        # Use the substrate name directly (not ID)
+                        phosphosite = (substrate_name, f"{residue}{position}")
+                        kinase_map[kinase_key].add(phosphosite)
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                continue
+
+        res = kinase_map
+
+        # Cache results
+        if cache_file is not None:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(cache_file, "wb") as fh:
+                pickle.dump(res, fh)
+            GENE_SET_CACHE[cache_file.as_posix()] = res
+
+    # Apply background filtering if provided
+    if background_phosphosites:
+        filtered_res = {}
+        for key in list(res.keys()):
+            filtered_set = {
+                phosphosite for phosphosite in res[key]
+                if phosphosite in background_phosphosites
+            }
+
+            if filtered_set:
+                filtered_res[key] = filtered_set
+            else:
+                continue
+
+        return filtered_res
+
+    return res
+
+
 @autoclient(cache=True)
 def get_go(
     *,
@@ -438,61 +598,13 @@ def get_kinase_phosphosites(
         """
     )
 
-    # Execute the query
-    raw_results = client.query_tx(query)
-
-    if raw_results is None:
-        return {}
-
-    # Process results to extract phosphosite information
-    import json
-
-    kinase_map = {}
-
-    for row in raw_results:
-        kinase_id, kinase_name, substrate_id, substrate_name, stmt_json = row
-
-        # Skip non-kinases using the is_kinase function
-        # For family-level entities (fplx), keep them as they often represent kinase families
-        if not (kinase_id.startswith('fplx:') or is_kinase(kinase_name)):
-            continue
-
-        # Create the kinase key
-        kinase_key = (kinase_id, kinase_name)
-
-        if kinase_key not in kinase_map:
-            kinase_map[kinase_key] = set()
-
-        # Extract phosphosite details from stmt_json
-        try:
-            if stmt_json:
-                stmt_data = json.loads(stmt_json)
-
-                # Collect residue and position if available
-                residue = stmt_data.get('residue')
-                position = stmt_data.get('position')
-
-                if residue and position:
-                    # Use the substrate name directly (not ID)
-                    phosphosite = (substrate_name, f"{residue}{position}")
-                    kinase_map[kinase_key].add(phosphosite)
-        except (json.JSONDecodeError, AttributeError, TypeError):
-            continue
-
-    # Apply background filtering if provided
-    if background_phosphosites:
-        for key in list(kinase_map.keys()):
-            filtered_set = {
-                phosphosite for phosphosite in kinase_map[key]
-                if phosphosite in background_phosphosites
-            }
-
-            if filtered_set:
-                kinase_map[key] = filtered_set
-            else:
-                del kinase_map[key]
-
-    return kinase_map
+    return collect_phosphosite_sets(
+        client=client,
+        query=query,
+        cache_file=KINASE_PHOSPHOSITE_PATH,
+        background_phosphosites=background_phosphosites,
+        force_cache_refresh=force_cache_refresh
+    )
 
 
 @autoclient()
@@ -889,6 +1001,11 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     )
     get_negative_stmt_sets(force_cache_refresh=force_refresh)
     get_positive_stmt_sets(force_cache_refresh=force_refresh)
+    get_kinase_phosphosites(
+        minimum_evidence_count=1,
+        minimum_belief=0.0,
+        force_cache_refresh=force_refresh
+    )
     # Build the pyobo name-id mapping caches. Skip force refresh since the data
     # isn't from CoGEx, rather change the version to download a new cache.
     # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
