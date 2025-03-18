@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Dict, Optional, Union, Tuple, List, Iterable, Collection
 
 import pandas as pd
@@ -337,20 +338,20 @@ def kinase_analysis(
     minimum_evidence_count: int = 1,
     minimum_belief: float = 0.0,
     *,
-    client: Neo4jClient
+    client: Neo4jClient,
 ) -> pd.DataFrame:
     """Perform over-representation analysis on kinase-phosphosite relationships.
 
     Parameters
     ----------
     phosphosite_list : Iterable[str]
-        List of phosphosites in the format "gene-site" (e.g., "MAPK1-Y187").
+        List of phosphosites in the format "gene-site" or "UniProtID-site" (e.g., "MAPK1-Y187" or "P23443-T412").
     alpha : float, default=0.05
         Significance threshold for ORA.
     keep_insignificant : bool, default=False
         Whether to retain results that are not statistically significant.
     background : Optional[Collection[str]], default=None
-        List of phosphosites in the format "gene-site" for the background set.
+        List of phosphosites in the format "gene-site" or "UniProtID-site" for the background set.
     minimum_evidence_count : int, default=1
         Minimum number of supporting edges in the knowledge graph.
     minimum_belief : float, default=0.0
@@ -360,34 +361,28 @@ def kinase_analysis(
 
     Returns
     -------
-    pd.DataFrame
+    :
         DataFrame with columns:
         - curie (kinase ID)
         - name (kinase name)
         - p (p-value)
         - q (adjusted p-value)
     """
-    # Parse input into (identifier, site) tuples
-    raw_phosphosites = [tuple(site.split("-")) for site in phosphosite_list if "-" in site]
+    # Parse phosphosites
+    parsed_phosphosites, errors = parse_phosphosite_list(
+        [tuple(site.split("-")) for site in phosphosite_list]
+    )
+    if errors:
+        print(f"Warning: Skipped invalid phosphosites: {errors}")
 
     # Parse background if provided
-    raw_background = None
-    if background:
-        raw_background = [tuple(site.split("-")) for site in background if "-" in background]
-
-    # Process phosphosites with validation and UniProt conversion
-    parsed_phosphosites, input_errors = parse_phosphosite_list(raw_phosphosites, client)
-
-    if input_errors:
-        logger.warning(f"Failed to parse the following phosphosites: {', '.join(input_errors)}")
-
-    # Process background phosphosites if provided
     parsed_background = None
-    if raw_background:
-        parsed_background, background_errors = parse_phosphosite_list(raw_background, client)
-
+    if background:
+        parsed_background, background_errors = parse_phosphosite_list(
+            [tuple(site.split("-")) for site in background]
+        )
         if background_errors:
-            logger.warning(f"Failed to parse the following background phosphosites: {', '.join(background_errors)}")
+            print(f"Warning: Skipped invalid background phosphosites: {background_errors}")
 
     return kinase_ora(
         client=client,
@@ -424,8 +419,18 @@ def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]
 
 
 def is_valid_gene(gene: str) -> bool:
-    """Validate if the gene name is non-empty and formatted correctly."""
-    return isinstance(gene, str) and len(gene) > 0  # Placeholder check
+    """Check if the given identifier is a gene symbol or a UniProt ID."""
+    if not isinstance(gene, str) or len(gene) == 0:
+        return False
+
+    # UniProt ID pattern
+    uniprot_pattern = re.compile(r"^[OPQ][0-9][A-Z0-9]{3}[0-9](-\d+)?$")
+    if uniprot_pattern.match(gene):
+        return True
+
+    # Gene symbols (allow alphanumeric but must start with a letter)
+    gene_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+    return bool(gene_pattern.match(gene))
 
 
 def is_valid_phosphosite(site: str) -> bool:
@@ -433,38 +438,21 @@ def is_valid_phosphosite(site: str) -> bool:
     return isinstance(site, str) and site[0] in {'S', 'T', 'Y', 'H'} and site[1:].isdigit()
 
 
-def is_valid_uniprot(identifier: str) -> bool:
-    """Validate if the identifier appears to be a UniProt ID."""
-    # Basic validation for UniProt ID format (starts with uppercase letter and contains digits)
-    return (isinstance(identifier, str) and len(identifier) > 0 and
-            identifier[0].isupper() and any(c.isdigit() for c in identifier))
-
-
-def parse_phosphosite_list(phosphosite_list: Iterable[Tuple[str, str]], client: Neo4jClient = None) -> Tuple[
-    List[Tuple[str, str]], List[str]]:
-    """Parse phosphosite list into (gene, phosphosite) pairs, converting UniProt IDs if needed."""
+def parse_phosphosite_list(
+    phosphosite_list: Iterable[Tuple[str, str]]
+) -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Convert UniProt IDs to gene symbols and validate phosphosites."""
     phosphosites = []
     errors = []
-    uniprot_cache = {}  # Cache for UniProt to gene symbol conversions
 
     for identifier, site in phosphosite_list:
-        # Check if it's a UniProt ID
-        if is_valid_uniprot(identifier) and is_valid_phosphosite(site) and client is not None:
-            # Convert UniProt ID to gene symbol
-            if identifier in uniprot_cache:
-                gene_symbol = uniprot_cache[identifier]
-            else:
-                gene_symbol = uniprot_client.get_gene_name(identifier)
-                uniprot_cache[identifier] = gene_symbol
+        # Convert UniProt ID to gene symbol if needed
+        gene = uniprot_client.get_gene_name(identifier) or identifier
 
-            if gene_symbol and is_valid_gene(gene_symbol):
-                phosphosites.append((gene_symbol, site))
-            else:
-                errors.append(f"{identifier}:{site}")
-        # Check if it's a valid gene and phosphosite
-        elif is_valid_gene(identifier) and is_valid_phosphosite(site):
-            phosphosites.append((identifier, site))
+        if is_valid_gene(gene) and is_valid_phosphosite(site):
+            phosphosites.append((gene, site))
         else:
             errors.append(f"{identifier}:{site}")
 
     return phosphosites, errors
+
