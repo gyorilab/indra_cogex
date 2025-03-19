@@ -15,6 +15,7 @@ import itertools
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict
 from io import BytesIO
+from bs4 import BeautifulSoup
 
 import pandas as pd
 import matplotlib
@@ -194,8 +195,6 @@ def assemble_protein_stmt_htmls(stmts_df):
     :
         Dictionary mapping protein names to HTML content of their statements
     """
-    from bs4 import BeautifulSoup
-
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
         stmt = stmt_from_json(json.loads(row['stmt_json']))
