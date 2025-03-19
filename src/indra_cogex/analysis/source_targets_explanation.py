@@ -188,7 +188,13 @@ def assemble_protein_stmt_htmls(stmts_df):
     stmts_df : pd.DataFrame
         Contains INDRA relationships for source protein filtered by
         "target_proteins" genes
+
+    Returns
+    -------
+    :
+        Dictionary mapping protein names to HTML content of their statements
     """
+    from bs4 import BeautifulSoup
 
     stmts_by_protein = defaultdict(list)
     for _, row in stmts_df.iterrows():
@@ -199,7 +205,23 @@ def assemble_protein_stmt_htmls(stmts_df):
     for name, stmts in stmts_by_protein.items():
         ha = HtmlAssembler(stmts, title=f'Statements for {name}',
                            db_rest_url='https://db.indra.bio')
-        html_content[name] = ha.make_model()
+        full_html = ha.make_model()
+
+        # Parse the HTML to add style attributes for tighter spacing
+        soup = BeautifulSoup(full_html, 'html.parser')
+
+        # Find and modify margin/padding of elements to reduce vertical spacing
+        for elem in soup.find_all(True):  # Find all elements
+            # Get current style
+            style = elem.get('style', '')
+
+            # Add margin/padding reduction for elements that often have excess spacing
+            if elem.name in ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'hr']:
+                style += '; margin-top: 2px; margin-bottom: 2px; padding-top: 2px; padding-bottom: 2px;'
+                elem['style'] = style
+
+        # Convert back to HTML string
+        html_content[name] = str(soup)
 
     return html_content
 
