@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Kinase Enrichment Analysis{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <link
+            href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
+            rel="stylesheet"
+    />
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
+    <script>
+        const datatablesConf = {
+            "order": [[2, "asc"]], // Sort by p-value by default (ascending to show lowest p-values first)
+            pageLength: 10,
+            layout: {
+                bottomStart: {
+                    pageLength: {
+                        menu: [10, 25, 50, 75, 100],
+                    }
+                },
+                topStart: {
+                    buttons: [
+                        {
+                            extend: 'csv',
+                            text: 'Download full table as CSV',
+                            exportOptions: {
+                                modifier: {
+                                    search: 'none'
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        };
+        $(document).ready(function () {
+            $("#table-kinase").DataTable(datatablesConf);
+        });
+    </script>
+{% endblock %}
+
+{% macro render_kinase_table(df, table_id, phosphosites, minimum_evidence, minimum_belief) -%}
+    <table class="table table-hover table-striped table-ora" id="{{ table_id }}" style="width: 100%;">
+        <thead>
+        <tr>
+            <th scope="col">CURIE</th>
+            <th scope="col">Name</th>
+            <th scope="col"><i>p</i>-value</th>
+            <th scope="col"><i>q</i>-value</th>
+            <th scope="col">Statements</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in df.values %}
+            <tr>
+                <td><a href="https://bioregistry.io/{{ row[0] }}" target="_blank">{{ row[0] }}</a></td>
+                <td>{{ row[1] }}</td>
+                <td>{{ "{:.2e}".format(row[2]) }}</td>
+                <td>{{ "{:.2e}".format(row[4]) }}</td>
+                <td>
+                    <a href="{{ url_for('search.search_kinase_statements',
+                                        kinase_id=row[0],
+                                        minimum_evidence=minimum_evidence,
+                                        minimum_belief=minimum_belief) }}{% for site in phosphosites %}&phosphosites={{ site }}{% endfor %}"
+                        target="_blank"
+                        class="btn btn-primary btn-sm">View Statements</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Kinase Enrichment Analysis</h1>
+        <div>
+            <h3>Phosphosite Query</h3>
+            <p>
+                {% for phosphosite in phosphosites %}
+                    <span class="badge badge-info">{{ phosphosite }}</span>
+                {% endfor %}
+            </p>
+
+            {% if background_phosphosites %}
+               <h3>Background Phosphosites</h3>
+               <p>
+                   {% for phosphosite in background_phosphosites %}
+                       <span class="badge badge-secondary">{{ phosphosite }}</span>
+                   {% endfor %}
+               </p>
+            {% else %}
+               <h3>Background</h3>
+               <p>
+                   <i>All phosphosites in the database were used as background.</i>
+               </p>
+            {% endif %}
+
+            <h3>Kinase Enrichment Results</h3>
+            <div>
+                <p>
+                    These results identify kinases that are statistically enriched in the set of phosphosites.
+                    The p-value represents the probability of the observed overlap between the query phosphosites
+                    and the kinase's known targets occurring by chance.
+                    Kinases with lower p-values are more likely to be involved in regulating the phosphorylation
+                    patterns in your dataset.
+                </p>
+                {{ render_kinase_table(results, "table-kinase", phosphosites, minimum_evidence, minimum_belief) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

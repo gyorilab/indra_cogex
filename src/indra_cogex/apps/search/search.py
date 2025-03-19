@@ -11,6 +11,7 @@ from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
+from indra_cogex.analysis.gene_analysis import parse_phosphosite_list
 from indra_cogex.apps.utils import render_statements
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
@@ -651,3 +652,142 @@ def search_continuous_statements():
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
+@autoclient()
+def get_kinase_phosphosite_statements(
+    kinase_id: str,
+    phosphosites: List[str],
+    minimum_belief: float = 0.0,
+    minimum_evidence: Optional[int] = None,
+    *,
+    client: Neo4jClient,
+) -> Tuple[List[Statement], Mapping[int, int]]:
+    """Get statements connecting a kinase to phosphosites.
+
+    Parameters
+    ----------
+    kinase_id : str
+        The ID of the kinase (e.g., 'hgnc:1722', 'fplx:MAPK')
+    phosphosites : List[str]
+        List of phosphosites in the format "gene-site" (e.g., "MAPK1-T202") or
+        "uniprot-site" (e.g., "P28482-T202")
+    minimum_belief : float
+        Minimum belief score for relationships
+    minimum_evidence : Optional[int]
+        Minimum number of evidences required
+    client : Neo4jClient
+        The Neo4j client to use for querying
+
+    Returns
+    -------
+    :
+        A tuple containing:
+        - List of INDRA statements representing the relationships
+        - Dictionary mapping statement hashes to their evidence counts
+    """
+    # Normalize kinase ID
+    namespace = kinase_id.split(':')[0].lower()
+    id_part = kinase_id.split(':')[1]
+
+    if namespace == 'fplx':
+        normalized_kinase = f"fplx:{id_part}"
+    elif namespace == 'hgnc':
+        normalized_kinase = f"hgnc:{id_part}"
+    else:
+        normalized_kinase = kinase_id.lower()
+
+    # Parse phosphosites and convert UniProt IDs if needed
+    raw_phosphosites = [tuple(site.split("-")) for site in phosphosites if "-" in site]
+    processed_phosphosites, errors = parse_phosphosite_list(raw_phosphosites)
+
+    if errors:
+        logger.debug(f"Some phosphosites could not be parsed: {errors}")
+
+    gene_names = [gene for gene, _ in processed_phosphosites]
+
+    if not gene_names:
+        return [], {}
+
+    # Find phosphorylation relationships between the kinase and these genes
+    query = """
+    MATCH path = (kinase:BioEntity)-[r:indra_rel]->(substrate:BioEntity)
+    WHERE kinase.id = $kinase_id
+      AND substrate.name IN $gene_names
+      AND r.stmt_type = 'Phosphorylation'
+      AND r.belief >= $minimum_belief
+      AND r.evidence_count >= $minimum_evidence
+    RETURN path
+    """
+
+    params = {
+        "kinase_id": normalized_kinase,
+        "gene_names": gene_names,
+        "minimum_belief": minimum_belief,
+        "minimum_evidence": minimum_evidence if minimum_evidence is not None else 0
+    }
+
+    results = client.query_tx(query, **params)
+
+    # Process results
+    all_relations = []
+    if results:
+        for result in results:
+            try:
+                rel = client.neo4j_to_relation(result[0])
+                all_relations.append(rel)
+            except Exception as e:
+                logger.error(f"Error processing relation: {e}")
+                continue
+
+    if not all_relations:
+        return [], {}
+
+    # Convert to INDRA statements
+    stmts = indra_stmts_from_relations(all_relations, deduplicate=True)
+    stmts = enrich_statements(stmts, client=client)
+
+    # Create evidence count mapping
+    evidence_counts = {
+        stmt.get_hash(): rel.data.get("evidence_count", 0)
+        for rel, stmt in zip(all_relations, stmts)
+    }
+
+    return stmts, evidence_counts
+
+
+@search_blueprint.route("/kinase_statements/", methods=['GET'])
+@jwt_required(optional=True)
+def search_kinase_statements():
+    """Endpoint to get INDRA statements connecting kinases to phosphosites."""
+    kinase_id = request.args.get("kinase_id")
+    phosphosites = request.args.getlist("phosphosites")
+
+    try:
+        minimum_evidence = int(request.args.get("minimum_evidence") or 1)
+        minimum_belief = float(request.args.get("minimum_belief") or 0.0)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid parameter values"}), 400
+
+    if not kinase_id:
+        return jsonify({"error": "kinase_id is required"}), 400
+
+    if not phosphosites:
+        return jsonify({"error": "No phosphosites provided"}), 400
+
+    try:
+        statements, evidence_counts = get_kinase_phosphosite_statements(
+            kinase_id=kinase_id,
+            phosphosites=phosphosites,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence
+        )
+
+        return render_statements(
+            stmts=statements,
+            evidence_count=evidence_counts
+        )
+
+    except Exception as e:
+        logger.error(f"Error in get_kinase_phosphosite_statements: {str(e)}")
+        return jsonify({"error": str(e)}), 500

@@ -6,13 +6,14 @@ from indra_cogex.analysis import gene_continuous_analysis_example_data
 from indra_cogex.analysis.gene_analysis import (
     discrete_analysis,
     signed_analysis,
-    continuous_analysis
+    continuous_analysis, kinase_analysis
 )
 from indra_cogex.analysis.metabolite_analysis import (
     metabolite_discrete_analysis,
     enzyme_analysis
 )
-from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
+from indra_cogex.client import Neo4jClient
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS, count_phosphosites
 from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,
@@ -214,3 +215,25 @@ def test_enzyme_analysis():
     assert isinstance(res, list), "Result should be a list"
     assert all(isinstance(s, Statement) for s in res), "All results should be INDRA Statements"
     assert len(res) > 0, "Result should not be empty"
+
+
+@pytest.mark.nonpublic
+def test_kinase_analysis():
+    """Integration test for kinase ORA functionality."""
+    TEST_PHOSPHOSITES = [
+        "RPS6KA1-S363", "RPS3-T42", "RPS6KA3-Y529",  # MAPK Signaling
+        "RPS6KB1-S434", "RPS6-S244", "RPS6-S236",  # PI3K/AKT Signaling
+        "RPA2-S29", "RPS6KB1-T412", "RNF8-T198",  # Cell Cycle
+        "ROCK2-Y722", "BDKRB2-Y177"  # Tyrosine Kinases
+    ]
+
+    # Run analysis with fewer phosphosites
+    result = kinase_analysis(
+        phosphosite_list=TEST_PHOSPHOSITES,
+        alpha=0.05,
+        keep_insignificant=False  # Limit results to significant ones
+    )
+
+    assert isinstance(result, pd.DataFrame), "Result should be a DataFrame"
+    assert not result.empty, "Result should not be empty"
+    assert set(result.columns) >= {"curie", "name", "p", "q"}, "Missing expected columns"

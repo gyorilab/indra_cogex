@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, Optional, Union, Tuple, List, Iterable
+import re
+from typing import Dict, Optional, Union, Tuple, List, Iterable, Collection
 
 import pandas as pd
 
@@ -23,25 +24,28 @@ from indra_cogex.client.enrichment.discrete import (
     phenotype_ora,
     reactome_ora,
     wikipathways_ora,
+    kinase_ora,
 )
 from indra_cogex.client.enrichment.signed import reverse_causal_reasoning
 from indra.databases.hgnc_client import is_kinase, is_transcription_factor
+from indra.databases import uniprot_client
+
 
 logger = logging.getLogger(__name__)
 
 
 @autoclient()
 def discrete_analysis(
-        gene_list: List[str],
-        method: str = 'fdr_bh',
-        alpha: float = 0.05,
-        keep_insignificant: bool = False,
-        minimum_evidence_count: int = 1,
-        minimum_belief: float = 0,
-        indra_path_analysis: bool = False,
-        background_gene_list: List[str] = None,
-        *,
-        client: Neo4jClient
+    gene_list: List[str],
+    method: str = 'fdr_bh',
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0,
+    indra_path_analysis: bool = False,
+    background_gene_list: List[str] = None,
+    *,
+    client: Neo4jClient
 ) -> Dict[str, Union[pd.DataFrame, None]]:
     """Perform discrete analysis on the provided genes.
 
@@ -218,17 +222,17 @@ def signed_analysis(
 
 @autoclient()
 def continuous_analysis(
-        gene_names: List[str],
-        log_fold_change: List[str],
-        species: str,
-        permutations: int,
-        source: str,
-        alpha: float = 0.05,
-        keep_insignificant: bool = False,
-        minimum_evidence_count: int = 1,
-        minimum_belief: float = 0,
-        *,
-        client: Neo4jClient
+    gene_names: List[str],
+    log_fold_change: List[str],
+    species: str,
+    permutations: int,
+    source: str,
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0,
+    *,
+    client: Neo4jClient
 ) -> pd.DataFrame:
     """Perform continuous gene set analysis on gene expression data.
 
@@ -325,6 +329,72 @@ def continuous_analysis(
     return result
 
 
+@autoclient()
+def kinase_analysis(
+    phosphosite_list: Iterable[str],
+    alpha: float = 0.05,
+    keep_insignificant: bool = False,
+    background: Optional[Collection[str]] = None,
+    minimum_evidence_count: int = 1,
+    minimum_belief: float = 0.0,
+    *,
+    client: Neo4jClient,
+) -> pd.DataFrame:
+    """Perform over-representation analysis on kinase-phosphosite relationships.
+
+    Parameters
+    ----------
+    phosphosite_list : Iterable[str]
+        List of phosphosites in the format "gene-site" or "UniProtID-site" (e.g., "MAPK1-Y187" or "P23443-T412").
+    alpha : float, default=0.05
+        Significance threshold for ORA.
+    keep_insignificant : bool, default=False
+        Whether to retain results that are not statistically significant.
+    background : Optional[Collection[str]], default=None
+        List of phosphosites in the format "gene-site" or "UniProtID-site" for the background set.
+    minimum_evidence_count : int, default=1
+        Minimum number of supporting edges in the knowledge graph.
+    minimum_belief : float, default=0.0
+        Minimum belief score for including kinase-phosphosite relationships.
+    client : Neo4jClient
+        Neo4j client for querying the database.
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        - curie (kinase ID)
+        - name (kinase name)
+        - p (p-value)
+        - q (adjusted p-value)
+    """
+    # Parse phosphosites
+    parsed_phosphosites, errors = parse_phosphosite_list(
+        [tuple(site.split("-")) for site in phosphosite_list]
+    )
+    if errors:
+        print(f"Warning: Skipped invalid phosphosites: {errors}")
+
+    # Parse background if provided
+    parsed_background = None
+    if background:
+        parsed_background, background_errors = parse_phosphosite_list(
+            [tuple(site.split("-")) for site in background]
+        )
+        if background_errors:
+            print(f"Warning: Skipped invalid background phosphosites: {background_errors}")
+
+    return kinase_ora(
+        client=client,
+        phosphosite_ids=parsed_phosphosites,
+        background_phosphosite_ids=parsed_background,
+        alpha=alpha,
+        keep_insignificant=keep_insignificant,
+        minimum_evidence_count=minimum_evidence_count,
+        minimum_belief=minimum_belief
+    )
+
+
 def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
     """Parse gene list"""
     hgnc_ids = []
@@ -346,3 +416,43 @@ def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]
                 errors.append(entry)
     genes = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in hgnc_ids}
     return genes, errors
+
+
+def is_valid_gene(gene: str) -> bool:
+    """Check if the given identifier is a gene symbol or a UniProt ID."""
+    if not isinstance(gene, str) or len(gene) == 0:
+        return False
+
+    # UniProt ID pattern
+    uniprot_pattern = re.compile(r"^[OPQ][0-9][A-Z0-9]{3}[0-9](-\d+)?$")
+    if uniprot_pattern.match(gene):
+        return True
+
+    # Gene symbols (allow alphanumeric but must start with a letter)
+    gene_pattern = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+    return bool(gene_pattern.match(gene))
+
+
+def is_valid_phosphosite(site: str) -> bool:
+    """Validate phosphosite format (e.g., S227, T345, Y100)."""
+    return isinstance(site, str) and site[0] in {'S', 'T', 'Y', 'H'} and site[1:].isdigit()
+
+
+def parse_phosphosite_list(
+    phosphosite_list: Iterable[Tuple[str, str]]
+) -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Convert UniProt IDs to gene symbols and validate phosphosites."""
+    phosphosites = []
+    errors = []
+
+    for identifier, site in phosphosite_list:
+        # Convert UniProt ID to gene symbol if needed
+        gene = uniprot_client.get_gene_name(identifier) or identifier
+
+        if is_valid_gene(gene) and is_valid_phosphosite(site):
+            phosphosites.append((gene, site))
+        else:
+            errors.append(f"{identifier}:{site}")
+
+    return phosphosites, errors
+
