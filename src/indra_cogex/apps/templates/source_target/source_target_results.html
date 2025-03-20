@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Source-Target Analysis Results{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
+          rel="stylesheet"/>
+    <style>
+        .datatable-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .badge {
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+        /* Fix for potential footer overlap */
+        .card-body {
+            margin-bottom: 50px;
+        }
+
+        .container {
+            padding-bottom: 70px;
+        }
+
+        html, body {
+            position: relative;
+            min-height: 100%;
+        }
+
+        .plot-container {
+            margin-bottom: 20px;
+        }
+
+        /* Style for the database badges container */
+        .database-badges-container {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background-color: #f8f9fa;
+        }
+
+        /* SIMPLE FIX: Make gene names stand out */
+        /* This targets the actual gene name headers that are likely already in your HTML */
+        #gene-statements-container > h4 {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.3rem;
+            color: #212529;
+        }
+
+        /* SIMPLE FIX: Make "Statements" headers less prominent */
+        #gene-statements-container h3:contains("Statements"),
+        h3.statements-header {
+            font-size: 1rem;
+            color: #495057 !important;
+            font-weight: normal !important;
+        }
+
+        /* Add some spacing between gene sections */
+        #gene-statements-container > hr {
+            margin-top: 0.0rem;
+            margin-bottom: 0.0rem;
+        }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
+    <script>
+        // Function to format number display as scientific notation
+        function formatNumberColumn(data, type) {
+            // For sorting, return the original numeric value
+            if (type === 'sort' || type === 'type') {
+                return data;
+            }
+
+            // If data is a number or can be parsed as one
+            if (typeof data === 'number' || (typeof data === 'string' && !isNaN(parseFloat(data)))) {
+                var num = parseFloat(data);
+
+                // Format regular numbers normally
+                if (num >= 0.001 && num < 1000) {
+                    return num.toFixed(4);
+                }
+
+                // Format using scientific notation for very small or large numbers
+                return num.toExponential(4);
+            }
+            return data; // Return as is if not a number
+        }
+
+        $(document).ready(function () {
+            $(".datatable").each(function() {
+                // Skip if already initialized
+                if ($.fn.DataTable.isDataTable(this)) {
+                    return;
+                }
+
+                var qColumnIndex = -1;
+
+                // Find the q-value column index
+                $(this).find('thead th').each(function(index) {
+                    var headerText = $(this).text().trim().toLowerCase();
+                    if (headerText === 'q' || headerText === 'q-value') {
+                        qColumnIndex = index;
+                    }
+                });
+
+                // Define column definitions for formatting
+                var columnDefs = [];
+                $(this).find('thead th').each(function(index) {
+                    var headerText = $(this).text().trim().toLowerCase();
+                    if (headerText === 'p' || headerText === 'q' ||
+                        headerText === 'mlp' || headerText === 'mlq' ||
+                        headerText === 'p-value' || headerText === 'q-value') {
+                        columnDefs.push({
+                            targets: index,
+                            render: function(data, type, row) {
+                                return formatNumberColumn(data, type);
+                            }
+                        });
+                    }
+                });
+
+                // Initialize DataTable
+                var tableConfig = {
+                    pageLength: 10,
+                    order: [], // Start with no specific order
+                    columnDefs: columnDefs,
+                    layout: {
+                        bottomStart: {
+                            pageLength: {
+                                menu: [10, 25, 50, 75, 100],
+                            }
+                        },
+                        topStart: {
+                            buttons: [
+                                {
+                                    extend: 'csv',
+                                    text: 'Download full table as CSV',
+                                    exportOptions: {
+                                        modifier: {
+                                            search: 'none'
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                };
+
+                // If we found a q-value column, set it as the default sort column (ascending)
+                if (qColumnIndex !== -1) {
+                    tableConfig.order = [[qColumnIndex, "asc"]];
+                }
+
+                $(this).DataTable(tableConfig);
+            });
+
+            // TARGETED DATABASE BADGES SOLUTION
+            // Find all database badge sections with the correct class
+            var databaseSections = $('.col.col-auto.text-center:contains("databases")');
+
+            if (databaseSections.length > 0) {
+                // Clone the first section
+                var firstSection = databaseSections.first().clone();
+
+                // Create a container div with a margin
+                var container = $('<div class="database-badges-container"></div>');
+                container.append(firstSection);
+
+                // Insert it after the "Direct relationships" paragraph
+                $('p:contains("Direct relationships between source and target genes")').after(container);
+
+                // Hide all the original sections
+                databaseSections.hide();
+            }
+
+            // Hide "Expand All" buttons
+            $('button').filter(function() {
+                return $(this).text().trim() === 'Expand All';
+            }).hide();
+
+            // Hide "Statements for X" headings
+            $('h1, h2, h3, h4, h5').filter(function() {
+                return $(this).text().includes('Statements for');
+            }).hide();
+
+            // SIMPLE ENHANCEMENT: Style the "Statements" headers that appear in the page
+            $('h3').filter(function() {
+                return $(this).text().trim() === 'Statements';
+            }).addClass('statements-header');
+        });
+    </script>
+{% endblock %}
+
+{% macro render_table(df, table_id) -%}
+    <div class="datatable-wrapper">
+        <table class="table table-hover table-striped datatable" id="{{ table_id }}" style="width: 100%;">
+            <thead>
+            <tr>
+                {% for column in df.columns %}
+                    <th scope="col">{{ column }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in df.values %}
+                <tr>
+                    {% for value in row %}
+                        <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endmacro %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-3">Source-Target Analysis Results</h1>
+
+        {% if errors %}
+            <h2>Errors</h2>
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div>
+            <h3>Query Genes</h3>
+            <h4>Source Gene</h4>
+            <p>
+                <a class="badge badge-primary" href="https://bioregistry.io/hgnc:{{ source_id }}" target="_blank">
+                    HGNC:{{ source_id }} ({{ source }})
+                </a>
+            </p>
+
+            <h4>Target Genes</h4>
+            <p>
+                {% for hgnc_id, name in target_genes.items() %}
+                    <a class="badge badge-info" href="https://bioregistry.io/hgnc:{{ hgnc_id }}" target="_blank">
+                        HGNC:{{ hgnc_id }} ({{ name }})
+                    </a>
+                {% endfor %}
+            </p>
+
+            {% if results.statements and results.statements.items() %}
+                <h3>INDRA Statements</h3>
+                <p>Direct relationships between source and target genes:</p>
+                <!-- Database badges will be inserted here by JavaScript -->
+
+                <div id="gene-statements-container">
+                    {% for gene, statement in results.statements.items() %}
+                        <h3>{{ gene }}</h3>
+                        {% if gene != 'database_badges' %}
+                            {{ statement | safe }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if results.interaction_plot %}
+                <h3>Interaction Types</h3>
+                <p>Distribution of different types of interactions found:</p>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ results.interaction_plot }}"
+                         alt="Interaction Types Distribution"
+                         class="img-fluid">
+                </div>
+            {% endif %}
+
+            {% if results.protein_families is not none and results.protein_families.shape[0] > 0 %}
+                <h3>Protein Families</h3>
+                <p>Shared protein family relationships:</p>
+                {{ render_table(results.protein_families, "table-families") }}
+            {% endif %}
+
+            {% if results.combined_pathways is not none and results.combined_pathways.shape[0] > 0 %}
+                <h3>Combined Pathway Analysis</h3>
+                <p>Combined REACTOME and WikiPathways analysis:</p>
+                {{ render_table(results.combined_pathways, "table-combined-pathways") }}
+            {% endif %}
+
+            {% if results.go_terms and results.go_terms.get('shared_terms') is not none
+                  and results.go_terms.get('shared_terms').shape[0] > 0 %}
+                <h3>GO Terms Analysis</h3>
+                <p>Shared Gene Ontology terms:</p>
+                {{ render_table(results.go_terms.get('shared_terms'), "table-shared-go") }}
+            {% endif %}
+
+            {% if results.analysis_plot %}
+                <h3>Statistical Analysis</h3>
+                <p>Distribution of p-values and q-values:</p>
+                <div class="plot-container">
+                    <img src="data:image/png;base64,{{ results.analysis_plot }}"
+                         alt="Statistical Analysis Plots"
+                         class="img-fluid">
+                </div>
+            {% endif %}
+
+            {% if results.upstream and results.upstream.get('shared_proteins') %}
+    <h3>Upstream Analysis</h3>
+    <p>
+        Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
+        {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+            Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
+        {% endif %}
+    </p>
+
+    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+        <!-- Display enrichment results as a table with pagination -->
+        <h4>Enriched Upstream Regulators</h4>
+        <div class="datatable-wrapper">
+            <table class="table table-sm table-hover datatable" id="upstream-table">
+                <thead>
+                    <tr>
+                        <th>CURIE</th>
+                        <th>Name</th>
+                        <th>p-value</th>
+                        <th>q-value</th>
+                        <th>Statements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for _, row in results.upstream.get('shared_entities').iterrows() %}
+                        <tr>
+                            <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
+                            <td>{{ row.name }}</td>
+                            <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
+                            <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
+                            <td>
+                                {% if 'curie' in row and row.curie and ':' in row.curie %}
+                                    <!-- Using full CURIE format with namespace:id -->
+                                    {% set namespace = row.curie.split(':')[0] %}
+                                    {% set id = row.curie.split(':')[1] %}
+                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% else %}
+                                    <!-- Fallback to name-based search -->
+                                    <a href="{{ url_for('search.search', agent=row.name) }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Display proteins with pagination using DataTables -->
+        <h4>Shared Proteins</h4>
+        <div class="datatable-wrapper">
+            <table class="table table-sm table-hover datatable" id="shared-proteins-table">
+                <thead>
+                    <tr>
+                        <th>Regulator</th>
+                        <th>Statements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for protein in results.upstream.get('shared_proteins') %}
+                        <tr>
+                            <td>{{ protein }}</td>
+                            <td>
+                                {% if ':' in protein|string %}
+                                    <!-- Protein is a CURIE with namespace:id format -->
+                                    {% set namespace = protein.split(':')[0] %}
+                                    {% set id = protein.split(':')[1] %}
+                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% else %}
+                                    <!-- Protein is a name -->
+                                    <a href="{{ url_for('search.search', agent=protein) }}"
+                                       class="btn btn-primary"
+                                       target="_blank">View Statements</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endif %}
+        </div>
+    </div>
+    <!-- Add extra space at bottom to prevent footer overlap -->
+    <div style="height: 50px;"></div>
+{% endblock %}

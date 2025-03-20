@@ -136,7 +136,7 @@
             </div>
         </div>
 
-        <!-- Second row with two cards -->
+        <!-- Second row with three cards -->
         <div class="card-deck" style="margin-bottom: 1em !important;">
             <div class="card">
                 <div class="d-flex justify-content-center align-items-center" style="height: 120px; padding: 10px;">
@@ -167,15 +167,19 @@
                 </div>
                 {{ start_button('gla.kinase_analysis_route', '/gene/kinase') }}
             </div>
-            <!-- Empty card for alignment in the second row -->
-            <div class="card" style="visibility: hidden;">
+            <div class="card">
                 <div class="d-flex justify-content-center align-items-center" style="height: 120px; padding: 10px;">
-                    <div style="height: 100px;"></div>
+                     <img style="max-height: 100px; max-width: 100%; object-fit: contain;"
+                          src="{{ url_for("static", filename="source_target.png") }}"
+                          alt="Source Target Analysis">
                 </div>
                 <div class="card-body">
-                    <h5 class="card-title">&nbsp;</h5>
-                    <p class="card-text">&nbsp;</p>
+                    <h5 class="card-title">Source-Target Gene Analysis</h5>
+                    <p class="card-text">
+                        Analyze relationships between a source gene and its downstream target genes.
+                    </p>
                 </div>
+                {{ start_button('sta.source_target_analysis_route', '/source_target/analysis') }}
             </div>
         </div>
 
@@ -366,7 +370,6 @@
             <div class="card"></div>
             <div class="card"></div>
         </div> #}
-    </div>
 {% endblock %}
 
 {% block scripts %}

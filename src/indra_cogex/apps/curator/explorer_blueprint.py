@@ -604,7 +604,9 @@ class PaperForm(FlaskForm):
         if "." in s:
             return "doi", s
         if ":" not in s:
-            raise ValueError(f"Can not prefix for {s}. Consider writing as a CURIE.")
+            self.identifier.errors.append("Please provide identifier as a CURIE (e.g., pubmed:12345)")
+            return None
+
         prefix, identifier = s.split(":", 1)
         prefix = prefix.lower()
         if prefix in {"pmid", "pubmed"}:
@@ -629,6 +631,9 @@ def paper():
     """Get all statements for the given paper."""
     form = PaperForm()
     if form.validate_on_submit():
+        result = form.get_term()
+        if result is None:
+            return render_template("curation/paper_form.html", form=form)
         prefix, identifier = form.get_term()
         include_db_evidence = form.include_db_evidence.data
         filter_curated = form.filter_curated.data
@@ -732,10 +737,12 @@ class NodesForm(FlaskForm):
                 invalid_entries.append(entry)
 
         if invalid_entries:
-            raise ValueError(
+            self.curies.errors.append(
+
                 f"Invalid identifier(s): {', '.join(invalid_entries)}. "
                 "Expected format: 'namespace:identifier' (e.g., 'FPLX:MEK')"
             )
+            return []
 
         return sorted(processed_nodes)
 
@@ -749,6 +756,8 @@ def subnetwork():
     if form.validate_on_submit():  # Handle form submission
         nodes = form.get_nodes()
         logger.info(f"Processed nodes: {nodes}")
+        if not nodes:
+            return render_template("curation/node_form.html", form=form)
 
         if len(nodes) > 30:
             flask.flash("Cannot query more than 30 nodes.")
