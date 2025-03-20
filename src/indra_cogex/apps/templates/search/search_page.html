@@ -81,6 +81,15 @@
         #ground-agent-button {
         width: 200px;
         }
+        #cancel-agent-button {
+        width: 200px;
+        }
+        #cancel-other-agent-button {
+        width: 200px;
+        }
+        #cancel-mesh-button {
+        width: 200px;
+        }
         #ground-mesh-button {
         width: 200px;
         }
@@ -230,9 +239,13 @@
                 <span class="blue-dot" style="margin-left: 3px;"></span>
             </label>
             <div style="display: flex; align-items: center; position: relative;">
-                <input type="text" class="form-control" id="agent-name" name="agent_name" placeholder="Enter agent name">
+                <input type="text" class="form-control"
+                       id="agent-name"
+                       name="agent_name"
+                       placeholder="Enter agent name (e.g. 'MEK', 'FPLX:MEK' or 'CHEBI:CHEBI:63637')">
+                <span id="agent-display" class="form-control" style="display: none;"></span>
 
-                <select class="form-control" id="agent-select" name="agent_select" style="display: none; margin-left: 10px;">
+                <select class="form-control" id="agent-select" name="agent_select" style="display: none;">
                     <option value="" selected hidden>Grounded Results...</option>
                 </select>
                 <button type="button" id="ground-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
@@ -245,6 +258,7 @@
                         </div>
                     </span>
                 </button>
+                <button type="button" id="cancel-agent-button" class="btn btn-danger ml-2" style="display: none; opacity: 0.9;">Cancel</button>
             </div>
         </div>
 
@@ -282,9 +296,10 @@
                 <span class="orange-dot" style="margin-left: 3px;"></span>
             </label>
             <div style="display: flex; align-items: center; position: relative;">
-                <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name">
+                <input type="text" class="form-control" id="other-agent-name" name="other_agent" placeholder="Enter other agent name (e.g. 'ACE2' or 'HGNC:13557')">
+                <span id="other-agent-display" class="form-control" style="display: none;"></span>
 
-                <select class="form-control" id="other-agent-select" style="display: none; margin-left: 10px;">
+                <select class="form-control" id="other-agent-select" style="display: none;">
                     <option value="" selected hidden>Grounded Results...</option>
                 </select>
                 <button type="button" id="ground-other-agent-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
@@ -297,6 +312,7 @@
                         </div>
                     </span>
                 </button>
+                <button type="button" id="cancel-other-agent-button" class="btn btn-danger ml-2" style="display: none; opacity: 0.9;">Cancel</button>
             </div>
         </div>
 
@@ -326,8 +342,9 @@
             <div style="display: flex; align-items: center; position: relative;">
                 <!-- Input field for Mesh name -->
                 <input type="text" class="form-control" id="mesh-name" name="mesh_name" placeholder="Enter Mesh name">
+                <span id="mesh-display" class="form-control" style="display: none;"></span>
 
-                <select class="form-control" id="mesh-select" style="display: none; margin-left: 10px;">
+                <select class="form-control" id="mesh-select" style="display: none;">
                     <option value="" selected hidden>Grounded Results...</option>
                 </select>
                 <button type="button" id="ground-mesh-button" class="btn btn-secondary ml-2" style="position: relative; width: 180px; flex-shrink: 0;">
@@ -340,6 +357,7 @@
                         </div>
                     </span>
                 </button>
+                <button type="button" id="cancel-mesh-button" class="btn btn-danger ml-2" style="display: none; opacity: 0.9;">Cancel</button>
             </div>
         </div>
 
