@@ -79,3 +79,7 @@ RUN python -m indra_cogex.client.enrichment.utils --force
 RUN python -m indra_cogex.apps.search.utils --cache
 
 ENTRYPOINT python -m indra_cogex.apps.cli --port 5000 --host "0.0.0.0" --with-gunicorn --workers 4 --timeout 300
+RUN echo "export GUNICORN_CONF=$(python -c 'from indra_cogex.apps.constants import GUNICORN_CONFIG; print(MY_CONFIG)')" >> /etc/environment && \
+    echo "Setting ${GUNICORN_CONF} as the gunicorn config file"
+
+ENTRYPOINT gunicorn -w 4 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
