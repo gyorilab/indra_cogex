@@ -17,6 +17,9 @@ from typing import (
     Union,
 )
 import json
+
+import bioregistry
+
 from indra.databases import identifiers
 from indra.ontology.standardize import standardize_name_db_refs
 from indra.statements.agent import get_grounding
@@ -268,17 +271,12 @@ def norm_id(db_ns, db_id) -> str:
     :
         The normalized identifier.
     """
-    identifiers_ns = identifiers.get_identifiers_ns(db_ns)
-    identifiers_id = db_id
-    if not identifiers_ns:
-        identifiers_ns = db_ns.lower()
-    else:
-        ns_embedded = identifiers.identifiers_registry.get(identifiers_ns, {}).get(
-            "namespace_embedded"
-        )
-        if ns_embedded:
-            identifiers_id = identifiers_id[len(identifiers_ns) + 1:]
-    return f"{identifiers_ns}:{identifiers_id}"
+    norm_curie = bioregistry.normalize_curie(f"{db_ns}:{db_id}")
+    # FIXME: temporarty patch while the content of the graph contains
+    # "ec-code" prefixes rather than "ec"
+    if norm_curie.startswith("ec:"):
+        norm_curie = 'ec-code:' + norm_curie[3:]
+    return norm_curie
 
 
 def triple_parameter_query(
