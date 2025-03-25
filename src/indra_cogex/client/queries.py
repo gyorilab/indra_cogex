@@ -105,6 +105,7 @@ __all__ = [
     "get_drugs_for_sensitive_cell_line",
     "get_sensitive_cell_lines_for_drug",
     "is_cell_line_sensitive_to_drug",
+    "get_mesh_annotated_evidence",
 
     # Summary functions
     "get_node_counter",
