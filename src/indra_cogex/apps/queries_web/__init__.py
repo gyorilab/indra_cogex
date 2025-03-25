@@ -196,7 +196,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_mesh",
             "get_stmts_meta_for_stmt_hashes",
             "get_stmts_for_stmt_hashes",
-            "get_statements"
+            "get_statements",
+            "get_mesh_annotated_evidence",
         ]
     },
     'drug_targets': {
