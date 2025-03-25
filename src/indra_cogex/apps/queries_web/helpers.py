@@ -11,9 +11,11 @@ from typing import (
     Type,
     Optional,
     Set,
+    Union,
 )
 
 import pandas as pd
+import pandas.core.frame
 from docstring_parser import parse
 from indra.statements import Agent, Evidence, Statement
 
@@ -139,6 +141,7 @@ def get_web_return_annotation(sig: Signature) -> Type:
     # Agent -> Dict[str, Any]
     # Mapping[str, Iterable[indra.statements.agent.Agent]]
     #   -> Dict[str, List[Dict[str, Any]]]
+    # pandas.core.frame.DataFrame -> List[Dict[str, Any]]
 
     if return_annotation is Iterable[Node]:
         return List[Dict[str, Any]]
@@ -158,6 +161,9 @@ def get_web_return_annotation(sig: Signature) -> Type:
         return Dict[str, Any]
     elif return_annotation is Mapping[str, Iterable[Agent]]:
         return Dict[str, List[Dict[str, Any]]]
+    elif return_annotation is pandas.core.frame.DataFrame:
+        # Has [str, int, float] columns
+        return List[Dict[str, Union[str, int, float]]]
     else:
         return return_annotation
 
