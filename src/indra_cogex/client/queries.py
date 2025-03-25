@@ -694,7 +694,27 @@ def get_mesh_annotated_evidence(
     include_child_terms: bool = True,
     *,
     client: Neo4jClient
-):
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Return Evidence data for a given MESH term and a given list of statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query evidence for.
+    mesh_term :
+        The MESH term to constrain evidences to.
+    include_child_terms :
+        If True, also match against the child MESH terms of the given MESH
+        term.
+
+    Returns
+    -------
+    :
+        A dictionary keyed by statement hash with each value being a list of
+        Evidence data dictionaries.
+    """
     if mesh_term[0] != "MESH":
         raise ValueError("Expected MESH term, got %s" % str(mesh_term))
     norm_mesh = norm_id(*mesh_term)
