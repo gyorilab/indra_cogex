@@ -21,8 +21,12 @@ from indra_cogex.client import queries, subnetwork
 from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.signed import EXAMPLE_POSITIVE_HGNC_IDS, EXAMPLE_NEGATIVE_HGNC_IDS
-from indra_cogex.analysis import metabolite_analysis, gene_analysis, gene_continuous_analysis_example_data
-
+from indra_cogex.analysis import (
+    metabolite_analysis,
+    gene_analysis,
+    gene_continuous_analysis_example_data,
+    source_targets_explanation
+)
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 logger = logging.getLogger(__name__)
@@ -314,7 +318,8 @@ FUNCTION_CATEGORIES = {
             "signed_analysis",
             "continuous_analysis",
             "metabolite_discrete_analysis",
-            "kinase_analysis"
+            "kinase_analysis",
+            "explain_downstream",
         ]
     },
     'subnetwork': {
@@ -383,10 +388,13 @@ examples_dict = {
     "include_db_evidence": fields.Boolean(example=True),
     "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
-    "targets": fields.List(
-        fields.List(fields.String),
-        example=[["HGNC", "6840"], ["HGNC", "1097"]]
-    ),
+    "targets": {
+        "explain_downstream": fields.List(fields.String, example=["TP53", "PARP1", "RAD51", "CHEK2"]),
+        "default": fields.List(
+            fields.List(fields.String),
+            example=[["HGNC", "6840"], ["HGNC", "1097"]]
+        )
+    },
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
@@ -425,8 +433,13 @@ examples_dict = {
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
-    "source": fields.String(example="go"),
+    "source": {
+        "explain_downstream": fields.String(example="BRCA1"),
+        "default": fields.String(example="go")
+    },
     "indra_path_analysis": fields.Boolean(example=False),
+    # For soure-targets analysis
+    "id_type": fields.String(example="hgnc.symbol"),
     # Cell marker
     "cell_type": fields.List(fields.String, example=["cl", "0000020"]),
     "marker": fields.List(fields.String, example=["hgnc", "11337"]),
@@ -483,10 +496,20 @@ SKIP_ARGUMENTS = {
 # example values for its parameters in the examples_dict above.
 module_functions = (
     [(queries, fn) for fn in queries.__all__] +
-    [(subnetwork, fn) for fn in ["indra_subnetwork_relations", "indra_subnetwork_meta", "indra_mediated_subnetwork",
-                                 "indra_subnetwork_tissue", "indra_subnetwork_go"]] +
+    [(subnetwork, fn) for fn in [
+        "indra_subnetwork_relations",
+        "indra_subnetwork_meta",
+        "indra_mediated_subnetwork",
+        "indra_subnetwork_tissue",
+        "indra_subnetwork_go"]] +
     [(metabolite_analysis, fn) for fn in ["metabolite_discrete_analysis"]] +
-    [(gene_analysis, fn) for fn in ["discrete_analysis", "signed_analysis", "continuous_analysis", "kinase_analysis"]]
+    [(gene_analysis, fn) for fn in [
+        "discrete_analysis",
+        "signed_analysis",
+        "continuous_analysis",
+        "kinase_analysis"]] +
+    [(source_targets_explanation, fn) for fn in ["explain_downstream"]]
+
 )
 
 # Maps function names to the actual functions
