@@ -271,7 +271,12 @@ def norm_id(db_ns, db_id) -> str:
     :
         The normalized identifier.
     """
-    return bioregistry.normalize_curie(f"{db_ns}:{db_id}")
+    norm_curie = bioregistry.normalize_curie(f"{db_ns}:{db_id}")
+    # FIXME: temporarty patch while the content of the graph contains
+    # "ec-code" prefixes rather than "ec"
+    if norm_curie.startswith("ec:"):
+        norm_curie = 'ec-code:' + norm_curie[3:]
+    return norm_curie
 
 
 def triple_parameter_query(
