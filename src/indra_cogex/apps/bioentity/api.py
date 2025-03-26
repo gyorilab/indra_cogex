@@ -131,9 +131,14 @@ class UniprotIdsFromUniprotMnemonicIds(Resource):
         convert each mnemonic ID to a UniProt ID. Then, it adds the mapping from the
         mnemonic ID to the UniProt ID to the result.
 
+        Parameters
+        ----------
+        uniprot_mnemonic_ids : List[str]
+            A list of  uniprot mnemonic identifiers to map to uniprot identifiers.
+
         Returns
         -------
-        :
+        mapping : Dict[str, str]
             A dictionary mapping UniProt mnemonic IDs to UniProt IDs.
         """
         uniprot_mnemonic_ids = request.json["uniprot_mnemonic_ids"]
@@ -164,9 +169,14 @@ class HgncIdsFromUniprotIds(Resource):
         "uniprot_ids". It returns a dictionary mapping each UniProt ID to its
         corresponding HGNC ID, if available.
 
+        Parameters
+        ----------
+        uniprot_ids : List[str]
+            A list of uniprot identifiers to map to HGNC identifiers.
+
         Returns
         -------
-        :
+        mapping : Dict[str, str]
             A dictionary where keys are UniProt IDs and values are HGNC IDs.
         """
         uniprot_ids = request.json["uniprot_ids"]
@@ -197,9 +207,14 @@ class HgncNamesFromHgncIds(Resource):
         "hgnc_ids". It retrieves the corresponding HGNC names using the `hgnc_client`
         and returns a dictionary mapping each HGNC ID to its name.
 
+        Parameters
+        ----------
+        hgnc_ids : List[str]
+            A list if HGNC identifiers to map to gene names
+
         Returns
         -------
-        :
+        mapping : Dict[str, str]
             A dictionary where keys are HGNC IDs and values are HGNC names.
         """
         hgnc_ids = request.json["hgnc_ids"]
@@ -231,9 +246,14 @@ class CheckIfKinase(Resource):
         `hgnc_client.is_kinase` method and returns a mapping of each gene to a boolean
         indicating whether it is a kinase.
 
+        Parameters
+        ----------
+        genes : List[str]
+            A list of gene names to check
+
         Returns
         -------
-        :
+        mapping : Dict[str, bool]
             A dictionary where the keys are gene names and the values are booleans
             indicating whether each gene is a kinase.
         """
@@ -260,15 +280,20 @@ class CheckIfPhosphatase(Resource):
     def post(self):
         """Determines if the given genes are phosphatases.
 
-        This method expects a JSON payload with a list of gene identifiers under the
+        This method expects a JSON payload with a list of gene names under the
         key "genes". It checks each gene to determine if it is a phosphatase using the
         `hgnc_client.is_phosphatase` method. The result is a dictionary mapping each
         gene to a boolean indicating whether it is a phosphatase.
 
+        Parameters
+        ----------
+        genes : List[str]
+            A list of gene names to check is they are phosphotases.
+
         Returns
         -------
-        :
-            A dictionary where keys are gene identifiers and values are booleans
+        mapping : Dict[str, bool]
+            A dictionary where keys are gene names and values are booleans
             indicating if the gene is a phosphatase.
         """
         genes = request.json["genes"]
@@ -299,9 +324,14 @@ class CheckIfTranscriptionFactor(Resource):
         `hgnc_client.is_transcription_factor` method and returns a mapping of genes
         to their transcription factor status.
 
+        Parameters
+        ----------
+        genes : List[str]
+            A list of gene names to check if they are transcription factors.
+
         Returns
         -------
-        :
+        mapping : Dict[str, bool]
             A dictionary where keys are gene names and values are booleans indicating
             whether the gene is a transcription factor.
         """
