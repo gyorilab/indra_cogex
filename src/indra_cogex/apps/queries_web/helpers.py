@@ -19,7 +19,7 @@ import pandas.core.frame
 from docstring_parser import parse
 from indra.statements import Agent, Evidence, Statement
 
-from indra_cogex.representation import Node
+from indra_cogex.representation import Node, Relation
 
 __all__ = [
     "parse_json",
@@ -28,6 +28,10 @@ __all__ = [
     "get_docstring",
     "ParseError",
 ]
+
+
+DictJSON = Dict[str, Any]
+ListJSON = List[DictJSON]
 
 
 class ParseError(ValueError):
@@ -144,26 +148,51 @@ def get_web_return_annotation(sig: Signature) -> Type:
     # pandas.core.frame.DataFrame -> List[Dict[str, Any]]
 
     if return_annotation is Iterable[Node]:
-        return List[Dict[str, Any]]
+        return ListJSON
     elif return_annotation is bool:
         return Dict[str, bool]
-    elif return_annotation is Dict[int, List[Evidence]]:
-        return Dict[str, List[Dict[str, Any]]]
-    elif return_annotation is Iterable[Evidence]:
-        return List[Dict[str, Any]]
-    elif return_annotation is Iterable[Statement]:
-        return List[Dict[str, Any]]
+    elif (
+        return_annotation is Dict[int, Iterable[Evidence]] or
+        return_annotation is Dict[int, List[Evidence]]
+    ):
+        return Dict[str, ListJSON]
+    elif (
+        return_annotation is Iterable[Evidence] or
+        return_annotation is List[Evidence]
+    ):
+        return ListJSON
+    elif (
+        return_annotation == Iterable[Statement] or
+        return_annotation == List[Statement]
+    ):
+        return ListJSON
+    elif (
+        return_annotation is Iterable[Relation] or
+        return_annotation is List[Relation]
+    ):
+        return ListJSON
     elif return_annotation is Counter:
         return Dict[str, int]
-    elif return_annotation is Iterable[Agent]:
-        return List[Dict[str, Any]]
+    elif (
+        return_annotation is Iterable[Agent] or
+        return_annotation is List[Agent]
+    ):
+        return ListJSON
     elif return_annotation is Agent:
-        return Dict[str, Any]
-    elif return_annotation is Mapping[str, Iterable[Agent]]:
-        return Dict[str, List[Dict[str, Any]]]
+        return DictJSON
+    elif (
+        return_annotation is Mapping[str, Iterable[Agent]] or
+        return_annotation is Dict[str, Iterable[Agent]] or
+        return_annotation is Mapping[str, List[Agent]] or
+        return_annotation is Dict[str, List[Agent]]
+    ):
+        return Dict[str, ListJSON]
     elif return_annotation is pandas.core.frame.DataFrame:
         # Has [str, int, float] columns
         return List[Dict[str, Union[str, int, float]]]
+    # indra_subnetwork_go
+    elif return_annotation == Union[List[Statement], Tuple[List[Statement], Dict[int, Dict[str, int]]]]:
+        return Union[ListJSON, Tuple[ListJSON, Dict[int, Dict[str, int]]]]
     else:
         return return_annotation
 
