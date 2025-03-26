@@ -86,6 +86,9 @@ def process_result(result) -> Any:
     # Any fundamental type
     if isinstance(result, (int, str, bool, float)):
         return result
+    # Any single instance of something that can be converted to JSON
+    elif isinstance(result, Node):
+        return result.to_json()
     # Any dict query
     elif isinstance(result, (dict, Mapping, Counter)):
         res_dict = dict(result)
@@ -99,6 +102,9 @@ def process_result(result) -> Any:
         # Check for empty list
         if list_res and hasattr(list_res[0], "to_json"):
             list_res = [res.to_json() for res in list_res]
+        # Recursively process lists of lists
+        elif list_res and isinstance(list_res[0], list):
+            list_res = [process_result(res) for res in list_res]
         return list_res
     else:
         raise TypeError(f"Don't know how to process result of type {type(result)}")
