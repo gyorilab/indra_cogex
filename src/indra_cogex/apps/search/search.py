@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["search_blueprint"]
 
-from indra_cogex.client.queries import enrich_statements
+from indra_cogex.client.queries import enrich_statements, check_agent_existence
 
 from indra_cogex.representation import indra_stmts_from_relations
 
@@ -53,7 +53,21 @@ def search():
     form = SearchForm()
 
     # POST Request: Generate a sharable link with query parameters
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        agent = form.agent_name.data
+
+        if agent:
+            agent, is_curie = check_and_convert(agent)
+            if is_curie:
+                agent_exists = check_agent_existence(agent)
+                if not agent_exists:
+                    return render_template(
+                        "search/search_page.html",
+                        form=form,
+                        stmt_types_json=stmt_types_json,
+                        agent_not_found=True,
+                        error_agent=f'{agent[0]}:{agent[1]}'
+                    )
         query_params = {
             "agent": form.agent_name.data,
             "agent_tuple": request.form.get("agent_tuple"),
@@ -75,7 +89,7 @@ def search():
 
     #Check if the agent is in CURIE form
     if agent:
-        agent = check_and_convert(agent)
+        agent, is_curie = check_and_convert(agent)
 
     agent_tuple = request.args.get("agent_tuple")
     if agent_tuple:
@@ -171,8 +185,8 @@ def check_and_convert(text):
         curie_validate_namespace, curie_validate_id = text.split(":", 1)
         if is_valid_curie(curie_validate_namespace, curie_validate_id, validator):
             result = (curie_validate_namespace, curie_validate_id)
-            return result
-    return text
+            return result, True
+    return text, False
 
 def gilda_ground(agent_text):
     try:

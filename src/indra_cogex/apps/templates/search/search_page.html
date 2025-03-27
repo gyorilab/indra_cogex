@@ -387,4 +387,12 @@
 <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
 <script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
+{% if agent_not_found %}
+    <script>
+        alert(" '{{ error_agent }}' not found in the database. Please try a different CURIE.");
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+{% endif %}
 {% endblock %}
