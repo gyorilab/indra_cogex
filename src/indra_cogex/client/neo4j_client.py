@@ -1029,6 +1029,30 @@ class Neo4jClient:
         )
         self.create_tx(create_query)
 
+    def check_curie_exists(self, agent:  Union[str, Tuple[str, str]]) -> bool:
+        """Check if an agent with the given id exists in the database.
+
+        Parameters
+        ----------
+        agent : Union[str, Tuple[str, str]]
+        The agent to check. Can be a string or a CURIE tuple.
+        Returns
+        -------
+        bool
+            True if the agent exists, False otherwise.
+        """
+        if isinstance(agent, tuple):
+            agent = norm_id(*agent)
+            clause = f"(n:BioEntity {{id: $agent}})"
+        else:
+            clause = f"(n:BioEntity {{name: $agent}})"
+        query = f"""Match {clause}
+        RETURN n IS NOT NULL AS exists
+        """
+
+        result = self.query_tx(query, squeeze=True, agent=agent)
+        return result[0] if result else False
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.
