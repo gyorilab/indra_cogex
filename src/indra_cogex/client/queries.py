@@ -1462,6 +1462,14 @@ def get_statements(
 
     return stmts, source_counts
 
+@autoclient()
+def check_agent_existence(
+    agent: Union[str, Tuple[str, str]],
+    *,
+    client: Neo4jClient
+) -> bool:
+    """Check if an agent exists in the database."""
+    return client.check_curie_exists(agent)
 
 @autoclient()
 def enrich_statements(
