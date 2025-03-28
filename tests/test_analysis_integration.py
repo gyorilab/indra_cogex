@@ -79,6 +79,8 @@ def test_discrete_analysis_with_indra():
         "phenotype",
         "indra-upstream",
         "indra-downstream",
+        "indra-upstream-kinases",
+        "indra-upstream-tfs",
     }
 
     assert expected_analyses == set(result.keys()), "Result should have all expected analyses"

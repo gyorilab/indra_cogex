@@ -5,6 +5,8 @@ from indra_cogex.representation import node_query, norm_id, triple_query, \
 def test_norm_id():
     assert norm_id("UP", "P12345") == "uniprot:P12345"
     assert norm_id("CHEBI", "CHEBI:12345") == "chebi:12345"
+    assert norm_id("CHEBI", "12345") == "chebi:12345"
+    assert norm_id("chebi", "12345") == "chebi:12345"
 
 
 def test_node_query():

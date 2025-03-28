@@ -621,7 +621,9 @@ def explain_downstream(
     client :
         The client instance
     id_type : str
-        Type of identifiers provided. Either 'hgnc.symbol' or 'hgnc'
+        Type of identifiers provided. Either 'hgnc.symbol' or 'hgnc'. Use
+        'hgnc.symbol' if the source and targets fields are HGNC gene symbols, and
+        'hgnc' if they are HGNC IDs.
 
     Returns
     -------

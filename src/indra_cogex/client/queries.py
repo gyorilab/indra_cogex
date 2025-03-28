@@ -105,6 +105,7 @@ __all__ = [
     "get_drugs_for_sensitive_cell_line",
     "get_sensitive_cell_lines_for_drug",
     "is_cell_line_sensitive_to_drug",
+    "get_mesh_annotated_evidence",
 
     # Summary functions
     "get_node_counter",
@@ -685,6 +686,62 @@ def isa_or_partof(
 
 
 # MESH / PMID
+
+@autoclient()
+def get_mesh_annotated_evidence(
+    stmt_hashes: List[str],
+    mesh_term: Tuple[str, str],
+    include_child_terms: bool = True,
+    *,
+    client: Neo4jClient
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Return Evidence data for a given MESH term and a given list of statement hashes.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    stmt_hashes :
+        The statement hashes to query evidence for.
+    mesh_term :
+        The MESH term to constrain evidences to.
+    include_child_terms :
+        If True, also match against the child MESH terms of the given MESH
+        term.
+
+    Returns
+    -------
+    :
+        A dictionary keyed by statement hash with each value being a list of
+        Evidence data dictionaries.
+    """
+    if mesh_term[0] != "MESH":
+        raise ValueError("Expected MESH term, got %s" % str(mesh_term))
+    norm_mesh = norm_id(*mesh_term)
+
+    # NOTE: we could use get_ontology_child_terms() here, but it's ~20 times
+    # slower for this specific query, so we do an optimized query that is
+    # basically equivalent instead.
+    if include_child_terms:
+        child_terms = _get_mesh_child_terms(mesh_term, client=client)
+    else:
+        child_terms = set()
+    mesh_terms = list({norm_mesh} | child_terms)
+
+    stmt_hashes = [int(h) for h in stmt_hashes]
+    # Statement -> Evidence -> Publication -> MeSH Term
+    query = """
+    MATCH (e:Evidence) -[:has_citation]-> (p:Publication) -[:annotated_with]-> (b:BioEntity)
+    WHERE e.stmt_hash in $stmt_hashes
+    AND b.id IN $mesh_terms
+    RETURN e
+    """
+    query_params = {"mesh_terms": mesh_terms, "stmt_hashes": stmt_hashes}
+    res = client.query_nodes(query, **query_params)
+    ret = defaultdict(list)
+    for ev in res:
+        ret[str(ev.data['stmt_hash'])].append(ev.data)
+    return dict(ret)
 
 
 @autoclient()
