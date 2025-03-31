@@ -46,6 +46,10 @@ api.init_app(app)
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 app.extensions[STATEMENT_CURATION_CACHE] = CurationCache()
 
+neo4j_client = Neo4jClient()
+agent_cache = neo4j_client.load_agent_cache()
+app.extensions["AGENT_CACHE_SET"] = agent_cache
+
 config_auth(app)
 
 # Secret key must be set to use flask-wtf, but there's no *really*

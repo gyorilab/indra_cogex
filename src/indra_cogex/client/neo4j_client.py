@@ -77,6 +77,21 @@ class Neo4jClient:
         if self.driver is not None:
             self.driver.close()
 
+    def load_agent_cache(self):
+        """Load all agents into a dictionary cache for quick lookup."""
+        query = "MATCH (n:BioEntity) RETURN n.id AS id, n.name AS name"
+        result = self.query_tx(query)
+        agent_cache = set()
+        for row in result:
+            if row[0]:  # Cache by ID if exists
+                agent_cache.add(row[0])
+            if row[1]:  # Cache by name if exists
+                agent_cache.add(row[1])
+
+        logger.info(f"Agent cache loaded successfully with,{len(agent_cache)}"
+                    f", entries.")
+        return agent_cache
+
     def ping(self) -> bool:
         """Ping the neo4j instance.
 

@@ -389,7 +389,7 @@
 <script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
 {% if agent_not_found %}
     <script>
-        alert(" '{{ error_agent }}' not found in the database. Please try a different CURIE.");
+        alert(" '{{ error_agent }}' not found in the database. Please try a different agent.");
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
         }

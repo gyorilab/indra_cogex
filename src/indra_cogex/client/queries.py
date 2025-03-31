@@ -1465,11 +1465,16 @@ def get_statements(
 @autoclient()
 def check_agent_existence(
     agent: Union[str, Tuple[str, str]],
-    *,
-    client: Neo4jClient
 ) -> bool:
     """Check if an agent exists in the database."""
-    return client.check_curie_exists(agent)
+    from flask import current_app
+    agent_cache = current_app.extensions["AGENT_CACHE_SET"]
+    if isinstance(agent, tuple):
+        agent = norm_id(*agent)
+        return agent in agent_cache
+    else:
+        print(agent)
+        return agent in agent_cache
 
 @autoclient()
 def enrich_statements(

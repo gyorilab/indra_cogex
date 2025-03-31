@@ -58,16 +58,19 @@ def search():
 
         if agent:
             agent, is_curie = check_and_convert(agent)
-            if is_curie:
-                agent_exists = check_agent_existence(agent)
-                if not agent_exists:
-                    return render_template(
-                        "search/search_page.html",
-                        form=form,
-                        stmt_types_json=stmt_types_json,
-                        agent_not_found=True,
-                        error_agent=f'{agent[0]}:{agent[1]}'
-                    )
+            agent_exists = check_agent_existence(agent)
+            if not agent_exists:
+                if is_curie:
+                    error_agent = f'{agent[0]}:{agent[1]}'
+                else:
+                    error_agent = agent
+                return render_template(
+                    "search/search_page.html",
+                    form=form,
+                    stmt_types_json=stmt_types_json,
+                    agent_not_found=True,
+                    error_agent=error_agent
+                )
         query_params = {
             "agent": form.agent_name.data,
             "agent_tuple": request.form.get("agent_tuple"),
@@ -89,7 +92,7 @@ def search():
 
     #Check if the agent is in CURIE form
     if agent:
-        agent, is_curie = check_and_convert(agent)
+        agent, _ = check_and_convert(agent)
 
     agent_tuple = request.args.get("agent_tuple")
     if agent_tuple:
