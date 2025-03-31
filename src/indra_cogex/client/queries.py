@@ -1462,7 +1462,6 @@ def get_statements(
 
     return stmts, source_counts
 
-@autoclient()
 def check_agent_existence(
     agent: Union[str, Tuple[str, str]],
 ) -> bool:
