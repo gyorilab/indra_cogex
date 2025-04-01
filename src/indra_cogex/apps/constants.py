@@ -57,7 +57,7 @@ STATIC_DIR = APPS_DIR / "static"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
-AGENT_NAME_CACHE = "AGENT_CACHE_SET"
+AGENT_NAME_CACHE = APPS_DIR / "search/agent_cache.pkl"
 # Set VUE parameters
 sources_dict = {
     "databases": [d for d in db_sources] + ["bel"],  # Fixme: temporary fix for BEL

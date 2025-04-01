@@ -79,7 +79,8 @@ class Neo4jClient:
 
     def load_agent_cache(self):
         """Load all agents into a dictionary cache for quick lookup."""
-        query = "MATCH (n:BioEntity) RETURN n.id AS id, n.name AS name"
+        query = ("MATCH (n:BioEntity) - [r: indra_rel] - (:BioEntity) "
+                 "RETURN n.id AS id, n.name AS name")
         result = self.query_tx(query)
         agent_cache = set()
         for row in result:
@@ -88,8 +89,8 @@ class Neo4jClient:
             if row[1]:  # Cache by name if exists
                 agent_cache.add(row[1])
 
-        logger.info(f"Agent cache loaded successfully with,{len(agent_cache)}"
-                    f", entries.")
+        logger.info(f"Agent cache loaded successfully with {len(agent_cache)}"
+                    f" entries.")
         return agent_cache
 
     def ping(self) -> bool:

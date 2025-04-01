@@ -1,5 +1,6 @@
 import json
 import logging
+import pickle
 import time
 from collections import Counter, defaultdict
 from textwrap import dedent
@@ -1468,12 +1469,15 @@ def check_agent_existence(
 ) -> bool:
     """Check if an agent exists in the database."""
     from flask import current_app
-    agent_cache = current_app.extensions[AGENT_NAME_CACHE]
+    if AGENT_NAME_CACHE.exists():
+        with open(AGENT_NAME_CACHE, 'rb') as f:
+            agent_cache = pickle.load(f)
+    else:
+        return True  # to skip the checking step
     if isinstance(agent, tuple):
         agent = norm_id(*agent)
         return agent in agent_cache
     else:
-        print(agent)
         return agent in agent_cache
 
 @autoclient()
