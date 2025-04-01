@@ -103,7 +103,7 @@ def search():
 
     # Check if the other_agent is in CURIE form
     if other_agent:
-        other_agent = check_and_convert(other_agent)
+        other_agent, _ = check_and_convert(other_agent)
 
     other_agent_tuple = request.args.get("other_agent_tuple")
     if other_agent_tuple:
@@ -120,7 +120,7 @@ def search():
 
     # Check if the mesh_terms is in CURIE form
     if mesh_terms:
-        mesh_terms = check_and_convert(mesh_terms)
+        mesh_terms, _ = check_and_convert(mesh_terms)
 
     mesh_tuple = request.args.get("mesh_tuple")
     if mesh_tuple:
