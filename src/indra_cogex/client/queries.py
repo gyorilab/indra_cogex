@@ -1468,7 +1468,6 @@ def check_agent_existence(
     agent: Union[str, Tuple[str, str]],
 ) -> bool:
     """Check if an agent exists in the database."""
-    from flask import current_app
     if AGENT_NAME_CACHE.exists():
         with open(AGENT_NAME_CACHE, 'rb') as f:
             agent_cache = pickle.load(f)
