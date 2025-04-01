@@ -9,6 +9,7 @@ import networkx as nx
 from indra.statements import Agent, Evidence, Statement
 from indra.sources import SOURCE_INFO
 
+from indra_cogex.apps.constants import AGENT_NAME_CACHE
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
 
@@ -1467,7 +1468,7 @@ def check_agent_existence(
 ) -> bool:
     """Check if an agent exists in the database."""
     from flask import current_app
-    agent_cache = current_app.extensions["AGENT_CACHE_SET"]
+    agent_cache = current_app.extensions[AGENT_NAME_CACHE]
     if isinstance(agent, tuple):
         agent = norm_id(*agent)
         return agent in agent_cache
