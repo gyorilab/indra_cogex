@@ -4,6 +4,7 @@ import pickle
 from indra_cogex.apps.constants import AGENT_NAME_CACHE
 from indra_cogex.client import Neo4jClient
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Utility for search-related tasks.")

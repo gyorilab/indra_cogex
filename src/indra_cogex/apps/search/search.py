@@ -59,7 +59,8 @@ def search():
         if agent:
             agent, is_curie = check_and_convert(agent)
             agent_exists = check_agent_existence(agent)
-            if not agent_exists:
+
+            if agent_exists is False:
                 if is_curie:
                     error_agent = f'{agent[0]}:{agent[1]}'
                 else:
