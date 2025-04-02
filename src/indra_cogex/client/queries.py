@@ -3311,8 +3311,6 @@ def get_network_for_paper(
     # Map known prefixes to their correct form
     if prefix_lower == 'pmid':
         paper_term = ('pubmed', identifier)
-    elif prefix_lower == 'pmc':
-        print(f"Warning: PMC IDs are not directly supported. Paper term: {paper_term}")
 
     # Get statements for the paper
     statements = get_stmts_for_paper(
@@ -3321,11 +3319,8 @@ def get_network_for_paper(
         include_db_evidence=include_db_evidence
     )
 
-    print(f"Found {len(statements)} statements for paper {paper_term}")
-
     # Limit to top N statements
     statements = statements[:limit]
-    print(f"Limited to top {len(statements)} statements")
 
     # If no statements found, return empty network
     if not statements:
@@ -3336,12 +3331,9 @@ def get_network_for_paper(
         assembler = IndraNetAssembler(statements)
         graph = assembler.make_model(graph_type='multi_graph')
 
-        print(f"Created graph with {len(graph.nodes())} nodes and {len(graph.edges())} edges")
-
         # Find most connected node
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0]
-        print(f"Central node is {central_node} with {node_degrees[central_node]} connections")
 
         # Convert to vis.js format
         nodes = []
@@ -3440,13 +3432,9 @@ def get_network_for_paper(
             edge_stmt = None
             found_stmt_type = None
 
-            # Debug the edge data
-            print(f"Edge from {source} to {target}, data: {data}")
-
             # Try to get stmt_type directly from edge data
             if 'stmt_type' in data:
                 found_stmt_type = data['stmt_type']
-                print(f"Found stmt_type in edge data: {found_stmt_type}")
 
             # Search for the statement that connects these nodes
             for stmt in statements:
@@ -3463,12 +3451,10 @@ def get_network_for_paper(
                 if source_found and target_found:
                     edge_stmt = stmt
                     found_stmt_type = type(stmt).__name__
-                    print(f"Found matching statement: {found_stmt_type}")
                     break
 
             # Extract statement type
             stmt_type = found_stmt_type if found_stmt_type else 'Interaction'
-            print(f"Final stmt_type for edge {source}->{target}: {stmt_type}")
 
             # Determine color and style based on statement type
             # Make color differences more dramatic
@@ -3480,16 +3466,12 @@ def get_network_for_paper(
 
             if 'Activation' in stmt_type:
                 color = '#00CC00'  # bright green
-                print(f"Setting activation color for {source}->{target}")
             elif 'Inhibition' in stmt_type:
                 color = '#FF0000'  # bright red
-                print(f"Setting inhibition color for {source}->{target}")
             elif 'Phosphorylation' in stmt_type:
                 color = '#000000'  # black
-                print(f"Setting phosphorylation color for {source}->{target}")
             elif 'Complex' in stmt_type:
                 color = '#0000FF'  # bright blue
-                print(f"Setting complex color for {source}->{target}")
                 arrows = {
                     'to': {'enabled': False},
                     'from': {'enabled': False}
@@ -3497,11 +3479,9 @@ def get_network_for_paper(
             elif 'IncreaseAmount' in stmt_type:
                 color = '#00CC00'  # bright green (same as Activation)
                 dashes = [5, 5]  # dashed line
-                print(f"Setting IncreaseAmount color for {source}->{target}")
             elif 'DecreaseAmount' in stmt_type:
                 color = '#FF0000'  # bright red (same as Inhibition)
                 dashes = [5, 5]  # dashed line
-                print(f"Setting DecreaseAmount color for {source}->{target}")
             else:
                 # Default color and width
                 color = '#999999'  # gray
@@ -3545,14 +3525,11 @@ def get_network_for_paper(
             })
             edge_count += 1
 
-        print(f"Converted to vis.js format: {len(nodes)} nodes and {len(edges)} edges")
-
         return {
             'nodes': nodes,
             'edges': edges
         }
     except Exception as e:
-        print(f"Error creating network: {str(e)}")
         import traceback
         traceback.print_exc()
 
