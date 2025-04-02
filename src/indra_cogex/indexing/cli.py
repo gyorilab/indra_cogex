@@ -19,6 +19,12 @@ import click
     help="Index all nodes on the id property.",
 )
 @click.option(
+    "--index-bioentity-names",
+    is_flag=True,
+    help="Index BioEntity nodes on the name property. This is useful for "
+    "efficiently querying BioEntity nodes by their names.",
+)
+@click.option(
     "--index-evidence-nodes",
     is_flag=True,
     help="Index the Evidence nodes on the stmt_hash property.",
@@ -37,6 +43,7 @@ import click
 def main(
     all_: bool = False,
     index_nodes: bool = False,
+    index_bioentity_names: bool = False,
     index_evidence_nodes: bool = False,
     index_indra_relations: bool = False,
     exist_ok: bool = False,
@@ -44,17 +51,34 @@ def main(
     auth: Optional[Tuple[str, str]] = None,
 ):
     """Build indexes on the database."""
+    if not any([all_, index_nodes, index_bioentity_names,
+                index_evidence_nodes, index_indra_relations]):
+        click.secho(
+            "No indexing options provided. Use --all or at least one of the "
+            "specific indexing options.",
+            fg="red"
+        )
+        return
+
     client = _get_client(url, auth)
     if all_ or index_nodes:
         from . import index_nodes_on_id
 
         click.secho("Indexing all nodes on the id property.", fg="green")
         index_nodes_on_id(client, exist_ok=exist_ok)
+
+    if all_ or index_bioentity_names:
+        from . import index_bioentity_nodes_on_name
+
+        click.secho("Indexing BioEntity nodes on the name property.", fg="green")
+        index_bioentity_nodes_on_name(client)
+
     if all_ or index_evidence_nodes:
         from . import index_evidence_on_stmt_hash
 
         click.secho("Indexing Evidence nodes on the stmt_hash property.", fg="green")
         index_evidence_on_stmt_hash(client, exist_ok=exist_ok)
+
     if all_ or index_indra_relations:
         from . import index_indra_rel_on_stmt_hash
 

@@ -42,6 +42,22 @@ def index_nodes_on_id(client: Neo4jClient, exist_ok: bool = False):
         time.sleep(0.25)
 
 
+def index_bioentity_nodes_on_name(client: Neo4jClient):
+    """Index all BioEntity nodes on the name property
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient instance to the graph database to be indexed
+    """
+    # Index BioEntity nodes on the name property
+    client.create_single_property_node_index(
+        index_name="node_name_bioentity",
+        label="BioEntity",
+        property_name="name"
+    )
+
+
 def index_evidence_on_stmt_hash(client: Neo4jClient, exist_ok: bool = False):
     """Index all Evidence nodes on the stmt_hash property
 
