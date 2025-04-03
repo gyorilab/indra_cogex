@@ -24,7 +24,7 @@ import pystow
 from indra.databases.hgnc_client import is_kinase
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
-from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS
+from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS, APP_CACHE_MODULE
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.representation import norm_id
@@ -44,7 +44,6 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 Y = TypeVar("Y")
-APP_CACHE_MODULE = pystow.module("indra", "cogex", "app_cache")
 GO_GENE_SET_PATH = APP_CACHE_MODULE.join(name="go.pkl")
 WIKIPATHWAYS_GENE_SET_PATH = APP_CACHE_MODULE.join(name="wiki.pkl")
 REACTOME_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="reactome.pkl")

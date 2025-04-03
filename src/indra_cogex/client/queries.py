@@ -1,5 +1,6 @@
 import json
 import logging
+import pickle
 import time
 from collections import Counter, defaultdict
 from textwrap import dedent
@@ -9,6 +10,7 @@ import networkx as nx
 from indra.statements import Agent, Evidence, Statement
 from indra.sources import SOURCE_INFO
 
+from indra_cogex.apps.constants import AGENT_NAME_CACHE
 from .neo4j_client import Neo4jClient, autoclient
 from ..representation import Node, Relation, indra_stmts_from_relations, norm_id, generate_paper_clause
 
@@ -1461,6 +1463,22 @@ def get_statements(
     }
 
     return stmts, source_counts
+
+
+def check_agent_existence(
+    agent: Union[str, Tuple[str, str]],
+) -> Union[bool, None]:
+    """Check if an agent exists in the database."""
+    if AGENT_NAME_CACHE.exists():
+        with open(AGENT_NAME_CACHE, 'rb') as f:
+            agent_cache = pickle.load(f)
+    else:
+        return None
+    if isinstance(agent, tuple):
+        agent = norm_id(*agent)
+        return agent in agent_cache
+    else:
+        return agent in agent_cache
 
 
 @autoclient()

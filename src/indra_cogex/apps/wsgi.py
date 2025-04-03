@@ -14,6 +14,7 @@ from indra_cogex.apps.constants import (
     STATIC_DIR,
     TEMPLATES_DIR,
     STATEMENT_CURATION_CACHE,
+    AGENT_NAME_CACHE,
 )
 from indra_cogex.apps.chat_page import chat_blueprint
 from indra_cogex.apps.curator import explorer_blueprint
@@ -45,6 +46,7 @@ api.init_app(app)
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 app.extensions[STATEMENT_CURATION_CACHE] = CurationCache()
+
 
 config_auth(app)
 

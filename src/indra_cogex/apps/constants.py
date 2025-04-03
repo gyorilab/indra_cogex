@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 from typing import Union
+
+import pystow
 from indra.util.statement_presentation import db_sources, reader_sources
 from indra.config import get_config
 
@@ -51,13 +53,14 @@ INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
     "true",
 }
 
+APP_CACHE_MODULE = pystow.module("indra", "cogex", "app_cache")
 APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
-
+AGENT_NAME_CACHE = APP_CACHE_MODULE.join(name="search_agent_cache.pkl")
 # Set VUE parameters
 sources_dict = {
     "databases": [d for d in db_sources] + ["bel"],  # Fixme: temporary fix for BEL

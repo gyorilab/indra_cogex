@@ -75,4 +75,7 @@ RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[w
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
 
+# Save agent name in cache for search
+RUN python -m indra_cogex.apps.search.utils --cache
+
 ENTRYPOINT python -m indra_cogex.apps.cli --port 5000 --host "0.0.0.0" --with-gunicorn --workers 4 --timeout 300

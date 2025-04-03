@@ -195,7 +195,7 @@
 <div class="card card-body bg-light">
     <h1 class="display-4">Statement Search</h1>
     <p class="lead">This page allows you to search into 9.8 million statements assembled over 130 thousand entities
-        (genes, proteins, small molecules, biological processes, etc.) with a total of 5.1 million pieces of supporting evidence from literature and databases. </br>
+        (genes, proteins, small molecules, biological processes, etc.) with a total of 25 million pieces of supporting evidence from literature and databases. </br>
         Refine your search by specifying agents, relationship types, and roles.</p>
 
     <form method="POST" id="agent-form">
@@ -387,4 +387,12 @@
 <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
 <script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
+{% if agent_not_found %}
+    <script>
+        alert(" '{{ error_agent }}' not found in the database. Please try a different agent.");
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+{% endif %}
 {% endblock %}

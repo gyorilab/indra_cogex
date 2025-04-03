@@ -77,6 +77,22 @@ class Neo4jClient:
         if self.driver is not None:
             self.driver.close()
 
+    def load_agent_cache(self):
+        """Load all agents into a dictionary cache for quick lookup."""
+        query = ("MATCH (n:BioEntity) - [r: indra_rel] - (:BioEntity) "
+                 "RETURN n.id AS id, n.name AS name")
+        result = self.query_tx(query)
+        agent_cache = set()
+        for row in result:
+            if row[0]:  # Cache by ID if exists
+                agent_cache.add(row[0])
+            if row[1]:  # Cache by name if exists
+                agent_cache.add(row[1])
+
+        logger.info(f"Agent cache loaded successfully with {len(agent_cache)}"
+                    f" entries.")
+        return agent_cache
+
     def ping(self) -> bool:
         """Ping the neo4j instance.
 
@@ -1028,6 +1044,30 @@ class Neo4jClient:
             f"CREATE INDEX {index_name} FOR ()-[r:{rel_type}]-() ON (r.{property_name})"
         )
         self.create_tx(create_query)
+
+    def check_curie_exists(self, agent:  Union[str, Tuple[str, str]]) -> bool:
+        """Check if an agent with the given id exists in the database.
+
+        Parameters
+        ----------
+        agent : Union[str, Tuple[str, str]]
+        The agent to check. Can be a string or a CURIE tuple.
+        Returns
+        -------
+        bool
+            True if the agent exists, False otherwise.
+        """
+        if isinstance(agent, tuple):
+            agent = norm_id(*agent)
+            clause = f"(n:BioEntity {{id: $agent}})"
+        else:
+            clause = f"(n:BioEntity {{name: $agent}})"
+        query = f"""Match {clause}
+        RETURN n IS NOT NULL AS exists
+        """
+
+        result = self.query_tx(query, squeeze=True, agent=agent)
+        return result[0] if result else False
 
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
