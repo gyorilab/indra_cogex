@@ -25,7 +25,10 @@ def metabolite_discrete_analysis(
         *,
         client: Neo4jClient  # Client argument moved to the end as a keyword argument
 ) -> pd.DataFrame:
-    """Perform discrete metabolite analysis and return results as a DataFrame
+    """Perform discrete metabolite analysis
+
+    Corresponding web-form based analysis is found at:
+    https://discovery.indra.bio/metabolite/discrete
 
     Parameters
     ----------

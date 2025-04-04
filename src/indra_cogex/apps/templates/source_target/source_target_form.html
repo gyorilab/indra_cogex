@@ -20,16 +20,27 @@
 
 {% block lead %}
     This application analyzes relationships between a source gene and its downstream target genes using
-    INDRA CoGEx. The analysis reveals various types of biological relationships and shared mechanisms.<br>
-    <small>
+    INDRA CoGEx. The analysis reveals various types of biological relationships and shared mechanisms.
+    <br>
+    The corresponding REST API endpoint for the source-target queries is <code>/api/explain_downstream</code>.
+    You can find it on the <a href="/apidocs">API Docs</a> under the section 'Analysis Queries'.
+    <br>
+    This tool helps understand how genes interact and influence each other in biological networks.
+    <br>
+    {# ul cannot be inside a <p> tag, so we close it early, use div for the list,
+    and then start a new paragraph tag after the list #}
+    </p>
+    <div>
         The analysis includes:
-        <ul>
+        <ul style="font-size: 16px">
             <li>INDRA statements showing direct relationships and evidence</li>
             <li>Shared biological pathways from REACTOME and WikiPathways</li>
             <li>Protein family relationships</li>
             <li>Gene Ontology (GO) term analysis</li>
             <li>Upstream regulatory mechanisms</li>
         </ul>
-        This tool helps understand how genes interact and influence each other in biological networks.
-    </small>
+    </div>
+    {# New paragraph to match the enclosing one from outside the lead block (see
+    base_form.html #}
+    <p>
 {% endblock %}

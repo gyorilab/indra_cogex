@@ -193,7 +193,7 @@ def get_docstring(
         raise ValueError("Forgot to type annotate function")
 
     full_docstr = """{title}
-
+{extra_description}
 Parameters
 ----------
 {params}
@@ -208,6 +208,12 @@ Returns
     param_templ = "{name} : {typing}\n    {description}"
 
     ret_templ = "{typing}\n    {description}"
+
+    # See if there is an extra description in the docstring, after the first line
+    # but before the Parameters section. This is optional.
+    extra_description = ""
+    if parsed_doc.long_description and parsed_doc.long_description.strip():
+        extra_description += f"\n{parsed_doc.long_description.strip()}\n"
 
     # Get the parameters
     param_list = []
@@ -238,6 +244,7 @@ Returns
 
     return short, full_docstr.format(
         title=short,
+        extra_description=extra_description,
         params=params,
         return_str=return_str,
     )
