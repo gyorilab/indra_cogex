@@ -27,6 +27,9 @@ def metabolite_discrete_analysis(
 ) -> pd.DataFrame:
     """Perform discrete metabolite analysis and return results as a DataFrame
 
+    Corresponding web-form based analysis is found at:
+    https://discovery.indra.bio/metabolite/discrete
+
     Parameters
     ----------
     metabolites : List[str]
