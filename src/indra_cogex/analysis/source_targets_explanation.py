@@ -613,7 +613,7 @@ def explain_downstream(
     """High-level function that handles input validation and runs the analysis.
 
     Corresponding web-form based analysis can be found at:
-    https://discovery.indra.bio/source-target/analysis
+    https://discovery.indra.bio/source_target/analysis
 
     Parameters
     ----------
