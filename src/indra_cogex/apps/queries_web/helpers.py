@@ -147,10 +147,13 @@ def get_web_return_annotation(sig: Signature) -> Type:
     #   -> Dict[str, List[Dict[str, Any]]]
     # pandas.core.frame.DataFrame -> List[Dict[str, Any]]
 
+    # Todo: is there a way to handle this recursively for nested types?
     if return_annotation is Iterable[Node]:
         return ListJSON
     elif return_annotation is bool:
         return Dict[str, bool]
+    elif return_annotation is Mapping[str, List[str]]:
+        return Dict[str, List[str]]
     elif (
         return_annotation is Dict[int, Iterable[Evidence]] or
         return_annotation is Dict[int, List[Evidence]]
@@ -190,9 +193,14 @@ def get_web_return_annotation(sig: Signature) -> Type:
     elif return_annotation is pandas.core.frame.DataFrame:
         # Has [str, int, float] columns
         return List[Dict[str, Union[str, int, float]]]
+    elif return_annotation is Dict[str, pandas.core.frame.DataFrame]:
+        return Dict[str, List[Dict[str, Union[str, int, float]]]]
     # indra_subnetwork_go
     elif return_annotation == Union[List[Statement], Tuple[List[Statement], Dict[int, Dict[str, int]]]]:
         return Union[ListJSON, Tuple[ListJSON, Dict[int, Dict[str, int]]]]
+    # get_stmts_for_stmt_hashes
+    elif return_annotation == Union[List[Statement], Tuple[List[Statement], Mapping[int, int]]]:
+        return Union[ListJSON, Tuple[ListJSON, Dict[int, int]]]
     else:
         return return_annotation
 
