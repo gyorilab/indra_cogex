@@ -578,7 +578,7 @@ class PaperForm(FlaskForm):
         description="""
                 This field accepts identifiers from PubMed, PubMed Central, and DOI. Examples: 
                 <a href="#" onclick="event.preventDefault(); 
-                document.getElementById('identifier').value='pubmed:26186194'">pubmed:26186194</a>, 
+                document.getElementById('identifier').value='pubmed:21040840'">pubmed:21040840</a>, 
                 <a href="#" onclick="event.preventDefault(); 
                 document.getElementById('identifier').value='PMC4617211'">PMC4617211</a>, or 
                 <a href="#" onclick="event.preventDefault(); 
@@ -586,13 +586,16 @@ class PaperForm(FlaskForm):
                 doi:10.1016/J.CELL.2015.06.043</a>
                 """
     )
+    include_db_evidence = BooleanField(
+        'Include Database Evidence',
+        default=True,
+        description="Include evidence from curated databases extracted from the given paper"
+    )
     filter_curated = BooleanField(
         "Filter Curated Evidences",
-        default=True,
-        description="Do not show evidences that have been previously explored",
+        default=False,
+        description="Do not show statements that have been curated for correctness",
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
-                                       default=True)
     submit = SubmitField("Submit")
 
     def get_term(self) -> Tuple[str, str]:
