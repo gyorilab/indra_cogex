@@ -49,6 +49,9 @@ def discrete_analysis(
 ) -> Dict[str, pd.DataFrame]:
     """Perform discrete analysis on the provided genes.
 
+    Corresponding web-form based analysis can be found at:
+    https://discovery.indra.bio/gene/discrete
+
     Parameters
     ----------
     gene_list : List[str]
@@ -174,6 +177,9 @@ def signed_analysis(
 ) -> Optional[pd.DataFrame]:
     """Perform signed analysis using reverse causal reasoning
 
+    Corresponding web-form based analysis can be found at:
+    https://discovery.indra.bio/gene/signed
+
     Parameters
     ----------
     positive_genes : List[str]
@@ -235,6 +241,9 @@ def continuous_analysis(
     client: Neo4jClient
 ) -> pd.DataFrame:
     """Perform continuous gene set analysis on gene expression data.
+
+    Corresponding web-form based analysis is found at:
+    https://discovery.indra.bio/gene/continuous
 
     Parameters
     ----------
@@ -341,6 +350,9 @@ def kinase_analysis(
     client: Neo4jClient,
 ) -> pd.DataFrame:
     """Perform over-representation analysis on kinase-phosphosite relationships.
+
+    Corresponding web-form based analysis is found at:
+    https://discovery.indra.bio/gene/kinase
 
     Parameters
     ----------
