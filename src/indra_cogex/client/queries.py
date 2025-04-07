@@ -445,7 +445,7 @@ def get_pathways_for_gene(
 
 @autoclient()
 def get_shared_pathways_for_genes(
-    genes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    genes: List[Tuple[str, str]], *, client: Neo4jClient
 ) -> Iterable[Node]:
     """Return the shared pathways for the given list of genes.
 
@@ -982,7 +982,7 @@ def get_evidences_for_stmt_hash(
 
 @autoclient()
 def get_evidences_for_stmt_hashes(
-    stmt_hashes: Iterable[int],
+    stmt_hashes: List[int],
     *,
     client: Neo4jClient,
     limit: Optional[str] = None,
@@ -1141,7 +1141,7 @@ def get_stmts_for_mesh(
     evidence_limit: int = 10,
     include_db_evidence: bool = True,
     **kwargs,
-) -> Union[Tuple[List[Statement], Mapping[int, int]], Tuple[List[Statement], None]]:
+) -> Union[Tuple[List[Statement], Mapping[int, int]], List[Statement]]:
     """Return the statements with evidence for the given MESH ID.
 
     Parameters
@@ -1180,7 +1180,7 @@ def get_stmts_for_mesh(
 
 @autoclient()
 def get_stmts_meta_for_stmt_hashes(
-    stmt_hashes: Iterable[int],
+    stmt_hashes: List[int],
     *,
     client: Neo4jClient,
 ) -> Iterable[Relation]:
@@ -1211,7 +1211,7 @@ def get_stmts_meta_for_stmt_hashes(
 
 @autoclient()
 def get_stmts_for_stmt_hashes(
-    stmt_hashes: Iterable[int],
+    stmt_hashes: List[int],
     *,
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     client: Neo4jClient,
@@ -1672,7 +1672,7 @@ def get_drugs_for_target(
 
 @autoclient()
 def get_drugs_for_targets(
-    targets: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    targets: List[Tuple[str, str]], *, client: Neo4jClient
 ) -> Mapping[str, Iterable[Agent]]:
     """Return the drugs targeting each of the given targets.
 
@@ -1732,7 +1732,7 @@ def get_targets_for_drug(
 
 @autoclient()
 def get_targets_for_drugs(
-    drugs: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    drugs: List[Tuple[str, str]], *, client: Neo4jClient
 ) -> Mapping[str, Iterable[Agent]]:
     """Return the proteins targeted by each of the given drugs
 
@@ -1789,7 +1789,7 @@ def is_drug_target(
 
 
 def _get_ev_dict_from_hash_ev_query(
-    result: Optional[Iterable[List[Union[int, str]]]] = None,
+    result: Optional[List[List[Union[int, str]]]] = None,
     remove_medscan: bool = True,
 ) -> Dict[int, List[Evidence]]:
     """Assumes result is an Iterable of pairs of [hash, evidence_json]"""
@@ -1823,7 +1823,7 @@ def _get_node_from_stmt_relation(
 
 
 def _filter_out_medscan_evidence(
-    ev_list: Iterable[Dict[str, Dict]], remove_medscan: bool = True
+    ev_list: List[Dict[str, Dict]], remove_medscan: bool = True
 ) -> List[Evidence]:
     """Filter out Evidence JSONs containing evidence from medscan."""
     return [
@@ -1889,7 +1889,7 @@ def get_cell_types_for_marker(
 @autoclient()
 def is_marker_for_cell_type(
     marker: Tuple[str, str], cell_type: Tuple[str, str], *, client: Neo4jClient
-) -> List[Any]:
+) -> bool:
     """Return True if the marker is associated with the given cell type.
 
     Parameters
@@ -1974,7 +1974,7 @@ def get_diseases_for_phenotype(
 @autoclient()
 def has_phenotype(
     disease: Tuple[str, str], phenotype: Tuple[str, str], *, client: Neo4jClient
-) -> List[Any]:
+) -> bool:
     """Return True if the disease has the given phenotype.
 
     Parameters
@@ -2137,7 +2137,7 @@ def get_journals_for_publisher(
 @autoclient()
 def is_journal_published_by(
     journal: Tuple[str, str], publisher: Tuple[str, str], *, client: Neo4jClient
-) -> List[Any]:
+) -> bool:
     """Check if a journal is published by a specific publisher.
 
     Parameters
@@ -2865,7 +2865,7 @@ def get_drugs_for_indication(
 @autoclient()
 def drug_has_indication(
     molecule: Tuple[str, str], indication: Tuple[str, str], *, client: Neo4jClient
-) -> List[Any]:
+) -> bool:
     """Check if a molecule is associated with an indication in ChEMBL data.
 
     Parameters
@@ -2922,7 +2922,7 @@ def get_codependents_for_gene(
 @autoclient()
 def gene_has_codependency(
     gene1: Tuple[str, str], gene2: Tuple[str, str], *, client: Neo4jClient
-) -> List[Any]:
+) -> bool:
     """Check if two genes are codependent according to DepMap data.
 
     Parameters
