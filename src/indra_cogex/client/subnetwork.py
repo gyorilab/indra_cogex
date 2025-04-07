@@ -1,7 +1,7 @@
 """Queries that generate statement subnetworks."""
 
 import json
-from typing import Any, Iterable, List, Tuple, Union, Dict
+from typing import Any, List, Tuple, Union, Dict
 import logging
 
 from indra.statements import Statement
@@ -23,7 +23,7 @@ __all__ = [
 
 @autoclient()
 def indra_subnetwork_relations(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
+    nodes: List[Tuple[str, str]], *, client: Neo4jClient, include_db_evidence: bool = True
 ) -> List[Relation]:
     """Return the subnetwork induced by the given nodes as a set of Relations.
 
@@ -54,7 +54,7 @@ def indra_subnetwork_relations(
 
 @autoclient()
 def indra_subnetwork_meta(
-    nodes: Iterable[Tuple[str, str]], *, client: Neo4jClient
+    nodes: List[Tuple[str, str]], *, client: Neo4jClient
 ) -> List[List[Any]]:
     """Return the subnetwork induced by the given nodes as a list of metadata
     on relations.
@@ -91,7 +91,7 @@ def indra_subnetwork_meta(
 
 @autoclient()
 def indra_subnetwork(
-    nodes: Iterable[Tuple[str, str]],
+    nodes: List[Tuple[str, str]],
     *,
     client: Neo4jClient,
     include_db_evidence: bool = True,
@@ -134,7 +134,7 @@ def indra_subnetwork(
 
 @autoclient()
 def indra_mediated_subnetwork(
-    nodes: Iterable[Tuple[str, str]],
+    nodes: List[Tuple[str, str]],
     *,
     client: Neo4jClient,
     order_by_ev_count: bool = False,
@@ -170,7 +170,7 @@ def indra_mediated_subnetwork(
 
 @autoclient()
 def indra_shared_downstream_subnetwork(
-    nodes: Iterable[Tuple[str, str]],
+    nodes: List[Tuple[str, str]],
     *,
     client: Neo4jClient,
     order_by_ev_count: bool = False,
@@ -206,7 +206,7 @@ def indra_shared_downstream_subnetwork(
 
 @autoclient()
 def indra_shared_upstream_subnetwork(
-    nodes: Iterable[Tuple[str, str]],
+    nodes: List[Tuple[str, str]],
     *,
     client: Neo4jClient,
     order_by_ev_count: bool = False,
@@ -242,7 +242,7 @@ def indra_shared_upstream_subnetwork(
 
 def get_two_step_subnetwork(
     *,
-    nodes: Iterable[Tuple[str, str]],
+    nodes: List[Tuple[str, str]],
     client: Neo4jClient,
     first_forward: bool = True,
     second_forward: bool = True,

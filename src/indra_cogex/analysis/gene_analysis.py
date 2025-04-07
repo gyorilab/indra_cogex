@@ -46,7 +46,7 @@ def discrete_analysis(
     background_gene_list: List[str] = None,
     *,
     client: Neo4jClient
-) -> Dict[str, Union[pd.DataFrame, None]]:
+) -> Dict[str, pd.DataFrame]:
     """Perform discrete analysis on the provided genes.
 
     Parameters
@@ -74,7 +74,7 @@ def discrete_analysis(
 
     Returns
     -------
-    Dict[str, pd.DataFrame | None]
+    Dict[str, pd.DataFrame]
         A dict with results per analysis type in the form of a DataFrame or None
         if an error occurs or no results are found.
     """
@@ -331,7 +331,7 @@ def continuous_analysis(
 
 @autoclient()
 def kinase_analysis(
-    phosphosite_list: Iterable[str],
+    phosphosite_list: List[str],
     alpha: float = 0.05,
     keep_insignificant: bool = False,
     background: Optional[Collection[str]] = None,
@@ -344,7 +344,7 @@ def kinase_analysis(
 
     Parameters
     ----------
-    phosphosite_list : Iterable[str]
+    phosphosite_list : List[str]
         List of phosphosites in the format "gene-site" or "UniProtID-site" (e.g., "MAPK1-Y187" or "P23443-T412").
     alpha : float, default=0.05
         Significance threshold for ORA.
@@ -395,7 +395,7 @@ def kinase_analysis(
     )
 
 
-def parse_gene_list(gene_list: Iterable[str]) -> Tuple[Dict[str, str], List[str]]:
+def parse_gene_list(gene_list: List[str]) -> Tuple[Dict[str, str], List[str]]:
     """Parse gene list"""
     hgnc_ids = []
     errors = []
@@ -439,7 +439,7 @@ def is_valid_phosphosite(site: str) -> bool:
 
 
 def parse_phosphosite_list(
-    phosphosite_list: Iterable[Tuple[str, str]]
+    phosphosite_list: List[Tuple[str, str]]
 ) -> Tuple[List[Tuple[str, str]], List[str]]:
     """Convert UniProt IDs to gene symbols and validate phosphosites."""
     phosphosites = []
