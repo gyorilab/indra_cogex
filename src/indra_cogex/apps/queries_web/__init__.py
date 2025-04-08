@@ -363,7 +363,12 @@ examples_dict = {
     "side_effect": fields.List(fields.String, example=["UMLS", "C3267206"]),
     "term": fields.List(fields.String, example=["MESH", "D007855"]),
     "parent": fields.List(fields.String, example=["MESH", "D007855"]),
-    "mesh_term": fields.List(fields.String, example=["MESH", "D015002"]),
+    "mesh_term": {
+        "get_mesh_annotated_evidence": fields.List(
+            fields.String, example=["MESH", "D012878"]
+        ),
+        "default": fields.List(fields.String, example=["MESH", "D015002"])
+    },
     "pmid_term": fields.List(fields.String, example=["PUBMED", "34634383"]),
     "paper_term": fields.List(fields.String, example=["PUBMED", "23356518"]),
     "pmids": fields.List(fields.String, example=["20861832", "19503834"]),
@@ -375,7 +380,15 @@ examples_dict = {
     "order_by_ev_count": fields.Boolean(example=False),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
-    "stmt_hashes": fields.List(fields.String, example=["12198579805553967", "30651649296901235"]),
+    "stmt_hashes": {
+        "get_mesh_annotated_evidence": fields.List(
+            fields.String, example=[
+                "9864896957797950", "20136431766023466", "-18896592574172325"
+            ]
+        ),
+        "default": fields.List(fields.String,
+                               example=["12198579805553967", "30651649296901235"])
+    },
     "rel_type": fields.String(example="Phosphorylation"),
     "rel_types": fields.List(fields.String, example=["Phosphorylation", "Activation"]),
     "agent_name": fields.String(example="MEK"),
