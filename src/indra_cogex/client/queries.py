@@ -42,6 +42,7 @@ __all__ = [
     "get_pmids_for_mesh",
     "get_mesh_ids_for_pmid",
     "get_mesh_ids_for_pmids",
+    "get_mesh_annotated_evidence",
     "get_evidences_for_mesh",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
