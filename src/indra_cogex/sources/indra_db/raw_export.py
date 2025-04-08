@@ -6,6 +6,8 @@ from pathlib import Path
 import tqdm
 
 from indra.statements import stmt_from_json
+
+from indra_cogex.sources.indra_db import belief_scores_pkl_fname
 from indra_cogex.sources.indra_db.locations import *
 from indra_cogex.util import load_stmt_json_str
 
@@ -48,6 +50,8 @@ if __name__ == "__main__":
                      processed_stmts_fname)
     download_s3_file(bucket, f"{s3_base_prefix}source_counts.pkl",
                      source_counts_fname)
+    download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
+                     belief_scores_pkl_fname)
 
     # ONE STAGE: create grounded and unique dumps
     # from processed statement in readonly pipeline
