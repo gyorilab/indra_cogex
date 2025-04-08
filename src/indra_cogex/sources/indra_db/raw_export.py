@@ -358,12 +358,12 @@ if __name__ == "__main__":
             f"already dumped to {source_counts_fname.as_posix()}, skipping..."
         )
 
-    # STAGE 3: create grounded and unique dumps
-    # Takes ~2.5 h
+    # ONE STAGE: create grounded and unique dumps
+    # from processed statement in readonly pipeline
     if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
-        with gzip.open(processed_stmts_fname, "rt") as fh, gzip.open(
-            grounded_stmts_fname, "wt"
-        ) as fh_out_gr, gzip.open(unique_stmts_fname, "wt") as fh_out_uniq:
+        with (gzip.open(processed_stmts_fname, "rt") as fh,
+              gzip.open(grounded_stmts_fname, "wt") as fh_out_gr,
+              gzip.open(unique_stmts_fname, "wt") as fh_out_uniq):
             seen_hashes = set()
             reader = csv.reader(fh, delimiter="\t")
             writer_gr = csv.writer(fh_out_gr, delimiter="\t")
