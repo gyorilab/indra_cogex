@@ -29,7 +29,7 @@ from tqdm import tqdm
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
-from indra_cogex.sources.indra_db.raw_export import stmts_from_json
+from indra.statements import stmts_from_json
 from indra_cogex.sources.indra_db.locations import (
     belief_scores_pkl_fname,
     processed_stmts_fname,

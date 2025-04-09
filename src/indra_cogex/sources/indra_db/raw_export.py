@@ -7,7 +7,6 @@ import tqdm
 
 from indra.statements import stmt_from_json
 
-from indra_cogex.sources.indra_db import belief_scores_pkl_fname
 from indra_cogex.sources.indra_db.locations import *
 from indra_cogex.util import load_stmt_json_str
 
