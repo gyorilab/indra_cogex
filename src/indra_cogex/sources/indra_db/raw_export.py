@@ -54,6 +54,7 @@ if __name__ == "__main__":
 
     # ONE STAGE: create grounded and unique dumps
     # from processed statement in readonly pipeline
+    # Takes ~2.5 h
     if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with (gzip.open(processed_stmts_fname, "rt") as fh,
               gzip.open(grounded_stmts_fname, "wt") as fh_out_gr,
