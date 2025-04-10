@@ -42,7 +42,7 @@ def download_s3_file(bucket: str, s3_key: str, local_path: Path):
 
 if __name__ == "__main__":
 
-    #Get the files from S3 of indra_db readonly pipeline
+    # Get the files from S3 of indra_db readonly pipeline
     bucket = "indra-db-readonly"
     s3_base_prefix = get_latest_timestamp_prefix(bucket, prefix="cogex_files/")
     download_s3_file(bucket, f"{s3_base_prefix}processed_statements.tsv.gz",
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
                      belief_scores_pkl_fname)
 
-    # ONE STAGE: create grounded and unique dumps
+    # Create grounded and unique dumps
     # from processed statement in readonly pipeline
     # Takes ~2.5 h
     if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
                 reader,
-                total=63928997,
+                total=63928997,  # Note this is a hard-coded estimate
                 desc="Gathering grounded and unique statements",
                 unit_scale=True,
                 unit="stmt"
@@ -88,43 +88,4 @@ if __name__ == "__main__":
             f"{unique_stmts_fname.as_posix()}, skipping..."
         )
 
-    logger.info(f"Script completed")
-
-
-"""Notes
-Dumped files into Ubuntu ~/.data/indra/db/
-
-I forgot to include the reader in the readings metadata but that can be
-reversed out using the inverse indra_db.databases.reader_versions dict so
-we don't need to fix that necessarily.
-
-Summary of what is in the text content joined with reading file
-
-('1.3.3-61059a-biores-', 58572394),
- ('October2018-linux', 51637830),
- ('sept14-linux', 19142899),
- ('June2018-linux', 10469377),
- ('April2020-linux', 7693672),
- ('0.2.3-SNAPSHOT', 6661714),
- ('20180503', 4647511),
- ('1.6.3-e48717', 3809726),
- ('2019Nov14', 1667674),
- ('1.0', 1017773),
- ('2021Jan26', 773324),
- ('1.6.1', 238176),
- ('February2020-linux', 61676),
- ('STATIC', 48053)
-
-(('pubmed', 'abstract'), 75625251),
- (('pubmed', 'title'), 74614345),
- (('pmc_oa', 'fulltext'), 10286339),
- (('manuscripts', 'fulltext'), 2128472),
- (('elsevier', 'fulltext'), 1396977),
- (('cord19_abstract', 'abstract'), 1000864),
- (('cord19_pdf', 'fulltext'), 649855),
- (('cord19_pmc_xml', 'fulltext'), 551702),
- (('xdd-pubmed', 'fulltext'), 174212),
- (('xdd', 'fulltext'), 7313),
- (('xdd-biorxiv', 'fulltext'), 6469)
-
-"""
+    logger.info(f"Grounded and unique statement export completed")
