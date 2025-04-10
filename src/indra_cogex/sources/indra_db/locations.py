@@ -4,7 +4,8 @@ __all__ = ["base_folder", "reading_text_content_fname", "text_refs_fname",
            "raw_stmts_fname", "drop_readings_fname",
            "reading_to_text_ref_map", "processed_stmts_fname",
            "grounded_stmts_fname", "unique_stmts_fname",
-           "source_counts_fname", ]
+           "source_counts_fname", 'refinements_fname',
+           'belief_scores_pkl_fname', 'refinement_cycles_fname']
 
 base_folder = pystow.module("indra", "db")
 reading_text_content_fname = base_folder.join(
