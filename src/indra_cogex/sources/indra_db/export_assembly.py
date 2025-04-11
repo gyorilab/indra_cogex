@@ -40,7 +40,7 @@ def download_s3_file(bucket: str, s3_key: str, local_path: Path):
     logger.info(f"Downloaded s3://{bucket}/{s3_key} → {local_path}")
 
 
-if __name__ == "__main__":
+def export_assembly():
     bucket = "bigmech"
     s3_base_prefix = get_latest_timestamp_prefix(
         bucket, prefix="indra-db/dumps/cogex_files/")
@@ -49,9 +49,6 @@ if __name__ == "__main__":
                      processed_stmts_fname)
     download_s3_file(bucket, f"{s3_base_prefix}source_counts.pkl",
                      source_counts_fname)
-
-
-
 
     # Create grounded and unique dumps
     # from processed statement in readonly pipeline
@@ -93,3 +90,6 @@ if __name__ == "__main__":
 
     download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
                      belief_scores_pkl_fname)
+
+if __name__ == "__main__":
+    export_assembly()
