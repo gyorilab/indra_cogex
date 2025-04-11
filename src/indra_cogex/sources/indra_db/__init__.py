@@ -47,8 +47,8 @@ reader_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "reader"}
 db_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "database"}
 
 
-# If you don't have the data, run the script export_assembly.py
-# (in this directory) to get it.
+# If you don't have the data.
+# Use command python -m indra_cogex.sources.indra_db.export_assembly
 
 
 class DbProcessor(Processor):
