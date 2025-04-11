@@ -12,7 +12,6 @@ from indra_cogex.util import load_stmt_json_str
 
 logger = logging.getLogger(__name__)
 
-
 def get_latest_timestamp_prefix(bucket: str, prefix: str) -> str:
     import boto3
     from datetime import datetime
@@ -40,17 +39,19 @@ def download_s3_file(bucket: str, s3_key: str, local_path: Path):
     s3.download_file(Bucket=bucket, Key=s3_key, Filename=str(local_path))
     logger.info(f"Downloaded s3://{bucket}/{s3_key} → {local_path}")
 
-if __name__ == "__main__":
 
-    # Get the files from S3 of indra_db readonly pipeline
-    bucket = "indra-db-readonly"
-    s3_base_prefix = get_latest_timestamp_prefix(bucket, prefix="cogex_files/")
+if __name__ == "__main__":
+    bucket = "bigmech"
+    s3_base_prefix = get_latest_timestamp_prefix(
+        bucket, prefix="indra-db/dumps/cogex_files/")
+
     download_s3_file(bucket, f"{s3_base_prefix}processed_statements.tsv.gz",
                      processed_stmts_fname)
     download_s3_file(bucket, f"{s3_base_prefix}source_counts.pkl",
                      source_counts_fname)
-    download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
-                     belief_scores_pkl_fname)
+
+
+
 
     # Create grounded and unique dumps
     # from processed statement in readonly pipeline
@@ -89,3 +90,6 @@ if __name__ == "__main__":
         )
 
     logger.info(f"Grounded and unique statement export completed")
+
+    download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
+                     belief_scores_pkl_fname)
