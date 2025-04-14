@@ -29,7 +29,7 @@ from tqdm import tqdm
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
-from indra_cogex.sources.indra_db.raw_export import stmts_from_json
+from indra.statements import stmts_from_json
 from indra_cogex.sources.indra_db.locations import (
     belief_scores_pkl_fname,
     processed_stmts_fname,
@@ -47,8 +47,8 @@ reader_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "reader"}
 db_sources = {k for k, v in SOURCE_INFO.items() if v["type"] == "database"}
 
 
-# If you don't have the data, run the script in raw_export.py and then in
-# assembly.py (both in this directory) to get it.
+# If you don't have the data.
+# Use command python -m indra_cogex.sources.indra_db.export_assembly
 
 
 class DbProcessor(Processor):
@@ -64,7 +64,7 @@ class DbProcessor(Processor):
         ----------
         dir_path :
             The path to the directory containing unique and grounded
-            statements as a \*.tsv.gz file, source counts as a pickle file and
+            statements as a \\*.tsv.gz file, source counts as a pickle file and
             belief scores as a pickle file.
         """
         if dir_path is None:
