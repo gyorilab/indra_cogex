@@ -111,6 +111,8 @@ __all__ = [
     "get_sensitive_cell_lines_for_drug",
     "is_cell_line_sensitive_to_drug",
     "get_network_for_paper",
+    "get_network_for_go_term",
+    "get_network_for_subnetwork",
     # Summary functions
     "get_node_counter",
     "get_edge_counter",
@@ -1508,7 +1510,7 @@ def enrich_statements(
             missing_stmt_hashes,
             client=client,
             limit=evidence_limit,
-            mesh_terms= mesh_terms,
+            mesh_terms=mesh_terms,
         )
         evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(
@@ -3535,6 +3537,373 @@ def get_network_for_paper(
         traceback.print_exc()
 
         # Return empty network on error
+        return {"nodes": [], "edges": []}
+
+
+@autoclient()
+def get_network_for_go_term(
+    go_term: str,
+    include_db_evidence: bool = True,
+    limit: int = 25,
+    *,
+    client: Neo4jClient,
+) -> Dict:
+    """
+    Generate network visualization data for INDRA statements from a GO term.
+
+    Parameters
+    ----------
+    go_term : str
+        The Gene Ontology (GO) term identifier. Example: "GO:0006915".
+    include_db_evidence : bool, optional
+        Whether to include statements derived from curated databases (default is True).
+    limit : int, optional
+        Maximum number of INDRA statements to include in the network (default is 25).
+    client : Neo4jClient
+        The Neo4j client used to query the INDRA CoGEx database.
+
+    Returns
+    -------
+    :
+        A dictionary with two keys: 'nodes' and 'edges', each representing lists of
+        objects compatible with vis.js network visualization format.
+    """
+    from indra_cogex.client.subnetwork import indra_subnetwork_go
+
+    try:
+        # Step 1: Query INDRA statements for the GO term
+        stmts = indra_subnetwork_go(
+            go_term=("GO", go_term),
+            client=client,
+            include_db_evidence=include_db_evidence,
+            order_by_ev_count=True,
+            return_source_counts=False,
+        )
+
+        # Limit number of statements
+        stmts = stmts[:limit]
+        if not stmts:
+            return {"nodes": [], "edges": []}
+
+        # Step 2: Assemble INDRA Net
+        assembler = IndraNetAssembler(stmts)
+        graph = assembler.make_model(graph_type="multi_graph")
+
+        # Step 3: Identify central node
+        node_degrees = dict(graph.degree())
+        central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
+
+        # Step 4: Prepare db_refs for all entities
+        entity_db_refs = {}
+        for stmt in stmts:
+            for agent in stmt.agent_list():
+                if agent and hasattr(agent, "db_refs"):
+                    entity_db_refs[agent.name] = agent.db_refs
+
+        # Step 5: Create vis.js nodes
+        nodes = []
+        for node_id in graph.nodes():
+            db_refs = entity_db_refs.get(node_id, {})
+            node_type = "Other"
+            color = "#607D8B"
+            shape = "ellipse"
+
+            if "HGNC" in db_refs or "FPLX" in db_refs:
+                node_type = "HGNC" if "HGNC" in db_refs else "FPLX"
+                color = "#4CAF50"
+                shape = "box"
+            elif "CHEBI" in db_refs or "PUBCHEM" in db_refs:
+                node_type = "CHEBI" if "CHEBI" in db_refs else "PUBCHEM"
+                color = "#FF9800"
+                shape = "diamond"
+            elif "GO" in db_refs:
+                node_type = "GO"
+                color = "#2196F3"
+                shape = "hexagon"
+            elif "MESH" in db_refs:
+                node_type = "MESH"
+                color = "#9C27B0"
+                shape = "triangle"
+            elif "UP" in db_refs:
+                node_type = "UP"
+                color = "#4CAF50"
+                shape = "box"
+            elif db_refs:
+                node_type = next(iter(db_refs.keys()), "Other")
+                color = "#009688"
+
+            size = 45 if node_id == central_node else 35
+            font_size = 26 if node_id == central_node else 22
+            border_width = 3 if node_id == central_node else 2
+
+            nodes.append({
+                "id": str(node_id),
+                "label": str(node_id),
+                "title": f"{node_id} ({node_type})",
+                "color": {"background": color, "border": "#37474F"},
+                "shape": shape,
+                "size": size,
+                "font": {
+                    "size": font_size,
+                    "color": "#000000",
+                    "face": "arial",
+                    "strokeWidth": 0,
+                    "vadjust": -40
+                },
+                "borderWidth": border_width,
+                "details": db_refs,
+                "egid": db_refs.get("EGID", ""),
+                "hgnc": db_refs.get("HGNC", ""),
+                "type": node_type.lower(),
+                "uniprot": db_refs.get("UP", "")
+            })
+
+        # Step 6: Create vis.js edges
+        edges = []
+        edge_count = 0
+        for source, target, key, data in graph.edges(data=True, keys=True):
+            stmt_type = data.get("stmt_type", "Interaction")
+
+            edge_stmt = next(
+                (s for s in stmts if {s.agent_list()[0].name, s.agent_list()[1].name} == {source, target}),
+                None
+            )
+            belief = getattr(edge_stmt, "belief", 0.5) if edge_stmt else data.get("belief", 0.5)
+
+            color, dashes = "#999999", False
+            arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
+            width = 4
+
+            if "Activation" in stmt_type:
+                color = "#00CC00"
+            elif "Inhibition" in stmt_type:
+                color = "#FF0000"
+            elif "Phosphorylation" in stmt_type:
+                color = "#000000"
+            elif "Complex" in stmt_type:
+                color = "#0000FF"
+                arrows = {"to": {"enabled": False}, "from": {"enabled": False}}
+            elif "IncreaseAmount" in stmt_type:
+                color = "#00CC00"
+                dashes = [5, 5]
+            elif "DecreaseAmount" in stmt_type:
+                color = "#FF0000"
+                dashes = [5, 5]
+
+            edge_details = {
+                "statement_type": stmt_type,
+                "belief": belief,
+                "indra_statement": str(edge_stmt) if edge_stmt else "Unknown",
+                "interaction": stmt_type.lower(),
+                "polarity": (
+                    "positive" if "Activation" in stmt_type or "IncreaseAmount" in stmt_type
+                    else "negative" if "Inhibition" in stmt_type or "DecreaseAmount" in stmt_type
+                    else "none"
+                ),
+                "support_type": "database" if include_db_evidence else "literature",
+                "type": stmt_type
+            }
+
+            edges.append({
+                "id": f"e{edge_count}",
+                "from": str(source),
+                "to": str(target),
+                "title": stmt_type,
+                "color": {"color": color, "highlight": color, "hover": color},
+                "dashes": dashes,
+                "arrows": arrows,
+                "width": width,
+                "details": edge_details,
+                "label": ""
+            })
+            edge_count += 1
+
+        return {"nodes": nodes, "edges": edges}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"nodes": [], "edges": []}
+
+
+@autoclient()
+def get_network_for_subnetwork(
+    nodes: List[Tuple[str, str]],
+    include_db_evidence: bool = True,
+    limit: int = 25,
+    *,
+    client: Neo4jClient,
+) -> Dict:
+    """
+    Generate network visualization data for INDRA statements between a set of nodes.
+
+    Parameters
+    ----------
+    nodes : List[Tuple[str, str]]
+        A list of INDRA-flavored CURIEs as (namespace, identifier) tuples.
+    include_db_evidence : bool, optional
+        Whether to include statements derived from curated databases (default is True).
+    limit : int, optional
+        Maximum number of INDRA statements to include in the network (default is 25).
+    client : Neo4jClient
+        The Neo4j client used to query the INDRA CoGEx database.
+
+    Returns
+    -------
+    dict
+        A dictionary with two keys: 'nodes' and 'edges', each representing lists of
+        objects compatible with vis.js network visualization format.
+    """
+    from indra_cogex.client.subnetwork import indra_subnetwork
+
+    try:
+        # Query statements
+        stmts = indra_subnetwork(
+            nodes=nodes,
+            client=client,
+            include_db_evidence=include_db_evidence,
+            order_by_ev_count=True,
+            return_source_counts=False,
+        )
+        stmts = stmts[:limit]
+        if not stmts:
+            return {"nodes": [], "edges": []}
+
+        assembler = IndraNetAssembler(stmts)
+        graph = assembler.make_model(graph_type="multi_graph")
+        node_degrees = dict(graph.degree())
+        central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
+
+        # Collect db_refs
+        entity_db_refs = {}
+        for stmt in stmts:
+            for agent in stmt.agent_list():
+                if agent and hasattr(agent, "db_refs"):
+                    entity_db_refs[agent.name] = agent.db_refs
+
+        # Create nodes
+        nodes_list = []
+        for node_id in graph.nodes():
+            db_refs = entity_db_refs.get(node_id, {})
+            node_type = "Other"
+            color = "#607D8B"
+            shape = "ellipse"
+
+            if "HGNC" in db_refs or "FPLX" in db_refs:
+                node_type = "HGNC" if "HGNC" in db_refs else "FPLX"
+                color = "#4CAF50"
+                shape = "box"
+            elif "CHEBI" in db_refs or "PUBCHEM" in db_refs:
+                node_type = "CHEBI" if "CHEBI" in db_refs else "PUBCHEM"
+                color = "#FF9800"
+                shape = "diamond"
+            elif "GO" in db_refs:
+                node_type = "GO"
+                color = "#2196F3"
+                shape = "hexagon"
+            elif "MESH" in db_refs:
+                node_type = "MESH"
+                color = "#9C27B0"
+                shape = "triangle"
+            elif "UP" in db_refs:
+                node_type = "UP"
+                color = "#4CAF50"
+                shape = "box"
+            elif db_refs:
+                node_type = next(iter(db_refs.keys()), "Other")
+                color = "#009688"
+
+            size = 45 if node_id == central_node else 35
+            font_size = 26 if node_id == central_node else 22
+            border_width = 3 if node_id == central_node else 2
+
+            nodes_list.append({
+                "id": str(node_id),
+                "label": str(node_id),
+                "title": f"{node_id} ({node_type})",
+                "color": {"background": color, "border": "#37474F"},
+                "shape": shape,
+                "size": size,
+                "font": {
+                    "size": font_size,
+                    "color": "#000000",
+                    "face": "arial",
+                    "strokeWidth": 0,
+                    "vadjust": -40
+                },
+                "borderWidth": border_width,
+                "details": db_refs,
+                "egid": db_refs.get("EGID", ""),
+                "hgnc": db_refs.get("HGNC", ""),
+                "type": node_type.lower(),
+                "uniprot": db_refs.get("UP", "")
+            })
+
+        # Create edges
+        edges = []
+        edge_count = 0
+        for source, target, key, data in graph.edges(data=True, keys=True):
+            stmt_type = data.get("stmt_type", "Interaction")
+
+            edge_stmt = next(
+                (s for s in stmts if {s.agent_list()[0].name, s.agent_list()[1].name} == {source, target}),
+                None
+            )
+            belief = getattr(edge_stmt, "belief", 0.5) if edge_stmt else data.get("belief", 0.5)
+
+            color, dashes = "#999999", False
+            arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
+            width = 4
+
+            if "Activation" in stmt_type:
+                color = "#00CC00"
+            elif "Inhibition" in stmt_type:
+                color = "#FF0000"
+            elif "Phosphorylation" in stmt_type:
+                color = "#000000"
+            elif "Complex" in stmt_type:
+                color = "#0000FF"
+                arrows = {"to": {"enabled": False}, "from": {"enabled": False}}
+            elif "IncreaseAmount" in stmt_type:
+                color = "#00CC00"
+                dashes = [5, 5]
+            elif "DecreaseAmount" in stmt_type:
+                color = "#FF0000"
+                dashes = [5, 5]
+
+            edge_details = {
+                "statement_type": stmt_type,
+                "belief": belief,
+                "indra_statement": str(edge_stmt) if edge_stmt else "Unknown",
+                "interaction": stmt_type.lower(),
+                "polarity": (
+                    "positive" if "Activation" in stmt_type or "IncreaseAmount" in stmt_type
+                    else "negative" if "Inhibition" in stmt_type or "DecreaseAmount" in stmt_type
+                    else "none"
+                ),
+                "support_type": "database" if include_db_evidence else "literature",
+                "type": stmt_type
+            }
+
+            edges.append({
+                "id": f"e{edge_count}",
+                "from": str(source),
+                "to": str(target),
+                "title": stmt_type,
+                "color": {"color": color, "highlight": color, "hover": color},
+                "dashes": dashes,
+                "arrows": arrows,
+                "width": width,
+                "details": edge_details,
+                "label": ""
+            })
+            edge_count += 1
+
+        return {"nodes": nodes_list, "edges": edges}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"nodes": [], "edges": []}
 
 
