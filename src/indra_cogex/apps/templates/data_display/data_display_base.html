@@ -283,38 +283,39 @@
         console.log("include_db_evidence:", includeDbEvidence);
 
         // Determine which API to use based on prefix
-        let fetchUrl, payload;
+        let fetchUrl = '/api/get_network';
+        let payload;
 
         if (prefix === 'go') {
-            fetchUrl = '/api/get_network_for_go_term';
             payload = {
-                go_term: identifier,
+                network_type: 'go',
+                identifier: identifier,
                 include_db_evidence: includeDbEvidence,
                 limit: 25
             };
-            console.log("Using GO term endpoint with payload:", payload);
+            console.log("Using GO term with unified endpoint:", payload);
         }
         else if (prefix === 'subnetwork') {
-            fetchUrl = '/api/get_network_for_subnetwork';
             const nodes = identifier.split(',').map(item => {
                 const [ns, id] = item.split(':');
                 return [ns, id];
             });
             payload = {
-                nodes: nodes,
+                network_type: 'subnetwork',
+                identifier: nodes,
                 include_db_evidence: includeDbEvidence,
                 limit: 25
             };
-            console.log("Using subnetwork endpoint with payload:", payload);
+            console.log("Using subnetwork with unified endpoint:", payload);
         }
         else {
-            fetchUrl = '/api/get_network_for_paper';
             payload = {
-                paper_term: [prefix, identifier],
+                network_type: 'paper',
+                identifier: [prefix, identifier],
                 include_db_evidence: includeDbEvidence,
                 limit: 25
             };
-            console.log("Using paper endpoint with payload:", payload);
+            console.log("Using paper with unified endpoint:", payload);
         }
 
         // Call the API to get network data
@@ -393,14 +394,14 @@
                 physics: {
                     enabled: true,
                     barnesHut: {
-                        gravitationalConstant: -8000,
-                        centralGravity: 0.05,
-                        springLength: 350,
-                        springConstant: 0.03
+                        gravitationalConstant: -8000,  // Much stronger repulsion (was -2000)
+                        centralGravity: 0.05,          // Less pull to center (was 0.1)
+                        springLength: 350,             // Much longer springs (was 200)
+                        springConstant: 0.03           // Slightly looser springs (was 0.04)
                     },
                     stabilization: {
                         enabled: true,
-                        iterations: 2000
+                        iterations: 2000               // More iterations for better layout
                     }
                 },
                 interaction: {
@@ -420,28 +421,28 @@
             // Initialize the network
             const network = new vis.Network(container, networkData, options);
 
+            // Store network instance globally for access by reset button
+            window.networkInstance = network;
+
             // Force a more spread out layout
             network.setOptions({
-               physics: {
-                   enabled: true,
-                   stabilization: {
-                       enabled: true,
-                       iterations: 2000
-                   }
-               }
+                physics: {
+                    enabled: true,
+                    stabilization: {
+                        enabled: true,
+                        iterations: 2000
+                    }
+                }
             });
 
             // Start over with stabilization
             network.stabilize(2000);
 
-            // Store network instance globally for access by reset button
-            window.networkInstance = network;
-
             // Start with a zoomed out view to see the whole network
             network.once('stabilizationIterationsDone', function() {
                 // Instead of fitting, set a specific zoom level
                 network.moveTo({
-                    scale: 0.75,  // Zoom out to 75%
+                    scale: 0.65,  // Zoom out more (was 0.75)
                     animation: {
                         duration: 1000,
                         easingFunction: 'easeInOutQuad'
