@@ -201,10 +201,7 @@ FUNCTION_CATEGORIES = {
             "get_stmts_meta_for_stmt_hashes",
             "get_stmts_for_stmt_hashes",
             "get_statements",
-            "get_mesh_annotated_evidence",
-            "get_network_for_paper",
-            "get_network_for_go_term",
-            "get_network_for_subnetwork"
+            "get_mesh_annotated_evidence"
         ]
     },
     'drug_targets': {
