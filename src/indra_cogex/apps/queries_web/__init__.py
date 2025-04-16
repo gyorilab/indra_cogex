@@ -201,7 +201,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_meta_for_stmt_hashes",
             "get_stmts_for_stmt_hashes",
             "get_statements",
-            "get_mesh_annotated_evidence"
+            "get_mesh_annotated_evidence",
+            "get_network"
         ]
     },
     'drug_targets': {
@@ -489,6 +490,11 @@ examples_dict = {
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
     # For EC
     "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
+    "network_type": fields.String(example="paper"),
+    "identifier": {
+        "get_network": fields.Raw(example=["PUBMED", "23356518"]),
+        "default": fields.Raw(example=["PUBMED", "23356518"])
+    },
 }
 
 # Parameters to always skip in the examples and in the documentation
