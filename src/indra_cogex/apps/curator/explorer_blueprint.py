@@ -109,6 +109,8 @@ def explore_go(term: str):
         """,
         include_db_evidence=include_db_evidence,
         source_counts=source_counts,
+        prefix="go",
+        identifier=term,
     )
 
 
@@ -120,6 +122,8 @@ def _enrich_render_statements(
     no_stmts_message: Optional[str] = None,
     include_db_evidence: bool = False,
     source_counts: Optional[Mapping[int, Mapping[str, int]]] = None,
+    prefix: Optional[str] = None,
+    identifier: Optional[str] = None,
 ) -> Response:
     if curations is None:
         curations = curation_cache.get_curation_cache()
@@ -146,7 +150,9 @@ def _enrich_render_statements(
         source_counts_dict=source_counts,
         description=description,
         no_stmts_message=no_stmts_message,
-        include_db_evidence=include_db_evidence
+        include_db_evidence=include_db_evidence,
+        prefix=prefix,
+        identifier=identifier
         # no limit necessary here since it was already applied above
     )
 
@@ -812,6 +818,8 @@ def subnetwork():
             no_stmts_message="No statements found for the given nodes.",
             include_db_evidence=include_db_evidence,
             source_counts=source_counts,
+            prefix="subnetwork",
+            identifier=','.join(f"{ns}:{id}" for ns, id in nodes)
         )
 
     # If no nodes provided, just render the form
