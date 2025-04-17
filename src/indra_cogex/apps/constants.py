@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import Union
 
 import pystow
-
-from indra.config import get_config
 from indra.util.statement_presentation import db_sources, reader_sources
+from indra.config import get_config
 
 try:
     from pusher import pusher
