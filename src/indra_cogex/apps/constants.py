@@ -61,6 +61,8 @@ INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 AGENT_NAME_CACHE = APP_CACHE_MODULE.join(name="search_agent_cache.pkl")
+GUNICORN_CONFIG = APPS_DIR / "gunicorn.conf.py"
+
 # Set VUE parameters
 sources_dict = {
     "databases": [d for d in db_sources] + ["bel"],  # Fixme: temporary fix for BEL
