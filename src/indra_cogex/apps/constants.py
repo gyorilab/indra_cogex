@@ -3,8 +3,9 @@ from pathlib import Path
 from typing import Union
 
 import pystow
-from indra.util.statement_presentation import db_sources, reader_sources
+
 from indra.config import get_config
+from indra.util.statement_presentation import db_sources, reader_sources
 
 try:
     from pusher import pusher
@@ -61,7 +62,7 @@ INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 AGENT_NAME_CACHE = APP_CACHE_MODULE.join(name="search_agent_cache.pkl")
-GUNICORN_CONFIG = APPS_DIR / "gunicorn_config.py"
+GUNICORN_CONFIG = APPS_DIR / "gunicorn.conf.py"
 
 # Set VUE parameters
 sources_dict = {
