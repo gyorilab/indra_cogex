@@ -13,12 +13,14 @@ import base64
 import logging
 import itertools
 from collections import defaultdict
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Any
 from io import BytesIO
 from bs4 import BeautifulSoup
 
 import pandas as pd
 import matplotlib
+
+from indra_cogex.apps.utils import format_stmts
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -138,7 +140,8 @@ def get_stmts_from_source(source_id, *, client, source_ns='HGNC', target_protein
             "target_id": entry.target_id,
             "stmt_type": entry.data["stmt_type"],
             "evidence_count": entry.data["evidence_count"],
-            "stmt_hash": entry.data["stmt_hash"]
+            "stmt_hash": entry.data["stmt_hash"],
+            "source_counts": json.loads(entry.data["source_counts"]),
         }
         for entry in res
     ]
@@ -200,29 +203,52 @@ def assemble_protein_stmt_htmls(stmts_df):
         stmt = stmt_from_json(json.loads(row['stmt_json']))
         stmts_by_protein[row['name']].append(stmt)
 
-    html_content = {}
-    for name, stmts in stmts_by_protein.items():
-        ha = HtmlAssembler(stmts, title=f'Statements for {name}',
-                           db_rest_url='https://db.indra.bio')
-        full_html = ha.make_model()
+    stmt_data_per_gene = {}
+    for name, gene_stmts_df in stmts_df.groupby('name'):
+        # ha = HtmlAssembler(stmts, title=f'Statements for {name}',
+        #                    db_rest_url='https://db.indra.bio')
+        # full_html = ha.make_model()
+        #
+        # # Parse the HTML to add style attributes for tighter spacing
+        # soup = BeautifulSoup(full_html, 'html.parser')
+        #
+        # # Find and modify margin/padding of elements to reduce vertical spacing
+        # for elem in soup.find_all(True):  # Find all elements
+        #     # Get current style
+        #     style = elem.get('style', '')
+        #
+        #     # Add margin/padding reduction for elements that often have excess spacing
+        #     if elem.name in ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'hr']:
+        #         style += '; margin-top: 2px; margin-bottom: 2px; padding-top: 2px; padding-bottom: 2px;'
+        #         elem['style'] = style
+        #
+        # # Convert back to HTML string
+        # html_content[name] = str(soup)
 
-        # Parse the HTML to add style attributes for tighter spacing
-        soup = BeautifulSoup(full_html, 'html.parser')
+        # This transforms the statement information into a format that can be used to
+        # render statements using the Vue.js components on the frontend
+        stmts = stmts_from_json(
+            [json.loads(sj) for sj in gene_stmts_df["stmt_json"].values]
+        )
+        evidence_counts = {
+            int(sh): int(sc) for sh, sc in gene_stmts_df[["stmt_hash","evidence_count"]].values
+        }
+        source_counts_per_hash = {
+            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash","source_counts"]].values
+        }
+        stmt_data_per_gene[name] = format_stmts(
+            stmts,
+            evidence_counts=evidence_counts,
+            remove_medscan=True,  # fixme: provide from outside based on login,
+            # like it's done in statement_display in indra_cogex/apps/data_display/__init__.py
+            source_counts_per_hash=source_counts_per_hash,
+        )
 
-        # Find and modify margin/padding of elements to reduce vertical spacing
-        for elem in soup.find_all(True):  # Find all elements
-            # Get current style
-            style = elem.get('style', '')
-
-            # Add margin/padding reduction for elements that often have excess spacing
-            if elem.name in ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'hr']:
-                style += '; margin-top: 2px; margin-bottom: 2px; padding-top: 2px; padding-bottom: 2px;'
-                elem['style'] = style
-
-        # Convert back to HTML string
-        html_content[name] = str(soup)
-
-    return html_content
+    # todo:
+    #  option 1: Continue above changes nd
+    #  option 2: cut out html that contains only the statements and put that in
+    #  the results page
+    return stmt_data_per_gene
 
 
 def shared_pathways_between_gene_sets(source_hgnc_ids, target_hgnc_ids):
