@@ -350,15 +350,13 @@ def search_ora_statements():
             # Filter for phosphorylation statements
             filtered_statements = [
                 stmt for stmt in statements
-                if isinstance(stmt, Phosphorylation) or
-                   "phosphorylation" in str(stmt).lower()
+                if "phosphorylation" in str(stmt).lower()
             ]
         elif regulator_type == 'tf':
             # Filter for increase/decrease amount statements
             filtered_statements = [
                 stmt for stmt in statements
-                if isinstance(stmt, (IncreaseAmount, DecreaseAmount)) or
-                   "increases amount" in str(stmt).lower() or
+                if "increases amount" in str(stmt).lower() or
                    "decreases amount" in str(stmt).lower()
             ]
         else:
@@ -375,10 +373,17 @@ def search_ora_statements():
         if filtered_statements:
             logger.debug(f"First filtered statement: {str(filtered_statements[0])}")
 
-        # Render the statements
+        # Render the statements with network visualization parameters
         return render_statements(
             stmts=filtered_statements,
-            evidence_count=filtered_evidence_counts
+            evidence_count=filtered_evidence_counts,
+            prefix="statements",
+            identifier=target_id,
+            genes=genes,
+            is_downstream=is_downstream,
+            regulator_type=regulator_type,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence
         )
 
     except Exception as e:
