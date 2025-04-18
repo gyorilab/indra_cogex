@@ -93,9 +93,9 @@ def download_source_files(force: bool = False):
     if force or not MODEL_INFO_FILE.exists():
         download_pbar(model_info_url, str(MODEL_INFO_FILE))
     else:
-        logger.info(f"{MODEL_INFO_FILE} ({DEPMAP_RELEASE}) already exists.")
+        logger.info(f"{MODEL_INFO_NAME} ({DEPMAP_RELEASE}) already exists.")
 
     if force or not MITOCARTA_FILE.exists():
         download_pbar(MITOCARTA_URL, str(MITOCARTA_FILE))
     else:
-        logger.info(f"{MITOCARTA_FILE} already exists.")
+        logger.info(f"{MITOCARTA_NAME} already exists.")
