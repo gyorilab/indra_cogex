@@ -7,7 +7,11 @@ from collections import defaultdict
 
 import click
 import pystow
+import pandas as pd
+import numpy as np
+from scipy import stats
 from indra.databases import hgnc_client
+from depmap_analysis.util.statistics import get_z, get_logp, get_n
 
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
@@ -19,12 +23,12 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-SUBMODULE = pystow.module("indra", "cogex", "depmap")
+DEPMAP_RELEASE = "21q2"
+SUBMODULE = pystow.module("indra", "cogex", "depmap", DEPMAP_RELEASE)
 
 # This is an intermediate processed file created using
 # https://github.com/sorgerlab/indra_assembly_paper/blob/master/bioexp/depmap/data_processing.py
-DEPMAP_SIGS = pystow.join('depmap_analysis', 'depmap', '21q2',
-                          name='dep_stouffer_signif.pkl')
+DEPMAP_SIGS = SUBMODULE.join(name="dep_stouffer_signif.pkl")
 
 CORRECTION_METHODS = {
     'bonferroni': 'bc_cutoff',
@@ -33,6 +37,138 @@ CORRECTION_METHODS = {
 }
 
 CORRECTION_METHOD = 'benjamini-yekutieli'
+
+### INPUT FILES
+# http://www.broadinstitute.org/ftp/distribution/metabolic/papers/Pagliarini/MitoCarta3.0/Human.MitoCarta3.0.xls
+mitocarta_file = SUBMODULE.join("Human.MitoCarta3.0.xls")
+
+# https://ndownloader.figshare.com/files/27902376
+sample_info_file = SUBMODULE.join(name="sample_info.csv")
+
+# Download from https://ndownloader.figshare.com/files/13515395
+rnai_file = SUBMODULE.join(name="D2_combined_gene_dep_scores.csv")
+
+# Download from https://ndownloader.figshare.com/files/27902226
+crispr_file = SUBMODULE.join(name="CRISPR_gene_effect.csv")
+
+
+def get_corr(recalculate: bool, data_df: pd.DataFrame, filename: str) -> pd.DataFrame:
+    filepath = SUBMODULE.join(name=filename)
+    if recalculate:
+        data_corr = data_df.corr()
+        data_corr.to_hdf('%s.h5' % filepath, filename)
+    else:
+        data_corr = pd.read_hdf('%s.h5' % filepath)
+    return data_corr
+
+
+def unstack_corrs(df: pd.DataFrame) -> pd.DataFrame:
+    df_ut = df.where(np.triu(np.ones(df.shape), k=1).astype(np.bool))
+    stacked = df_ut.stack(dropna=True)
+    return stacked
+
+
+def filt_mitocorrs(ser: pd.DataFrame, mitogenes: list[str]) -> pd.Series:
+    filt_ix = []
+    filt_vals = []
+    for (ix0, ix1), logp in ser.iteritems():
+        if ix0 in mitogenes and ix1 in mitogenes:
+            continue
+        filt_ix.append((ix0, ix1))
+        filt_vals.append(logp)
+    index = pd.MultiIndex.from_tuples(filt_ix, names=['geneA', 'geneB'])
+    filt_ser = pd.Series(filt_vals, index=index)
+    return filt_ser
+
+
+def create_sig_df(recalculate: bool = True) -> pd.DataFrame:
+    """
+
+    Parameters
+    ----------
+    recalculate :
+
+    Returns
+    -------
+    :
+        A pandas DataFrame of significant pairs of genes.
+    """
+    if not recalculate and DEPMAP_SIGS.exists():
+        return pd.read_pickle(DEPMAP_SIGS)
+
+    # Ensure source files are downloaded
+    # ensure_source_files()
+
+    # Process Mitocarta data
+    mitocarta = pd.read_excel(mitocarta_file, sheet_name=1)
+    mitogenes = mitocarta.Symbol.to_list()
+
+    # Process cell line info from DepMap
+    cell_line_df = pd.read_csv(sample_info_file)
+    cell_line_map = cell_line_df[['DepMap_ID', 'CCLE_Name']]
+    cell_line_map.set_index('CCLE_Name', inplace=True)
+
+    # Process RNAi data
+    rnai_df = pd.read_csv(rnai_file, index_col=0)
+    rnai_df = rnai_df.transpose()
+    gene_cols = ['%s' % col.split(' ')[0] for col in rnai_df.columns]
+    rnai_df.columns = gene_cols
+    rnai_df = rnai_df.join(cell_line_map)
+    rnai_df = rnai_df.set_index('DepMap_ID')
+    # Drop duplicate columns
+    rnai_df = rnai_df.loc[:, ~rnai_df.columns.duplicated()]
+
+    rnai_corr = get_corr(recalculate, rnai_df, 'rnai_correlations')
+    rnai_n = get_n(recalculate, rnai_df, SUBMODULE.join(name='rnai_n'))
+    rnai_logp = get_logp(recalculate, rnai_n, rnai_corr, SUBMODULE.join(name='rnai_logp'))
+    rnai_z = get_z(recalculate, rnai_logp, rnai_corr, SUBMODULE.join(name='rnai_z_log'))
+
+    # Process CRISPR data
+    crispr_df = pd.read_csv(crispr_file, index_col=0)
+    gene_cols = ['%s' % col.split(' ')[0] for col in crispr_df.columns]
+    crispr_df.columns = gene_cols
+    # Drop any duplicate columns (shouldn't be any for CRISPR, but just in case)
+    crispr_df = crispr_df.loc[:, ~crispr_df.columns.duplicated()]
+
+    crispr_corr = get_corr(recalculate, crispr_df, 'crispr_correlations')
+    crispr_n = get_n(recalculate, crispr_df, SUBMODULE.join(name='crispr_n'))
+    crispr_logp = get_logp(recalculate, crispr_n, crispr_corr, SUBMODULE.join(name='crispr_logp'))
+    crispr_z = get_z(recalculate, crispr_logp, crispr_corr, SUBMODULE.join(name='crispr_z_log'))
+
+    # Combine z-scores
+    dep_z = (crispr_z + rnai_z) / np.sqrt(2)
+    dep_z = dep_z.dropna(axis=0, how='all').dropna(axis=1, how='all')
+
+    dep_logp = pd.DataFrame(np.log(2) + stats.norm.logcdf(-dep_z.abs()),
+                            index=dep_z.columns, columns=dep_z.columns)
+
+    filename = 'dep_z'
+    z_filepath = SUBMODULE.join(name='%s.h5' % filename)
+    dep_z.to_hdf(z_filepath, filename)
+
+    filename = 'dep_logp'
+    logp_filepath = SUBMODULE.join(name='%s.h5' % filename)
+    dep_logp.to_hdf(logp_filepath, filename)
+
+    df_logp = dep_logp
+    total_comps = np.triu(~df_logp.isna(), k=1).sum()
+    mitogenes_in_df = set(df_logp.columns).intersection(set(mitogenes))
+    mito_comps = len(mitogenes_in_df)**2
+    num_comps = total_comps - mito_comps
+
+    alpha = 0.05
+    bc_thresh = np.log(alpha / num_comps)
+    sig_no_corr = unstack_corrs(df_logp[df_logp < np.log(alpha)])
+    filt_corrs = filt_mitocorrs(sig_no_corr, mitogenes=mitogenes)
+    sig_sorted = filt_corrs.sort_values().to_frame('logp')
+    sig_sorted['rank'] = sig_sorted.rank()
+    sig_sorted['bc_cutoff'] = bc_thresh
+    sig_sorted['bh_crit_val'] = np.log((sig_sorted['rank'] / num_comps) * alpha)
+    cm = np.log(num_comps) + np.euler_gamma + (1 / (2 * num_comps))
+
+    sig_sorted['by_crit_val'] = sig_sorted['bh_crit_val'] - np.log(cm)
+    sig_sorted.to_pickle(DEPMAP_SIGS)
+    return sig_sorted
 
 
 def load_sigs(correction_method=CORRECTION_METHOD):
