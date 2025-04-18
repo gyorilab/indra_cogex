@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import SubmitField, TextAreaField, StringField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 from indra_cogex.apps.proxies import client
 from indra_cogex.analysis.source_targets_explanation import (
     run_explain_downstream_analysis,
@@ -105,10 +106,15 @@ def source_target_analysis_route():
                 source_id=source_id,
                 target_genes={tid: get_valid_gene_id(t) for t, tid in zip(targets, target_ids)},
                 results=results,
+                sources_dict=sources_dict,
+                vue_src_js=VUE_SRC_JS,
+                vue_src_css=VUE_SRC_CSS,
             )
 
         except Exception as e:
-            flask.flash(str(e), "error")
+            # todo: one exception is raised which gives this error:
+            # "the JSON object must be str, bytes or bytearray, not dict"
+            flask.flash("An error occurred: " + str(e), "error")
             return flask.redirect(flask.url_for("sta.source_target_analysis_route"))
 
     return flask.render_template(
