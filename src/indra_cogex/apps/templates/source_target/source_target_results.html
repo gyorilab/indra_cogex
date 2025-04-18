@@ -195,6 +195,51 @@
                 return $(this).text().trim() === 'Statements';
             }).addClass('statements-header');
         });
+        // Vue js section
+
+        // Define globals
+        // Sources dict = {databases: [...], readers: [...]}
+        Vue.prototype.$sources = {{ sources_dict|safe }};
+        // Define endpoints
+        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
+        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+
+        let app = new Vue({
+            el: '#vue-app',
+            data: {
+                stmt_sections: [
+                    // results is the dict from run_explain_downstream_analysis()
+                    {% for gene, stmt_data in results.statements.items() %}
+                        {
+                            gene: "{{ gene }}",
+                            statements: [
+                                // stmts is coming from "format_stmts()" on the backend
+                                {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
+                                {
+                                    ev_array: {{ ev_array|safe }},
+                                    english: {{ english|safe }},
+                                    hash: {{ hash_str|safe }},
+                                    sources: {{ sources|safe }},
+                                    total_evidence: {{ total_evidence|int }},
+                                    badges: {{ badges|safe }}
+                                },
+                                {% endfor %}
+                        },
+                    {% endfor %}
+                ],
+                include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+            },
+            methods: {
+                updateIncludeDbEvidence() {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
+                    window.location.href = currentUrl.toString();
+                }
+            }
+        });
+
     </script>
 {% endblock %}
 
@@ -220,6 +265,8 @@
         </table>
     </div>
 {% endmacro %}
+
+{% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
 
 {% block container %}
     <div class="card card-body bg-light">
@@ -258,7 +305,28 @@
                 <!-- Database badges will be inserted here by JavaScript -->
 
                 <div id="gene-statements-container">
-                    {% for gene, statement in results.statements.items() %}
+                    <div
+                        class="row"
+                        v-for="(stmt_section, index) in stmt_sections"
+                        :key="index"
+                    >
+                        <div class="list-group list-group-flush">
+                            <h3 v-html="stmt_section.gene"></h3>
+                            <statement
+                                    class="list-group-item"
+                                    v-for="st_obj in stmt_section.statements"
+                                    :key="st_obj.hash"
+                                    :evidence="st_obj.ev_array"
+                                    :english="st_obj.english"
+                                    :hash="st_obj.hash"
+                                    :sources="st_obj.sources"
+                                    :total_evidence="st_obj.total_evidence"
+                                    :badges="st_obj.badges"
+                                    :loadable="true"
+                                    :sources_left_of_badges="true"
+                            ></statement>
+                        </div>
+                    </div>
                         <h3>{{ gene }}</h3>
                         {% if gene != 'database_badges' %}
                             {{ statement | safe }}
