@@ -116,10 +116,10 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
     ensure_source_files()
 
     # Process RNAi data
-    if DEP_Z.exists() and DEP_LOGP.exists():
+    if DEP_Z.exists() and DEP_LOGP.exists() and not recalculate:
         # Skips to the end
         pass
-    elif RNAI_Z_LOG.exists() and RNAI_LOGP.exists():
+    elif RNAI_Z_LOG.exists() and RNAI_LOGP.exists() and not recalculate:
         logger.info(f"Loading {RNAI_Z_LOG}")
         rnai_z = pd.read_hdf(str(RNAI_Z_LOG))
     else:
@@ -148,10 +148,10 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         rnai_z = get_z(recalculate, rnai_logp, rnai_corr, filepath= RNAI_Z_LOG)
 
     # Process CRISPR data
-    if DEP_Z.exists() and DEP_LOGP.exists():
+    if DEP_Z.exists() and DEP_LOGP.exists() and not recalculate:
         # Skips to the end
         pass
-    elif CRISPR_Z_LOG.exists() and CRISPR_LOGP.exists():
+    elif CRISPR_Z_LOG.exists() and CRISPR_LOGP.exists() and not recalculate:
         logger.info(f"Loading {CRISPR_Z_LOG}")
         crispr_z = pd.read_hdf(str(CRISPR_Z_LOG))
     else:
@@ -169,7 +169,7 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         crispr_z = get_z(recalculate, crispr_logp, crispr_corr, filepath=CRISPR_Z_LOG)
 
     # Combine z-scores
-    if DEP_Z.exists() and DEP_LOGP.exists():
+    if DEP_Z.exists() and DEP_LOGP.exists() and not recalculate:
         logger.info(f"Loading {DEP_LOGP}")
         df_logp = pd.read_hdf(str(DEP_LOGP))
     else:
