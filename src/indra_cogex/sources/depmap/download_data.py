@@ -12,7 +12,6 @@ MITOCARTA_NAME = "Human.MitoCarta3.0.xls"  # Rarely updates, see https://www.bro
 MODEL_INFO_NAME = "Model.csv"  # To get mapping from model name to CCLE Name
 CRISPR_NAME = "CRISPRGeneEffect.csv"  # CRISPr data
 RNAI_NAME = "D2_combined_gene_dep_scores.csv"  # RNAi data
-DEPMAP_SIGS_PKL_NAME = "dep_stouffer_signif.pkl"  # Output file used in node/edge generation
 DEPMAP_RELEASE = depmap_api.get_latest().split()[-1].lower()
 DEPMAP_RELEASE_MODULE = SUBMODULE.module(DEPMAP_RELEASE)
 
@@ -24,7 +23,6 @@ MITOCARTA_URL = "https://personal.broadinstitute.org/scalvo/MitoCarta3.0/Human.M
 MODEL_INFO_FILE = DEPMAP_RELEASE_MODULE.join(name=MODEL_INFO_NAME)
 RNAI_FILE = SUBMODULE.join(name=RNAI_NAME)  # Rarely updates
 CRISPR_FILE = DEPMAP_RELEASE_MODULE.join(name=CRISPR_NAME)
-DEPMAP_SIGS = DEPMAP_RELEASE_MODULE.join(name=DEPMAP_SIGS_PKL_NAME)
 
 
 logger = logging.getLogger(__name__)
