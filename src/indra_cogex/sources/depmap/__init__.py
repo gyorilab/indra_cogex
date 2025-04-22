@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Dict, Union
 from collections import defaultdict
 
-import click
-import pystow
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -16,6 +14,16 @@ from depmap_analysis.util.statistics import get_z, get_logp, get_n
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.processor import Processor
 
+from indra_cogex.sources.depmap.download_data import (
+    MITOCARTA_FILE,
+    MODEL_INFO_FILE,
+    RNAI_FILE,
+    CRISPR_FILE,
+    DEPMAP_RELEASE_MODULE,
+    SUBMODULE,
+    download_source_files,
+)
+
 
 __all__ = [
     "DepmapProcessor",
@@ -23,12 +31,18 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-DEPMAP_RELEASE = "21q2"
-SUBMODULE = pystow.module("indra", "cogex", "depmap", DEPMAP_RELEASE)
+#: DepMap derived files
+RNAI_CORRS = SUBMODULE.join(name='rnai_corrs.h5')
+RNAI_SAMPL = SUBMODULE.join(name='rnai_n.h5')
+RNAI_LOGP = SUBMODULE.join(name='rnai_logp.h5')
+RNAI_Z_LOG = SUBMODULE.join(name='rnai_z_log.h5')
+CRISPR_CORRS = DEPMAP_RELEASE_MODULE.join(name='crispr_correlations.h5')
+CRISPR_SAMPL = DEPMAP_RELEASE_MODULE.join(name='crispr_n.h5')
+CRISPR_LOGP = DEPMAP_RELEASE_MODULE.join(name='crispr_logp.h5')
+CRISPR_Z_LOG = DEPMAP_RELEASE_MODULE.join(name='crispr_z_log.h5')
 
-# This is an intermediate processed file created using
-# https://github.com/sorgerlab/indra_assembly_paper/blob/master/bioexp/depmap/data_processing.py
-DEPMAP_SIGS = SUBMODULE.join(name="dep_stouffer_signif.pkl")
+DEPMAP_SIGS_PKL_NAME = "dep_stouffer_signif.pkl"  # Output file used in node/edge generation
+DEPMAP_SIGS = DEPMAP_RELEASE_MODULE.join(name=DEPMAP_SIGS_PKL_NAME)
 
 CORRECTION_METHODS = {
     'bonferroni': 'bc_cutoff',
@@ -38,18 +52,8 @@ CORRECTION_METHODS = {
 
 CORRECTION_METHOD = 'benjamini-yekutieli'
 
-### INPUT FILES
-# http://www.broadinstitute.org/ftp/distribution/metabolic/papers/Pagliarini/MitoCarta3.0/Human.MitoCarta3.0.xls
-mitocarta_file = SUBMODULE.join("Human.MitoCarta3.0.xls")
 
-# https://ndownloader.figshare.com/files/27902376
-sample_info_file = SUBMODULE.join(name="sample_info.csv")
 
-# Download from https://ndownloader.figshare.com/files/13515395
-rnai_file = SUBMODULE.join(name="D2_combined_gene_dep_scores.csv")
-
-# Download from https://ndownloader.figshare.com/files/27902226
-crispr_file = SUBMODULE.join(name="CRISPR_gene_effect.csv")
 
 def get_corr(
     recalculate: bool,
