@@ -299,5 +299,5 @@ class DepmapProcessor(Processor):
                     target_ns="HGNC",
                     target_id=b_hgnc_id,
                     rel_type=self.depmap_relation,
-                    data={"logp": logp},
+                    data={"logp:float": logp},
                 )
