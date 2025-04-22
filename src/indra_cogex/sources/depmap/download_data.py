@@ -12,7 +12,7 @@ MITOCARTA_NAME = "Human.MitoCarta3.0.xls"  # Rarely updates, see https://www.bro
 MODEL_INFO_NAME = "Model.csv"  # To get mapping from model name to CCLE Name
 CRISPR_NAME = "CRISPRGeneEffect.csv"  # CRISPr data
 RNAI_NAME = "D2_combined_gene_dep_scores.csv"  # RNAi data
-DEPMAP_RELEASE = depmap_api.get_latest().split()[-1].lower()
+DEPMAP_RELEASE = depmap_api.get_latest().split()[-1].lower()  # e.g., "21q4"
 DEPMAP_RELEASE_MODULE = SUBMODULE.module(DEPMAP_RELEASE)
 
 
