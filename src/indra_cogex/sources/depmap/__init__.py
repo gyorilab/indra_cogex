@@ -99,12 +99,15 @@ def filt_mitocorrs(ser: pd.DataFrame, mitogenes: list[str]) -> pd.Series:
     return filt_ser
 
 
-def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
-    """
+def get_sig_df(recalculate: bool = False, redownload_sources: bool = False) -> pd.DataFrame:
+    """Get the significant pairs of genes from DepMap.
 
     Parameters
     ----------
     recalculate :
+        If True, recalculate the significant pairs of genes.
+    redownload_sources :
+        If True, redownload the source files from DepMap.
 
     Returns
     -------
@@ -115,7 +118,7 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         return pd.read_pickle(DEPMAP_SIGS)
 
     # Ensure source files are downloaded
-    ensure_source_files()
+    ensure_source_files(force=redownload_sources)
 
     # Process RNAi data
     if DEP_Z.exists() and DEP_LOGP.exists() and not recalculate:
