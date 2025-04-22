@@ -28,6 +28,7 @@ from indra_cogex.analysis import (
     source_targets_explanation
 )
 from .helpers import ParseError, get_docstring, parse_json, process_result
+from indra_cogex.apps.search import search
 
 logger = logging.getLogger(__name__)
 
@@ -529,8 +530,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["explain_downstream"]]
-
+    [(source_targets_explanation, fn) for fn in ["explain_downstream"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 )
 
 # Maps function names to the actual functions
