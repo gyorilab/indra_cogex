@@ -97,7 +97,7 @@ def filt_mitocorrs(ser: pd.DataFrame, mitogenes: list[str]) -> pd.Series:
     return filt_ser
 
 
-def create_sig_df(recalculate: bool = True) -> pd.DataFrame:
+def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
     """
 
     Parameters
@@ -189,8 +189,7 @@ def create_sig_df(recalculate: bool = True) -> pd.DataFrame:
 
 def load_sigs(correction_method=CORRECTION_METHOD):
     # Load the significance data frame
-    with open(DEPMAP_SIGS, 'rb') as f:
-        df = pickle.load(f)
+    df = get_sig_df(recalculate=recalculate)
 
     # Apply correction method filter
     if correction_method is not None:
