@@ -291,8 +291,7 @@ class DepmapProcessor(Processor):
         # Note that we have previously sorted a and b and
         # we are generating a single directed edge a->b here
         for (a, a_hgnc_id), genes in \
-                tqdm.tqdm(self.sigs_by_gene.items(),
-                          desc='Processing DepMap into relations'):
+                tqdm(self.sigs_by_gene.items(), desc='Processing DepMap into relations'):
             for (b, b_hgnc_id), logp in genes.items():
                 yield Relation(
                     source_ns="HGNC",
