@@ -1,8 +1,8 @@
 """Process DepMap, a resource for gene-gene dependencies in cancer cell lines."""
 
 import logging
-import pickle
-import tqdm
+from pathlib import Path
+from typing import Dict, Union
 from collections import defaultdict
 
 import click
@@ -51,14 +51,19 @@ rnai_file = SUBMODULE.join(name="D2_combined_gene_dep_scores.csv")
 # Download from https://ndownloader.figshare.com/files/27902226
 crispr_file = SUBMODULE.join(name="CRISPR_gene_effect.csv")
 
-
-def get_corr(recalculate: bool, data_df: pd.DataFrame, filename: str) -> pd.DataFrame:
-    filepath = SUBMODULE.join(name=filename)
-    if recalculate:
+def get_corr(
+    recalculate: bool,
+    data_df: pd.DataFrame,
+    filepath: Union[str, Path]
+) -> pd.DataFrame:
+    if not Path(filepath).name.endswith('.h5'):
+        filepath = Path(filepath).with_suffix('.h5')
+    filename = Path(filepath).name
+    if recalculate or not filepath.exists():
         data_corr = data_df.corr()
-        data_corr.to_hdf('%s.h5' % filepath, filename)
+        data_corr.to_hdf(str(filepath), filename.split('.')[0])
     else:
-        data_corr = pd.read_hdf('%s.h5' % filepath)
+        data_corr = pd.read_hdf(str(filepath))
     return data_corr
 
 
