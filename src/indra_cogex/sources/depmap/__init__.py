@@ -113,43 +113,52 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         return pd.read_pickle(DEPMAP_SIGS)
 
     # Ensure source files are downloaded
-    # ensure_source_files()
-
-    # Process Mitocarta data
-    mitocarta = pd.read_excel(mitocarta_file, sheet_name=1)
-    mitogenes = mitocarta.Symbol.to_list()
+    ensure_source_files()
 
     # Process cell line info from DepMap
-    cell_line_df = pd.read_csv(sample_info_file)
-    cell_line_map = cell_line_df[['DepMap_ID', 'CCLE_Name']]
-    cell_line_map.set_index('CCLE_Name', inplace=True)
+    logger.info("Processing cell line info from DepMap")
+    cell_line_df = pd.read_csv(MODEL_INFO_FILE)
+    cell_line_map = cell_line_df[cell_line_df['CCLEName'].notna()][['ModelID', 'CCLEName']]
+    cell_line_map.set_index('CCLEName', inplace=True)
 
     # Process RNAi data
-    rnai_df = pd.read_csv(rnai_file, index_col=0)
-    rnai_df = rnai_df.transpose()
-    gene_cols = ['%s' % col.split(' ')[0] for col in rnai_df.columns]
-    rnai_df.columns = gene_cols
-    rnai_df = rnai_df.join(cell_line_map)
-    rnai_df = rnai_df.set_index('DepMap_ID')
-    # Drop duplicate columns
-    rnai_df = rnai_df.loc[:, ~rnai_df.columns.duplicated()]
+    if RNAI_Z_LOG.exists() and RNAI_LOGP.exists():
+        logger.info(f"Loading {RNAI_Z_LOG}")
+        rnai_z = pd.read_hdf(str(RNAI_Z_LOG))
+    else:
+        logger.info("Processing RNAi data")
+        rnai_df = pd.read_csv(RNAI_FILE, index_col=0)
+        rnai_df = rnai_df.transpose()
+        gene_cols = ['%s' % col.split(' ')[0] for col in rnai_df.columns]
+        rnai_df.columns = gene_cols
+        rnai_df = rnai_df.join(cell_line_map)
+        rnai_df = rnai_df.set_index('ModelID')
+        # Drop duplicate columns
+        rnai_df = rnai_df.loc[:, ~rnai_df.columns.duplicated()]
 
-    rnai_corr = get_corr(recalculate, rnai_df, 'rnai_correlations')
-    rnai_n = get_n(recalculate, rnai_df, SUBMODULE.join(name='rnai_n'))
-    rnai_logp = get_logp(recalculate, rnai_n, rnai_corr, SUBMODULE.join(name='rnai_logp'))
-    rnai_z = get_z(recalculate, rnai_logp, rnai_corr, SUBMODULE.join(name='rnai_z_log'))
+        logger.info("Getting correlations for RNAi data")
+        rnai_corr = get_corr(recalculate, rnai_df, RNAI_CORRS)
+        rnai_n = get_n(recalculate, rnai_df, filepath=RNAI_SAMPL)
+        rnai_logp = get_logp(recalculate, rnai_n, rnai_corr, filepath=RNAI_LOGP)
+        rnai_z = get_z(recalculate, rnai_logp, rnai_corr, filepath= RNAI_Z_LOG)
 
     # Process CRISPR data
-    crispr_df = pd.read_csv(crispr_file, index_col=0)
-    gene_cols = ['%s' % col.split(' ')[0] for col in crispr_df.columns]
-    crispr_df.columns = gene_cols
-    # Drop any duplicate columns (shouldn't be any for CRISPR, but just in case)
-    crispr_df = crispr_df.loc[:, ~crispr_df.columns.duplicated()]
+    if CRISPR_Z_LOG.exists() and CRISPR_LOGP.exists():
+        logger.info(f"Loading {CRISPR_Z_LOG}")
+        crispr_z = pd.read_hdf(str(CRISPR_Z_LOG))
+    else:
+        logger.info("Processing CRISPR data")
+        crispr_df = pd.read_csv(CRISPR_FILE, index_col=0)
+        gene_cols = ['%s' % col.split(' ')[0] for col in crispr_df.columns]
+        crispr_df.columns = gene_cols
+        # Drop any duplicate columns (shouldn't be any for CRISPR, but just in case)
+        crispr_df = crispr_df.loc[:, ~crispr_df.columns.duplicated()]
 
-    crispr_corr = get_corr(recalculate, crispr_df, 'crispr_correlations')
-    crispr_n = get_n(recalculate, crispr_df, SUBMODULE.join(name='crispr_n'))
-    crispr_logp = get_logp(recalculate, crispr_n, crispr_corr, SUBMODULE.join(name='crispr_logp'))
-    crispr_z = get_z(recalculate, crispr_logp, crispr_corr, SUBMODULE.join(name='crispr_z_log'))
+        logger.info("Getting correlations for CRISPR data")
+        crispr_corr = get_corr(recalculate, crispr_df, filepath=CRISPR_CORRS)
+        crispr_n = get_n(recalculate, crispr_df, filepath=CRISPR_SAMPL)
+        crispr_logp = get_logp(recalculate, crispr_n, crispr_corr, filepath=CRISPR_LOGP)
+        crispr_z = get_z(recalculate, crispr_logp, crispr_corr, filepath=CRISPR_Z_LOG)
 
     # Combine z-scores
     dep_z = (crispr_z + rnai_z) / np.sqrt(2)
