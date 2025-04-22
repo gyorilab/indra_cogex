@@ -115,17 +115,22 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
     # Ensure source files are downloaded
     ensure_source_files()
 
-    # Process cell line info from DepMap
-    logger.info("Processing cell line info from DepMap")
-    cell_line_df = pd.read_csv(MODEL_INFO_FILE)
-    cell_line_map = cell_line_df[cell_line_df['CCLEName'].notna()][['ModelID', 'CCLEName']]
-    cell_line_map.set_index('CCLEName', inplace=True)
-
     # Process RNAi data
-    if RNAI_Z_LOG.exists() and RNAI_LOGP.exists():
+    if DEP_Z.exists() and DEP_LOGP.exists():
+        # Skips to the end
+        pass
+    elif RNAI_Z_LOG.exists() and RNAI_LOGP.exists():
         logger.info(f"Loading {RNAI_Z_LOG}")
         rnai_z = pd.read_hdf(str(RNAI_Z_LOG))
     else:
+        # Process cell line info from DepMap
+        logger.info("Processing cell line info from DepMap")
+        cell_line_df = pd.read_csv(MODEL_INFO_FILE)
+        cell_line_map = cell_line_df[cell_line_df["CCLEName"].notna()][
+            ["ModelID", "CCLEName"]
+        ]
+        cell_line_map.set_index("CCLEName", inplace=True)
+
         logger.info("Processing RNAi data")
         rnai_df = pd.read_csv(RNAI_FILE, index_col=0)
         rnai_df = rnai_df.transpose()
@@ -143,7 +148,10 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         rnai_z = get_z(recalculate, rnai_logp, rnai_corr, filepath= RNAI_Z_LOG)
 
     # Process CRISPR data
-    if CRISPR_Z_LOG.exists() and CRISPR_LOGP.exists():
+    if DEP_Z.exists() and DEP_LOGP.exists():
+        # Skips to the end
+        pass
+    elif CRISPR_Z_LOG.exists() and CRISPR_LOGP.exists():
         logger.info(f"Loading {CRISPR_Z_LOG}")
         crispr_z = pd.read_hdf(str(CRISPR_Z_LOG))
     else:
@@ -161,22 +169,26 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
         crispr_z = get_z(recalculate, crispr_logp, crispr_corr, filepath=CRISPR_Z_LOG)
 
     # Combine z-scores
-    dep_z = (crispr_z + rnai_z) / np.sqrt(2)
-    dep_z = dep_z.dropna(axis=0, how='all').dropna(axis=1, how='all')
+    if DEP_Z.exists() and DEP_LOGP.exists():
+        logger.info(f"Loading {DEP_LOGP}")
+        df_logp = pd.read_hdf(str(DEP_LOGP))
+    else:
+        logger.info("Combining z-scores for CRISPR and RNAi data")
+        dep_z = (crispr_z + rnai_z) / np.sqrt(2)
+        dep_z = dep_z.dropna(axis=0, how='all').dropna(axis=1, how='all')
+        dep_z.to_hdf(str(DEP_Z), DEP_Z.name.split('.')[0])
 
-    dep_logp = pd.DataFrame(np.log(2) + stats.norm.logcdf(-dep_z.abs()),
-                            index=dep_z.columns, columns=dep_z.columns)
+        df_logp = pd.DataFrame(np.log(2) + stats.norm.logcdf(-dep_z.abs()),
+                                index=dep_z.columns, columns=dep_z.columns)
 
-    filename = 'dep_z'
-    z_filepath = SUBMODULE.join(name='%s.h5' % filename)
-    dep_z.to_hdf(z_filepath, filename)
+        df_logp.to_hdf(str(DEP_LOGP), DEP_LOGP.name.split('.')[0])
 
-    filename = 'dep_logp'
-    logp_filepath = SUBMODULE.join(name='%s.h5' % filename)
-    dep_logp.to_hdf(logp_filepath, filename)
-
-    df_logp = dep_logp
     total_comps = np.triu(~df_logp.isna(), k=1).sum()
+
+    # Process Mitocarta data
+    logger.info("Processing Mitocarta data")
+    mitocarta = pd.read_excel(MITOCARTA_FILE, sheet_name=1)
+    mitogenes = mitocarta.Symbol.to_list()
     mitogenes_in_df = set(df_logp.columns).intersection(set(mitogenes))
     mito_comps = len(mitogenes_in_df)**2
     num_comps = total_comps - mito_comps
@@ -192,6 +204,8 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
     cm = np.log(num_comps) + np.euler_gamma + (1 / (2 * num_comps))
 
     sig_sorted['by_crit_val'] = sig_sorted['bh_crit_val'] - np.log(cm)
+
+    logger.info(f"Saving significant pairs of genes to {DEPMAP_SIGS}")
     sig_sorted.to_pickle(DEPMAP_SIGS)
     return sig_sorted
 
