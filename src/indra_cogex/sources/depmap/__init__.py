@@ -8,6 +8,8 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 from scipy import stats
+from tqdm import tqdm
+
 from indra.databases import hgnc_client
 from depmap_analysis.util.statistics import get_z, get_logp, get_n
 
@@ -210,20 +212,39 @@ def get_sig_df(recalculate: bool = True) -> pd.DataFrame:
     return sig_sorted
 
 
-def load_sigs(correction_method=CORRECTION_METHOD):
+def load_sigs(
+    correction_method=CORRECTION_METHOD,
+    recalculate: bool = False
+) -> Dict[str, Dict[str, float]]:
+    """Load the DepMap significant pairs.
+
+    Parameters
+    ----------
+    correction_method :
+        The correction method to use. Options are:
+        'bonferroni', 'benjamini-hochberg', 'benjamini-yekutieli'.
+    recalculate :
+        Whether to recalculate the significant pairs.
+
+    Returns
+    -------
+    :
+        A dictionary of significant pairs of genes.
+    """
+
     # Load the significance data frame
     df = get_sig_df(recalculate=recalculate)
 
     # Apply correction method filter
-    if correction_method is not None:
-        crit_col = CORRECTION_METHODS[correction_method]
-        df = df[df.logp < df[crit_col]]
+    crit_col = CORRECTION_METHODS[correction_method]
+    df = df[df.logp < df[crit_col]]
 
     # Get the current HGNC IDs for the genes since
     # some are outdated and organize them by pairs
     sig_by_gene = defaultdict(dict)
-    for row in tqdm.tqdm(df.itertuples(), total=len(df),
-                         desc='Processing DepMap significant pairs'):
+    for row in tqdm(
+        df.itertuples(), total=len(df), desc="Processing DepMap significant pairs"
+    ):
         # Note that we are sorting the genes here since
         # we will generate a single directed edge a->b
         # and this makes that process deterministic
