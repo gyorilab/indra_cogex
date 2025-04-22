@@ -53,6 +53,12 @@ CORRECTION_METHODS = {
 CORRECTION_METHOD = 'benjamini-yekutieli'
 
 
+def ensure_source_files(force: bool = False):
+    if force or not all([f.exists() for f in
+                         [MITOCARTA_FILE, MODEL_INFO_FILE, RNAI_FILE, CRISPR_FILE]]):
+        download_source_files(force=force)
+    else:
+        logger.info("All source files exist, skipping download.")
 
 
 def get_corr(
