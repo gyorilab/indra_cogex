@@ -42,8 +42,8 @@ CRISPR_CORRS = DEPMAP_RELEASE_MODULE.join(name='crispr_correlations.h5')
 CRISPR_SAMPL = DEPMAP_RELEASE_MODULE.join(name='crispr_n.h5')
 CRISPR_LOGP = DEPMAP_RELEASE_MODULE.join(name='crispr_logp.h5')
 CRISPR_Z_LOG = DEPMAP_RELEASE_MODULE.join(name='crispr_z_log.h5')
-DEP_Z = SUBMODULE.join(name="dep_z.h5")
-DEP_LOGP = SUBMODULE.join(name="dep_logp.h5")
+DEP_Z = DEPMAP_RELEASE_MODULE.join(name="dep_z.h5")
+DEP_LOGP = DEPMAP_RELEASE_MODULE.join(name="dep_logp.h5")
 DEPMAP_SIGS_PKL_NAME = "dep_stouffer_signif.pkl"  # Output file used in node/edge generation
 DEPMAP_SIGS = DEPMAP_RELEASE_MODULE.join(name=DEPMAP_SIGS_PKL_NAME)
 
