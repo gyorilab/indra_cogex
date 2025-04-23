@@ -80,16 +80,16 @@ def get_corr(
     return data_corr
 
 
-def unstack_corrs(df: pd.DataFrame) -> pd.DataFrame:
-    df_ut = df.where(np.triu(np.ones(df.shape), k=1).astype(np.bool))
-    stacked = df_ut.stack(dropna=True)
+def unstack_corrs(df: pd.DataFrame) -> pd.Series:
+    df_ut = df.where(np.triu(np.ones(df.shape), k=1).astype(np.bool_))
+    stacked: pd.Series = df_ut.stack(dropna=True)
     return stacked
 
 
-def filt_mitocorrs(ser: pd.DataFrame, mitogenes: list[str]) -> pd.Series:
+def filt_mitocorrs(ser: pd.Series, mitogenes: list[str]) -> pd.Series:
     filt_ix = []
     filt_vals = []
-    for (ix0, ix1), logp in ser.iteritems():
+    for (ix0, ix1), logp in ser.items():
         if ix0 in mitogenes and ix1 in mitogenes:
             continue
         filt_ix.append((ix0, ix1))
