@@ -322,7 +322,7 @@ FUNCTION_CATEGORIES = {
             "continuous_analysis",
             "metabolite_discrete_analysis",
             "kinase_analysis",
-            "explain_downstream",
+            "source_target_analysis",
         ]
     },
     'subnetwork': {
@@ -411,6 +411,7 @@ examples_dict = {
             example=[["HGNC", "6840"], ["HGNC", "1097"]]
         )
     },
+    "output_dir": fields.List(fields.String, example=None),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
@@ -529,8 +530,7 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["explain_downstream"]] +
-    [(search, fn) for fn in ["get_network_for_statements"]]
+    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]]
 
 )
 
