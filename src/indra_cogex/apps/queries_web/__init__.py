@@ -553,6 +553,12 @@ for module, func_name in module_functions:
             target_ns = info['namespace']
             break
 
+    if target_ns is None:
+        raise ValueError(
+            f"Function '{func_name}' missing from api category mapping. Please add "
+            f"it to FUNCTION_CATEGORIES."
+        )
+
     short_doc, fixed_doc = get_docstring(
         func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
     )
