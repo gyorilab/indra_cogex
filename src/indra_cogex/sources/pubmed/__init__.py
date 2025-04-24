@@ -534,7 +534,7 @@ def download_medline_pubmed_xml_resource(
         If True, will raise error instead of skipping the file when
         checksums do not match. Default: False.
     """
-    for xml_file, stow, base_url in xml_path_generator(description="Download"):
+    for xml_file, stow, base_url in xml_path_generator(description="Downloading PubMed XML files"):
         # Check if resource already exists
         if not force and stow.exists():
             continue
@@ -603,6 +603,8 @@ def xml_path_generator(
         all_urls = baseline_urls + update_urls
         for pubmed_url in tqdm(
             all_urls,
+            unit="file",
+            unit_scale=True,
             desc=description,
         ):
             yield _get_tuple(pubmed_url)
