@@ -112,8 +112,6 @@ def source_target_analysis_route():
             )
 
         except Exception as e:
-            # todo: one exception is raised which gives this error:
-            # "the JSON object must be str, bytes or bytearray, not dict"
             flask.flash("An error occurred: " + str(e), "error")
             return flask.redirect(flask.url_for("sta.source_target_analysis_route"))
 
