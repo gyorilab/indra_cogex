@@ -207,9 +207,19 @@ def assemble_protein_stmt_htmls(stmts_df):
     stmt_data_per_gene = {}
     for name, gene_stmts_df in stmts_df.groupby('name'):
         # Convert statement JSON to statement objects
-        stmts = stmts_from_json(
-            [json.loads(sj) for sj in gene_stmts_df["stmt_json"].values]
-        )
+        stmt_jsons = []
+        for sj in gene_stmts_df["stmt_json"].values:
+            if isinstance(sj, str):
+                try:
+                    stmt_jsons.append(json.loads(sj))
+                except Exception as e:
+                    print(f"Error decoding stmt_json string: {sj[:100]} -> {e}")
+            elif isinstance(sj, dict):
+                stmt_jsons.append(sj)
+            else:
+                print(f"Skipping unexpected stmt_json type: {type(sj)} -> {sj}")
+
+        stmts = stmts_from_json(stmt_jsons)
 
         # Get evidence counts for each statement hash
         evidence_counts = {
@@ -218,7 +228,8 @@ def assemble_protein_stmt_htmls(stmts_df):
 
         # Get source counts for each statement hash
         source_counts_per_hash = {
-            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
+            int(sh): json.loads(sc) if isinstance(sc, str) else sc
+            for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
         }
 
         # Format statements for Vue.js rendering
@@ -584,15 +595,30 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=
     # render statements using the Vue.js components on the frontend
     stmt_data_per_gene = {}
     for name, gene_stmts_df in filtered_df.groupby('name'):
-        stmts = stmts_from_json(
-            [json.loads(sj) for sj in gene_stmts_df["stmt_json"].values]
-        )
+        stmt_jsons = []
+        for sj in gene_stmts_df["stmt_json"].values:
+            if isinstance(sj, str):
+                try:
+                    stmt_jsons.append(json.loads(sj))
+                except json.JSONDecodeError as e:
+                    print(f"Failed to decode JSON string: {sj[:100]}... -> {e}")
+                    continue
+            elif isinstance(sj, dict):
+                stmt_jsons.append(sj)
+            else:
+                print(f"Unexpected type in stmt_json column: {type(sj)} -> {sj}")
+                continue
+
+        stmts = stmts_from_json(stmt_jsons)
+
         evidence_counts = {
             int(sh): int(sc) for sh, sc in gene_stmts_df[["stmt_hash", "evidence_count"]].values
         }
         source_counts_per_hash = {
-            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
+            int(sh): json.loads(sc) if isinstance(sc, str) else sc
+            for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
         }
+
         stmt_data_per_gene[name] = format_stmts(
             stmts,
             evidence_counts=evidence_counts,
