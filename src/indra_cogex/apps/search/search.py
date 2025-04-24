@@ -175,6 +175,7 @@ def gilda_ground_endpoint():
     except Exception as e:
         return {"error": str(e)}, 500
 
+
 def is_valid_curie(namespace, identifier, validator):
     """Check if a given namespace is valid"""
     try:
@@ -182,6 +183,7 @@ def is_valid_curie(namespace, identifier, validator):
         return True
     except ValueError:
         return False
+
 
 def check_and_convert(text):
     if ":" in text:
@@ -191,6 +193,7 @@ def check_and_convert(text):
             result = (curie_validate_namespace, curie_validate_id)
             return result, True
     return text, False
+
 
 def gilda_ground(agent_text):
     try:
