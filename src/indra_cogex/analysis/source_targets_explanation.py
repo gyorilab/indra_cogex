@@ -307,6 +307,7 @@ def shared_protein_families(target_hgnc_ids, source_hgnc_id, *, client):
             # creates new dataframe for shared complexes
             shared_families_df = target_df[target_df.id.isin(source_df["id"].values)]
             return shared_families_df
+    return pd.DataFrame()
 
 
 def get_go_terms_for_source(source_hgnc_id):
@@ -436,7 +437,7 @@ def find_shared_go_terms(source_go_terms: List[str], target_genes: List[str], *,
         return shared_go_df
 
     logger.info("No shared GO terms found between source and targets")
-    return None
+    return pd.DataFrame(columns=go_df.columns)
 
 
 @autoclient()
