@@ -209,23 +209,22 @@
             el: '#vue-app',
             data: {
                 stmt_sections: [
-                    // results is the dict from run_explain_downstream_analysis()
                     {% for gene, stmt_data in results.statements.items() %}
-                        {
-                            gene: "{{ gene }}",
-                            statements: [
-                                // stmts is coming from "format_stmts()" on the backend
-                                {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
-                                {
-                                    ev_array: {{ ev_array|safe }},
-                                    english: {{ english|safe }},
-                                    hash: {{ hash_str|safe }},
-                                    sources: {{ sources|safe }},
-                                    total_evidence: {{ total_evidence|int }},
-                                    badges: {{ badges|safe }}
-                                },
-                                {% endfor %}
-                        },
+                    {
+                        gene: "{{ gene }}",
+                        statements: [
+                            {% for stmt_tuple in stmt_data %}
+                            {
+                                ev_array: {{ stmt_tuple[0]|safe }},
+                                english: {{ stmt_tuple[1]|safe }},
+                                hash: {{ stmt_tuple[2]|safe }},
+                                sources: {{ stmt_tuple[3]|safe }},
+                                total_evidence: {{ stmt_tuple[4]|int }},
+                                badges: {{ stmt_tuple[5]|safe }}
+                            }{% if not loop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    }{% if not loop.last %},{% endif %}
                     {% endfor %}
                 ],
                 include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
@@ -239,7 +238,6 @@
                 }
             }
         });
-
     </script>
 {% endblock %}
 
@@ -327,11 +325,6 @@
                             ></statement>
                         </div>
                     </div>
-                        <h3>{{ gene }}</h3>
-                        {% if gene != 'database_badges' %}
-                            {{ statement | safe }}
-                        {% endif %}
-                    {% endfor %}
                 </div>
             {% endif %}
 
@@ -375,92 +368,92 @@
             {% endif %}
 
             {% if results.upstream and results.upstream.get('shared_proteins') %}
-    <h3>Upstream Analysis</h3>
-    <p>
-        Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
-        {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
-            Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
-        {% endif %}
-    </p>
+                <h3>Upstream Analysis</h3>
+                <p>
+                    Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
+                    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+                        Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
+                    {% endif %}
+                </p>
 
-    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
-        <!-- Display enrichment results as a table with pagination -->
-        <h4>Enriched Upstream Regulators</h4>
-        <div class="datatable-wrapper">
-            <table class="table table-sm table-hover datatable" id="upstream-table">
-                <thead>
-                    <tr>
-                        <th>CURIE</th>
-                        <th>Name</th>
-                        <th>p-value</th>
-                        <th>q-value</th>
-                        <th>Statements</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for _, row in results.upstream.get('shared_entities').iterrows() %}
-                        <tr>
-                            <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
-                            <td>{{ row.name }}</td>
-                            <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
-                            <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
-                            <td>
-                                {% if 'curie' in row and row.curie and ':' in row.curie %}
-                                    <!-- Using full CURIE format with namespace:id -->
-                                    {% set namespace = row.curie.split(':')[0] %}
-                                    {% set id = row.curie.split(':')[1] %}
-                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% else %}
-                                    <!-- Fallback to name-based search -->
-                                    <a href="{{ url_for('search.search', agent=row.name) }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <!-- Display proteins with pagination using DataTables -->
-        <h4>Shared Proteins</h4>
-        <div class="datatable-wrapper">
-            <table class="table table-sm table-hover datatable" id="shared-proteins-table">
-                <thead>
-                    <tr>
-                        <th>Regulator</th>
-                        <th>Statements</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for protein in results.upstream.get('shared_proteins') %}
-                        <tr>
-                            <td>{{ protein }}</td>
-                            <td>
-                                {% if ':' in protein|string %}
-                                    <!-- Protein is a CURIE with namespace:id format -->
-                                    {% set namespace = protein.split(':')[0] %}
-                                    {% set id = protein.split(':')[1] %}
-                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% else %}
-                                    <!-- Protein is a name -->
-                                    <a href="{{ url_for('search.search', agent=protein) }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
-{% endif %}
+                {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+                    <!-- Display enrichment results as a table with pagination -->
+                    <h4>Enriched Upstream Regulators</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="upstream-table">
+                            <thead>
+                                <tr>
+                                    <th>CURIE</th>
+                                    <th>Name</th>
+                                    <th>p-value</th>
+                                    <th>q-value</th>
+                                    <th>Statements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for _, row in results.upstream.get('shared_entities').iterrows() %}
+                                    <tr>
+                                        <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
+                                        <td>{{ row.name }}</td>
+                                        <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
+                                        <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
+                                        <td>
+                                            {% if 'curie' in row and row.curie and ':' in row.curie %}
+                                                <!-- Using full CURIE format with namespace:id -->
+                                                {% set namespace = row.curie.split(':')[0] %}
+                                                {% set id = row.curie.split(':')[1] %}
+                                                <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% else %}
+                                                <!-- Fallback to name-based search -->
+                                                <a href="{{ url_for('search.search', agent=row.name) }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <!-- Display proteins with pagination using DataTables -->
+                    <h4>Shared Proteins</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="shared-proteins-table">
+                            <thead>
+                                <tr>
+                                    <th>Regulator</th>
+                                    <th>Statements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for protein in results.upstream.get('shared_proteins') %}
+                                    <tr>
+                                        <td>{{ protein }}</td>
+                                        <td>
+                                            {% if ':' in protein|string %}
+                                                <!-- Protein is a CURIE with namespace:id format -->
+                                                {% set namespace = protein.split(':')[0] %}
+                                                {% set id = protein.split(':')[1] %}
+                                                <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% else %}
+                                                <!-- Protein is a name -->
+                                                <a href="{{ url_for('search.search', agent=protein) }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
     <!-- Add extra space at bottom to prevent footer overlap -->
