@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+from abc import abstractmethod
 from hashlib import md5
 from itertools import chain
 from typing import Tuple, Mapping, Iterable, List, Set
@@ -112,6 +113,16 @@ class PubmedProcessor(Processor):
                 batch, self.edges_path, sample_path, write_mode
             )
         return edges_path
+
+    @abstractmethod
+    def _get_nodes(self):
+        """This method should be overridden by subclasses to yield nodes."""
+        return
+
+    @abstractmethod
+    def _get_relations(self):
+        """This method should be overridden by subclasses to yield relations."""
+        return
 
 
 class PublicationProcessor(PubmedProcessor):
