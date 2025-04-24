@@ -115,6 +115,7 @@ def get_sig_df(recalculate: bool = False, redownload_sources: bool = False) -> p
         A pandas DataFrame of significant pairs of genes.
     """
     if not recalculate and DEPMAP_SIGS.exists():
+        logger.info(f"Loading cached significant pairs from {DEPMAP_SIGS}")
         return pd.read_pickle(DEPMAP_SIGS)
 
     # Ensure source files are downloaded
