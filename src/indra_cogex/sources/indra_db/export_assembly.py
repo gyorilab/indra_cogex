@@ -12,6 +12,7 @@ from indra_cogex.util import load_stmt_json_str
 
 logger = logging.getLogger(__name__)
 
+
 def get_latest_timestamp_prefix(bucket: str, prefix: str) -> str:
     import boto3
     from datetime import datetime
@@ -31,6 +32,7 @@ def get_latest_timestamp_prefix(bucket: str, prefix: str) -> str:
 
     latest_ts = max(timestamps).strftime("%Y%m%d-%H%M%S")
     return f"{prefix}{latest_ts}/"
+
 
 def download_s3_file(bucket: str, s3_key: str, local_path: Path):
     import boto3
@@ -90,6 +92,7 @@ def export_assembly():
 
     download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
                      belief_scores_pkl_fname)
+
 
 if __name__ == "__main__":
     export_assembly()
