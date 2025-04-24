@@ -110,7 +110,7 @@ __all__ = [
     "get_drugs_for_sensitive_cell_line",
     "get_sensitive_cell_lines_for_drug",
     "is_cell_line_sensitive_to_drug",
-    "get_network_for_paper",
+    "get_network",
     # Summary functions
     "get_node_counter",
     "get_edge_counter",
@@ -1508,7 +1508,7 @@ def enrich_statements(
             missing_stmt_hashes,
             client=client,
             limit=evidence_limit,
-            mesh_terms= mesh_terms,
+            mesh_terms=mesh_terms,
         )
         evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(
@@ -3277,22 +3277,25 @@ def is_cell_line_sensitive_to_drug(
 
 
 @autoclient()
-def get_network_for_paper(
-    paper_term: Tuple[str, str],
+def get_network(
+    network_type: str,
+    identifier: Any,
     include_db_evidence: bool = True,
     limit: int = 25,
     *,
     client: Neo4jClient,
 ) -> Dict:
-    """Generate network visualization data for INDRA statements from a paper.
+    """Generate network visualization data for INDRA statements based on different sources.
 
     Parameters
     ----------
-    paper_term : Tuple[str, str]
-        The paper identifier as a tuple of (prefix, id). Supported prefixes:
-        - 'pubmed' or 'pmid': PubMed ID
-        - 'doi': Digital Object Identifier
-        - 'pmc': PubMed Central ID (will try to map to pubmed)
+    network_type : str
+        The type of network to generate. Options: 'paper', 'go', 'subnetwork'
+    identifier : Any
+        The identifier for the network:
+        - For 'paper': Tuple[str, str] of (prefix, id) where prefix is one of: 'pubmed', 'pmid', 'doi', 'pmc'
+        - For 'go': str with GO term ID (e.g., "GO:0006915")
+        - For 'subnetwork': List[Tuple[str, str]] of node identifiers as (namespace, id) tuples
     include_db_evidence : bool, default=True
         Whether to include statements with database evidence.
     limit : int, default=25
@@ -3305,49 +3308,65 @@ def get_network_for_paper(
     Dict
         A dictionary containing nodes and edges in vis.js format for network visualization.
     """
-    # Handle prefix mapping based on test results
-    prefix, identifier = paper_term
-    prefix_lower = prefix.lower()
-
-    # Map known prefixes to their correct form
-    if prefix_lower == 'pmid':
-        paper_term = ('pubmed', identifier)
-
-    # Get statements for the paper
-    statements = get_stmts_for_paper(
-        paper_term,
-        client=client,
-        include_db_evidence=include_db_evidence
-    )
-
-    # Limit to top N statements
-    statements = statements[:limit]
-
-    # If no statements found, return empty network
-    if not statements:
-        return {"nodes": [], "edges": []}
-
-    # Create network using IndraNetAssembler
     try:
-        assembler = IndraNetAssembler(statements)
+        # Get statements based on network type
+        stmts = []
+        if network_type == 'paper':
+            prefix, paper_id = identifier
+            # Map known prefixes to their correct form
+            if prefix.lower() == 'pmid':
+                prefix = 'pubmed'
+
+            stmts = get_stmts_for_paper(
+                (prefix, paper_id),
+                client=client,
+                include_db_evidence=include_db_evidence
+            )
+        elif network_type == 'go':
+            from indra_cogex.client.subnetwork import indra_subnetwork_go
+            stmts = indra_subnetwork_go(
+                go_term=("GO", identifier),
+                client=client,
+                include_db_evidence=include_db_evidence,
+                order_by_ev_count=True,
+                return_source_counts=False,
+            )
+        elif network_type == 'subnetwork':
+            from indra_cogex.client.subnetwork import indra_subnetwork
+            stmts = indra_subnetwork(
+                nodes=identifier,
+                client=client,
+                include_db_evidence=include_db_evidence,
+                order_by_ev_count=True,
+                return_source_counts=False,
+            )
+        else:
+            return {"nodes": [], "edges": [], "error": f"Unknown network type: {network_type}"}
+
+        # Limit to top N statements
+        stmts = stmts[:limit]
+
+        # If no statements found, return empty network
+        if not stmts:
+            return {"nodes": [], "edges": []}
+
+        # Create network using IndraNetAssembler
+        assembler = IndraNetAssembler(stmts)
         graph = assembler.make_model(graph_type='multi_graph')
 
         # Find most connected node
         node_degrees = dict(graph.degree())
-        central_node = max(node_degrees.items(), key=lambda x: x[1])[0]
-
-        # Convert to vis.js format
-        nodes = []
-        edges = []
+        central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
         # Create a mapping of db_refs for all entities
         entity_db_refs = {}
-        for stmt in statements:
+        for stmt in stmts:
             for agent in stmt.agent_list():
                 if agent is not None and hasattr(agent, 'db_refs'):
                     entity_db_refs[agent.name] = agent.db_refs
 
-        # Process nodes with better type detection
+        # Process nodes
+        nodes = []
         for node_id in graph.nodes():
             # Default node properties
             node_type = "Other"
@@ -3355,50 +3374,47 @@ def get_network_for_paper(
             shape = "ellipse"  # default shape
 
             # Try to get more detailed type information
-            db_refs = {}
-            if node_id in entity_db_refs:
-                db_refs = entity_db_refs[node_id]
+            db_refs = entity_db_refs.get(node_id, {})
 
-                # Comprehensive categorization of entity types
-                if 'HGNC' in db_refs or 'FPLX' in db_refs:
-                    # Genes or gene families
-                    node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
-                    color = "#4CAF50"  # green for genes/proteins/families
-                    shape = "box"
-                elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
-                    # Chemical entities
-                    node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
-                    color = "#FF9800"  # orange for chemicals
-                    shape = "diamond"
-                elif 'GO' in db_refs:
-                    node_type = "GO"
-                    color = "#2196F3"  # blue for GO terms
-                    shape = "hexagon"
-                elif 'MESH' in db_refs:
-                    node_type = "MESH"
-                    color = "#9C27B0"  # purple for MESH terms
-                    shape = "triangle"
-                elif 'UP' in db_refs:
-                    # UniProt IDs - also proteins
-                    node_type = "UP"
-                    color = "#4CAF50"  # same green as genes
-                    shape = "box"
-                else:
-                    # If there's any db_ref, use the first one
-                    if db_refs:
-                        node_type = next(iter(db_refs.keys()), "Other")
-                        # For any other database types, use a unique color
-                        if node_type != "Other":
-                            color = "#009688"  # teal for other known types
+            # Comprehensive categorization of entity types
+            if 'HGNC' in db_refs or 'FPLX' in db_refs:
+                # Genes or gene families
+                node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
+                color = "#4CAF50"  # green for genes/proteins/families
+                shape = "box"
+            elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
+                # Chemical entities
+                node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
+                color = "#FF9800"  # orange for chemicals
+                shape = "diamond"
+            elif 'GO' in db_refs:
+                node_type = "GO"
+                color = "#2196F3"  # blue for GO terms
+                shape = "hexagon"
+            elif 'MESH' in db_refs:
+                node_type = "MESH"
+                color = "#9C27B0"  # purple for MESH terms
+                shape = "triangle"
+            elif 'UP' in db_refs:
+                # UniProt IDs - also proteins
+                node_type = "UP"
+                color = "#4CAF50"  # same green as genes
+                shape = "box"
+            elif db_refs:
+                # If there's any db_ref, use the first one
+                node_type = next(iter(db_refs.keys()), "Other")
+                # For any other database types, use a unique color
+                if node_type != "Other":
+                    color = "#009688"  # teal for other known types
 
             # Make central node more prominent
             if node_id == central_node:
                 size = 45
-                font_size = 26  # Increased font size
+                font_size = 26
                 border_width = 3
             else:
                 size = 35
-                font_size = 22  # Increased font size
+                font_size = 22
                 border_width = 2
 
             nodes.append({
@@ -3416,7 +3432,7 @@ def get_network_for_paper(
                     'color': '#000000',
                     'face': 'arial',
                     'strokeWidth': 0,
-                    'vadjust': -40  # Increased distance from node
+                    'vadjust': -40
                 },
                 'borderWidth': border_width,
                 'details': db_refs,
@@ -3426,44 +3442,26 @@ def get_network_for_paper(
                 'uniprot': db_refs.get('UP', '')
             })
 
-        # Process edges - handle multi_graph correctly
+        # Process edges
+        edges = []
         edge_count = 0
         for source, target, key, data in graph.edges(data=True, keys=True):
+            # Get statement type from edge data or find matching statement
+            stmt_type = data.get('stmt_type', 'Interaction')
+
             # Find the corresponding statement for this edge
-            edge_stmt = None
-            found_stmt_type = None
+            edge_stmt = next(
+                (s for s in stmts if {a.name for a in s.agent_list() if a} == {source, target}),
+                None
+            )
 
-            # Try to get stmt_type directly from edge data
-            if 'stmt_type' in data:
-                found_stmt_type = data['stmt_type']
-
-            # Search for the statement that connects these nodes
-            for stmt in statements:
-                source_found = False
-                target_found = False
-
-                for agent in stmt.agent_list():
-                    if agent is not None:
-                        if agent.name == source:
-                            source_found = True
-                        elif agent.name == target:
-                            target_found = True
-
-                if source_found and target_found:
-                    edge_stmt = stmt
-                    found_stmt_type = type(stmt).__name__
-                    break
-
-            # Extract statement type
-            stmt_type = found_stmt_type if found_stmt_type else 'Interaction'
+            # Get belief score
+            belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
 
             # Determine color and style based on statement type
-            # Make color differences more dramatic
-            dashes = False  # solid line by default
-            arrows = {
-                'to': {'enabled': True, 'scaleFactor': 0.5}  # Default arrow
-            }
-            width = 4  # Default width
+            color, dashes = "#999999", False
+            arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
+            width = 4
 
             if 'Activation' in stmt_type:
                 color = '#00CC00'  # bright green
@@ -3478,22 +3476,11 @@ def get_network_for_paper(
                     'from': {'enabled': False}
                 }
             elif 'IncreaseAmount' in stmt_type:
-                color = '#00CC00'  # bright green (same as Activation)
+                color = '#00CC00'  # bright green
                 dashes = [5, 5]  # dashed line
             elif 'DecreaseAmount' in stmt_type:
-                color = '#FF0000'  # bright red (same as Inhibition)
+                color = '#FF0000'  # bright red
                 dashes = [5, 5]  # dashed line
-            else:
-                # Default color and width
-                color = '#999999'  # gray
-                width = 3
-
-            # Get belief score
-            belief = 0.5
-            if edge_stmt and hasattr(edge_stmt, 'belief'):
-                belief = edge_stmt.belief
-            elif 'belief' in data:
-                belief = data['belief']
 
             # Collect edge details for tooltip/dialog
             edge_details = {
@@ -3507,7 +3494,6 @@ def get_network_for_paper(
                 'type': stmt_type
             }
 
-            # Then set these properties directly on the edge object
             edges.append({
                 'id': f"e{edge_count}",
                 'from': str(source),
@@ -3517,7 +3503,7 @@ def get_network_for_paper(
                     'color': color,
                     'highlight': color,
                     'hover': color
-                },  # Make color an object with multiple properties
+                },
                 'dashes': dashes,
                 'arrows': arrows,
                 'width': width,
@@ -3533,9 +3519,8 @@ def get_network_for_paper(
     except Exception as e:
         import traceback
         traceback.print_exc()
-
         # Return empty network on error
-        return {"nodes": [], "edges": []}
+        return {"nodes": [], "edges": [], "error": str(e)}
 
 
 if __name__ == "__main__":
