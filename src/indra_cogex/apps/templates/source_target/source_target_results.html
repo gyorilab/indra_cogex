@@ -264,6 +264,59 @@
     </div>
 {% endmacro %}
 
+{% block head %}
+    {{ super() }}
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+
+    <!-- Indralab-vue, for access to <statement> component and its child components -->
+    <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
+    <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
+          rel="stylesheet">
+
+    <!-- Source badge CSS -->
+    <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
+
+    <style>
+        .badge-subject {
+            background-color: #4a36aa;
+            color: #FFFFFF;
+        }
+
+        .badge-object {
+            background-color: #2d8e4c;
+            color: #FFFFFF;
+        }
+
+        .badge-other {
+            background-color: #606060;
+            color: #FFFFFF;
+        }
+
+        .badge-source {
+            font-size: 8pt;
+            margin: 0;
+            padding-left: 5px;
+            cursor: pointer;
+        }
+
+        .nvm {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .col-1 {
+            flex: 12%;
+            max-width: 12%;
+        }
+
+        .col-10 {
+            flex: 76%;
+            max-width: 76%;
+        }
+    </style>
+{% endblock %}
+
 {% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
 
 {% block container %}
