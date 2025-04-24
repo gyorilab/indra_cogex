@@ -717,7 +717,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=
 
 
 @autoclient()
-def explain_downstream(
+def source_target_analysis(
     source: str,
     targets: List[str],
     output_dir: Optional[str] = None,
