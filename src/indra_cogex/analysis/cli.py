@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from indra_cogex.analysis.source_targets_explanation import explain_downstream
+from indra_cogex.analysis.source_targets_explanation import souce_target_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def main():
 
     try:
         # Run the analysis with the output directory parameter
-        result = explain_downstream(
+        result = souce_target_analysis(
             args.source,
             args.targets,
             output_dir=output_dir_str,  # Pass the output directory
