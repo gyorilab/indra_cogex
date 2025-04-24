@@ -12,6 +12,8 @@ import json
 import base64
 import logging
 import itertools
+import os
+import pickle
 from collections import defaultdict
 from typing import List, Tuple, Optional, Dict, Any
 from io import BytesIO
@@ -185,7 +187,10 @@ def plot_stmts_by_type(stmts_df):
 
 
 def assemble_protein_stmt_htmls(stmts_df):
-    """Assemble HTML page for each protein's INDRA statements in a data frame.
+    """Assemble statement data for each protein's INDRA statements in a data frame.
+
+    This function transforms statement data into a format that can be used by
+    Vue.js components on the frontend and by REST API endpoints.
 
     Parameters
     ----------
@@ -196,58 +201,34 @@ def assemble_protein_stmt_htmls(stmts_df):
     Returns
     -------
     :
-        Dictionary mapping protein names to HTML content of their statements
+        Dictionary mapping protein names to formatted statement data
     """
-    stmts_by_protein = defaultdict(list)
-    for _, row in stmts_df.iterrows():
-        stmt = stmt_from_json(json.loads(row['stmt_json']))
-        stmts_by_protein[row['name']].append(stmt)
-
+    # Group statements by protein (gene) name
     stmt_data_per_gene = {}
     for name, gene_stmts_df in stmts_df.groupby('name'):
-        # ha = HtmlAssembler(stmts, title=f'Statements for {name}',
-        #                    db_rest_url='https://db.indra.bio')
-        # full_html = ha.make_model()
-        #
-        # # Parse the HTML to add style attributes for tighter spacing
-        # soup = BeautifulSoup(full_html, 'html.parser')
-        #
-        # # Find and modify margin/padding of elements to reduce vertical spacing
-        # for elem in soup.find_all(True):  # Find all elements
-        #     # Get current style
-        #     style = elem.get('style', '')
-        #
-        #     # Add margin/padding reduction for elements that often have excess spacing
-        #     if elem.name in ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'hr']:
-        #         style += '; margin-top: 2px; margin-bottom: 2px; padding-top: 2px; padding-bottom: 2px;'
-        #         elem['style'] = style
-        #
-        # # Convert back to HTML string
-        # html_content[name] = str(soup)
-
-        # This transforms the statement information into a format that can be used to
-        # render statements using the Vue.js components on the frontend
+        # Convert statement JSON to statement objects
         stmts = stmts_from_json(
             [json.loads(sj) for sj in gene_stmts_df["stmt_json"].values]
         )
+
+        # Get evidence counts for each statement hash
         evidence_counts = {
-            int(sh): int(sc) for sh, sc in gene_stmts_df[["stmt_hash","evidence_count"]].values
+            int(sh): int(sc) for sh, sc in gene_stmts_df[["stmt_hash", "evidence_count"]].values
         }
+
+        # Get source counts for each statement hash
         source_counts_per_hash = {
-            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash","source_counts"]].values
+            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
         }
+
+        # Format statements for Vue.js rendering
         stmt_data_per_gene[name] = format_stmts(
             stmts,
             evidence_counts=evidence_counts,
-            remove_medscan=True,  # fixme: provide from outside based on login,
-            # like it's done in statement_display in indra_cogex/apps/data_display/__init__.py
+            remove_medscan=True,  # fixme: provide from outside based on login
             source_counts_per_hash=source_counts_per_hash,
         )
 
-    # todo:
-    #  option 1: Continue above changes nd
-    #  option 2: cut out html that contains only the statements and put that in
-    #  the results page
     return stmt_data_per_gene
 
 
@@ -557,8 +538,8 @@ def convert_plot_to_base64(fig):
 
 
 @autoclient()
-def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
-    """Run complete downstream analysis.
+def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=None, *, client):
+    """Run complete downstream analysis and save results to files.
 
     Parameters
     ----------
@@ -566,6 +547,8 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
         HGNC ID for the source gene
     target_hgnc_ids : list
         List of HGNC IDs for target genes
+    output_dir : str, optional
+        Directory to save output files. If None, results are only returned as dict
     client :
         The client instance
 
@@ -577,6 +560,10 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
     # Initialize results dictionary
     results = {}
 
+    # Create output directory if specified and it doesn't exist
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # 1. Get statements and create visualizations
     stmts_df, filtered_df = get_stmts_from_source(source_hgnc_id, target_proteins=target_hgnc_ids)
 
@@ -584,20 +571,73 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
     interaction_fig = plot_stmts_by_type(filtered_df)
     results['interaction_plot'] = convert_plot_to_base64(interaction_fig)
 
-    results['statements'] = assemble_protein_stmt_htmls(filtered_df)
+    # Save interaction plot if output directory is specified
+    if output_dir:
+        # Save as PNG image
+        interaction_fig.savefig(os.path.join(output_dir, 'interaction_plot.png'))
+        # Also save the base64 data for convenience
+        with open(os.path.join(output_dir, 'interaction_plot.txt'), 'w') as f:
+            f.write(results['interaction_plot'])
+
+    # Process statements - Using the new Vue-compatible approach
+    # This transforms the statement information into a format that can be used to
+    # render statements using the Vue.js components on the frontend
+    stmt_data_per_gene = {}
+    for name, gene_stmts_df in filtered_df.groupby('name'):
+        stmts = stmts_from_json(
+            [json.loads(sj) for sj in gene_stmts_df["stmt_json"].values]
+        )
+        evidence_counts = {
+            int(sh): int(sc) for sh, sc in gene_stmts_df[["stmt_hash", "evidence_count"]].values
+        }
+        source_counts_per_hash = {
+            int(sh): json.loads(sc) for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
+        }
+        stmt_data_per_gene[name] = format_stmts(
+            stmts,
+            evidence_counts=evidence_counts,
+            remove_medscan=True,  # fixme: provide from outside based on login
+            source_counts_per_hash=source_counts_per_hash,
+        )
+
+    results['statements'] = stmt_data_per_gene
+
+    if output_dir:
+        # Create statements directory
+        statements_dir = os.path.join(output_dir, 'statements')
+        os.makedirs(statements_dir, exist_ok=True)
+
+        # Save the complete statements data
+        with open(os.path.join(statements_dir, 'all_statements.json'), 'w') as f:
+            json.dump(stmt_data_per_gene, f, default=str, indent=2)
+
+        # Also save individual gene statements separately for easier access
+        for gene_name, stmt_data in stmt_data_per_gene.items():
+            gene_file = os.path.join(statements_dir, f'{gene_name}_statements.json')
+            with open(gene_file, 'w') as f:
+                json.dump(stmt_data, f, default=str, indent=2)
 
     # 2. Run discrete analysis
     hgnc_map = {hgnc_id: hgnc_client.get_hgnc_name(hgnc_id) for hgnc_id in target_hgnc_ids}
     discrete_result = discrete_analysis(hgnc_map, client=client)
     results['discrete_analysis'] = discrete_result
+    if output_dir:
+        with open(os.path.join(output_dir, 'discrete_analysis.json'), 'w') as f:
+            json.dump(discrete_result, f, default=str, indent=2)
 
     # 3. Find shared pathways
     shared_pathways_result = shared_pathways_between_gene_sets([source_hgnc_id], target_hgnc_ids)
     results['shared_pathways'] = shared_pathways_result
+    if output_dir:
+        with open(os.path.join(output_dir, 'shared_pathways.json'), 'w') as f:
+            json.dump(shared_pathways_result, f, default=str, indent=2)
 
     # 4. Analyze protein families
     shared_families_result = shared_protein_families(target_hgnc_ids, source_hgnc_id)
     results['protein_families'] = shared_families_result
+    if output_dir:
+        with open(os.path.join(output_dir, 'protein_families.json'), 'w') as f:
+            json.dump(shared_families_result, f, default=str, indent=2)
 
     # 5. GO terms analysis
     source_go_terms, _ = get_go_terms_for_source(source_hgnc_id)
@@ -606,6 +646,19 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
         'source_terms': source_go_terms,
         'shared_terms': shared_go_df
     }
+    if output_dir:
+        go_terms_dir = os.path.join(output_dir, 'go_terms')
+        os.makedirs(go_terms_dir, exist_ok=True)
+
+        # Save source terms
+        with open(os.path.join(go_terms_dir, 'source_terms.json'), 'w') as f:
+            json.dump(source_go_terms, f, default=str, indent=2)
+
+        # Save shared terms dataframe
+        if not shared_go_df.empty:
+            shared_go_df.to_csv(os.path.join(go_terms_dir, 'shared_terms.csv'))
+            # Also save as HTML for easy viewing
+            shared_go_df.to_html(os.path.join(go_terms_dir, 'shared_terms.html'))
 
     # 6. Additional analyses
     shared_proteins, shared_entities = shared_upstream_bioentities_from_targets(
@@ -616,15 +669,49 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
         'shared_proteins': shared_proteins,
         'shared_entities': shared_entities
     }
+    if output_dir:
+        upstream_dir = os.path.join(output_dir, 'upstream')
+        os.makedirs(upstream_dir, exist_ok=True)
+        with open(os.path.join(upstream_dir, 'shared_proteins.json'), 'w') as f:
+            json.dump(shared_proteins, f, default=str, indent=2)
+        with open(os.path.join(upstream_dir, 'shared_entities.json'), 'w') as f:
+            json.dump(shared_entities, f, default=str, indent=2)
 
     # 7. Get combined pathway analysis
     pathways_df = combine_target_gene_pathways(source_hgnc_id, target_hgnc_ids)
     results['combined_pathways'] = pathways_df
+    if output_dir and not pathways_df.empty:
+        pathways_df.to_csv(os.path.join(output_dir, 'combined_pathways.csv'))
+        # Also save as HTML for easy viewing
+        pathways_df.to_html(os.path.join(output_dir, 'combined_pathways.html'))
 
     # 8. Create analysis plots
     if not shared_go_df.empty and not shared_entities.empty:
         # graph_boxplots now returns base64 string directly
         results['analysis_plot'] = graph_boxplots(shared_go_df, shared_entities)
+        if output_dir:
+            # Save as base64 text file
+            with open(os.path.join(output_dir, 'analysis_plot.txt'), 'w') as f:
+                f.write(results['analysis_plot'])
+
+            # Also try to convert and save as PNG if possible
+            try:
+                import base64
+                from io import BytesIO
+                from PIL import Image
+
+                # Assuming the base64 string is for an image
+                img_data = base64.b64decode(results['analysis_plot'].split(',')[1])
+                img = Image.open(BytesIO(img_data))
+                img.save(os.path.join(output_dir, 'analysis_plot.png'))
+            except Exception:
+                # If conversion fails, just skip the PNG output
+                pass
+
+    # Optionally, still save the complete results as a pickle for backwards compatibility
+    if output_dir:
+        with open(os.path.join(output_dir, 'analysis_results.pkl'), 'wb') as f:
+            pickle.dump(results, f)
 
     return results
 
@@ -633,6 +720,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, *, client):
 def explain_downstream(
     source: str,
     targets: List[str],
+    output_dir: Optional[str] = None,
     *,
     client,
     id_type: str = 'hgnc.symbol'
@@ -648,6 +736,8 @@ def explain_downstream(
         Source identifier (either gene symbol or HGNC ID based on id_type)
     targets : List[str]
         List of target identifiers
+    output_dir : str, optional
+        Directory to save output files. If None, results are only returned as dict
     client :
         The client instance
     id_type : str
@@ -675,9 +765,10 @@ def explain_downstream(
     else:
         raise ValueError('Invalid id_type, must be hgnc.symbol or hgnc')
 
-    # Run the main analysis with the validated IDs
+    # Run the main analysis with the validated IDs and output directory
     return run_explain_downstream_analysis(
         source_hgnc_id,
         target_hgnc_ids,
+        output_dir=output_dir,
         client=client
     )
