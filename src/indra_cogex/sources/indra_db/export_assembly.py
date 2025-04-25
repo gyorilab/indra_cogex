@@ -66,22 +66,24 @@ def export_assembly(force: bool = False):
     force :
         If True, force re-download and re-process the data.
     """
-    bucket = "bigmech"
-    s3_base_prefix = get_latest_timestamp_prefix(bucket, prefix="indra-db/dumps/cogex_files/")
+    s3_base_prefix = get_latest_timestamp_prefix(bucket=DUMP_BUCKET, prefix=DUMP_PREFIX)
 
     download_s3_file(
-        bucket,
-        f"{s3_base_prefix}processed_statements.tsv.gz",
+        DUMP_BUCKET,
+        f"{s3_base_prefix}{processed_stmts_fname.name}",
         processed_stmts_fname,
         force=force
     )
     download_s3_file(
-        bucket, f"{s3_base_prefix}source_counts.pkl", source_counts_fname, force=force
+        DUMP_BUCKET,
+        f"{s3_base_prefix}{source_counts_fname.name}",
+        source_counts_fname,
+        force=force
     )
 
     # Create grounded and unique dumps
     # from processed statement in readonly pipeline
-    # Takes ~2.5 h
+    # Takes ~6.5 h
     if force or not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with (gzip.open(processed_stmts_fname, "rt") as fh,
               gzip.open(grounded_stmts_fname, "wt") as fh_out_gr,
@@ -118,7 +120,10 @@ def export_assembly(force: bool = False):
     logger.info(f"Grounded and unique statement export completed")
 
     download_s3_file(
-        bucket, f"{s3_base_prefix}belief_scores.pkl", belief_scores_pkl_fname, force=force
+        DUMP_BUCKET,
+        f"{s3_base_prefix}{belief_scores_pkl_fname.name}",
+        belief_scores_pkl_fname,
+        force=force
     )
 
 
