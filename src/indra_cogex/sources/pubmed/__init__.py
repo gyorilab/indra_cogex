@@ -295,20 +295,21 @@ def ensure_text_refs(fname):
     if os.path.exists(fname):
         logger.info(f"Found existing text refs in {fname}")
         return
-    from indra_db import get_db
-
-    db = get_db("primary")
-    os.environ["PGPASSWORD"] = db.url.password
-    logger.info(f"Dumping text refs into {fname}")
-    command = textwrap.dedent(
-        f"""
-        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
-        -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id 
-        FROM public.text_ref) TO STDOUT"
-        | gzip > {fname}
-    """
-    ).replace("\n", " ")
-    os.system(command)
+    from indra_cogex.sources.indra_db.export_assembly import (
+        download_s3_file,
+        get_latest_timestamp_prefix,
+    )
+    from indra_cogex.sources.indra_db.locations import DUMP_BUCKET, DUMP_PREFIX
+    s3_base_prefix = get_latest_timestamp_prefix(
+        bucket=DUMP_BUCKET, prefix=DUMP_PREFIX
+    )
+    s3_key = f"{s3_base_prefix}{text_refs_fname.name}"
+    download_s3_file(
+        bucket=DUMP_BUCKET,
+        s3_key=s3_key,
+        local_path=text_refs_fname,
+        force=False,
+    )
 
 
 def extract_info_from_medline_xml(
