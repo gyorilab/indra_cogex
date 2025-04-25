@@ -34,7 +34,23 @@ def get_latest_timestamp_prefix(bucket: str, prefix: str) -> str:
     return f"{prefix}{latest_ts}/"
 
 
-def download_s3_file(bucket: str, s3_key: str, local_path: Path):
+def download_s3_file(bucket: str, s3_key: str, local_path: Path, force: bool = False):
+    """Download a file from S3 to a local path.
+
+    Parameters
+    ----------
+    bucket :
+        The name of the S3 bucket.
+    s3_key :
+        The S3 key (path) of the file to download.
+    local_path :
+        The local path where the file should be saved.
+    force :
+        If True, force download even if the file already exists.
+    """
+    if local_path.exists() and not force:
+        logger.info(f"File {local_path} already exists, skipping download.")
+        return
     import boto3
     s3 = boto3.client("s3")
     local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,20 +58,31 @@ def download_s3_file(bucket: str, s3_key: str, local_path: Path):
     logger.info(f"Downloaded s3://{bucket}/{s3_key} → {local_path}")
 
 
-def export_assembly():
-    bucket = "bigmech"
-    s3_base_prefix = get_latest_timestamp_prefix(
-        bucket, prefix="indra-db/dumps/cogex_files/")
+def export_assembly(force: bool = False):
+    """Get grounded and unique statements from the latest processed INDRA DB dump.
 
-    download_s3_file(bucket, f"{s3_base_prefix}processed_statements.tsv.gz",
-                     processed_stmts_fname)
-    download_s3_file(bucket, f"{s3_base_prefix}source_counts.pkl",
-                     source_counts_fname)
+    Parameters
+    ----------
+    force :
+        If True, force re-download and re-process the data.
+    """
+    bucket = "bigmech"
+    s3_base_prefix = get_latest_timestamp_prefix(bucket, prefix="indra-db/dumps/cogex_files/")
+
+    download_s3_file(
+        bucket,
+        f"{s3_base_prefix}processed_statements.tsv.gz",
+        processed_stmts_fname,
+        force=force
+    )
+    download_s3_file(
+        bucket, f"{s3_base_prefix}source_counts.pkl", source_counts_fname, force=force
+    )
 
     # Create grounded and unique dumps
     # from processed statement in readonly pipeline
     # Takes ~2.5 h
-    if not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
+    if force or not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with (gzip.open(processed_stmts_fname, "rt") as fh,
               gzip.open(grounded_stmts_fname, "wt") as fh_out_gr,
               gzip.open(unique_stmts_fname, "wt") as fh_out_uniq):
@@ -90,8 +117,9 @@ def export_assembly():
 
     logger.info(f"Grounded and unique statement export completed")
 
-    download_s3_file(bucket, f"{s3_base_prefix}belief_scores.pkl",
-                     belief_scores_pkl_fname)
+    download_s3_file(
+        bucket, f"{s3_base_prefix}belief_scores.pkl", belief_scores_pkl_fname, force=force
+    )
 
 
 if __name__ == "__main__":
