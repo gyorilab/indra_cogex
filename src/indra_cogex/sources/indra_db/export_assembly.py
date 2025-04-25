@@ -123,4 +123,9 @@ def export_assembly(force: bool = False):
 
 
 if __name__ == "__main__":
-    export_assembly()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "force":
+        force = True
+    else:
+        force = False
+    export_assembly(force=force)
