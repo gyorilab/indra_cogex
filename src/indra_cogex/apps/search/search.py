@@ -399,19 +399,22 @@ def get_network_for_statements(
         edge_count = 0
         node_ids = set()
 
-        # Create a mapping of HGNC IDs to gene symbols from statements
-        hgnc_id_to_symbol = {}
+        # Create a mapping of HGNC IDs to gene names and details from statements
+        gene_id_to_info = {}
 
-        # First pass: extract gene symbols from statements
+        # First pass: extract gene information from statements
         for stmt in sorted_statements:
             agents = stmt.agent_list()
             for agent in agents:
-                if agent is None:
+                if agent is None or not hasattr(agent, 'db_refs'):
                     continue
 
                 if 'HGNC' in agent.db_refs and hasattr(agent, 'name'):
-                    hgnc_id = str(agent.db_refs['HGNC'])
-                    hgnc_id_to_symbol[hgnc_id] = agent.name
+                    hgnc_id = f"HGNC:{agent.db_refs['HGNC']}"
+                    gene_id_to_info[hgnc_id] = {
+                        'name': agent.name,
+                        'db_refs': agent.db_refs
+                    }
 
         # Extract target information
         namespace, id_part = target_id.split(':')
@@ -456,19 +459,17 @@ def get_network_for_statements(
 
         # Add nodes for all genes
         for gene_id in genes:
-            # Extract HGNC ID number from gene_id
-            if gene_id.startswith('HGNC:'):
-                hgnc_id = gene_id.split(':')[-1]
-                # Use the symbol from our mapping if available, else use the ID
-                gene_label = hgnc_id_to_symbol.get(hgnc_id, hgnc_id)
-            else:
-                # If not an HGNC ID, just use the ID itself
-                gene_label = gene_id.split(':')[-1]
+            # Use the gene info from our mapping if available
+            gene_info = gene_id_to_info.get(gene_id, {})
+
+            # Use gene name/symbol for label if available, otherwise use ID
+            gene_label = gene_info.get('name') if gene_info else gene_id.split(':')[-1]
+            db_refs = gene_info.get('db_refs', {})
 
             if gene_id not in node_ids:
                 nodes.append({
                     'id': str(gene_id),
-                    'label': str(gene_label),  # Use symbol instead of ID
+                    'label': str(gene_label),  # Use gene name/symbol
                     'title': f"{gene_id}",
                     'color': {
                         'background': '#4CAF50',  # green
@@ -484,7 +485,11 @@ def get_network_for_statements(
                         'vadjust': -40
                     },
                     'borderWidth': 2,
-                    'type': 'gene'
+                    'type': 'gene',
+                    'details': db_refs,
+                    'egid': db_refs.get('EGID', ''),
+                    'hgnc': db_refs.get('HGNC', ''),
+                    'uniprot': db_refs.get('UP', '')
                 })
                 node_ids.add(gene_id)
 
