@@ -15,23 +15,23 @@
         <strong>Node Types:</strong>
         <div class="d-flex flex-wrap">
           <div class="legend-item mr-3">
-            <div style="display: inline-block; width: 15px; height: 15px; background-color: #4CAF50; margin-right: 5px; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);"></div>
+            <div style="width: 15px; height: 15px; background-color: #4CAF50; margin-right: 5px;"></div>
             <small>Gene/Protein</small>
           </div>
           <div class="legend-item mr-3">
-            <div style="display: inline-block; width: 15px; height: 15px; background-color: #FF9800; margin-right: 5px; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
+            <div style="width: 15px; height: 15px; background-color: #FF9800; margin-right: 5px;"></div>
             <small>Chemical</small>
           </div>
           <div class="legend-item mr-3">
-            <div style="display: inline-block; width: 15px; height: 15px; background-color: #2196F3; margin-right: 5px; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);"></div>
+            <div style="width: 15px; height: 15px; background-color: #2196F3; margin-right: 5px;"></div>
             <small>GO Term</small>
           </div>
           <div class="legend-item mr-3">
-            <div style="display: inline-block; width: 15px; height: 15px; background-color: #9C27B0; margin-right: 5px; clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div>
+            <div style="width: 15px; height: 15px; background-color: #9C27B0; margin-right: 5px;"></div>
             <small>MESH Term</small>
           </div>
           <div class="legend-item">
-            <div style="display: inline-block; width: 15px; height: 15px; background-color: #607D8B; margin-right: 5px; border-radius: 50%;"></div>
+            <div style="width: 15px; height: 15px; background-color: #607D8B; margin-right: 5px; border-radius: 50%;"></div>
             <small>Other</small>
           </div>
         </div>
@@ -42,31 +42,31 @@
         <strong>Edge Types:</strong>
         <div class="d-flex flex-wrap">
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #00CC00; margin-right: 5px;"></span>
+            <span style="width: 15px; height: 3px; background-color: #00CC00; margin-right: 5px; display: inline-block;"></span>
             <small>Activation</small>
           </div>
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #FF0000; margin-right: 5px;"></span>
+            <span style="width: 15px; height: 3px; background-color: #FF0000; margin-right: 5px; display: inline-block;"></span>
             <small>Inhibition</small>
           </div>
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #000000; margin-right: 5px;"></span>
+            <span style="width: 15px; height: 3px; background-color: #000000; margin-right: 5px; display: inline-block;"></span>
             <small>Phosphorylation</small>
           </div>
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #0000FF; margin-right: 5px;"></span>
+            <span style="width: 15px; height: 3px; background-color: #0000FF; margin-right: 5px; display: inline-block;"></span>
             <small>Complex</small>
           </div>
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #00CC00; margin-right: 5px; stroke-dasharray: 5,5;"></span>
+            <span style="width: 15px; height: 3px; background-color: #00CC00; margin-right: 5px; display: inline-block;"></span>
             <small>IncreaseAmount</small>
           </div>
           <div class="legend-item mr-3">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #FF0000; margin-right: 5px; stroke-dasharray: 5,5;"></span>
+            <span style="width: 15px; height: 3px; background-color: #FF0000; margin-right: 5px; display: inline-block;"></span>
             <small>DecreaseAmount</small>
           </div>
           <div class="legend-item">
-            <span style="display: inline-block; width: 15px; height: 3px; background-color: #999999; margin-right: 5px;"></span>
+            <span style="width: 15px; height: 3px; background-color: #999999; margin-right: 5px; display: inline-block;"></span>
             <small>Other</small>
           </div>
         </div>
@@ -74,58 +74,4 @@
     </div>
   </div>
 </div>
-
-<!-- Node/Edge Details Dialog Styling -->
-<style>
-.details-dialog {
-    position: absolute;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 1000;
-    min-width: 300px;
-    max-width: 400px;
-}
-
-.details-dialog .close-btn {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    cursor: pointer;
-    font-size: 18px;
-    color: #999;
-}
-
-.details-dialog h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-
-.details-dialog dl {
-    margin: 0;
-}
-
-.details-dialog dt {
-    font-weight: bold;
-    margin-top: 8px;
-}
-
-.details-dialog dd {
-    margin-left: 0;
-    margin-bottom: 5px;
-}
-
-.details-dialog a {
-    color: blue;
-    text-decoration: none;
-}
-
-.details-dialog a:hover {
-    text-decoration: underline;
-}
-</style>
 {% endif %}

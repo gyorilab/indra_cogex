@@ -28,6 +28,7 @@ from indra_cogex.analysis import (
     source_targets_explanation
 )
 from .helpers import ParseError, get_docstring, parse_json, process_result
+from indra_cogex.apps.search import search
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_stmt_hashes",
             "get_statements",
             "get_mesh_annotated_evidence",
-            "get_network"
+            "get_network",
+            "get_network_for_statements"
         ]
     },
     'drug_targets': {
@@ -443,6 +445,7 @@ examples_dict = {
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
     "target_id": fields.String(example="hgnc:646"),
     "is_downstream": fields.Boolean(example=False),
+    "regulator_type": fields.String(example="kinase", enum=["kinase", "tf", None]),
     "minimum_evidence": fields.Float(example=2),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
     "species": fields.String(example="human"),
@@ -527,8 +530,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["explain_downstream"]]
-
+    [(source_targets_explanation, fn) for fn in ["explain_downstream"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 )
 
 # Maps function names to the actual functions

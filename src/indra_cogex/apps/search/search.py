@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional, Mapping, Tuple
+from typing import List, Optional, Mapping, Tuple, Dict
 import logging
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
@@ -175,6 +175,7 @@ def gilda_ground_endpoint():
     except Exception as e:
         return {"error": str(e)}, 500
 
+
 def is_valid_curie(namespace, identifier, validator):
     """Check if a given namespace is valid"""
     try:
@@ -182,6 +183,7 @@ def is_valid_curie(namespace, identifier, validator):
         return True
     except ValueError:
         return False
+
 
 def check_and_convert(text):
     if ":" in text:
@@ -191,6 +193,7 @@ def check_and_convert(text):
             result = (curie_validate_namespace, curie_validate_id)
             return result, True
     return text, False
+
 
 def gilda_ground(agent_text):
     try:
@@ -313,6 +316,275 @@ def get_ora_statements(
     return stmts, evidence_counts
 
 
+@autoclient()
+def get_network_for_statements(
+    target_id: str,
+    genes: List[str],
+    minimum_belief: float = 0.0,
+    minimum_evidence: int = 2,
+    is_downstream: bool = False,
+    regulator_type: Optional[str] = None,
+    limit: int = 50,
+    *,
+    client: Neo4jClient,
+) -> Dict:
+    """Generate network visualization data for ORA statements.
+
+    Parameters
+    ----------
+    target_id : str
+        The ID of the target entity (e.g., 'GO:0006955', 'MESH:D007239')
+    genes : List[str]
+        List of gene IDs (e.g., ['HGNC:6019', 'HGNC:11876'])
+    minimum_belief : float
+        Minimum belief score for relationships
+    minimum_evidence : int
+        Minimum number of evidences required for a statement to be included
+    is_downstream : bool
+        Whether this is a downstream analysis
+    regulator_type : Optional[str]
+        Type of regulator to filter for ('kinase', 'tf', or None)
+    limit : int
+        Maximum number of statements to include in the network
+    client : Neo4jClient
+        The Neo4j client
+
+    Returns
+    -------
+    Dict
+        A dictionary containing nodes and edges in vis.js format for network visualization.
+    """
+    try:
+        # Get statements connecting genes to target
+        statements, evidence_counts = get_ora_statements(
+            target_id=target_id,
+            genes=genes,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence,
+            is_downstream=is_downstream,
+            client=client
+        )
+
+        # Filter statements based on regulator type
+        if regulator_type == 'kinase':
+            # Filter for phosphorylation statements
+            filtered_statements = [
+                stmt for stmt in statements
+                if "phosphorylation" in str(stmt).lower()
+            ]
+        elif regulator_type == 'tf':
+            # Filter for increase/decrease amount statements
+            filtered_statements = [
+                stmt for stmt in statements
+                if "increases amount" in str(stmt).lower() or
+                   "decreases amount" in str(stmt).lower()
+            ]
+        else:
+            # No filtering for other cases
+            filtered_statements = statements
+
+        # Sort statements by evidence count and limit
+        sorted_statements = sorted(
+            filtered_statements,
+            key=lambda stmt: evidence_counts.get(stmt.get_hash(), 0),
+            reverse=True
+        )[:limit]
+
+        if not sorted_statements:
+            return {"nodes": [], "edges": []}
+
+        # Create nodes and edges for the network
+        nodes = []
+        edges = []
+        edge_count = 0
+        node_ids = set()
+
+        # Create a mapping of HGNC IDs to gene names and details from statements
+        gene_id_to_info = {}
+
+        # First pass: extract gene information from statements
+        for stmt in sorted_statements:
+            agents = stmt.agent_list()
+            for agent in agents:
+                if agent is None or not hasattr(agent, 'db_refs'):
+                    continue
+
+                if 'HGNC' in agent.db_refs and hasattr(agent, 'name'):
+                    hgnc_id = f"HGNC:{agent.db_refs['HGNC']}"
+                    gene_id_to_info[hgnc_id] = {
+                        'name': agent.name,
+                        'db_refs': agent.db_refs
+                    }
+
+        # Extract target information
+        namespace, id_part = target_id.split(':')
+        target_node_id = target_id
+
+        # Set appropriate style for target node based on namespace
+        target_shape = "ellipse"
+        target_color = "#607D8B"  # Default gray-blue
+
+        if namespace.lower() == "go":
+            target_shape = "hexagon"
+            target_color = "#2196F3"  # blue
+        elif namespace.lower() == "mesh":
+            target_shape = "triangle"
+            target_color = "#9C27B0"  # purple
+        elif namespace.lower() in ["wikipathways", "reactome"]:
+            target_shape = "diamond"
+            target_color = "#FF9800"  # orange
+
+        # Add target node
+        nodes.append({
+            'id': str(target_node_id),
+            'label': str(id_part),
+            'title': f"{target_id}",
+            'color': {
+                'background': target_color,
+                'border': '#37474F'
+            },
+            'shape': target_shape,
+            'size': 45,  # Make target larger
+            'font': {
+                'size': 26,
+                'color': '#000000',
+                'face': 'arial',
+                'strokeWidth': 0,
+                'vadjust': -40
+            },
+            'borderWidth': 3,
+            'type': namespace.lower()
+        })
+        node_ids.add(target_node_id)
+
+        # Add nodes for all genes
+        for gene_id in genes:
+            # Use the gene info from our mapping if available
+            gene_info = gene_id_to_info.get(gene_id, {})
+
+            # Use gene name/symbol for label if available, otherwise use ID
+            gene_label = gene_info.get('name') if gene_info else gene_id.split(':')[-1]
+            db_refs = gene_info.get('db_refs', {})
+
+            if gene_id not in node_ids:
+                nodes.append({
+                    'id': str(gene_id),
+                    'label': str(gene_label),  # Use gene name/symbol
+                    'title': f"{gene_id}",
+                    'color': {
+                        'background': '#4CAF50',  # green
+                        'border': '#37474F'
+                    },
+                    'shape': 'box',
+                    'size': 35,
+                    'font': {
+                        'size': 22,
+                        'color': '#000000',
+                        'face': 'arial',
+                        'strokeWidth': 0,
+                        'vadjust': -40
+                    },
+                    'borderWidth': 2,
+                    'type': 'gene',
+                    'details': db_refs,
+                    'egid': db_refs.get('EGID', ''),
+                    'hgnc': db_refs.get('HGNC', ''),
+                    'uniprot': db_refs.get('UP', '')
+                })
+                node_ids.add(gene_id)
+
+        # Process statements to create edges
+        for stmt in sorted_statements:
+            # Extract agent information
+            agents = stmt.agent_list()
+            if len(agents) < 2 or None in agents:
+                continue
+
+            # Get statement type and determine edge style
+            stmt_type = stmt.__class__.__name__
+
+            # Determine edge color and style based on statement type
+            edge_color = "#999999"  # Default gray
+            dashes = False
+            arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
+
+            if "Activation" in stmt_type:
+                edge_color = '#00CC00'  # Green
+            elif "Inhibition" in stmt_type:
+                edge_color = '#FF0000'  # Red
+            elif "Phosphorylation" in stmt_type:
+                edge_color = '#000000'  # Black
+            elif "Complex" in stmt_type:
+                edge_color = '#0000FF'  # Blue
+                arrows = {"to": {"enabled": False}, "from": {"enabled": False}}
+            elif "IncreaseAmount" in stmt_type:
+                edge_color = '#00CC00'  # Green
+                dashes = [5, 5]
+            elif "DecreaseAmount" in stmt_type:
+                edge_color = '#FF0000'  # Red
+                dashes = [5, 5]
+
+            # Find the gene involved in this statement
+            gene_agent = None
+            for agent in agents:
+                if agent is None:
+                    continue
+
+                # Look for HGNC reference
+                if 'HGNC' in agent.db_refs:
+                    gene_id = f"HGNC:{agent.db_refs['HGNC']}"
+                    if gene_id in genes:
+                        gene_agent = agent
+                        break
+
+            if gene_agent is None:
+                continue
+
+            # Create edge between gene and target
+            if is_downstream:
+                source = f"HGNC:{gene_agent.db_refs['HGNC']}"
+                target = target_node_id
+            else:
+                source = target_node_id
+                target = f"HGNC:{gene_agent.db_refs['HGNC']}"
+
+            # Get evidence count
+            evidence_count = evidence_counts.get(stmt.get_hash(), 0)
+            belief = getattr(stmt, 'belief', 0.5)
+
+            edges.append({
+                'id': f"e{edge_count}",
+                'from': str(source),
+                'to': str(target),
+                'title': f"{stmt_type}: {str(stmt)}",
+                'color': {
+                    'color': edge_color,
+                    'highlight': edge_color,
+                    'hover': edge_color
+                },
+                'dashes': dashes,
+                'arrows': arrows,
+                'width': min(5, 1 + evidence_count / 5),  # Scale width based on evidence
+                'details': {
+                    'statement_type': stmt_type,
+                    'belief': belief,
+                    'evidence_count': evidence_count,
+                    'indra_statement': str(stmt)
+                },
+                'label': ''
+            })
+            edge_count += 1
+
+        return {
+            'nodes': nodes,
+            'edges': edges
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"nodes": [], "edges": [], "error": str(e)}
+
+
 @search_blueprint.route("/ora_statements/", methods=['GET'])
 @jwt_required(optional=True)
 def search_ora_statements():
@@ -350,15 +622,13 @@ def search_ora_statements():
             # Filter for phosphorylation statements
             filtered_statements = [
                 stmt for stmt in statements
-                if isinstance(stmt, Phosphorylation) or
-                   "phosphorylation" in str(stmt).lower()
+                if "phosphorylation" in str(stmt).lower()
             ]
         elif regulator_type == 'tf':
             # Filter for increase/decrease amount statements
             filtered_statements = [
                 stmt for stmt in statements
-                if isinstance(stmt, (IncreaseAmount, DecreaseAmount)) or
-                   "increases amount" in str(stmt).lower() or
+                if "increases amount" in str(stmt).lower() or
                    "decreases amount" in str(stmt).lower()
             ]
         else:
@@ -375,10 +645,17 @@ def search_ora_statements():
         if filtered_statements:
             logger.debug(f"First filtered statement: {str(filtered_statements[0])}")
 
-        # Render the statements
+        # Render the statements with network visualization parameters
         return render_statements(
             stmts=filtered_statements,
-            evidence_count=filtered_evidence_counts
+            evidence_count=filtered_evidence_counts,
+            prefix="statements",
+            identifier=target_id,
+            genes=genes,
+            is_downstream=is_downstream,
+            regulator_type=regulator_type,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence
         )
 
     except Exception as e:
