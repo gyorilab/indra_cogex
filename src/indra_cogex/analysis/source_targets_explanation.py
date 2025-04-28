@@ -549,7 +549,14 @@ def convert_plot_to_base64(fig):
 
 
 @autoclient()
-def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=None, *, client):
+def run_explain_downstream_analysis(
+    source_hgnc_id,
+    target_hgnc_ids,
+    output_dir=None,
+    curations=None,
+    *,
+    client
+):
     """Run complete downstream analysis and save results to files.
 
     Parameters
@@ -560,6 +567,11 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=
         List of HGNC IDs for target genes
     output_dir : str, optional
         Directory to save output files. If None, results are only returned as dict
+    curations : dict, optional
+        A list of curations to pass on to format_stmts. If this is run in the context
+        of the web app, this will be done automatically, if this function is called
+        standalone, curations need to be provided manually. In order to not provide
+        any curations outside the context of the web app, pass an empty list.
     client :
         The client instance
 
@@ -624,6 +636,7 @@ def run_explain_downstream_analysis(source_hgnc_id, target_hgnc_ids, output_dir=
             evidence_counts=evidence_counts,
             remove_medscan=True,  # fixme: provide from outside based on login
             source_counts_per_hash=source_counts_per_hash,
+            curations=curations,
         )
 
     results['statements'] = stmt_data_per_gene
@@ -747,6 +760,7 @@ def source_target_analysis(
     source: str,
     targets: List[str],
     output_dir: Optional[str] = None,
+    curations: Optional[List[Dict[str, Any]]] = None,
     *,
     client,
     id_type: str = 'hgnc.symbol'
@@ -764,6 +778,11 @@ def source_target_analysis(
         List of target identifiers
     output_dir : str, optional
         Directory to save output files. If None, results are only returned as dict
+    curations : List[Mapping[str, Any]], optional
+        A list of curations to pass on to format_stmts. If this is run in the context
+        of the web app, this will be done automatically, if this function is called
+        standalone, curations need to be provided manually. In order to not provide
+        any curations outside the context of the web app, pass an empty list.
     client :
         The client instance
     id_type : str
@@ -796,5 +815,6 @@ def source_target_analysis(
         source_hgnc_id,
         target_hgnc_ids,
         output_dir=output_dir,
-        client=client
+        client=client,
+        curations=curations,
     )
