@@ -500,7 +500,7 @@ examples_dict = {
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix", "file_path"}
+               "subject_prefix", "object_prefix", "file_path", "curations"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
