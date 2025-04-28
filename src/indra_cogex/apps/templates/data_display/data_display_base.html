@@ -14,41 +14,64 @@
     <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
 
     <style>
-        .badge-subject {
-            background-color: #4a36aa;
-            color: #FFFFFF;
+        .badge-subject { background-color: #4a36aa; color: #FFF; }
+        .badge-object { background-color: #2d8e4c; color: #FFF; }
+        .badge-other { background-color: #606060; color: #FFF; }
+        .badge-source { font-size: 8pt; margin: 0; padding-left: 5px; cursor: pointer; }
+        .nvm { padding-left: 0; padding-right: 0; }
+        .col-1 { flex: 12%; max-width: 12%; }
+        .col-10 { flex: 76%; max-width: 76%; }
+
+        /* Details dialog CSS moved here from the template body */
+        .details-dialog {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 400px;
         }
 
-        .badge-object {
-            background-color: #2d8e4c;
-            color: #FFFFFF;
-        }
-
-        .badge-other {
-            background-color: #606060;
-            color: #FFFFFF;
-        }
-
-        .badge-source {
-            font-size: 8pt;
-            margin: 0;
-            padding-left: 5px;
+        .details-dialog .close-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
             cursor: pointer;
+            font-size: 18px;
+            color: #999;
         }
 
-        .nvm {
-            padding-left: 0;
-            padding-right: 0;
+        .details-dialog h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
 
-        .col-1 {
-            flex: 12%;
-            max-width: 12%;
+        .details-dialog dl {
+            margin: 0;
         }
 
-        .col-10 {
-            flex: 76%;
-            max-width: 76%;
+        .details-dialog dt {
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .details-dialog dd {
+            margin-left: 0;
+            margin-bottom: 5px;
+        }
+
+        .details-dialog a {
+            color: blue;
+            text-decoration: none;
+        }
+
+        .details-dialog a:hover {
+            text-decoration: underline;
         }
     </style>
 {% endblock %}
@@ -56,111 +79,864 @@
 {% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
 
 {% block container %}
-    <div class="card">
-        <div class="card-header">
-            <h4 class="my-0 font-weight-normal">
-                {% if title %}{{ title }}{% else %}INDRA Knowledge Graph Statements{% endif %}
-            </h4>
-            Databases - <source-display></source-display> - Readers
-        </div>
-        {% if stmts|length == 0 %}
-            <div class="card-body">
-                {% if filter_curated %}
-                    <p class="card-text">
-                        There are no statements left to be curated!
-                    </p>
-                    <a class="btn btn-primary btn-hover"
-                       href="{{ url_for(endpoint, prefix=prefix, identifier=identifier, filter_curated=False) }}">
-                        Reveal curated content
-                    </a>
-                {% else %}
-                    <p class="card-text">
-                        {{ no_stmts_message if no_stmts_message else 'No statements to display.' }}
-                    </p>
-                {% endif %}
-            </div>
-        {% else %}
-            {% if description %}
-                <div class="card-body">
-                    <p class="card-text">{{ description | safe }}</p>
-                </div>
-            {% endif %}
-            {% if is_proteocentric %}
-                <div class="card-body">
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="include_db_evidence"
-                               v-model="include_db_evidence" @change="updateIncludeDbEvidence">
-                        <label class="form-check-label" for="include_db_evidence">Include database evidence</label>
-                    </div>
-                </div>
-            {% endif %}
-
-            <!-- Include the network visualization partial template -->
-            {% if prefix in ['pubmed', 'pmc', 'doi', 'go', 'subnetwork'] %}
-                {% include 'data_display/_network_visualization.html' %}
-            {% endif %}
-
-            <div class="list-group list-group-flush">
-                <statement
-                        class="list-group-item"
-                        v-for="st_obj in stmts"
-                        :key="st_obj.hash"
-                        :evidence="st_obj.ev_array"
-                        :english="st_obj.english"
-                        :hash="st_obj.hash"
-                        :sources="st_obj.sources"
-                        :total_evidence="st_obj.total_evidence"
-                        :badges="st_obj.badges"
-                        :loadable="true"
-                        :sources_left_of_badges="true"
-                ></statement>
-            </div>
-            {% if footer %}
-                <div class="card-footer">
-                    <small>{{ footer }}</small>
-                </div>
-            {% endif %}
-        {% endif %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="my-0 font-weight-normal">
+            {% if title %}{{ title }}{% else %}INDRA Knowledge Graph Statements{% endif %}
+        </h4>
+        Databases - <source-display></source-display> - Readers
     </div>
+
+    {% if stmts|length == 0 %}
+        <div class="card-body">
+            {% if filter_curated %}
+                <p class="card-text">There are no statements left to be curated!</p>
+                <a class="btn btn-primary btn-hover"
+                   href="{{ url_for(endpoint, prefix=prefix, identifier=identifier, filter_curated=False) }}">
+                    Reveal curated content
+                </a>
+            {% else %}
+                <p class="card-text">{{ no_stmts_message if no_stmts_message else 'No statements to display.' }}</p>
+            {% endif %}
+        </div>
+    {% else %}
+        {% if description %}
+            <div class="card-body">
+                <p class="card-text">{{ description | safe }}</p>
+            </div>
+        {% endif %}
+        {% if is_proteocentric %}
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="include_db_evidence"
+                           v-model="include_db_evidence" @change="updateIncludeDbEvidence">
+                    <label class="form-check-label" for="include_db_evidence">Include database evidence</label>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if prefix in ['pubmed', 'pmc', 'doi', 'go', 'subnetwork'] or prefix == 'statements' %}
+            {% include 'data_display/_network_visualization.html' %}
+        {% endif %}
+
+        <div class="list-group list-group-flush">
+            <statement class="list-group-item" v-for="st_obj in stmts" :key="st_obj.hash"
+                       :evidence="st_obj.ev_array" :english="st_obj.english" :hash="st_obj.hash"
+                       :sources="st_obj.sources" :total_evidence="st_obj.total_evidence"
+                       :badges="st_obj.badges" :loadable="true" :sources_left_of_badges="true">
+            </statement>
+        </div>
+
+        {% if footer %}
+            <div class="card-footer">
+                <small>{{ footer }}</small>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
-    <script>
-        // Define globals
-        // Sources dict = {databases: [...], readers: [...]}
-        Vue.prototype.$sources = {{ sources_dict|safe }};
-        // Define endpoints
-        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
-        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
-        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+{{ super() }}
+<script>
+Vue.prototype.$sources = {{ sources_dict|safe }};
+Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
+Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
 
-        let app = new Vue({
-            el: '#vue-app',
-            data: {
-                stmts: [
-                    {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
-                        {
-                            ev_array: {{ ev_array|safe }},
-                            english: {{ english|safe }},
-                            hash: {{ hash_str|safe }},
-                            sources: {{ sources|safe }},
-                            total_evidence: {{ total_evidence|int }},
-                            badges: {{ badges|safe }}
-                        },
-                    {% endfor %}
-                ],
-                include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
-                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+let app = new Vue({
+    el: '#vue-app',
+    data: {
+        stmts: [
+            {% for ev_array, english, hash_str, sources, total_evidence, badges in stmts %}
+                {
+                    ev_array: {{ ev_array|safe }},
+                    english: {{ english|safe }},
+                    hash: {{ hash_str|safe }},
+                    sources: {{ sources|safe }},
+                    total_evidence: {{ total_evidence|int }},
+                    badges: {{ badges|safe }}
+                },
+            {% endfor %}
+        ],
+        include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
+        is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+    },
+    methods: {
+        updateIncludeDbEvidence() {
+            let currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
+            window.location.href = currentUrl.toString();
+        }
+    }
+});
+</script>
+{% if (prefix in ['pubmed', 'pmid', 'pmc', 'doi', 'go', 'subnetwork'] or prefix == 'statements') and stmts|length > 0 %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the identifier information
+    const prefix = '{{ prefix }}';
+    const identifier = '{{ identifier }}';
+
+    console.log("Document loaded. Prefix:", prefix, "Identifier:", identifier);
+
+    // Check if this is a statements view or a regular explorer view
+    if (prefix === 'statements') {
+        // Get statement parameters from template with correct names
+        const genes = {{ genes|tojson if genes else '[]' }};
+        const isDownstream = {{ is_downstream|tojson if is_downstream is defined else 'false' }};
+        const regulatorType = {{ regulator_type|tojson if regulator_type else 'null' }};
+        const minBelief = {{ minimum_belief|default(0.0) }};
+        const minEvidence = {{ minimum_evidence|default(2) }};
+
+        // Initialize network for statements
+        initializeStatementsNetwork(identifier, genes, minBelief, minEvidence, isDownstream, regulatorType);
+    } else {
+        // Regular explorer initialization
+        initializeNetwork(prefix, identifier);
+    }
+
+    // Toggle network visibility
+    const toggleBtn = document.getElementById('toggle-network');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const container = document.getElementById('network-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                this.textContent = 'Hide Network';
+            } else {
+                container.style.display = 'none';
+                this.textContent = 'Show Network';
+            }
+        });
+    }
+
+    // Reset button functionality
+    const resetBtn = document.getElementById('reset-network');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (window.networkInstance) {
+                window.networkInstance.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            }
+        });
+    }
+});
+
+function initializeNetwork(prefix, identifier) {
+    console.log("initializeNetwork called with:", prefix, identifier);
+
+    const container = document.getElementById('network-container');
+    if (!container) {
+        console.error("Network container not found!");
+        return;
+    }
+
+    // Show loading indicator
+    container.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;">' +
+                         '<div class="spinner-border text-primary" role="status"></div>' +
+                         '<span class="ml-2">Loading network...</span>' +
+                         '</div>';
+
+    // Get the current include_db_evidence value from Vue
+    const includeDbEvidence = app.include_db_evidence;
+    console.log("include_db_evidence:", includeDbEvidence);
+
+    // Determine which API to use based on prefix
+    let fetchUrl, payload;
+
+    if (prefix === 'go') {
+        fetchUrl = '/api/get_network_for_go_term';
+        payload = {
+            go_term: identifier,
+            include_db_evidence: includeDbEvidence,
+            limit: 25
+        };
+        console.log("Using GO term endpoint with payload:", payload);
+    }
+    else if (prefix === 'subnetwork') {
+        fetchUrl = '/api/get_network_for_subnetwork';
+        const nodes = identifier.split(',').map(item => {
+            const [ns, id] = item.split(':');
+            return [ns, id];
+        });
+        payload = {
+            nodes: nodes,
+            include_db_evidence: includeDbEvidence,
+            limit: 25
+        };
+        console.log("Using subnetwork endpoint with payload:", payload);
+    }
+    else {
+        fetchUrl = '/api/get_network_for_paper';
+        payload = {
+            paper_term: [prefix, identifier],
+            include_db_evidence: includeDbEvidence,
+            limit: 25
+        };
+        console.log("Using paper endpoint with payload:", payload);
+    }
+
+    // Call the API to get network data
+    fetch(fetchUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        console.log("API response status:", response.status);
+        if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("API data received:", data);
+
+        if (!data.nodes || data.nodes.length === 0) {
+            let noDataMessage = 'No network data available';
+            if (prefix === 'go') {
+                noDataMessage += ' for this GO term.';
+            } else if (prefix === 'subnetwork') {
+                noDataMessage += ' for this subnetwork.';
+            } else {
+                noDataMessage += ' for this paper.';
+            }
+            container.innerHTML = `<div class="alert alert-info">${noDataMessage}</div>`;
+            return;
+        }
+
+        console.log("Creating network with nodes:", data.nodes.length, "edges:", data.edges.length);
+
+        // Create the network
+        const nodes = new vis.DataSet(data.nodes);
+        const edges = new vis.DataSet(data.edges);
+
+        const networkData = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        const options = {
+            nodes: {
+                shape: 'ellipse',
+                size: 60,
+                font: {
+                    color: '#000000',
+                    size: 26,
+                    face: 'arial',
+                    vadjust: -40,
+                    bold: true
+                },
+                borderWidth: 3,
+                shadow: true
             },
-            methods: {
-                updateIncludeDbEvidence() {
-                    let currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
-                    window.location.href = currentUrl.toString();
+            edges: {
+                arrows: {
+                    to: { enabled: true, scaleFactor: 0.5 }
+                },
+                font: {
+                    size: 0,
+                    align: 'middle',
+                    color: '#333333',
+                    strokeWidth: 0
+                },
+                width: 5,
+                smooth: {
+                    enabled: true,
+                    type: 'dynamic'
+                },
+                shadow: true
+            },
+            physics: {
+                enabled: true,
+                barnesHut: {
+                    gravitationalConstant: -8000,  // Stronger repulsion
+                    centralGravity: 0.05,          // Less center pull
+                    springLength: 350,             // Longer springs
+                    springConstant: 0.03           // Looser springs
+                },
+                stabilization: {
+                    enabled: true,
+                    iterations: 2000               // More iterations
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                zoomView: true,
+                dragView: true,
+                selectable: true,
+                selectConnectedEdges: true,
+                hoverConnectedEdges: true
+            },
+            layout: {
+                improvedLayout: true,
+            }
+        };
+
+        // Initialize the network
+        const network = new vis.Network(container, networkData, options);
+
+        // Store network instance globally for access by reset button
+        window.networkInstance = network;
+
+        // Force a more spread out layout
+        network.setOptions({
+            physics: {
+                enabled: true,
+                stabilization: {
+                    enabled: true,
+                    iterations: 2000
                 }
             }
         });
-    </script>
-   {% block network_scripts %}{% endblock %}
+
+        // Start over with stabilization
+        network.stabilize(2000);
+
+        // Start with a zoomed out view to see the whole network
+        network.once('stabilizationIterationsDone', function() {
+            // Instead of fitting, set a specific zoom level
+            network.moveTo({
+                scale: 0.65,  // Zoom out more (was 0.75)
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        });
+
+        // Create and manage the details dialog
+        let detailsDialog = null;
+
+        function showEdgeDetails(edge) {
+            // Remove any existing dialog
+            if (detailsDialog) {
+                document.body.removeChild(detailsDialog);
+            }
+
+            // Create new dialog
+            detailsDialog = document.createElement('div');
+            detailsDialog.className = 'details-dialog';
+
+            // Get edge data
+            const edgeData = edges.get(edge.edgeId);
+            const details = edgeData.details || {};
+
+            // Format belief score to 2 decimal places
+            const beliefScore = typeof details.belief === 'number' ? details.belief.toFixed(2) : 'N/A';
+
+            // Build dialog content
+            detailsDialog.innerHTML = `
+                <span class="close-btn">×</span>
+                <h3>Edge Details</h3>
+                <dl>
+                    <dt>belief</dt>
+                    <dd>${beliefScore}</dd>
+
+                    <dt>INDRA statement</dt>
+                    <dd>${details.indra_statement || 'Unknown'}</dd>
+
+                    <dt>interaction</dt>
+                    <dd>${details.interaction || 'Unknown'}</dd>
+
+                    <dt>polarity</dt>
+                    <dd>${details.polarity || 'none'}</dd>
+
+                    <dt>supportType</dt>
+                    <dd>${details.support_type || 'Unknown'}</dd>
+
+                    <dt>type</dt>
+                    <dd>${details.type || 'Unknown'}</dd>
+                </dl>
+            `;
+
+            // Position dialog near click
+            const pos = network.getPositions([edgeData.from, edgeData.to]);
+            const fromPos = pos[edgeData.from];
+            const toPos = pos[edgeData.to];
+
+            // Get middle point of edge
+            const x = (fromPos.x + toPos.x) / 2;
+            const y = (fromPos.y + toPos.y) / 2;
+
+            // Convert to DOM coordinates
+            const domPos = network.canvasToDOM({x: x, y: y});
+
+            // Position dialog
+            detailsDialog.style.left = `${domPos.x + 20}px`;
+            detailsDialog.style.top = `${domPos.y + 20}px`;
+
+            // Add to DOM
+            document.body.appendChild(detailsDialog);
+
+            // Add close handler
+            const closeBtn = detailsDialog.querySelector('.close-btn');
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            });
+        }
+
+        function showNodeDetails(node) {
+            // Remove any existing dialog
+            if (detailsDialog) {
+                document.body.removeChild(detailsDialog);
+            }
+
+            // Create new dialog
+            detailsDialog = document.createElement('div');
+            detailsDialog.className = 'details-dialog';
+
+            // Get node data
+            const nodeData = nodes.get(node.nodeId);
+            const details = nodeData.details || {};
+
+            // Format node information for dialog
+            let dialogContent = `
+                <span class="close-btn">×</span>
+                <h3>${nodeData.label}</h3>
+                <dl>
+            `;
+
+            // Add EGID if available
+            if (nodeData.egid) {
+                dialogContent += `
+                    <dt>EGID</dt>
+                    <dd><a href="https://identifiers.org/ncbigene:${nodeData.egid}" target="_blank">https://identifiers.org/ncbigene:${nodeData.egid}</a></dd>
+                `;
+            }
+
+            // Add HGNC if available
+            if (nodeData.hgnc) {
+                dialogContent += `
+                    <dt>HGNC</dt>
+                    <dd><a href="https://identifiers.org/hgnc:${nodeData.hgnc}" target="_blank">https://identifiers.org/hgnc:${nodeData.hgnc}</a></dd>
+                `;
+            }
+
+            // Add type
+            dialogContent += `
+                <dt>type</dt>
+                <dd>${nodeData.type || 'Unknown'}</dd>
+            `;
+
+            // Add UniProt if available
+            if (nodeData.uniprot) {
+                dialogContent += `
+                    <dt>UniProt</dt>
+                    <dd><a href="https://identifiers.org/uniprot:${nodeData.uniprot}" target="_blank">https://identifiers.org/uniprot:${nodeData.uniprot}</a></dd>
+                `;
+            }
+
+            // Add any other database references
+            if (details) {
+                for (const [key, value] of Object.entries(details)) {
+                    // Skip ones we've already added
+                    if (['EGID', 'HGNC', 'UP'].includes(key)) continue;
+
+                    dialogContent += `
+                        <dt>${key}</dt>
+                        <dd>${value}</dd>
+                    `;
+                }
+            }
+
+            dialogContent += `</dl>`;
+            detailsDialog.innerHTML = dialogContent;
+
+            // Position dialog near clicked node
+            const pos = network.getPositions([node.nodeId])[node.nodeId];
+            const domPos = network.canvasToDOM(pos);
+
+            // Position dialog
+            detailsDialog.style.left = `${domPos.x + 30}px`;
+            detailsDialog.style.top = `${domPos.y - 30}px`;
+
+            // Add to DOM
+            document.body.appendChild(detailsDialog);
+
+            // Add close handler
+            const closeBtn = detailsDialog.querySelector('.close-btn');
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            });
+        }
+
+        // Handle clicks - Check nodes FIRST, then edges
+        network.on("click", function(params) {
+            // If a node was clicked
+            if (params.nodes && params.nodes.length > 0) {
+                showNodeDetails({
+                    nodeId: params.nodes[0]
+                });
+            }
+            // If an edge was clicked
+            else if (params.edges && params.edges.length > 0) {
+                showEdgeDetails({
+                    edgeId: params.edges[0]
+                });
+            }
+            // If clicking elsewhere, close dialog
+            else if (detailsDialog && !params.event.srcElement.closest('.details-dialog')) {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            }
+        });
+
+        // Double-click to highlight connections
+        network.on("doubleClick", function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const connectedNodes = network.getConnectedNodes(nodeId);
+                const connectedEdges = network.getConnectedEdges(nodeId);
+
+                // Highlight the selected node and its connections
+                nodes.get().forEach(node => {
+                    if (node.id === nodeId) {
+                        nodes.update({id: node.id, borderWidth: 4, color: {border: '#FF5722'}});
+                    } else if (connectedNodes.includes(node.id)) {
+                        nodes.update({id: node.id, borderWidth: 3, color: {border: '#FF9800'}});
+                    } else {
+                        nodes.update({id: node.id, opacity: 0.3});
+                    }
+                });
+
+                // Highlight connected edges
+                edges.get().forEach(edge => {
+                    if (connectedEdges.includes(edge.id)) {
+                        edges.update({id: edge.id, width: edge.width * 1.5});
+                    } else {
+                        edges.update({id: edge.id, opacity: 0.1});
+                    }
+                });
+            } else {
+                // Reset all highlights
+                nodes.get().forEach(node => {
+                    nodes.update({id: node.id, borderWidth: 2, opacity: 1.0, color: {border: '#37474F'}});
+                });
+
+                edges.get().forEach(edge => {
+                    const originalWidth = edge.width / 1.5;
+                    edges.update({id: edge.id, width: originalWidth, opacity: 1.0});
+                });
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error fetching network data:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error loading network visualization. Please try again later.</div>';
+    });
+}
+
+// Function to initialize the network for statements view
+function initializeStatementsNetwork(targetId, genes, minBelief, minEvidence, isDownstream, regulatorType) {
+    const container = document.getElementById('network-container');
+    if (!container) return;
+
+    container.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;">' +
+                         '<div class="spinner-border text-primary" role="status"></div>' +
+                         '<span class="ml-2">Loading network...</span>' +
+                         '</div>';
+
+    // Call the statements network API
+    fetch('/api/get_network_for_statements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            target_id: targetId,
+            genes: genes,
+            minimum_belief: minBelief,
+            minimum_evidence: minEvidence,
+            is_downstream: isDownstream,
+            regulator_type: regulatorType,
+            limit: 50
+        })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`API returned status ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        if (!data.nodes || data.nodes.length === 0) {
+            container.innerHTML = '<div class="alert alert-info">No network data available for these statements.</div>';
+            return;
+        }
+
+        const nodes = new vis.DataSet(data.nodes);
+        const edges = new vis.DataSet(data.edges);
+
+        const options = {
+            nodes: {
+                shape: 'ellipse',
+                font: {
+                    color: '#000000',
+                    face: 'arial',
+                    vadjust: -40
+                },
+                borderWidth: 2,
+                shadow: true
+            },
+            edges: {
+                width: 2,
+                smooth: {
+                    enabled: true,
+                    type: 'dynamic'
+                },
+                shadow: false,
+                opacity: 0.8
+            },
+            physics: {
+                enabled: true,
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    centralGravity: 0.05,
+                    springLength: 350,
+                    springConstant: 0.03
+                },
+                stabilization: {
+                    enabled: true,
+                    iterations: 2000
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                zoomView: true,
+                dragView: true,
+                selectable: true,
+                selectConnectedEdges: true,
+                hoverConnectedEdges: true
+            },
+            layout: {
+                improvedLayout: true
+            }
+        };
+
+        const network = new vis.Network(container, {nodes, edges}, options);
+        window.networkInstance = network;
+
+        // Apply better stabilization
+        network.stabilize(2000);
+
+        // Zoom out slightly
+        network.once('stabilizationIterationsDone', function() {
+            network.moveTo({
+                scale: 0.65,
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        });
+
+        // Create and manage the details dialog
+        let detailsDialog = null;
+
+        function showEdgeDetails(edge) {
+            // Remove any existing dialog
+            if (detailsDialog) {
+                document.body.removeChild(detailsDialog);
+            }
+
+            // Create new dialog
+            detailsDialog = document.createElement('div');
+            detailsDialog.className = 'details-dialog';
+
+            // Get edge data
+            const edgeData = edges.get(edge.edgeId);
+            const details = edgeData.details || {};
+
+            // Format belief score to 2 decimal places
+            const beliefScore = typeof details.belief === 'number' ? details.belief.toFixed(2) : 'N/A';
+
+            // Build dialog content
+            detailsDialog.innerHTML = `
+                <span class="close-btn">×</span>
+                <h3>Edge Details</h3>
+                <dl>
+                    <dt>Statement Type</dt>
+                    <dd>${details.statement_type || 'Unknown'}</dd>
+
+                    <dt>Evidence Count</dt>
+                    <dd>${details.evidence_count || 'Unknown'}</dd>
+
+                    <dt>Belief</dt>
+                    <dd>${beliefScore}</dd>
+
+                    <dt>INDRA Statement</dt>
+                    <dd>${details.indra_statement || 'Unknown'}</dd>
+                </dl>
+            `;
+
+            // Position dialog near click
+            const pos = network.getPositions([edgeData.from, edgeData.to]);
+            const fromPos = pos[edgeData.from];
+            const toPos = pos[edgeData.to];
+
+            // Get middle point of edge
+            const x = (fromPos.x + toPos.x) / 2;
+            const y = (fromPos.y + toPos.y) / 2;
+
+            // Convert to DOM coordinates
+            const domPos = network.canvasToDOM({x: x, y: y});
+
+            // Position dialog
+            detailsDialog.style.left = `${domPos.x + 20}px`;
+            detailsDialog.style.top = `${domPos.y + 20}px`;
+
+            // Add to DOM
+            document.body.appendChild(detailsDialog);
+
+            // Add close handler
+            const closeBtn = detailsDialog.querySelector('.close-btn');
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            });
+        }
+
+        function showNodeDetails(node) {
+            // Remove any existing dialog
+            if (detailsDialog) {
+                document.body.removeChild(detailsDialog);
+            }
+
+            // Create new dialog
+            detailsDialog = document.createElement('div');
+            detailsDialog.className = 'details-dialog';
+
+            // Get node data
+            const nodeData = nodes.get(node.nodeId);
+            const details = nodeData.details || {};
+
+            // Format node information for dialog
+            let dialogContent = `
+                <span class="close-btn">×</span>
+                <h3>${nodeData.label}</h3>
+                <dl>
+            `;
+
+            // Add ID
+            dialogContent += `
+                <dt>ID</dt>
+                <dd>${nodeData.id || 'Unknown'}</dd>
+            `;
+
+            // Add type
+            dialogContent += `
+                <dt>Type</dt>
+                <dd>${nodeData.type || 'Unknown'}</dd>
+            `;
+
+            // Add any other details
+            if (details) {
+                for (const [key, value] of Object.entries(details)) {
+                dialogContent += `
+                        <dt>${key}</dt>
+                        <dd>${value}</dd>
+                    `;
+                }
+            }
+
+            dialogContent += `</dl>`;
+            detailsDialog.innerHTML = dialogContent;
+
+            // Position dialog near clicked node
+            const pos = network.getPositions([node.nodeId])[node.nodeId];
+            const domPos = network.canvasToDOM(pos);
+
+            // Position dialog
+            detailsDialog.style.left = `${domPos.x + 30}px`;
+            detailsDialog.style.top = `${domPos.y - 30}px`;
+
+            // Add to DOM
+            document.body.appendChild(detailsDialog);
+
+            // Add close handler
+            const closeBtn = detailsDialog.querySelector('.close-btn');
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            });
+        }
+
+        // Handle clicks - Check nodes FIRST, then edges
+        network.on("click", function(params) {
+            // If a node was clicked
+            if (params.nodes && params.nodes.length > 0) {
+                showNodeDetails({
+                    nodeId: params.nodes[0]
+                });
+            }
+            // If an edge was clicked
+            else if (params.edges && params.edges.length > 0) {
+                showEdgeDetails({
+                    edgeId: params.edges[0]
+                });
+            }
+            // If clicking elsewhere, close dialog
+            else if (detailsDialog && !params.event.srcElement.closest('.details-dialog')) {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            }
+        });
+
+        // Double-click to highlight connections
+        network.on("doubleClick", function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const connectedNodes = network.getConnectedNodes(nodeId);
+                const connectedEdges = network.getConnectedEdges(nodeId);
+
+                // Highlight the selected node and its connections
+                nodes.get().forEach(node => {
+                    if (node.id === nodeId) {
+                        nodes.update({id: node.id, borderWidth: 4, color: {border: '#FF5722'}});
+                    } else if (connectedNodes.includes(node.id)) {
+                        nodes.update({id: node.id, borderWidth: 3, color: {border: '#FF9800'}});
+                    } else {
+                        nodes.update({id: node.id, opacity: 0.3});
+                    }
+                });
+
+                // Highlight connected edges
+                edges.get().forEach(edge => {
+                    if (connectedEdges.includes(edge.id)) {
+                        edges.update({id: edge.id, width: edge.width * 1.5});
+                    } else {
+                        edges.update({id: edge.id, opacity: 0.1});
+                    }
+                });
+            } else {
+                // Reset all highlights
+                nodes.get().forEach(node => {
+                    nodes.update({id: node.id, borderWidth: 2, opacity: 1.0, color: {border: '#37474F'}});
+                });
+
+                edges.get().forEach(edge => {
+                    const originalWidth = edge.width / 1.5;
+                    edges.update({id: edge.id, width: originalWidth, opacity: 1.0});
+                });
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error loading network:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error loading network visualization. Please try again later.</div>';
+    });
+}
+</script>
+{% endif %}
 {% endblock %}

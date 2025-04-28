@@ -137,13 +137,8 @@ def render_statements(
         footer = ""
     footer += f"Formatted {len(formatted_stmts)} statements in {end_time:.2f} seconds."
 
-    prefix = kwargs.get('prefix')
-    template = "data_display/data_display_network.html" if prefix in ['pubmed', 'pmid', 'pmc', 'doi', 'go',
-                                                                      'subnetwork',
-                                                                      'statements'] else "data_display/data_display_base.html"
-
     response = render_template(
-        template,
+        "data_display/data_display_base.html",
         stmts=formatted_stmts,
         user_email=user_email,
         footer=footer,

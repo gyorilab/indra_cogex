@@ -399,6 +399,20 @@ def get_network_for_statements(
         edge_count = 0
         node_ids = set()
 
+        # Create a mapping of HGNC IDs to gene symbols from statements
+        hgnc_id_to_symbol = {}
+
+        # First pass: extract gene symbols from statements
+        for stmt in sorted_statements:
+            agents = stmt.agent_list()
+            for agent in agents:
+                if agent is None:
+                    continue
+
+                if 'HGNC' in agent.db_refs and hasattr(agent, 'name'):
+                    hgnc_id = str(agent.db_refs['HGNC'])
+                    hgnc_id_to_symbol[hgnc_id] = agent.name
+
         # Extract target information
         namespace, id_part = target_id.split(':')
         target_node_id = target_id
@@ -442,12 +456,19 @@ def get_network_for_statements(
 
         # Add nodes for all genes
         for gene_id in genes:
-            gene_name = gene_id.split(':')[-1]
+            # Extract HGNC ID number from gene_id
+            if gene_id.startswith('HGNC:'):
+                hgnc_id = gene_id.split(':')[-1]
+                # Use the symbol from our mapping if available, else use the ID
+                gene_label = hgnc_id_to_symbol.get(hgnc_id, hgnc_id)
+            else:
+                # If not an HGNC ID, just use the ID itself
+                gene_label = gene_id.split(':')[-1]
 
             if gene_id not in node_ids:
                 nodes.append({
                     'id': str(gene_id),
-                    'label': str(gene_name),
+                    'label': str(gene_label),  # Use symbol instead of ID
                     'title': f"{gene_id}",
                     'color': {
                         'background': '#4CAF50',  # green
