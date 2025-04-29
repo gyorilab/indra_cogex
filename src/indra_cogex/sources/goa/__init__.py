@@ -12,7 +12,7 @@ from ...representation import Node, Relation
 
 logger = logging.getLogger(__name__)
 
-GOA_URL = "http://geneontology.org/gene-associations/goa_human.gaf.gz"
+GOA_URL = "https://current.geneontology.org/annotations/goa_human.gaf.gz"
 EVIDENCE_CODES = {
     "EXP",
     "IDA",
