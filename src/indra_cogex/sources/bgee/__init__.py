@@ -71,7 +71,7 @@ def get_expressions(fname):
             return pickle.load(fh)
     else:
         url = (
-            "https://bgee.org/ftp/bgee_v15_0/download/calls/expr_calls/"
+            "https://bgee.org/ftp/bgee_v15_2/download/calls/expr_calls/"
             "Homo_sapiens_expr_simple.tsv.gz"
         )
         logger.info("Getting source tsv file")
