@@ -21,7 +21,7 @@ downloads at: https://reporter.nih.gov/exporter available as zipped csv files pe
 
 import re
 import logging
-import datetime
+from datetime import datetime, UTC, date
 from typing import Iterable, Any
 import zipfile
 from collections import defaultdict
@@ -89,8 +89,7 @@ class NihReporterProcessor(Processor):
 
         # Download the data files if they are not present
         if download or force_download:
-            from datetime import datetime
-            last_year = datetime.utcnow().year - 1
+            last_year = datetime.now(UTC).year - 1
             logger.info(
                 "Downloading NIH RePORTER data files %s force redownload..."
                 % ("with" if force_download else "without")
@@ -244,7 +243,7 @@ def _read_first_df(zip_file_path):
 def download_files(
     base_folder: pystow.Module, force=False, first_year=1985, last_year=2021
 ):
-    current_year = datetime.date.today().year
+    current_year = date.today().year
     for subset, url_pattern in download_urls.items():
         # These files are indexed by year
         if subset in ["project", "publink"]:
@@ -261,7 +260,7 @@ def download_files(
         # year as reference.
         else:
             timestamp = int(
-                datetime.datetime(year=current_year, month=1, day=1).timestamp()
+                datetime(year=current_year, month=1, day=1).timestamp()
             )
             url = download_urls[subset]
             base_folder.ensure(
