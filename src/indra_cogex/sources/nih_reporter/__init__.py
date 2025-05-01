@@ -173,7 +173,8 @@ class NihReporterProcessor(Processor):
             df = pandas.read_csv(patent_file)
             # Drop duplicated IDs and iterate over rows
             for _, row in df.drop_duplicates(subset=["PATENT_ID"]).iterrows():
-                pat_id = row["PATENT_ID"].strip()
+                # Strip whitespace and remove any whitespace in patent IDs
+                pat_id = row["PATENT_ID"].strip().replace(" ", "").replace("\t", "")
                 if pat_id and pat_id not in patent_ids:
                     yield Node(
                         db_ns="GOOGLE.PATENT",
