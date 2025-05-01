@@ -405,13 +405,13 @@ examples_dict = {
     "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": {
-        "explain_downstream": fields.List(fields.String, example=["TP53", "PARP1", "RAD51", "CHEK2"]),
+        "source_target_analysis": fields.List(fields.String, example=["TP53", "PARP1", "RAD51", "CHEK2"]),
         "default": fields.List(
             fields.List(fields.String),
             example=[["HGNC", "6840"], ["HGNC", "1097"]]
         )
     },
-    "output_dir": fields.List(fields.String, example=None),
+    #"output_dir": fields.List(fields.String, example=None),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
@@ -451,7 +451,7 @@ examples_dict = {
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
     "source": {
-        "explain_downstream": fields.String(example="BRCA1"),
+        "source_target_analysis": fields.String(example="BRCA1"),
         "default": fields.String(example="go")
     },
     "indra_path_analysis": fields.Boolean(example=False),
