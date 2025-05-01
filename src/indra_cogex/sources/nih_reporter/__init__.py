@@ -241,9 +241,15 @@ def _read_first_df(zip_file_path):
 
 
 def download_files(
-    base_folder: pystow.Module, force=False, first_year=1985, last_year=2021
+    base_folder: pystow.Module,
+    force=False,
+    first_year=1985,
+    last_year: int = None
 ):
     current_year = date.today().year
+    if last_year is None:
+        last_year = current_year - 1
+    logger.info(f"Last year set to {last_year}")
     for subset, url_pattern in download_urls.items():
         # These files are indexed by year
         if subset in ["project", "publink"]:
