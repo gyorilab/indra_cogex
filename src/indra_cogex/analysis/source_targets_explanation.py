@@ -48,16 +48,35 @@ def get_valid_gene_id(gene_name):
 
     Parameters
     ----------
-    gene_name : str
-        The gene name to get the HGNC id for.
+    gene_name : str or list
+        The gene name to get the HGNC id for. Can be either a string (gene symbol) or
+        a list in the format [namespace, id] where namespace is 'HGNC'.
 
     Returns
     -------
     hgnc_id : str
-        The HGNC id corresponding ton the gene name.
+        The HGNC id corresponding to the gene name.
     """
+    # Handle the case where gene_name is already in [namespace, id] format
+    if isinstance(gene_name, list) and len(gene_name) == 2:
+        namespace, gene_id = gene_name
+        if namespace.upper() == 'HGNC':
+            return gene_id
+        else:
+            logger.warning(f"{namespace}:{gene_id} is not in HGNC namespace")
+            return None
+
+    # Handle non-string inputs that aren't in the expected list format
+    if not isinstance(gene_name, str):
+        logger.warning(f"{gene_name} is not a valid gene name (not a string or [namespace, id] list)")
+        return None
+
     # Get ID for gene name
-    hgnc_id = hgnc_client.get_hgnc_id(gene_name)
+    try:
+        hgnc_id = hgnc_client.get_hgnc_id(gene_name)
+    except TypeError:
+        logger.warning(f"TypeError when getting HGNC ID for {gene_name}")
+        return None
 
     # Try to turn an outdated symbol into a valid one
     # if possible
@@ -174,10 +193,25 @@ def plot_stmts_by_type(stmts_df):
     Parameters
     ----------
     stmts_df : pd.DataGrame
-        Contains INDRA statements represented as a data frame..
+        Contains INDRA statements represented as a data frame.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The plot as a Figure object
     """
-    # Plot bar chart based on "stmt_type" which are the interaction types
+    # Create figure and axis
     fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Check if DataFrame is empty or has no valid stmt_type values
+    if stmts_df.empty or stmts_df["stmt_type"].count() == 0:
+        # Display a message on the empty plot
+        ax.text(0.5, 0.5, "No interaction data available to plot",
+                ha='center', va='center', fontsize=14)
+        ax.set_axis_off()
+        return fig
+
+    # Plot bar chart based on "stmt_type" which are the interaction types
     type_counts = stmts_df["stmt_type"].value_counts()
     type_counts.plot.bar(ax=ax)
     ax.set_xlabel("Interaction Type")
@@ -598,11 +632,8 @@ def run_explain_downstream_analysis(
     if output_dir:
         # Save as PNG image
         interaction_fig.savefig(os.path.join(output_dir, 'interaction_plot.png'))
-        # Also save the base64 data for convenience
-        with open(os.path.join(output_dir, 'interaction_plot.txt'), 'w') as f:
-            f.write(results['interaction_plot'])
 
-    # Process statements - Using the new Vue-compatible approach
+    # Process statements
     # This transforms the statement information into a format that can be used to
     # render statements using the Vue.js components on the frontend
     stmt_data_per_gene = {}
@@ -728,12 +759,9 @@ def run_explain_downstream_analysis(
     if not shared_go_df.empty and not shared_entities.empty:
         # graph_boxplots now returns base64 string directly
         results['analysis_plot'] = graph_boxplots(shared_go_df, shared_entities)
-        if output_dir:
-            # Save as base64 text file
-            with open(os.path.join(output_dir, 'analysis_plot.txt'), 'w') as f:
-                f.write(results['analysis_plot'])
 
-            # Also try to convert and save as PNG if possible
+        if output_dir:
+            # Try to convert and save as PNG if possible
             try:
                 import base64
                 from io import BytesIO
@@ -743,9 +771,8 @@ def run_explain_downstream_analysis(
                 img_data = base64.b64decode(results['analysis_plot'].split(',')[1])
                 img = Image.open(BytesIO(img_data))
                 img.save(os.path.join(output_dir, 'analysis_plot.png'))
-            except Exception:
-                # If conversion fails, just skip the PNG output
-                pass
+            except Exception as e:
+                raise RuntimeError("Failed to save analysis plot as PNG") from e
 
     # Optionally, still save the complete results as a pickle for backwards compatibility
     if output_dir:
