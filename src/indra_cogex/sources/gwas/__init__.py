@@ -109,7 +109,10 @@ def map_phenotypes(df: pd.DataFrame) -> pd.DataFrame:
     # Filter out all snp ids that don't begin with "rs"
     # Around 10,000 entries contain snp ids in the "chr" (chromosome position) format
     # TODO: Convert snp ids beginning with "chr" to "rs" format
-    df = df[df["SNPS"].map(lambda snp_id: bool(re.match("^rs\d+$", snp_id)))]
+    df = df[df["SNPS"].map(
+        lambda snp_id: bool(re.match("^rs\d+$", snp_id))
+        if not pd.isna(snp_id) else False
+    )]
 
     return df
 
