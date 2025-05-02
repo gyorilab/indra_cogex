@@ -178,7 +178,7 @@ class NihReporterProcessor(Processor):
                 if pat_id and pat_id not in patent_ids:
                     yield Node(
                         db_ns="GOOGLE.PATENT",
-                        db_id="US%s" % row["PATENT_ID"],
+                        db_id="US%s" % pat_id,
                         data={"name": clean_text(row["PATENT_TITLE"])},
                         labels=["Patent"],
                     )
