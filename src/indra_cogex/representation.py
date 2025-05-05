@@ -267,10 +267,14 @@ def dump_norm_id(db_ns, db_id) -> str:
     """Wrapper for norm_id to be used in node dumping."""
     # Note: this is needed because some of the processors use custom namespaces e.g.,
     # 'indra_evidence' for node identification and norm_id returns None for those
-    norm_curie = norm_id(db_ns, db_id)
-    if norm_curie is None:
+    try:
+        norm_curie = norm_id(db_ns, db_id)
+        return norm_curie
+    except AttributeError:
+        # Rather than changing the behavior of norm_id, we just check for an
+        # AttributeError coming from the NoneType object trying to access
+        # the attribute 'startswith'
         return f"{db_ns}:{db_id}"
-    return norm_curie
 
 
 
