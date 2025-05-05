@@ -65,16 +65,23 @@ def ensure_clinical_trials_df(*, refresh: bool = False):
     ctp.run()
 
 
-def _mesh_to_chebi(mesh_curie: Union[str, None]) -> Union[str, None]:
-    """Convert a MeSH CURIE to a ChEBI CURIE if possible."""
+def _mesh_to_chebi(row) -> Union[str, None]:
+    """Convert a MeSH CURIE to a ChEBI CURIE if possible for intervention edges"""
+    mesh_curie = row.get("bioentity", None)
     if mesh_curie is None:
         return None
+    if (not mesh_curie.lower().startswith("mesh:") or
+        row["rel_type:string"] != "has_intervention"):
+        # If it's not mesh or it's not an intervention row just return the
+        # original CURIE
+        return mesh_curie.lower()
+
     chebi_ns, chebi_id = bio_ontology.map_to(
         ns1="MESH", id1=mesh_curie.split(":")[1], ns2="CHEBI"
     ) or (None, None)
-    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345"), CoGEx needs
-    # just "chebi:12345"
-    return chebi_id.lower() if chebi_id else None
+    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345"),
+    # CoGEx needs just "chebi:12345"
+    return chebi_id.lower() if chebi_id else mesh_curie
 
 
 def _nsid_to_name(ns: str, id_: str) -> Union[str, None]:
