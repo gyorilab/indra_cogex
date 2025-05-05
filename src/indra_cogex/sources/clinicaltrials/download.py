@@ -12,6 +12,9 @@ from trialsynth.clinical_trials_dot_gov import config, process
 
 __all__ = [
     "ensure_clinical_trials_df",
+    "process_trialsynth_edges",
+    "process_trialsynth_bioentity_nodes",
+    "process_trialsynth_trial_nodes",
 ]
 
 CLINICAL_TRIALS_MODULE = pystow.module(
@@ -60,11 +63,6 @@ def ensure_clinical_trials_df(*, refresh: bool = False):
         reload_api_data=refresh, store_samples=True, validate=False
     )
     ctp.run()
-
-    # Process the edges and nodes
-    edges_df = process_trialsynth_edges()
-    bioentity_nodes_df = process_trialsynth_bioentity_nodes()
-    trials_nodes_df = process_trialsynth_trial_nodes()
 
 
 def _mesh_to_chebi(mesh_curie: Union[str, None]) -> Union[str, None]:
@@ -173,7 +171,7 @@ def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
     # start_year:int
     # start_year_anticipated:boolean
     # status  # Completed, terminated etc...
-    # study_type  # Observational, interventional etc... Fixme: should be among labels but deosn't seem to be there
+    # study_type  # Observational, interventional etc... Fixme: should be among labels but doesn't seem to be there
     # why_stopped
 
     # Trialsynth trial nodes file has the following columns:
