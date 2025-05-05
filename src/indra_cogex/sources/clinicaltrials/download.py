@@ -186,7 +186,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     # start_year:int
     # start_year_anticipated:boolean
     # status  # Completed, terminated etc...
-    # study_type  # Observational, interventional etc... Fixme: should be among labels but doesn't seem to be there
+    # study_type  # Observational, interventional etc...
     # why_stopped
 
     # Trialsynth trial nodes file has the following columns:
@@ -243,6 +243,19 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     trials_nodes_df["start_year"] = trials_nodes_df["start_year:integer"].apply(
         lambda x: int(x) if pd.notna(x) else 0
     )
+
+    # fixme: need a better way to get the study type out
+    def _get_study_type(labels: str) -> str:
+        if pd.isna(labels):
+            return "unknown"
+        # The study type is in the labels, e.g. "Study Type: Interventional"
+        for label in labels.split(";"):
+            for study_type in ["interventional", "observational", "expanded access"]:
+                if study_type in label.lower():
+                    return study_type
+        return "unknown"
+    # Add study type column
+    trials_nodes_df["study_type"] = trials_nodes_df["labels:LABEL[]"].apply(_get_study_type)
 
     return trials_nodes_df
 
