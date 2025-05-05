@@ -170,7 +170,7 @@ def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.Dat
     return bioentity_nodes_df[["bioentity_mapped", "name"]]
 
 
-def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
+def process_trialsynth_trial_nodes() -> pd.DataFrame:
     """Convert the trial nodes file from the trialsynth to CoGEx format
 
     Returns
@@ -224,10 +224,7 @@ def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
         return -1
 
     # Read the trial nodes file from trialsynth
-    if df is None:
-        trials_nodes_df = pd.read_csv(ctconfig.trials_path, sep="\t", compression="gzip")
-    else:
-        trials_nodes_df = df
+    trials_nodes_df = pd.read_csv(ctconfig.trials_path, sep="\t", compression="gzip")
 
     # Rename the columns to match CoGEx format
     trials_nodes_df.rename(columns=headers_translation, inplace=True)
