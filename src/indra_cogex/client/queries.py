@@ -3317,11 +3317,23 @@ def get_network(
             if prefix.lower() == 'pmid':
                 prefix = 'pubmed'
 
-            stmts = get_stmts_for_paper(
+            all_stmts = get_stmts_for_paper(
                 (prefix, paper_id),
                 client=client,
                 include_db_evidence=include_db_evidence
             )
+
+            # Create evidence counts dictionary
+            evidence_counts = {}
+            for stmt in all_stmts:
+                evidence_counts[stmt.get_hash()] = len(stmt.evidence)
+
+            # Sort statements by evidence count (highest first)
+            sorted_stmts = sorted(all_stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
+
+            # Apply limit
+            stmts = sorted_stmts[:limit]
+
         elif network_type == 'go':
             from indra_cogex.client.subnetwork import indra_subnetwork_go
             stmts = indra_subnetwork_go(
@@ -3342,9 +3354,6 @@ def get_network(
             )
         else:
             return {"nodes": [], "edges": [], "error": f"Unknown network type: {network_type}"}
-
-        # Limit to top N statements
-        stmts = stmts[:limit]
 
         # If no statements found, return empty network
         if not stmts:
@@ -3442,18 +3451,75 @@ def get_network(
                 'uniprot': db_refs.get('UP', '')
             })
 
+        # Create a mapping of statement type by node pairs
+        stmt_direction_map = {}
+        for stmt in stmts:
+            # Get the statement class name (Activation, Inhibition, etc.)
+            stmt_class = stmt.__class__.__name__
+
+            # Skip statements that don't have clear directionality
+            if stmt_class in ['Complex', 'Association']:
+                continue
+
+            # Get ordered agents from the statement
+            agents = stmt.agent_list()
+            if len(agents) >= 2 and agents[0] is not None and agents[1] is not None:
+                key = (agents[0].name, agents[1].name)
+                stmt_direction_map[key] = stmt_class
+
         # Process edges
         edges = []
         edge_count = 0
+
+        # Track processed edge pairs to avoid duplicates
+        processed_edge_pairs = set()
+
         for source, target, key, data in graph.edges(data=True, keys=True):
-            # Get statement type from edge data or find matching statement
+            # Skip if we've already processed an edge between these nodes
+            edge_pair = (source, target)
+            if edge_pair in processed_edge_pairs:
+                continue
+
+            # Add to processed set
+            processed_edge_pairs.add(edge_pair)
+
+            # Get statement type from edge data
             stmt_type = data.get('stmt_type', 'Interaction')
 
-            # Find the corresponding statement for this edge
+            # Find the corresponding statement
             edge_stmt = next(
                 (s for s in stmts if {a.name for a in s.agent_list() if a} == {source, target}),
                 None
             )
+
+            # Check if direction needs to be corrected
+            needs_direction_fix = False
+
+            # Method 1: Use our pre-built direction map
+            if (target, source) in stmt_direction_map:
+                # The statement direction is opposite to the graph edge
+                needs_direction_fix = True
+
+            # Method 2: Parse the statement string as backup
+            if not needs_direction_fix and edge_stmt and hasattr(edge_stmt, '__str__'):
+                try:
+                    stmt_str = str(edge_stmt)
+                    # Get first two parenthesized elements, which should be the agents
+                    import re
+                    parts = re.findall(r'\((.*?)\)', stmt_str)
+                    if len(parts) >= 2:
+                        first_agent = parts[0].strip()
+                        second_agent = parts[1].strip()
+
+                        # If the first agent is target and second is source, direction is wrong
+                        if first_agent == target and second_agent == source:
+                            needs_direction_fix = True
+                except Exception:
+                    pass
+
+            # Fix direction if needed
+            if needs_direction_fix:
+                source, target = target, source
 
             # Get belief score
             belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
@@ -3482,23 +3548,26 @@ def get_network(
                 color = '#FF0000'  # bright red
                 dashes = [5, 5]  # dashed line
 
+            # Use actual statement type from the found statement if available
+            actual_stmt_type = edge_stmt.__class__.__name__ if edge_stmt else stmt_type
+
             # Collect edge details for tooltip/dialog
             edge_details = {
-                'statement_type': stmt_type,
+                'statement_type': actual_stmt_type,
                 'belief': belief,
                 'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
-                'interaction': stmt_type.lower(),
-                'polarity': 'positive' if 'Activation' in stmt_type or 'IncreaseAmount' in stmt_type else
-                'negative' if 'Inhibition' in stmt_type or 'DecreaseAmount' in stmt_type else 'none',
+                'interaction': actual_stmt_type.lower(),
+                'polarity': 'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
+                'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
                 'support_type': 'database' if include_db_evidence else 'literature',
-                'type': stmt_type
+                'type': actual_stmt_type
             }
 
             edges.append({
                 'id': f"e{edge_count}",
                 'from': str(source),
                 'to': str(target),
-                'title': stmt_type,
+                'title': actual_stmt_type,
                 'color': {
                     'color': color,
                     'highlight': color,
