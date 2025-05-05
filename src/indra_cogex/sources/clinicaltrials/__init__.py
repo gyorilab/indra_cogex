@@ -60,116 +60,44 @@ class ClinicaltrialsProcessor(Processor):
         return None
 
     def get_nodes(self):
-        nctid_to_data = {}
         yielded_nodes = set()
-        for _, row in tqdm.tqdm(self.df.iterrows(), total=len(self.df)):
-            nctid_to_data[row["NCTId"]] = {
-                "study_type": or_na(row["StudyType"]),  # observational, interventional
-                "randomized:boolean": row["randomized"],
-                "status": or_na(row["OverallStatus"]),  # Completed, Active, Recruiting
-                "phase:int": row["Phase"],
-                "why_stopped": or_na(row["WhyStopped"]),
-                "start_year:int": or_na(row["start_year"]),
-                "start_year_anticipated:boolean": row["start_year_anticipated"],
-            }
+        for ix, row in tqdm.tqdm(
+            self.trials_df.iterrows(), total=len(self.trials_df), desc="Trial nodes"
+        ):
+            nctid = row["NCTId"]
+            if nctid in yielded_nodes:
+                continue
+            yielded_nodes.add(nctid)
+            db_ns, db_id = nctid.split(":")
+            yield Node(
+                db_ns=db_ns,
+                db_id=db_id,
+                labels=["ClinicalTrial"],
+                data={
+                    "study_type": or_na(row["study_type"]),
+                    "randomized:boolean": row["randomized:boolean"],
+                    "status": or_na(row["status"]),
+                    "phase:int": row["phase:int"],
+                    "why_stopped": or_na(row["why_stopped"]),
+                    "start_year:int": or_na(row["start_year"]),
+                    "start_year_anticipated:boolean": row["start_year_anticipated"],
+                },
+            )
 
-            found_disease_gilda = False
-            for condition in str(row["Condition"]).split("|"):
-                cond_term = self.ground_condition(condition)
-                if cond_term:
-                    self.has_trial_nct.append(row["NCTId"])
-                    self.has_trial_cond_ns.append(cond_term.db)
-                    self.has_trial_cond_id.append(cond_term.id)
-                    found_disease_gilda = True
-                    if (cond_term.db, cond_term.id) not in yielded_nodes:
-                        yield Node(
-                            db_ns=cond_term.db,
-                            db_id=cond_term.id,
-                            labels=["BioEntity"],
-                            data=dict(name=cond_term.entry_name),
-                        )
-                        yielded_nodes.add((cond_term.db, cond_term.id))
-            if not found_disease_gilda and not pd.isna(row["ConditionMeshId"]):
-                for mesh_id, mesh_term in zip(
-                    row["ConditionMeshId"].split("|"),
-                    row["ConditionMeshTerm"].split("|"),
-                ):
-                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
-                    if not correct_mesh_id:
-                        self.problematic_mesh_ids.append((mesh_id, mesh_term))
-                        continue
-                    stnd_node = Node.standardized(
-                        db_ns="MESH",
-                        db_id=correct_mesh_id,
-                        labels=["BioEntity"],
-                    )
-                    node_ns, node_id = stnd_node.db_ns, stnd_node.db_id
-                    self.has_trial_nct.append(row["NCTId"])
-                    self.has_trial_cond_ns.append(node_ns)
-                    self.has_trial_cond_id.append(node_id)
-                    if (node_ns, node_id) not in yielded_nodes:
-                        yield stnd_node
-                        yielded_nodes.add((node_ns, node_id))
-
-            # We first try grounding the names with Gilda, if any match, we
-            # use it, if there are no matches, we go by provided MeSH ID
-            found_drug_gilda = False
-            for int_name, int_type in zip(
-                str(row["InterventionName"]).split("|"),
-                str(row["InterventionType"]).split("|"),
-            ):
-                if int_type == "Drug":
-                    drug_term = self.ground_drug(int_name)
-                    if drug_term:
-                        self.tested_in_int_ns.append(drug_term.db)
-                        self.tested_in_int_id.append(drug_term.id)
-                        self.tested_in_nct.append(row["NCTId"])
-                        if (drug_term.db, drug_term.id) not in yielded_nodes:
-                            yield Node(
-                                db_ns=drug_term.db,
-                                db_id=drug_term.id,
-                                labels=["BioEntity"],
-                                data=dict(name=drug_term.entry_name)
-                            )
-                            found_drug_gilda = True
-                            yielded_nodes.add((drug_term.db, drug_term.id))
-            # If there is no Gilda grounding but there are some MeSH IDs given
-            if not found_drug_gilda and not pd.isna(row["InterventionMeshId"]):
-                for mesh_id, mesh_term in zip(
-                    row["InterventionMeshId"].split("|"),
-                    row["InterventionMeshTerm"].split("|"),
-                ):
-                    correct_mesh_id = get_correct_mesh_id(mesh_id, mesh_term)
-                    if not correct_mesh_id:
-                        self.problematic_mesh_ids.append((mesh_id, mesh_term))
-                        continue
-                    stnd_node = Node.standardized(
-                        db_ns="MESH",
-                        db_id=correct_mesh_id,
-                        labels=["BioEntity"],
-                    )
-                    node_ns, node_id = stnd_node.db_ns, stnd_node.db_id
-                    self.tested_in_int_ns.append(node_ns)
-                    self.tested_in_int_id.append(node_id)
-                    self.tested_in_nct.append(row["NCTId"])
-                    if (node_ns, node_id) not in yielded_nodes:
-                        yield stnd_node
-                        yielded_nodes.add((node_ns, node_id))
-
-        for nctid in set(self.tested_in_nct) | set(self.has_trial_nct):
-            if ("CLINICALTRIALS", nctid) not in yielded_nodes:
-                yield Node(
-                    db_ns="CLINICALTRIALS",
-                    db_id=nctid,
-                    labels=["ClinicalTrial"],
-                    data=nctid_to_data[nctid],
-                )
-                yielded_nodes.add(("CLINICALTRIALS", nctid))
-
-        logger.info(
-            "Problematic MeSH IDs: %s"
-            % str(Counter(self.problematic_mesh_ids).most_common())
-        )
+        for ix, row in tqdm.tqdm(
+            self.bioentities_df.iterrows(), total=len(self.bioentities_df), desc="BioEntity nodes"
+        ):
+            bioentity = row["bioentity_mapped"]
+            if bioentity in yielded_nodes:
+                continue
+            yielded_nodes.add(bioentity)
+            db_ns, db_id = bioentity.split(":")
+            yield Node(
+                db_ns=db_ns,
+                db_id=db_id,
+                labels=["BioEntity"],
+                data={"name": row["name"]},
+            )
 
     def get_relations(self):
         added = set()
