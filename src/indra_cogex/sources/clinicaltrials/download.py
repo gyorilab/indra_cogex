@@ -201,7 +201,7 @@ def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
     # secondary_ids:CURIE[]
     # source_registry:string
     # phases:PHASE[]
-    # start_date:DATE
+    # start_year:int
     # labels:LABEL[]
     # why_stopped:string
 
@@ -213,8 +213,14 @@ def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
     }
 
     def _get_phase(phase_string: str) -> int:
-        if pd.notna(phase_string) and phase_string[-1].isdigit():
-            return int(phase_string[-1])
+        if pd.notna(phase_string):
+            # The phase string is a list of phases, e.g. "PHASE1|PHASE2"
+            # Get the highest phase number
+            max_phase = max(
+                int(p[-1]) if p[-1].isdigit() else -1
+                for p in phase_string.split("|")
+            )
+            return max_phase
         return -1
 
     # Read the trial nodes file from trialsynth
@@ -237,7 +243,7 @@ def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
         "Allocation: RANDOMIZED")
 
     # Add the start_year:int column, defaulting to 0 (unknown)
-    trials_nodes_df["start_year:int"] = trials_nodes_df["start_date:DATE"].apply(
+    trials_nodes_df["start_year"] = trials_nodes_df["start_year:integer"].apply(
         lambda x: int(x) if pd.notna(x) else 0
     )
 
