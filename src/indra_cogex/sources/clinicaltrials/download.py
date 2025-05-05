@@ -121,9 +121,6 @@ def process_trialsynth_edges() -> pd.DataFrame:
     if "source_registry:string" in edges_df.columns:
         edges_df.drop(columns=["source_registry:string"], inplace=True)
 
-    # Drop rows which didn't map to chebi
-    edges_df = edges_df[edges_df[":END_ID"].notna()]
-
     return edges_df
 
 
@@ -150,9 +147,6 @@ def process_trialsynth_bioentity_nodes() -> pd.DataFrame:
 
     # Translate the mesh terms to chebi, since we're only interested in drug trials
     bioentity_nodes_df["id:ID"].apply(_mesh_to_chebi, inplace=True)
-
-    # Drop rows which didn't map to chebi
-    bioentity_nodes_df = bioentity_nodes_df[bioentity_nodes_df["id:ID"].notna()]
 
     # Create a new column for name
     bioentity_nodes_df["name"] = bioentity_nodes_df["id:ID"].apply(
