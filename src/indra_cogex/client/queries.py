@@ -3281,7 +3281,7 @@ def get_network(
     network_type: str,
     identifier: Any,
     include_db_evidence: bool = True,
-    limit: int = 25,
+    limit: int = None,
     *,
     client: Neo4jClient,
 ) -> Dict:
@@ -3298,7 +3298,7 @@ def get_network(
         - For 'subnetwork': List[Tuple[str, str]] of node identifiers as (namespace, id) tuples
     include_db_evidence : bool, default=True
         Whether to include statements with database evidence.
-    limit : int, default=25
+    limit : int, default=None
         Maximum number of statements to include in the network.
     client : Neo4jClient
         The Neo4j client.
@@ -3329,10 +3329,7 @@ def get_network(
                 evidence_counts[stmt.get_hash()] = len(stmt.evidence)
 
             # Sort statements by evidence count (highest first)
-            sorted_stmts = sorted(all_stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
-
-            # Apply limit
-            stmts = sorted_stmts[:limit]
+            stmts = sorted(all_stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
 
         elif network_type == 'go':
             from indra_cogex.client.subnetwork import indra_subnetwork_go
@@ -3358,6 +3355,10 @@ def get_network(
         # If no statements found, return empty network
         if not stmts:
             return {"nodes": [], "edges": []}
+
+        # Apply limit
+        if limit is not None:
+            stmts = stmts[:limit]
 
         # Create network using IndraNetAssembler
         assembler = IndraNetAssembler(stmts)
