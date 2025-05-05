@@ -10,9 +10,15 @@ import pandas as pd
 import tqdm
 
 from indra.databases import mesh_client
+from indra.ontology.bio import bio_ontology
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
-from indra_cogex.sources.clinicaltrials.download import ensure_clinical_trials_df
+from indra_cogex.sources.clinicaltrials.download import (
+    ensure_clinical_trials_df,
+    process_trialsynth_edges,
+    process_trialsynth_bioentity_nodes,
+    process_trialsynth_trial_nodes
+)
 
 
 logger = logging.getLogger(__name__)
@@ -23,20 +29,18 @@ class ClinicaltrialsProcessor(Processor):
     node_types = ["BioEntity", "ClinicalTrial"]
 
     def __init__(self, path: Union[str, Path, None] = None):
-        if path is not None:
-            self.df = pd.read_csv(path, sep=",", skiprows=10)
-        else:
-            self.df = ensure_clinical_trials_df()
-        process_df(self.df)
+        ensure_clinical_trials_df()
 
-        self.has_trial_cond_ns = []
-        self.has_trial_cond_id = []
-        self.has_trial_nct = []
-        self.tested_in_int_ns = []
-        self.tested_in_int_id = []
-        self.tested_in_nct = []
-
-        self.problematic_mesh_ids = []
+        self.trials_df = process_trialsynth_trial_nodes()
+        # Warm up bio ontology
+        _ = bio_ontology.get_name("HGNC", "1100")
+        self.edges_df = process_trialsynth_edges()
+        self.mesh_chebi_map = {
+            old_id: new_id for new_id, old_id in
+            self.edges_df[["bioentity_mapped", "bioentity"]].values
+            if new_id.startswith("chebi:") and old_id.startswith("mesh:")
+        }
+        self.bioentities_df = process_trialsynth_bioentity_nodes(self.mesh_chebi_map)
 
     def ground_condition(self, condition):
         matches = gilda.ground(condition)
