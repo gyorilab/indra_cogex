@@ -29,7 +29,7 @@ from tqdm import tqdm
 from indra.statements.validate import assert_valid_db_refs, assert_valid_evidence
 from indra.statements import Evidence
 
-from indra_cogex.representation import Node, Relation, norm_id
+from indra_cogex.representation import Node, Relation, dump_norm_id
 from indra_cogex.sources.processor_util import (
     NEO4J_DATA_TYPES,
     data_validator,
@@ -188,7 +188,7 @@ class Processor(ABC):
 
         node_rows = (
             (
-                norm_id(node.db_ns, node.db_id),
+                dump_norm_id(node.db_ns, node.db_id),
                 ";".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
@@ -243,8 +243,8 @@ class Processor(ABC):
 
         edge_rows = (
             (
-                norm_id(rel.source_ns, rel.source_id),
-                norm_id(rel.target_ns, rel.target_id),
+                dump_norm_id(rel.source_ns, rel.source_id),
+                dump_norm_id(rel.target_ns, rel.target_id),
                 rel.rel_type,
                 *[rel.data.get(key) for key in metadata],
             )
