@@ -100,11 +100,10 @@ def process_trialsynth_edges() -> pd.DataFrame:
     """
     headers_translation = {
         # The Trialsynth edges go from the trial to the bioentity with a
-        # has_intervention relation, in CoGEx the edge goes from the bioentity to the trial
-        # with a tested_in edge
-        "from:CURIE": ":END_ID",
-        "to:CURIE": ":START_ID",
-        "rel_type:string": ":TYPE",
+        # has_intervention or has_condition relation. In CoGEx the edge goes
+        # from the bioentity to the trial with a tested_in or has_trial edge
+        "from:CURIE": "trial",
+        "to:CURIE": "bioentity",
     }
 
     # Read the edges file from trialsynth
@@ -113,9 +112,10 @@ def process_trialsynth_edges() -> pd.DataFrame:
     # Rename the columns to match CoGEx format
     edges_df.rename(columns=headers_translation, inplace=True)
 
-    # Translate the mesh terms to chebi, since we're only interested in drug trials
-    bio_ontology.initialize()
-    edges_df[":END_ID"] = edges_df[":END_ID"].apply(_mesh_to_chebi)
+    # Only translate has_intervention edges from mesh to chebi, but use a new column
+    # for the resulting values and fill in with the untranslated values for the rows
+    # that were not translated
+    edges_df["bioentity_mapped"] = edges_df.apply(_mesh_to_chebi, axis=1)
 
     # Drop the "source_registry:string" column
     if "source_registry:string" in edges_df.columns:
