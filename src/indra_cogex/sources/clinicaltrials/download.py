@@ -2,7 +2,7 @@
 Download and parse the ClinicalTrials.gov data using Trialsynth.
 """
 import os
-from typing import Union
+from typing import Union, Dict
 
 import pystow
 import pandas as pd
@@ -84,11 +84,6 @@ def _mesh_to_chebi(row) -> Union[str, None]:
     return chebi_id.lower() if chebi_id else mesh_curie
 
 
-def _nsid_to_name(ns: str, id_: str) -> Union[str, None]:
-    """Convert a namespace and ID to a name if possible."""
-    return bio_ontology.get_name(ns=ns, id=id_) or None
-
-
 def process_trialsynth_edges() -> pd.DataFrame:
     """Convert the edge file from the trialsynth to CoGEx format
 
@@ -124,7 +119,7 @@ def process_trialsynth_edges() -> pd.DataFrame:
     return edges_df
 
 
-def process_trialsynth_bioentity_nodes() -> pd.DataFrame:
+def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.DataFrame:
     """Convert the bioentity nodes file from the trialsynth to CoGEx format
 
     Returns
@@ -132,7 +127,10 @@ def process_trialsynth_bioentity_nodes() -> pd.DataFrame:
     :
         writeme
     """
-    headers_translation = {"curie:CURIE": "id:ID"}
+    headers_translation = {
+        "curie:CURIE": "bioentity",
+        "term:string": "name",
+    }
 
     # Read the bioentity nodes file from trialsynth
     bioentity_nodes_df = pd.read_csv(
@@ -142,18 +140,34 @@ def process_trialsynth_bioentity_nodes() -> pd.DataFrame:
     # Rename the columns to match CoGEx format
     bioentity_nodes_df.rename(columns=headers_translation, inplace=True)
 
-    # Create a new column for :LABEL
-    bioentity_nodes_df[":LABEL"] = "BioEntity"
+    def _map_to_chebi(row) -> str:
+        if "intervention" in row["labels:LABEL[]"].lower():
+            return mesh_chebi_map.get(
+                row["bioentity"], row["bioentity"]
+            )
+        return row["bioentity"]
 
-    # Translate the mesh terms to chebi, since we're only interested in drug trials
-    bioentity_nodes_df["id:ID"].apply(_mesh_to_chebi, inplace=True)
+    # Translate the same rows that were translated in the edges file:
+    # Any mesh id that is an intervention should be converted to chebi
+    bioentity_nodes_df["bioentity_mapped"] = bioentity_nodes_df.apply(_map_to_chebi, axis=1)
 
-    # Create a new column for name
-    bioentity_nodes_df["name"] = bioentity_nodes_df["id:ID"].apply(
-        lambda c: _nsid_to_name(ns="CHEBI", id_=c.upper() if c else None)
-    )
+    # Map names for the chebi mapped bioentities
+    def _nsid_to_name(row) -> str:
+        if pd.isna(row["bioentity_mapped"]) or row["bioentity_mapped"] is None:
+            return row["name"]
+        if "intervention" in row["labels:LABEL[]"].lower() and \
+            row["bioentity_mapped"].lower().startswith("chebi:"):
+            # If it's an intervention, get the name from the chebi id, use the
+            # existing name as default
+            mapped_name = bio_ontology.get_name(
+                ns="CHEBI", id=row["bioentity_mapped"].upper()
+            )
+            return mapped_name or row["name"]
+        return row["name"]
 
-    return bioentity_nodes_df[["id:ID", ":LABEL", "name"]]
+    bioentity_nodes_df["name"] = bioentity_nodes_df.apply(_nsid_to_name, axis=1)
+
+    return bioentity_nodes_df[["bioentity_mapped", "name"]]
 
 
 def process_trialsynth_trial_nodes(df: pd.DataFrame = None) -> pd.DataFrame:
