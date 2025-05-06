@@ -40,7 +40,7 @@ class ClinicaltrialsProcessor(Processor):
         self.mesh_chebi_map = {
             old_id: new_id for new_id, old_id in
             self.edges_df[["bioentity_mapped", "bioentity"]].values
-            if new_id.startswith("chebi:") and old_id.startswith("mesh:")
+            if new_id.lower().startswith("chebi:") and old_id.lower().startswith("mesh:")
         }
         self.bioentities_df = process_trialsynth_bioentity_nodes(self.mesh_chebi_map)
 
