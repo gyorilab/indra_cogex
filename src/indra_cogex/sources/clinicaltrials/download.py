@@ -144,7 +144,7 @@ def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.Dat
         return row["bioentity"]
 
     # Translate the same rows that were translated in the edges file:
-    # Any mesh id that is an intervention should be converted to chebi
+    # Any mesh id that is an intervention should be attempted to be converted to chebi
     bioentity_nodes_df["bioentity_mapped"] = bioentity_nodes_df.apply(_map_to_chebi, axis=1)
 
     # Map names for the chebi mapped bioentities
