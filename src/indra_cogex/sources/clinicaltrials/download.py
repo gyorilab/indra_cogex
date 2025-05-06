@@ -241,8 +241,8 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
 
     # Add the start_year:int column, defaulting to 0 (unknown)
     trials_nodes_df["start_year"] = trials_nodes_df["start_year:integer"].apply(
-        lambda x: int(x) if pd.notna(x) else 0
-    )
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
 
     # fixme: need a better way to get the study type out
     def _get_study_type(labels: str) -> str:
