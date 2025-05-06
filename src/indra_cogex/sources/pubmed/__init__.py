@@ -177,8 +177,8 @@ class PublicationProcessor(PubmedProcessor):
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
-            # NOTE tested with 100000 batch size but given that total is ~290M
-            # and each line is lightweight, trying with larger batch here
+            # Given each line is lightweight and that total is ~350M trying
+            # with larger batch size here. Total time us typically 15-20 hours.
             batch_size = 10_000_000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
