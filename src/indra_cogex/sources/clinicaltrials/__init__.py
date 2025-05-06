@@ -29,7 +29,7 @@ class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
     node_types = ["BioEntity", "ClinicalTrial"]
 
-    def __init__(self, path: Union[str, Path, None] = None):
+    def __init__(self):
         ensure_clinical_trials_df()
 
         self.trials_df = process_trialsynth_trial_nodes()
