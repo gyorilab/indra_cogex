@@ -74,14 +74,13 @@ def _mesh_to_chebi(row) -> Union[str, None]:
         row["rel_type:string"] != "has_intervention"):
         # If it's not mesh or it's not an intervention row just return the
         # original CURIE
-        return mesh_curie.lower()
+        return mesh_curie
 
     chebi_ns, chebi_id = bio_ontology.map_to(
         ns1="MESH", id1=mesh_curie.split(":")[1], ns2="CHEBI"
     ) or (None, None)
-    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345"),
-    # CoGEx needs just "chebi:12345"
-    return chebi_id.lower() if chebi_id else mesh_curie
+    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345")
+    return chebi_id if chebi_id else mesh_curie
 
 
 def process_trialsynth_edges() -> pd.DataFrame:
@@ -94,9 +93,6 @@ def process_trialsynth_edges() -> pd.DataFrame:
          values converted to Chebi identifiers.
     """
     headers_translation = {
-        # The Trialsynth edges go from the trial to the bioentity with a
-        # has_intervention or has_condition relation. In CoGEx the edge goes
-        # from the bioentity to the trial with a tested_in or has_trial edge
         "from:CURIE": "trial",
         "to:CURIE": "bioentity",
     }
