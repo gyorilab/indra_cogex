@@ -69,7 +69,7 @@ class ClinicaltrialsProcessor(Processor):
             if nctid in yielded_nodes:
                 continue
             yielded_nodes.add(nctid)
-            db_ns, db_id = nctid.split(":")
+            db_ns, db_id = process_identifier(nctid)
             yield Node(
                 db_ns=db_ns,
                 db_id=db_id,
@@ -92,7 +92,7 @@ class ClinicaltrialsProcessor(Processor):
             if bioentity in yielded_nodes:
                 continue
             yielded_nodes.add(bioentity)
-            db_ns, db_id = bioentity.split(":")
+            db_ns, db_id = process_identifier(bioentity)
             yield Node(
                 db_ns=db_ns,
                 db_id=db_id,
