@@ -11,6 +11,7 @@ import tqdm
 
 from indra.databases import mesh_client
 from indra.ontology.bio import bio_ontology
+from indra_cogex.client import process_identifier
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
 from indra_cogex.sources.clinicaltrials.download import (
@@ -101,33 +102,38 @@ class ClinicaltrialsProcessor(Processor):
 
     def get_relations(self):
         added = set()
-        for cond_ns, cond_id, target_id in zip(
-            self.has_trial_cond_ns, self.has_trial_cond_id, self.has_trial_nct
+        rel_translation = {
+            "has_condition": "has_trial",
+            "has_intervention": "tested_in",
+        }
+        for ix, row in tqdm.tqdm(
+            self.edges_df.iterrows(), total=len(self.edges_df), desc="Edges"
         ):
-            if (cond_ns, cond_id, target_id) in added:
+            # Conditions: use "has_trial" relation going to the trial from the condition
+            # Interventions: use "tested_in" relation going to the trial from the intervention
+            # The Trialsynth edges go from the trial to the bioentity with a
+            # has_intervention or has_condition relation. In CoGEx the edge goes
+            # from the bioentity to the trial with a tested_in or has_trial edge
+
+            bioentity = row["bioentity_mapped"]
+            rel_type = rel_translation.get(row["rel_type:string"])
+            if rel_type is None:
+                raise ValueError(f"Unknown relation type: {row['rel_type:string']}")
+
+            nctid_curie = row["trial"]
+            if (bioentity, nctid_curie, rel_type) in added:
                 continue
-            added.add((cond_ns, cond_id, target_id))
+
+            db_ns, db_id = process_identifier(bioentity)
+            trial_ns, trial_id = process_identifier(nctid_curie)
             yield Relation(
-                source_ns=cond_ns,
-                source_id=cond_id,
-                target_ns="CLINICALTRIALS",
-                target_id=target_id,
-                rel_type="has_trial",
+                source_ns=db_ns,
+                source_id=db_id,
+                target_ns=trial_ns,
+                target_id=trial_id,
+                rel_type=rel_type,
             )
-        added = set()
-        for int_ns, int_id, target_id in zip(
-            self.tested_in_int_ns, self.tested_in_int_id, self.tested_in_nct
-        ):
-            if (int_ns, int_id, target_id) in added:
-                continue
-            added.add((int_ns, int_id, target_id))
-            yield Relation(
-                source_ns=int_ns,
-                source_id=int_id,
-                target_ns="CLINICALTRIALS",
-                target_id=target_id,
-                rel_type="tested_in",
-            )
+            added.add((bioentity, nctid_curie, rel_type))
 
 
 def get_correct_mesh_id(mesh_id, mesh_term=None):
