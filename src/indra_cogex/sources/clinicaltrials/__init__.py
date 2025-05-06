@@ -14,6 +14,7 @@ from indra.ontology.bio import bio_ontology
 from indra_cogex.client import process_identifier
 from indra_cogex.sources.processor import Processor
 from indra_cogex.representation import Node, Relation
+from indra_cogex.sources.utils import get_bool
 from indra_cogex.sources.clinicaltrials.download import (
     ensure_clinical_trials_df,
     process_trialsynth_edges,
@@ -65,7 +66,7 @@ class ClinicaltrialsProcessor(Processor):
         for ix, row in tqdm.tqdm(
             self.trials_df.iterrows(), total=len(self.trials_df), desc="Trial nodes"
         ):
-            nctid = row["NCTId"]
+            nctid = row["id:ID"]
             if nctid in yielded_nodes:
                 continue
             yielded_nodes.add(nctid)
@@ -76,12 +77,14 @@ class ClinicaltrialsProcessor(Processor):
                 labels=["ClinicalTrial"],
                 data={
                     "study_type": or_na(row["study_type"]),
-                    "randomized:boolean": row["randomized:boolean"],
+                    "randomized:boolean": get_bool(row["randomized:boolean"]),
                     "status": or_na(row["status"]),
                     "phase:int": row["phase:int"],
                     "why_stopped": or_na(row["why_stopped"]),
                     "start_year:int": or_na(row["start_year"]),
-                    "start_year_anticipated:boolean": row["start_year_anticipated"],
+                    "start_year_anticipated:boolean": get_bool(
+                        row["start_year_anticipated:boolean"]
+                    ),
                 },
             )
 
