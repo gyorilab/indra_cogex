@@ -55,9 +55,13 @@ def search():
     # POST Request: Generate a sharable link with query parameters
     if request.method == 'POST':
         agent = form.agent_name.data
+        agent_tuple = json.loads(request.form.get("agent_tuple") or "null")
 
         if agent:
-            agent, is_curie = check_and_convert(agent)
+            if agent_tuple:
+                agent, is_curie = check_and_convert(":".join(agent_tuple))
+            else:
+                is_curie = False
             agent_exists = check_agent_existence(agent)
 
             if agent_exists is False:
@@ -74,7 +78,8 @@ def search():
                 )
         query_params = {
             "agent": form.agent_name.data,
-            "agent_tuple": request.form.get("agent_tuple"),
+            # JSON dumps for proper encoding
+            "agent_tuple": json.dumps(agent_tuple) if agent_tuple else None,
             "other_agent": form.other_agent.data,
             "other_agent_tuple": request.form.get("other_agent_tuple"),
             "source_type": form.source_type.data,
