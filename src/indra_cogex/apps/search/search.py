@@ -64,7 +64,7 @@ def search():
                 is_curie = False
             agent_exists = check_agent_existence(agent)
 
-            if agent_exists is False:
+            if not agent_exists:
                 if is_curie:
                     error_agent = f'{agent[0]}:{agent[1]}'
                 else:
@@ -96,7 +96,7 @@ def search():
     # GET Request: Extract query parameters and fetch statements
     agent = request.args.get("agent")
 
-    #Check if the agent is in CURIE form
+    # Check if the agent is in CURIE form
     if agent:
         agent, _ = check_and_convert(agent)
 
