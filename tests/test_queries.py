@@ -1095,3 +1095,164 @@ def test_is_cell_line_sensitive_to_drug():
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
 
+
+@pytest.mark.nonpublic
+def test_indranet_assembler_direction_comprehensive():
+    """Test how IndraNetAssembler handles directions for various statement types."""
+    from indra.statements import Activation, Inhibition, Agent, Complex, Phosphorylation
+    from indra.assemblers.indranet import IndraNetAssembler
+
+    # Create test agents
+    nf1 = Agent('NF1')
+    ras = Agent('RAS')
+    raf1 = Agent('RAF1')
+    mek = Agent('MEK')
+    erk = Agent('ERK')
+    rapgef2 = Agent('RAPGEF2')
+
+    # Create statements with clear directions
+    statements = [
+        Inhibition(nf1, ras),  # NF1 inhibits RAS
+        Activation(ras, raf1),  # RAS activates RAF1
+        Activation(ras, mek),  # RAS activates MEK
+        Activation(rapgef2, ras),  # RAPGEF2 activates RAS
+        Phosphorylation(erk, ras),  # ERK phosphorylates RAS
+        Complex([ras, raf1])  # Complex is undirected
+    ]
+
+    # Create network using IndraNetAssembler
+    assembler = IndraNetAssembler(statements)
+    graph = assembler.make_model(graph_type='multi_graph')
+
+    # Check direction for each statement
+    print("\nTesting statement directions vs graph edges:")
+    print("-" * 50)
+    for i, stmt in enumerate(statements):
+        stmt_type = stmt.__class__.__name__
+        if stmt_type == 'Complex':
+            agents = [a.name for a in stmt.agent_list() if a]
+            print(f"{i}. {stmt_type}({', '.join(agents)}) - Complex is undirected")
+            continue
+
+        subject = stmt.agent_list()[0].name if stmt.agent_list()[0] else "None"
+        obj = stmt.agent_list()[1].name if stmt.agent_list()[1] else "None"
+        print(f"{i}. {stmt_type}({subject}, {obj}) - Correct direction: {subject} -> {obj}")
+
+        # Find matching edges in graph
+        found_correct = False
+        found_reverse = False
+        for source, target, key, data in graph.edges(data=True, keys=True):
+            if (source == subject and target == obj):
+                found_correct = True
+                edge_type = data.get('stmt_type', 'Unknown')
+                print(f"   MATCH: Graph has edge {source} -> {target} with type {edge_type}")
+            elif (source == obj and target == subject):
+                found_reverse = True
+                edge_type = data.get('stmt_type', 'Unknown')
+                print(f"   REVERSED: Graph has edge {target} <- {source} with type {edge_type}")
+
+        if not (found_correct or found_reverse):
+            print(f"   NO MATCH: No corresponding edge found in graph")
+
+    # Print all edges in the graph for inspection
+    print("\nAll edges in graph:")
+    print("-" * 50)
+    for source, target, key, data in graph.edges(data=True, keys=True):
+        edge_type = data.get('stmt_type', 'Unknown')
+        print(f"Edge: {source} -> {target}, Type: {edge_type}, Key: {key}")
+
+    # Print all statements for reference
+    print("\nOriginal statements:")
+    print("-" * 50)
+    for i, stmt in enumerate(statements):
+        print(f"{i}. {stmt}")
+
+
+@pytest.mark.nonpublic
+def test_indranet_assembler_with_real_examples():
+    """Test how IndraNetAssembler handles directions for real-world examples."""
+    from indra.statements import Activation, Inhibition, Agent, Complex, Phosphorylation, Dephosphorylation
+    from indra.assemblers.indranet import IndraNetAssembler
+
+    # Create agents
+    ras = Agent('RAS')
+    erk = Agent('ERK')
+    raf1 = Agent('RAF1')
+    rapgef2 = Agent('RAPGEF2')
+    ncam1 = Agent('NCAM1')
+    rap1 = Agent('RAP1')
+    syn1 = Agent('SYN1')
+    braf = Agent('BRAF')
+    pi3k = Agent('PI3K')
+    terf2ip = Agent('TERF2IP')
+    lipid = Agent('Non-specific lipid-transfer protein')
+    nf1 = Agent('NF1')
+
+    # Create statements matching the real examples
+    statements = [
+        Activation(ras, erk),  # RAS activates ERK
+        Activation(ras, raf1),  # RAS activates RAF1
+        Activation(rapgef2, ras),  # RAPGEF2 activates RAS
+        Complex([ncam1, ras]),  # NCAM1 binds RAS
+        Activation(rap1, erk),  # RAP1 activates ERK
+        Phosphorylation(erk, syn1),  # ERK phosphorylates SYN1
+        Activation(rap1, braf),  # RAP1 activates BRAF
+        Activation(ras, pi3k),  # RAS activates PI3K
+        Inhibition(terf2ip, lipid),  # TERF2IP inhibits lipid-transfer protein
+        Inhibition(nf1, ras)  # NF1 inhibits RAS
+    ]
+
+    # Create network using IndraNetAssembler
+    for graph_type in ['multi_graph', 'digraph', 'signed']:
+        print(f"\nTesting with graph_type='{graph_type}':")
+        assembler = IndraNetAssembler(statements)
+        graph = assembler.make_model(graph_type=graph_type)
+
+    # Check direction for each statement
+    print("\nTesting real-world statement directions vs graph edges:")
+    print("-" * 60)
+
+    problems_found = []
+
+    for i, stmt in enumerate(statements):
+        stmt_type = stmt.__class__.__name__
+        if stmt_type == 'Complex':
+            agents = [a.name for a in stmt.agent_list() if a]
+            print(f"{i}. {stmt_type}({', '.join(agents)}) - Complex is undirected")
+            continue
+
+        subject = stmt.agent_list()[0].name if stmt.agent_list()[0] else "None"
+        obj = stmt.agent_list()[1].name if stmt.agent_list()[1] else "None"
+        print(f"{i}. {stmt_type}({subject}, {obj}) - Correct direction: {subject} -> {obj}")
+
+        # Find matching edges in graph
+        found_correct = False
+        found_reverse = False
+        for source, target, key, data in graph.edges(data=True, keys=True):
+            if (source == subject and target == obj):
+                found_correct = True
+                edge_type = data.get('stmt_type', 'Unknown')
+                print(f"   CORRECT: Graph has edge {source} -> {target} with type {edge_type}")
+            elif (source == obj and target == subject):
+                found_reverse = True
+                edge_type = data.get('stmt_type', 'Unknown')
+                print(f"   REVERSED: Graph has edge {target} <- {source} with type {edge_type}")
+                problems_found.append((stmt, source, target))
+
+        if not (found_correct or found_reverse):
+            print(f"   NO MATCH: No corresponding edge found in graph")
+
+    print("\nSummary of direction problems:")
+    print("-" * 60)
+    if problems_found:
+        print(f"Found {len(problems_found)} statements with reversed directions:")
+        for stmt, source, target in problems_found:
+            print(f"- {stmt} is shown as {target} -> {source} in the graph")
+    else:
+        print("No direction problems found in this test set.")
+
+    print("\nAll edges in graph:")
+    print("-" * 60)
+    for source, target, key, data in graph.edges(data=True, keys=True):
+        edge_type = data.get('stmt_type', 'Unknown')
+        print(f"Edge: {source} -> {target}, Type: {edge_type}, Key: {key}")
