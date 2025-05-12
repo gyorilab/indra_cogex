@@ -1,5 +1,4 @@
-from indra_cogex.sources.clinicaltrials import ClinicaltrialsProcessor, \
-    get_correct_mesh_id
+from indra_cogex.sources.clinicaltrials import ClinicaltrialsProcessor
 import os
 
 
@@ -36,9 +35,3 @@ def test_get_relations():
         assert relation.target_ns == "CLINICALTRIALS"
         assert relation.target_id
         assert relation.rel_type == "has_trial" or relation.rel_type == "tested_in"
-
-
-def test_get_correct_mesh_id():
-    assert get_correct_mesh_id('D013274') == 'D013274'
-    assert get_correct_mesh_id('D000013274') == 'D013274'
-    assert get_correct_mesh_id('C000603933', 'Osimertinib') == 'C000596361'
