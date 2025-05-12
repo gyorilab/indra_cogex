@@ -1,15 +1,10 @@
 """This module implements input for ClinicalTrials.gov data."""
 
 import logging
-from collections import Counter
-from pathlib import Path
-from typing import Union
 
-import gilda
 import pandas as pd
 import tqdm
 
-from indra.databases import mesh_client
 from indra.ontology.bio import bio_ontology
 from indra_cogex.client import process_identifier
 from indra_cogex.sources.processor import Processor
