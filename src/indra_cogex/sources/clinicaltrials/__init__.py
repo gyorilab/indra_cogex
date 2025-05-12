@@ -44,23 +44,6 @@ class ClinicaltrialsProcessor(Processor):
         }
         self.bioentities_df = process_trialsynth_bioentity_nodes(self.mesh_chebi_map)
 
-    def ground_condition(self, condition):
-        matches = gilda.ground(condition)
-        matches = [
-            match
-            for match in matches
-            if match.term.db in {"MESH", "DOID", "EFO", "HP", "GO"}
-        ]
-        if matches:
-            return matches[0].term
-        return None
-
-    def ground_drug(self, drug):
-        matches = gilda.ground(drug)
-        if matches:
-            return matches[0].term
-        return None
-
     def get_nodes(self):
         yielded_nodes = set()
         for ix, row in tqdm.tqdm(
@@ -137,68 +120,6 @@ class ClinicaltrialsProcessor(Processor):
                 rel_type=rel_type,
             )
             added.add((bioentity, nctid_curie, rel_type))
-
-
-def get_correct_mesh_id(mesh_id, mesh_term=None):
-    # A proxy for checking whether something is a valid MeSH term is
-    # to look up its name
-    name = mesh_client.get_mesh_name(mesh_id, offline=True)
-    if name:
-        return mesh_id
-    # A common issue is with zero padding, where 9 digits are used
-    # instead of the correct 6, and we can remove the extra zeros
-    # to get a valid ID
-    else:
-        short_id = mesh_id[0] + mesh_id[4:]
-        name = mesh_client.get_mesh_name(short_id, offline=True)
-        if name:
-            return short_id
-    # Another pattern is one where the MeSH ID is simply invalid but the
-    # corresponding MeSH term allows us to get a valid ID via reverse
-    # ID lookup - done here as grounding just to not have to assume
-    # perfect / up to date naming conventions in the source data.
-    if mesh_term:
-        matches = gilda.ground(mesh_term, namespaces=["MESH"])
-        if len(matches) == 1:
-            for k, v in matches[0].get_groundings():
-                if k == "MESH":
-                    return v
-    return None
-
-
-def _get_phase(phase_string: str) -> int:
-    if pd.notna(phase_string) and phase_string[-1].isdigit():
-        return int(phase_string[-1])
-    return -1
-
-
-def process_df(df: pd.DataFrame):
-    """Clean up values in DataFrame"""
-    # Create start year column from StartDate
-    df["start_year"] = (
-        df["StartDate"]
-        .map(lambda s: None if pd.isna(s) else int(s[-4:]))
-        .astype("Int64")
-    )
-
-    # randomized, Non-Randomized
-    df["randomized"] = df["DesignAllocation"].map(
-        lambda s: "true" if pd.notna(s) and s == "Randomized" else "false"
-    )
-
-    # Indicate if the start_year is anticipated or not
-    df["start_year_anticipated"] = df["StartDateType"].map(
-        lambda s: "true" if pd.notna(s) and s == "Anticipated" else "false"
-    )
-
-    # Map the phase info for trial to integer (-1 for unknown)
-    df["Phase"] = df["Phase"].apply(_get_phase)
-
-    # Create a Neo4j compatible list of references
-    df["ReferencePMID"] = df["ReferencePMID"].map(
-        lambda s: ";".join(f"PUBMED:{pubmed_id}" for pubmed_id in s.split("|")),
-        na_action="ignore",
-    )
 
 
 def or_na(x):
