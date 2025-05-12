@@ -78,6 +78,9 @@ RUN python -m indra_cogex.client.enrichment.utils --force
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --cache
 
+# Run the gilda resource file download so it doesn't happen at runtime
+RUN python -m gilda.resources
+
 ENV GUNICORN_CONF /usr/local/lib/python3.8/dist-packages/indra_cogex/apps/gunicorn.conf.py
 
 ENTRYPOINT gunicorn -w 4 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
