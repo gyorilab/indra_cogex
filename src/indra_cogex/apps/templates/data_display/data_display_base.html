@@ -284,39 +284,11 @@
 
         // Determine which API to use based on prefix
         let fetchUrl = '/api/get_network';
-        let payload;
+        let payload = {
+        include_db_evidence: includeDbEvidence
+        };
 
-        if (prefix === 'go') {
-            payload = {
-                network_type: 'go',
-                identifier: identifier,
-                include_db_evidence: includeDbEvidence,
-                limit: 25
-            };
-            console.log("Using GO term with unified endpoint:", payload);
-        }
-        else if (prefix === 'subnetwork') {
-            const nodes = identifier.split(',').map(item => {
-                const [ns, id] = item.split(':');
-                return [ns, id];
-            });
-            payload = {
-                network_type: 'subnetwork',
-                identifier: nodes,
-                include_db_evidence: includeDbEvidence,
-                limit: 25
-            };
-            console.log("Using subnetwork with unified endpoint:", payload);
-        }
-        else {
-            payload = {
-                network_type: 'paper',
-                identifier: [prefix, identifier],
-                include_db_evidence: includeDbEvidence,
-                limit: 25
-            };
-            console.log("Using paper with unified endpoint:", payload);
-        }
+        console.log("Using session-based approach with payload:", payload);
 
         // Call the API to get network data
         fetch(fetchUrl, {
