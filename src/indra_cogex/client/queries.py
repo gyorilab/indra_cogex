@@ -7,6 +7,7 @@ from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
 
 import networkx as nx
+from flask import session
 
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.statements import Agent, Evidence, Statement
@@ -3306,28 +3307,16 @@ def is_cell_line_sensitive_to_drug(
 
 @autoclient()
 def get_network(
-    network_type: str,
-    identifier: Any,
     include_db_evidence: bool = True,
-    limit: int = None,
     *,
     client: Neo4jClient,
 ) -> Dict:
-    """Generate network visualization data for INDRA statements based on different sources.
+    """Generate network visualization data from INDRA statements.
 
     Parameters
     ----------
-    network_type : str
-        The type of network to generate. Options: 'paper', 'go', 'subnetwork'
-    identifier : Any
-        The identifier for the network:
-        - For 'paper': Tuple[str, str] of (prefix, id) where prefix is one of: 'pubmed', 'pmid', 'doi', 'pmc'
-        - For 'go': str with GO term ID (e.g., "GO:0006915")
-        - For 'subnetwork': List[Tuple[str, str]] of node identifiers as (namespace, id) tuples
     include_db_evidence : bool, default=True
-        Whether to include statements with database evidence.
-    limit : int, default=None
-        Maximum number of statements to include in the network.
+        Whether to include database evidence information.
     client : Neo4jClient
         The Neo4j client.
 
@@ -3337,59 +3326,25 @@ def get_network(
         A dictionary containing nodes and edges in vis.js format for network visualization.
     """
     try:
-        # Get statements based on network type
-        stmts = []
-        if network_type == 'paper':
-            prefix, paper_id = identifier
-            # Map known prefixes to their correct form
-            if prefix.lower() == 'pmid':
-                prefix = 'pubmed'
+        # Get statement hashes from session
+        statement_hashes = session.get('statement_hashes')
+        if not statement_hashes:
+            return {"nodes": [], "edges": [], "error": "No statement hashes found in session"}
 
-            all_stmts = get_stmts_for_paper(
-                (prefix, paper_id),
-                client=client,
-                include_db_evidence=include_db_evidence
-            )
+        # Retrieve statements without unpacking
+        result = get_stmts_for_stmt_hashes(
+            statement_hashes,
+            include_db_evidence=include_db_evidence,
+            client=client,
+            return_evidence_counts=False
+        )
+        statements = result
 
-            # Create evidence counts dictionary
-            evidence_counts = {}
-            for stmt in all_stmts:
-                evidence_counts[stmt.get_hash()] = len(stmt.evidence)
-
-            # Sort statements by evidence count (highest first)
-            stmts = sorted(all_stmts, key=lambda s: evidence_counts[s.get_hash()], reverse=True)
-
-        elif network_type == 'go':
-            from indra_cogex.client.subnetwork import indra_subnetwork_go
-            stmts = indra_subnetwork_go(
-                go_term=("GO", identifier),
-                client=client,
-                include_db_evidence=include_db_evidence,
-                order_by_ev_count=True,
-                return_source_counts=False,
-            )
-        elif network_type == 'subnetwork':
-            from indra_cogex.client.subnetwork import indra_subnetwork
-            stmts = indra_subnetwork(
-                nodes=identifier,
-                client=client,
-                include_db_evidence=include_db_evidence,
-                order_by_ev_count=True,
-                return_source_counts=False,
-            )
-        else:
-            return {"nodes": [], "edges": [], "error": f"Unknown network type: {network_type}"}
-
-        # If no statements found, return empty network
-        if not stmts:
+        if not statements:
             return {"nodes": [], "edges": []}
 
-        # Apply limit
-        if limit is not None:
-            stmts = stmts[:limit]
-
         # Create network using IndraNetAssembler
-        assembler = IndraNetAssembler(stmts)
+        assembler = IndraNetAssembler(statements)
         graph = assembler.make_model(graph_type='multi_graph')
 
         # Find most connected node
@@ -3398,7 +3353,7 @@ def get_network(
 
         # Create a mapping of db_refs for all entities
         entity_db_refs = {}
-        for stmt in stmts:
+        for stmt in statements:
             for agent in stmt.agent_list():
                 if agent is not None and hasattr(agent, 'db_refs'):
                     entity_db_refs[agent.name] = agent.db_refs
@@ -3482,7 +3437,7 @@ def get_network(
 
         # Create a mapping of statement type by node pairs
         stmt_direction_map = {}
-        for stmt in stmts:
+        for stmt in statements:
             # Get the statement class name (Activation, Inhibition, etc.)
             stmt_class = stmt.__class__.__name__
 
@@ -3501,23 +3456,22 @@ def get_network(
         edge_count = 0
 
         # Track processed edge pairs to avoid duplicates
-        processed_edge_pairs = set()
+        processed_edge_triplets = set()
 
         for source, target, key, data in graph.edges(data=True, keys=True):
             # Skip if we've already processed an edge between these nodes
-            edge_pair = (source, target)
-            if edge_pair in processed_edge_pairs:
+            stmt_type = data.get('stmt_type', 'Interaction')
+            edge_triplet = (source, target, stmt_type)
+            if edge_triplet in processed_edge_triplets:
                 continue
-
-            # Add to processed set
-            processed_edge_pairs.add(edge_pair)
+            processed_edge_triplets.add(edge_triplet)
 
             # Get statement type from edge data
             stmt_type = data.get('stmt_type', 'Interaction')
 
             # Find the corresponding statement
             edge_stmt = next(
-                (s for s in stmts if {a.name for a in s.agent_list() if a} == {source, target}),
+                (s for s in statements if {a.name for a in s.agent_list() if a} == {source, target}),
                 None
             )
 
