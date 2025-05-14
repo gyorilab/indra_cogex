@@ -1,8 +1,8 @@
 import json
-from typing import List, Optional, Mapping, Tuple
+from typing import List, Optional, Mapping, Tuple, Dict
 import logging
 
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from indra.statements import get_all_descendants, Statement, Phosphorylation, IncreaseAmount, DecreaseAmount
@@ -322,6 +322,255 @@ def get_ora_statements(
     return stmts, evidence_counts
 
 
+@autoclient()
+def get_network_for_statements(
+    include_db_evidence: bool = True,
+    *,
+    client: Neo4jClient,
+) -> Dict:
+    """Generate network visualization data for ORA statements from session data.
+
+    Parameters
+    ----------
+    include_db_evidence
+    client : Neo4jClient
+        The Neo4j client.
+
+    Returns
+    -------
+    Dict
+        A dictionary containing nodes and edges in vis.js format for network visualization.
+    """
+    try:
+        # Get statement hashes and parameters from session
+        statement_hashes = session.get('ora_statement_hashes')
+        params = session.get('ora_params', {})
+
+        if not statement_hashes or not params:
+            return {"nodes": [], "edges": [], "error": "No ORA statement data found in session"}
+
+        # Extract parameters from session
+        target_id = params.get('target_id')
+        genes = params.get('genes', [])
+        minimum_belief = params.get('minimum_belief', 0.0)
+        minimum_evidence = params.get('minimum_evidence', 2)
+        is_downstream = params.get('is_downstream', False)
+        regulator_type = params.get('regulator_type')
+        evidence_counts = params.get('evidence_counts', {})
+
+        # Retrieve statements by hash
+        statements = get_stmts_for_stmt_hashes(
+            statement_hashes,
+            client=client,
+            return_evidence_counts=False
+        )
+
+        if not statements:
+            return {"nodes": [], "edges": []}
+
+        logger.debug(f"Network visualization - Retrieved {len(statements)} statements from session")
+
+        # Initialize nodes and edges collections
+        nodes, edges = [], []
+        node_ids = set()
+
+        # Normalize target_id format
+        if isinstance(target_id, list):
+            namespace, id_part = target_id
+            target_id_str = f"{namespace}:{id_part}"
+        else:
+            target_id_str = target_id
+            namespace = target_id_str.split(':')[0].lower()
+            id_part = target_id_str.split(':')[1]
+
+        # Collect all genes that appear in the statements
+        statement_entities = set()
+        entity_info_dict = {}
+
+        # Define color and shape maps for different entity types
+        color_map = {
+            "go": "#2196F3",  # Blue
+            "mesh": "#9C27B0",  # Purple
+            "wikipathways": "#FF9800",  # Orange
+            "reactome": "#FF9800",  # Orange
+            "hgnc": "#4CAF50",  # Green - for genes
+            "default": "#607D8B"  # Gray - for other entities
+        }
+
+        shape_map = {
+            "go": "hexagon",
+            "mesh": "triangle",
+            "wikipathways": "diamond",
+            "reactome": "diamond",
+            "hgnc": "box",  # Box for genes
+            "default": "ellipse"  # Default shape
+        }
+
+        # Process all statements to extract connected genes
+        for stmt in statements:
+            for agent in stmt.agent_list():
+                if agent and hasattr(agent, 'name'):
+                    # Get ID in our standard format
+                    entity_id = None
+                    entity_type = "default"
+
+                    # Handle gene entities
+                    if 'HGNC' in agent.db_refs:
+                        hgnc_id = f"HGNC:{agent.db_refs['HGNC']}"
+                        # Check if this gene is in our input list
+                        for gene in genes:
+                            gene_id = gene if isinstance(gene, str) else f"{gene[0]}:{gene[1]}"
+                            if gene_id.upper() == hgnc_id.upper():
+                                entity_id = hgnc_id
+                                entity_type = "hgnc"
+                                break
+
+                    if entity_id:
+                        statement_entities.add(entity_id)
+                        entity_info_dict[entity_id] = {
+                            'name': agent.name,
+                            'db_refs': getattr(agent, 'db_refs', {}),
+                            'type': entity_type
+                        }
+
+        # Get target node name/symbol if available
+        target_name = id_part
+        if namespace.lower() == 'hgnc':
+            try:
+                # Try to get the gene symbol from the database
+                query = """
+                MATCH (n:BioEntity {id: $target_id})
+                RETURN n.name
+                """
+                result = client.query_tx(query, target_id=target_id_str.lower())
+                if result and result[0][0]:
+                    target_name = result[0][0]
+            except Exception as e:
+                logger.warning(f"Could not get target name: {e}")
+
+        # Always add the target node
+        target_node = {
+            'id': target_id_str,
+            'label': target_name,
+            'title': target_id_str,
+            'color': {'background': color_map.get(namespace.lower(), color_map['default']),
+                      'border': '#37474F'},
+            'shape': shape_map.get(namespace.lower(), shape_map['default']),
+            'size': 45,
+            'font': {'size': 26, 'color': '#000000', 'face': 'arial', 'strokeWidth': 0, 'vadjust': -40},
+            'borderWidth': 3,
+            'type': namespace.lower()
+        }
+        nodes.append(target_node)
+        node_ids.add(target_id_str)
+
+        # Add genes that appear in the statements (not showing all input genes)
+        for entity_id in statement_entities:
+            if entity_id not in node_ids:
+                entity_info = entity_info_dict.get(entity_id, {})
+                entity_ns = entity_id.split(':')[0].lower()
+                entity_label = entity_info.get('name', entity_id.split(':')[-1])
+                db_refs = entity_info.get('db_refs', {})
+                entity_type = entity_info.get('type', entity_ns)
+
+                node = {
+                    'id': entity_id,
+                    'label': entity_label,
+                    'title': entity_id,
+                    'color': {'background': color_map.get(entity_type, color_map['default']),
+                              'border': '#37474F'},
+                    'shape': shape_map.get(entity_type, shape_map['default']),
+                    'size': 35,
+                    'font': {'size': 22, 'color': '#000000', 'face': 'arial', 'strokeWidth': 0, 'vadjust': -40},
+                    'borderWidth': 2,
+                    'type': entity_type,
+                    'details': db_refs
+                }
+
+                # Add specific identifiers for genes
+                if entity_type == 'hgnc':
+                    node['egid'] = db_refs.get('EGID', '')
+                    node['hgnc'] = db_refs.get('HGNC', '')
+                    node['uniprot'] = db_refs.get('UP', '')
+
+                nodes.append(node)
+                node_ids.add(entity_id)
+
+        # Define edge styles for different statement types
+        edge_styles = {
+            "Activation": {"color": "#00CC00", "dashes": False},
+            "Inhibition": {"color": "#FF0000", "dashes": False},
+            "Phosphorylation": {"color": "#000000", "dashes": False},
+            "Complex": {"color": "#0000FF", "dashes": False,
+                        "arrows": {"to": {"enabled": False}, "from": {"enabled": False}}},
+            "IncreaseAmount": {"color": "#00CC00", "dashes": [5, 5]},
+            "DecreaseAmount": {"color": "#FF0000", "dashes": [5, 5]}
+        }
+
+        # Create edges for statements
+        for edge_count, stmt in enumerate(statements):
+            agents = stmt.agent_list()
+            if len(agents) < 2 or None in agents:
+                continue
+
+            stmt_type = stmt.__class__.__name__
+            style = edge_styles.get(stmt_type, {"color": "#999999", "dashes": False})
+            arrows = style.get('arrows', {"to": {"enabled": True, "scaleFactor": 0.5}})
+
+            # Find the gene agent in the statement
+            gene_agent = None
+            for agent in agents:
+                if not agent or not hasattr(agent, 'db_refs'):
+                    continue
+
+                if 'HGNC' in agent.db_refs:
+                    hgnc_id = f"HGNC:{agent.db_refs['HGNC']}"
+                    # Check if this gene is in our input list
+                    for gene in genes:
+                        gene_id = gene if isinstance(gene, str) else f"{gene[0]}:{gene[1]}"
+                        if gene_id.upper() == hgnc_id.upper():
+                            gene_agent = agent
+                            break
+                    if gene_agent:
+                        break
+
+            if not gene_agent:
+                continue
+
+            # Set source and target based on direction
+            source = f"HGNC:{gene_agent.db_refs['HGNC']}" if is_downstream else target_id_str
+            target = target_id_str if is_downstream else f"HGNC:{gene_agent.db_refs['HGNC']}"
+
+            # Only add the edge if both source and target nodes exist
+            if source in node_ids and target in node_ids:
+                # Create edge
+                edges.append({
+                    'id': f"e{edge_count}",
+                    'from': source,
+                    'to': target,
+                    'title': f"{stmt_type}: {stmt}",
+                    'color': {'color': style['color'], 'highlight': style['color'], 'hover': style['color']},
+                    'dashes': style['dashes'],
+                    'arrows': arrows,
+                    'width': min(5, 1 + evidence_counts.get(str(stmt.get_hash()), 0) / 5),
+                    'details': {
+                        'statement_type': stmt_type,
+                        'belief': getattr(stmt, 'belief', 0.5),
+                        'evidence_count': evidence_counts.get(str(stmt.get_hash()), 0),
+                        'indra_statement': str(stmt)
+                    },
+                    'label': ''
+                })
+
+        logger.debug(f"Network data - nodes: {len(nodes)}, edges: {len(edges)}")
+
+        # Return the network visualization data
+        return {'nodes': nodes, 'edges': edges}
+    except Exception as e:
+        logger.error(f"Error in get_network_for_statements: {str(e)}", exc_info=True)
+        return {"nodes": [], "edges": [], "error": str(e)}
+
+
 @search_blueprint.route("/ora_statements/", methods=['GET'])
 @jwt_required(optional=True)
 def search_ora_statements():
@@ -388,10 +637,27 @@ def search_ora_statements():
         if filtered_statements:
             logger.debug(f"First filtered statement: {str(filtered_statements[0])}")
 
+        # Store parameters and statement hashes in session for network visualization
+        if filtered_statements:
+            # Store statement hashes
+            session['ora_statement_hashes'] = [stmt.get_hash() for stmt in filtered_statements]
+
+            # Store other parameters needed for the network
+            session['ora_params'] = {
+                'target_id': target_id,
+                'genes': genes,
+                'minimum_belief': minimum_belief,
+                'minimum_evidence': minimum_evidence,
+                'is_downstream': is_downstream,
+                'regulator_type': regulator_type,
+                'evidence_counts': filtered_evidence_counts
+                }
+
         # Render the statements
         return render_statements(
             stmts=filtered_statements,
-            evidence_count=filtered_evidence_counts
+            evidence_count=filtered_evidence_counts,
+            store_hashes_in_session=True
         )
 
     except Exception as e:
