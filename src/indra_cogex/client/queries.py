@@ -3331,93 +3331,63 @@ def get_network(
         if not statement_hashes:
             return {"nodes": [], "edges": [], "error": "No statement hashes found in session"}
 
-        # Retrieve statements without unpacking
-        result = get_stmts_for_stmt_hashes(
+        # Retrieve statements
+        statements = get_stmts_for_stmt_hashes(
             statement_hashes,
             include_db_evidence=include_db_evidence,
             client=client,
             return_evidence_counts=False
         )
-        statements = result
 
         if not statements:
             return {"nodes": [], "edges": []}
 
-        # Create network using IndraNetAssembler
+        # Create network using IndraNetAssembler with direction-preserving method
         assembler = IndraNetAssembler(statements)
-        graph = assembler.make_model(graph_type='multi_graph')
+        graph = assembler.make_model(method='df', graph_type='multi_graph')
 
         # Find most connected node
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
-        # Create a mapping of db_refs for all entities
+        # Map db_refs
         entity_db_refs = {}
         for stmt in statements:
             for agent in stmt.agent_list():
-                if agent is not None and hasattr(agent, 'db_refs'):
+                if agent and hasattr(agent, 'db_refs'):
                     entity_db_refs[agent.name] = agent.db_refs
 
         # Process nodes
         nodes = []
         for node_id in graph.nodes():
-            # Default node properties
-            node_type = "Other"
-            color = "#607D8B"  # default gray-blue
-            shape = "ellipse"  # default shape
-
-            # Try to get more detailed type information
             db_refs = entity_db_refs.get(node_id, {})
+            node_type = next(iter(db_refs.keys()), "Other") if db_refs else "Other"
+            color, shape = "#607D8B", "ellipse"
 
-            # Comprehensive categorization of entity types
             if 'HGNC' in db_refs or 'FPLX' in db_refs:
-                # Genes or gene families
                 node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
-                color = "#4CAF50"  # green for genes/proteins/families
-                shape = "box"
+                color, shape = "#4CAF50", "box"
             elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
-                # Chemical entities
                 node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
-                color = "#FF9800"  # orange for chemicals
-                shape = "diamond"
+                color, shape = "#FF9800", "diamond"
             elif 'GO' in db_refs:
-                node_type = "GO"
-                color = "#2196F3"  # blue for GO terms
-                shape = "hexagon"
+                node_type, color, shape = "GO", "#2196F3", "hexagon"
             elif 'MESH' in db_refs:
-                node_type = "MESH"
-                color = "#9C27B0"  # purple for MESH terms
-                shape = "triangle"
+                node_type, color, shape = "MESH", "#9C27B0", "triangle"
             elif 'UP' in db_refs:
-                # UniProt IDs - also proteins
-                node_type = "UP"
-                color = "#4CAF50"  # same green as genes
-                shape = "box"
+                node_type, color, shape = "UP", "#4CAF50", "box"
             elif db_refs:
-                # If there's any db_ref, use the first one
-                node_type = next(iter(db_refs.keys()), "Other")
-                # For any other database types, use a unique color
-                if node_type != "Other":
-                    color = "#009688"  # teal for other known types
+                color = "#009688"
 
-            # Make central node more prominent
-            if node_id == central_node:
-                size = 45
-                font_size = 26
-                border_width = 3
-            else:
-                size = 35
-                font_size = 22
-                border_width = 2
+            size = 45 if node_id == central_node else 35
+            font_size = 26 if node_id == central_node else 22
+            border_width = 3 if node_id == central_node else 2
 
             nodes.append({
                 'id': str(node_id),
                 'label': str(node_id),
                 'title': f"{node_id} ({node_type})",
-                'color': {
-                    'background': color,
-                    'border': '#37474F'
-                },
+                'color': {'background': color, 'border': '#37474F'},
                 'shape': shape,
                 'size': size,
                 'font': {
@@ -3431,117 +3401,66 @@ def get_network(
                 'details': db_refs,
                 'egid': db_refs.get('EGID', ''),
                 'hgnc': db_refs.get('HGNC', ''),
-                'type': node_type.lower() if node_type else 'protein',
+                'type': node_type.lower(),
                 'uniprot': db_refs.get('UP', '')
             })
 
-        # Create a mapping of statement type by node pairs
-        stmt_direction_map = {}
-        for stmt in statements:
-            # Get the statement class name (Activation, Inhibition, etc.)
-            stmt_class = stmt.__class__.__name__
-
-            # Skip statements that don't have clear directionality
-            if stmt_class in ['Complex', 'Association']:
-                continue
-
-            # Get ordered agents from the statement
-            agents = stmt.agent_list()
-            if len(agents) >= 2 and agents[0] is not None and agents[1] is not None:
-                key = (agents[0].name, agents[1].name)
-                stmt_direction_map[key] = stmt_class
-
-        # Process edges
+        # Process edges: only one edge per (source, target, stmt_type)
         edges = []
         edge_count = 0
-
-        # Track processed edge pairs to avoid duplicates
-        processed_edge_triplets = set()
+        seen_triplets = set()
 
         for source, target, key, data in graph.edges(data=True, keys=True):
-            # Skip if we've already processed an edge between these nodes
             stmt_type = data.get('stmt_type', 'Interaction')
-            edge_triplet = (source, target, stmt_type)
-            if edge_triplet in processed_edge_triplets:
+            edge_key = (source, target, stmt_type)
+
+            if edge_key in seen_triplets:
                 continue
-            processed_edge_triplets.add(edge_triplet)
+            seen_triplets.add(edge_key)
 
-            # Get statement type from edge data
             stmt_type = data.get('stmt_type', 'Interaction')
-
-            # Find the corresponding statement
             edge_stmt = next(
-                (s for s in statements if {a.name for a in s.agent_list() if a} == {source, target}),
+                (
+                    s for s in statements
+                    if len(s.agent_list()) >= 2 and
+                       s.agent_list()[0] and s.agent_list()[1] and
+                       s.agent_list()[0].name == source and
+                       s.agent_list()[1].name == target and
+                       s.__class__.__name__ == stmt_type
+                ),
                 None
             )
-
-            # Check if direction needs to be corrected
-            needs_direction_fix = False
-
-            # Method 1: Use our pre-built direction map
-            if (target, source) in stmt_direction_map:
-                # The statement direction is opposite to the graph edge
-                needs_direction_fix = True
-
-            # Method 2: Parse the statement string as backup
-            if not needs_direction_fix and edge_stmt and hasattr(edge_stmt, '__str__'):
-                try:
-                    stmt_str = str(edge_stmt)
-                    # Get first two parenthesized elements, which should be the agents
-                    import re
-                    parts = re.findall(r'\((.*?)\)', stmt_str)
-                    if len(parts) >= 2:
-                        first_agent = parts[0].strip()
-                        second_agent = parts[1].strip()
-
-                        # If the first agent is target and second is source, direction is wrong
-                        if first_agent == target and second_agent == source:
-                            needs_direction_fix = True
-                except Exception:
-                    pass
-
-            # Fix direction if needed
-            if needs_direction_fix:
-                source, target = target, source
-
-            # Get belief score
             belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
 
-            # Determine color and style based on statement type
             color, dashes = "#999999", False
             arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
             width = 4
 
             if 'Activation' in stmt_type:
-                color = '#00CC00'  # bright green
+                color = '#00CC00'
             elif 'Inhibition' in stmt_type:
-                color = '#FF0000'  # bright red
+                color = '#FF0000'
             elif 'Phosphorylation' in stmt_type:
-                color = '#000000'  # black
+                color = '#000000'
             elif 'Complex' in stmt_type:
-                color = '#0000FF'  # bright blue
-                arrows = {
-                    'to': {'enabled': False},
-                    'from': {'enabled': False}
-                }
+                color = '#0000FF'
+                arrows = {'to': {'enabled': False}, 'from': {'enabled': False}}
             elif 'IncreaseAmount' in stmt_type:
-                color = '#00CC00'  # bright green
-                dashes = [5, 5]  # dashed line
+                color = '#00CC00'
+                dashes = [5, 5]
             elif 'DecreaseAmount' in stmt_type:
-                color = '#FF0000'  # bright red
-                dashes = [5, 5]  # dashed line
+                color = '#FF0000'
+                dashes = [5, 5]
 
-            # Use actual statement type from the found statement if available
             actual_stmt_type = edge_stmt.__class__.__name__ if edge_stmt else stmt_type
 
-            # Collect edge details for tooltip/dialog
             edge_details = {
                 'statement_type': actual_stmt_type,
                 'belief': belief,
                 'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
                 'interaction': actual_stmt_type.lower(),
                 'polarity': 'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
-                'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
+                            'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
                 'support_type': 'database' if include_db_evidence else 'literature',
                 'type': actual_stmt_type
             }
@@ -3551,11 +3470,7 @@ def get_network(
                 'from': str(source),
                 'to': str(target),
                 'title': actual_stmt_type,
-                'color': {
-                    'color': color,
-                    'highlight': color,
-                    'hover': color
-                },
+                'color': {'color': color, 'highlight': color, 'hover': color},
                 'dashes': dashes,
                 'arrows': arrows,
                 'width': width,
@@ -3571,8 +3486,8 @@ def get_network(
     except Exception as e:
         import traceback
         traceback.print_exc()
-        # Return empty network on error
         return {"nodes": [], "edges": [], "error": str(e)}
+
 
 
 if __name__ == "__main__":
