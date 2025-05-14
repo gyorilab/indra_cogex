@@ -375,13 +375,15 @@ def get_network_for_statements(
         node_ids = set()
 
         # Normalize target_id format
-        if isinstance(target_id, list):
+        if isinstance(target_id, list) and len(target_id) == 2:
             namespace, id_part = target_id
             target_id_str = f"{namespace}:{id_part}"
-        else:
+        elif isinstance(target_id, str) and ':' in target_id:
             target_id_str = target_id
-            namespace = target_id_str.split(':')[0].lower()
-            id_part = target_id_str.split(':')[1]
+            namespace, id_part = target_id_str.split(':', 1)
+            namespace = namespace.lower()
+        else:
+            return {"nodes": [], "edges": [], "error": "Invalid or missing target_id in session parameters"}
 
         # Collect all genes that appear in the statements
         statement_entities = set()
