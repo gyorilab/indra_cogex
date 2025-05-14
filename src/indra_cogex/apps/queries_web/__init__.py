@@ -320,7 +320,7 @@ FUNCTION_CATEGORIES = {
             "continuous_analysis",
             "metabolite_discrete_analysis",
             "kinase_analysis",
-            "explain_downstream",
+            "source_target_analysis",
         ]
     },
     'subnetwork': {
@@ -403,12 +403,13 @@ examples_dict = {
     "cell_line": fields.List(fields.String, example=["CCLE", "HEL_HAEMATOPOIETIC_AND_LYMPHOID_TISSUE"]),
     "target": fields.List(fields.String, example=["HGNC", "6840"]),
     "targets": {
-        "explain_downstream": fields.List(fields.String, example=["TP53", "PARP1", "RAD51", "CHEK2"]),
+        "source_target_analysis": fields.List(fields.String, example=["TP53", "PARP1", "RAD51", "CHEK2"]),
         "default": fields.List(
             fields.List(fields.String),
             example=[["HGNC", "6840"], ["HGNC", "1097"]]
         )
     },
+    #"output_dir": fields.List(fields.String, example=None),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
@@ -448,7 +449,7 @@ examples_dict = {
     "species": fields.String(example="human"),
     "permutations": fields.Integer(example=100),
     "source": {
-        "explain_downstream": fields.String(example="BRCA1"),
+        "source_target_analysis": fields.String(example="BRCA1"),
         "default": fields.String(example="go")
     },
     "indra_path_analysis": fields.Boolean(example=False),
@@ -499,7 +500,7 @@ examples_dict = {
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix", "file_path"}
+               "subject_prefix", "object_prefix", "file_path", "curations", "output_dir"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
@@ -527,7 +528,7 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["explain_downstream"]]
+    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]]
 
 )
 
@@ -551,6 +552,12 @@ for module, func_name in module_functions:
         if func_name in info['functions']:
             target_ns = info['namespace']
             break
+
+    if target_ns is None:
+        raise ValueError(
+            f"Function '{func_name}' missing from api category mapping. Please add "
+            f"it to FUNCTION_CATEGORIES."
+        )
 
     short_doc, fixed_doc = get_docstring(
         func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
