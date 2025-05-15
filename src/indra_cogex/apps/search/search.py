@@ -320,7 +320,6 @@ def get_ora_statements(
 
 @autoclient()
 def get_network_for_statements(
-    include_db_evidence: bool = True,
     *,
     client: Neo4jClient,
 ) -> Dict:
@@ -328,7 +327,6 @@ def get_network_for_statements(
 
     Parameters
     ----------
-    include_db_evidence
     client : Neo4jClient
         The Neo4j client.
 
