@@ -96,7 +96,7 @@
             {% endif %}
 
             <!-- Include the network visualization partial template -->
-            {% if prefix in ['pubmed', 'pmc', 'doi', 'go', 'subnetwork'] %}
+            {% if prefix in ['pubmed', 'pmc', 'doi', 'go', 'subnetwork', 'statements'] %}
                 {% include 'data_display/_network_visualization.html' %}
             {% endif %}
 
