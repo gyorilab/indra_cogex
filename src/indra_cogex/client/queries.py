@@ -3460,7 +3460,7 @@ def get_network(
                 'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
                 'interaction': actual_stmt_type.lower(),
                 'polarity': 'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
-                            'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
+                'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
                 'support_type': 'database' if include_db_evidence else 'literature',
                 'type': actual_stmt_type
             }
@@ -3487,7 +3487,6 @@ def get_network(
         import traceback
         traceback.print_exc()
         return {"nodes": [], "edges": [], "error": str(e)}
-
 
 
 if __name__ == "__main__":
