@@ -1,10 +1,9 @@
-{% if prefix in ['pubmed', 'pmid', 'pmc', 'doi', 'go', 'subnetwork'] and stmts|length > 0 %}
+{% if prefix in ['pubmed', 'pmid', 'pmc', 'doi', 'go', 'subnetwork', 'statements'] and stmts|length > 0 %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
 <script>
 // Make sure dialog styles are available
 function injectDialogStyles() {
-    // Check if styles are already defined
     if (!document.querySelector('style[data-id="network-dialog-styles"]')) {
         const style = document.createElement('style');
         style.setAttribute('data-id', 'network-dialog-styles');
@@ -65,144 +64,129 @@ function injectDialogStyles() {
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Document loaded, initializing network visualization");
-
-    // Get the paper ID from the identifier variable
+    // Get the identifier information
     const prefix = '{{ prefix }}';
     const identifier = '{{ identifier }}';
 
     // Make sure dialog styles are available
     injectDialogStyles();
 
-    // Initialize network visualization
+    console.log("Document loaded. Prefix:", prefix, "Identifier:", identifier);
+
+    // Initialize network visualization for all types
     initializeNetwork(prefix, identifier);
 
     // Set up button event listeners
-    setupButtonListeners();
-
-    // Function to set up button event listeners
-    function setupButtonListeners() {
-        const toggleBtn = document.getElementById('toggle-network');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function() {
-                const container = document.getElementById('network-container');
-                if (container.style.display === 'none') {
-                    container.style.display = 'block';
-                    this.textContent = 'Hide Network';
-                } else {
-                    container.style.display = 'none';
-                    this.textContent = 'Show Network';
-                }
-            });
-        }
-
-        const resetBtn = document.getElementById('reset-network');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function() {
-                if (window.networkInstance) {
-                    window.networkInstance.fit({
-                        animation: {
-                            duration: 1000,
-                            easingFunction: 'easeInOutQuad'
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    // Function to initialize the network
-    function initializeNetwork(prefix, identifier) {
-        console.log("initializeNetwork called with:", prefix, identifier);
-
-        const container = document.getElementById('network-container');
-        if (!container) {
-            console.error("Network container not found!");
-            return;
-        }
-
-        // Show loading indicator
-        container.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;">' +
-                            '<div class="spinner-border text-primary" role="status"></div>' +
-                            '<span class="ml-2">Loading network...</span>' +
-                            '</div>';
-
-        // Get the current include_db_evidence value from Vue
-        const includeDbEvidence = app.include_db_evidence;
-        console.log("include_db_evidence:", includeDbEvidence);
-
-        // API endpoint and payload
-        let fetchUrl = '/api/get_network';
-        let payload = {
-            include_db_evidence: includeDbEvidence
-        };
-
-        console.log("Using session-based approach with payload:", payload);
-
-        // Call the API to get network data
-        fetch(fetchUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
-            console.log("API response status:", response.status);
-            if (!response.ok) {
-                throw new Error(`API returned status ${response.status}`);
+    const toggleBtn = document.getElementById('toggle-network');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const container = document.getElementById('network-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                this.textContent = 'Hide Network';
+            } else {
+                container.style.display = 'none';
+                this.textContent = 'Show Network';
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log("API data received:", data);
-
-            if (!data.nodes || data.nodes.length === 0) {
-                let noDataMessage = 'No network data available';
-                if (prefix === 'go') {
-                    noDataMessage += ' for this GO term.';
-                } else if (prefix === 'subnetwork') {
-                    noDataMessage += ' for this subnetwork.';
-                } else {
-                    noDataMessage += ' for this paper.';
-                }
-                container.innerHTML = `<div class="alert alert-info">${noDataMessage}</div>`;
-                return;
-            }
-
-            console.log("Creating network with nodes:", data.nodes.length, "edges:", data.edges.length);
-            createNetworkVisualization(container, data);
-        })
-        .catch(error => {
-            console.error('Error fetching network data:', error);
-            container.innerHTML = '<div class="alert alert-danger">Error loading network visualization. Please try again later.</div>';
         });
     }
 
-    // Function to create the network visualization
-    function createNetworkVisualization(container, data) {
-        // Create data sets
+    const resetBtn = document.getElementById('reset-network');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (window.networkInstance) {
+                window.networkInstance.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            }
+        });
+    }
+});
+
+// Unified function to initialize network for all types
+function initializeNetwork(prefix, identifier) {
+    console.log("initializeNetwork called with:", prefix, identifier);
+
+    const container = document.getElementById('network-container');
+    if (!container) {
+        console.error("Network container not found!");
+        return;
+    }
+
+    // Show loading indicator
+    container.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;">' +
+                         '<div class="spinner-border text-primary" role="status"></div>' +
+                         '<span class="ml-2">Loading network...</span>' +
+                         '</div>';
+
+    // Determine API endpoint based on prefix
+    let fetchUrl;
+    if (prefix === 'statements') {
+        fetchUrl = '/api/get_network_for_statements';
+    } else {
+        fetchUrl = '/api/get_network';
+    }
+
+    // Common simplified payload for all network types
+    const payload = {
+        include_db_evidence: app.include_db_evidence
+    };
+
+    console.log("Using session-based approach with payload:", payload);
+
+    // Call the API to get network data
+    fetch(fetchUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        console.log("API response status:", response.status);
+        if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("API data received:", data);
+
+        if (!data.nodes || data.nodes.length === 0) {
+            let noDataMessage = 'No network data available';
+            if (prefix === 'go') {
+                noDataMessage += ' for this GO term.';
+            } else if (prefix === 'subnetwork') {
+                noDataMessage += ' for this subnetwork.';
+            } else if (prefix === 'statements') {
+                noDataMessage += ' for these statements.';
+            } else {
+                noDataMessage += ' for this paper.';
+            }
+            container.innerHTML = `<div class="alert alert-info">${noDataMessage}</div>`;
+            return;
+        }
+
+        // Create the network
         const nodes = new vis.DataSet(data.nodes);
         const edges = new vis.DataSet(data.edges);
 
-        const networkData = {
-            nodes: nodes,
-            edges: edges
-        };
-
-        // Network options
+        // Configure network options based on prefix
         const options = {
             nodes: {
                 shape: 'ellipse',
-                size: 60,
                 font: {
                     color: '#000000',
-                    size: 26,
                     face: 'arial',
                     vadjust: -40,
-                    bold: true
+                    bold: prefix !== 'statements',
+                    size: prefix === 'statements' ? 16 : 26
                 },
-                borderWidth: 3,
+                size: prefix === 'statements' ? 30 : 60,
+                borderWidth: prefix === 'statements' ? 2 : 3,
                 shadow: true
             },
             edges: {
@@ -215,12 +199,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     color: '#333333',
                     strokeWidth: 0
                 },
-                width: 5,
+                width: prefix === 'statements' ? 2 : 5,
                 smooth: {
                     enabled: true,
                     type: 'dynamic'
                 },
-                shadow: true
+                shadow: prefix !== 'statements',
+                opacity: prefix === 'statements' ? 0.8 : 1.0
             },
             physics: {
                 enabled: true,
@@ -245,26 +230,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 hoverConnectedEdges: true
             },
             layout: {
-                improvedLayout: true,
+                improvedLayout: true
             }
         };
 
         // Initialize the network
-        const network = new vis.Network(container, networkData, options);
-
-        // Store network instance globally for access by reset button
+        const network = new vis.Network(container, {nodes, edges}, options);
         window.networkInstance = network;
-
-        // Force a more spread out layout
-        network.setOptions({
-            physics: {
-                enabled: true,
-                stabilization: {
-                    enabled: true,
-                    iterations: 2000
-                }
-            }
-        });
 
         // Start stabilization
         network.stabilize(2000);
@@ -286,25 +258,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle clicks on nodes or edges
         network.on("click", function(params) {
             try {
-                console.log("Click detected:", params);
-
                 // If a node was clicked
                 if (params.nodes && params.nodes.length > 0) {
-                    console.log("Node clicked:", params.nodes[0]);
                     showNodeDetails({
-                        nodeId: params.nodes[0]
+                        nodeId: params.nodes[0],
+                        isStatement: prefix === 'statements'
                     });
                 }
                 // If an edge was clicked
                 else if (params.edges && params.edges.length > 0) {
-                    console.log("Edge clicked:", params.edges[0]);
                     showEdgeDetails({
-                        edgeId: params.edges[0]
+                        edgeId: params.edges[0],
+                        isStatement: prefix === 'statements'
                     });
                 }
                 // If clicking elsewhere, close dialog
                 else if (detailsDialog) {
-                    // Check if click was outside dialog with optional chaining
+                    // Check if click was outside dialog
                     if (!params.event?.srcElement?.closest('.details-dialog')) {
                         document.body.removeChild(detailsDialog);
                         detailsDialog = null;
@@ -312,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (e) {
                 console.error("Click handler error:", e);
-                // Ensure dialog is cleaned up
+                // Clean up dialog if there was an error
                 if (detailsDialog) {
                     try {
                         document.body.removeChild(detailsDialog);
@@ -327,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Function to show node details dialog
         function showNodeDetails(params) {
             const nodeId = params.nodeId;
-            console.log("Showing details for node:", nodeId);
+            const isStatement = params.isStatement;
 
             // Remove any existing dialog
             if (detailsDialog) {
@@ -349,41 +319,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 <dl>
             `;
 
-            // Add EGID if available
-            if (nodeData.egid) {
+            if (isStatement) {
+                // Add ID
                 dialogContent += `
-                    <dt>EGID</dt>
-                    <dd><a href="https://identifiers.org/ncbigene:${nodeData.egid}" target="_blank">https://identifiers.org/ncbigene:${nodeData.egid}</a></dd>
+                    <dt>ID</dt>
+                    <dd>${nodeData.id || 'Unknown'}</dd>
                 `;
-            }
 
-            // Add HGNC if available
-            if (nodeData.hgnc) {
+                // Add type
                 dialogContent += `
-                    <dt>HGNC</dt>
-                    <dd><a href="https://identifiers.org/hgnc:${nodeData.hgnc}" target="_blank">https://identifiers.org/hgnc:${nodeData.hgnc}</a></dd>
+                    <dt>Type</dt>
+                    <dd>${nodeData.type || 'Unknown'}</dd>
                 `;
-            }
+            } else {
+                // Add EGID if available
+                if (nodeData.egid) {
+                    dialogContent += `
+                        <dt>EGID</dt>
+                        <dd><a href="https://identifiers.org/ncbigene:${nodeData.egid}" target="_blank">https://identifiers.org/ncbigene:${nodeData.egid}</a></dd>
+                    `;
+                }
 
-            // Add type
-            dialogContent += `
-                <dt>type</dt>
-                <dd>${nodeData.type || 'Unknown'}</dd>
-            `;
+                // Add HGNC if available
+                if (nodeData.hgnc) {
+                    dialogContent += `
+                        <dt>HGNC</dt>
+                        <dd><a href="https://identifiers.org/hgnc:${nodeData.hgnc}" target="_blank">https://identifiers.org/hgnc:${nodeData.hgnc}</a></dd>
+                    `;
+                }
 
-            // Add UniProt if available
-            if (nodeData.uniprot) {
+                // Add type
                 dialogContent += `
-                    <dt>UniProt</dt>
-                    <dd><a href="https://identifiers.org/uniprot:${nodeData.uniprot}" target="_blank">https://identifiers.org/uniprot:${nodeData.uniprot}</a></dd>
+                    <dt>type</dt>
+                    <dd>${nodeData.type || 'Unknown'}</dd>
                 `;
+
+                // Add UniProt if available
+                if (nodeData.uniprot) {
+                    dialogContent += `
+                        <dt>UniProt</dt>
+                        <dd><a href="https://identifiers.org/uniprot:${nodeData.uniprot}" target="_blank">https://identifiers.org/uniprot:${nodeData.uniprot}</a></dd>
+                    `;
+                }
             }
 
             // Add any other database references
             if (details) {
                 for (const [key, value] of Object.entries(details)) {
                     // Skip ones we've already added
-                    if (['EGID', 'HGNC', 'UP'].includes(key)) continue;
+                    if (!isStatement && ['EGID', 'HGNC', 'UP'].includes(key)) continue;
 
                     dialogContent += `
                         <dt>${key}</dt>
@@ -417,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Function to show edge details dialog
         function showEdgeDetails(params) {
             const edgeId = params.edgeId;
-            console.log("Showing details for edge:", edgeId);
+            const isStatement = params.isStatement;
 
             // Remove any existing dialog
             if (detailsDialog) {
@@ -435,11 +419,29 @@ document.addEventListener('DOMContentLoaded', function() {
             // Format belief score to 2 decimal places
             const beliefScore = typeof details.belief === 'number' ? details.belief.toFixed(2) : 'N/A';
 
-            // Build dialog content
-            detailsDialog.innerHTML = `
+            // Build dialog content based on whether it's a statement or not
+            let dialogContent = `
                 <span class="close-btn">×</span>
                 <h3>Edge Details</h3>
                 <dl>
+            `;
+
+            if (isStatement) {
+                dialogContent += `
+                    <dt>Statement Type</dt>
+                    <dd>${details.statement_type || 'Unknown'}</dd>
+
+                    <dt>Evidence Count</dt>
+                    <dd>${details.evidence_count || 'Unknown'}</dd>
+
+                    <dt>Belief</dt>
+                    <dd>${beliefScore}</dd>
+
+                    <dt>INDRA Statement</dt>
+                    <dd>${details.indra_statement || 'Unknown'}</dd>
+                `;
+            } else {
+                dialogContent += `
                     <dt>belief</dt>
                     <dd>${beliefScore}</dd>
 
@@ -457,8 +459,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     <dt>type</dt>
                     <dd>${details.type || 'Unknown'}</dd>
-                </dl>
-            `;
+                `;
+            }
+
+            dialogContent += `</dl>`;
+            detailsDialog.innerHTML = dialogContent;
 
             // Position dialog near click
             const pos = network.getPositions([edgeData.from, edgeData.to]);
@@ -525,7 +530,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-    }
-});
+    })
+    .catch(error => {
+        console.error('Error loading network:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error loading network visualization. Please try again later.</div>';
+    });
+}
 </script>
 {% endif %}
