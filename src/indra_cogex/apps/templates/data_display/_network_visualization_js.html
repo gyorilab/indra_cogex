@@ -130,12 +130,26 @@ function initializeNetwork(prefix, identifier) {
         fetchUrl = '/api/get_network';
     }
 
-    // Common simplified payload for all network types
-    const payload = {
-        include_db_evidence: app.include_db_evidence
-    };
+    // Prepare payload based on prefix
+    let payload = {};
 
-    console.log("Using session-based approach with payload:", payload);
+    if (prefix === 'statements') {
+        // For statements, we use an empty payload
+        // The backend will use session data for statements
+        console.log("Using empty payload for statements visualization");
+    } else {
+        // For other prefixes (go, subnetwork, paper), use include_db_evidence
+        if (typeof app !== 'undefined' && app && 'include_db_evidence' in app) {
+            payload.include_db_evidence = app.include_db_evidence;
+            console.log(`Using include_db_evidence: ${app.include_db_evidence} for ${prefix} visualization`);
+        } else {
+            // This should not happen for go, subnetwork, paper, but just in case
+            payload.include_db_evidence = true;
+            console.log(`No app.include_db_evidence found for ${prefix}, defaulting to true`);
+        }
+    }
+
+    console.log("Final payload:", payload);
 
     // Call the API to get network data
     fetch(fetchUrl, {
