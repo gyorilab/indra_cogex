@@ -659,7 +659,9 @@ def search_ora_statements():
         return render_statements(
             stmts=filtered_statements,
             evidence_count=filtered_evidence_counts,
-            store_hashes_in_session=True
+            store_hashes_in_session=True,
+            prefix='statements',
+            identifier=target_id
         )
 
     except Exception as e:
