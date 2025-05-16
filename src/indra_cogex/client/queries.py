@@ -3408,15 +3408,21 @@ def get_network(
         # Process edges: only one edge per (source, target, stmt_type)
         edges = []
         edge_count = 0
-        seen_triplets = set()
+        seen_keys = set()
 
         for source, target, key, data in graph.edges(data=True, keys=True):
             stmt_type = data.get('stmt_type', 'Interaction')
-            edge_key = (source, target, stmt_type)
 
-            if edge_key in seen_triplets:
+            if stmt_type == 'Complex':
+                # Treat Complex as undirected: only one edge per unordered pair
+                edge_key = tuple(sorted([source, target]))
+            else:
+                # For all others, preserve direction and type
+                edge_key = (source, target, stmt_type)
+
+            if edge_key in seen_keys:
                 continue
-            seen_triplets.add(edge_key)
+            seen_keys.add(edge_key)
 
             stmt_type = data.get('stmt_type', 'Interaction')
             edge_stmt = next(
