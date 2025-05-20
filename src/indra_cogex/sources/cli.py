@@ -222,5 +222,92 @@ def main(
         os.system(command)  # noqa:S605
 
 
+def get_pickle_paths() -> dict[str, list[Path]]:
+    node_labels_to_processor_name_paths = defaultdict(list)
+    for processor_cls in _iter_processors():
+        if not processor_cls.importable:
+            continue
+        for label in processor_cls.node_types:
+            (proc_nodes_path, nodes_indra_path, _, ) \
+                = processor_cls._get_node_paths(label)
+            node_labels_to_processor_name_paths[label].append(
+                (processor_cls.name, proc_nodes_path, nodes_indra_path)
+            )
+
+    to_assemble = {}
+    for label, processor_names_paths in node_labels_to_processor_name_paths.items():
+        if len(processor_names_paths) > 1:
+            to_assemble[label] = []
+            for processor_name, proc_nodes_path, nodes_indra_path in processor_names_paths:
+                to_assemble[label].append(nodes_indra_path)
+
+    print(f"Node labels to assemble: {list(to_assemble)}")
+    return to_assemble
+
+
+def assemble_type(
+    pickle_paths: list[Path],
+    assembled_path: Path,
+    force_assemble: bool = False,
+):
+    """Assemble nodes of a given type from the given pickle paths
+
+    Parameters
+    ----------
+    pickle_paths :
+        A list of the input paths to the pickled nodes
+    assembled_path :
+        The path to the output file where the assembled nodes will be saved
+    force_assemble :
+        If True, reassemble the nodes even if the output file already exists
+    """
+    if assembled_path.exists() and not force_assemble:
+        print(f"Skipping assembly, {assembled_path} already exists")
+        return
+    na = NodeAssembler()
+    for pickle_path in pickle_paths:
+        print(f"Loading cached nodes from {pickle_path}")
+        with open(pickle_path, "rb") as fh:
+            nodes = pickle.load(fh)
+        na.add_nodes(nodes)
+
+    print(f"Assembling {len(na.nodes)} nodes")
+    assembled_nodes = na.assemble_nodes()
+    if na.conflicts:
+        import gzip
+        import csv
+        # Replace nodes_{node_type}.tsv.gz with nodes_{node_type}_conflicts.tsv.gz
+        conflict_path = assembled_path.with_name(
+            assembled_path.stem + "_conflicts" + assembled_path.suffix
+        )
+        print(f"Got {len(na.conflicts)} conflicts, please inspect")
+        with gzip.open(conflict_path, "wt", encoding="utf-8") as fh:
+            writer = csv.writer(fh, delimiter="\t")
+            writer.writerow(["key", "val1", "val2"])
+            for conflict in na.conflicts:
+                writer.writerow([conflict.key, conflict.val1, conflict.val2])
+
+    print(f"Sorting {len(assembled_nodes)} assembled nodes")
+    assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
+    Processor._dump_nodes_to_path_static(
+        "assembled nodes", assembled_nodes, assembled_path
+    )
+
+
+def manual_assembly(force_assemble: bool = False):
+    """Assemble nodes of a given type from the given pickle paths
+
+    Parameters
+    ----------
+    force_assemble :
+        If True, reassemble the nodes even if the output file already exists
+    """
+    from indra_cogex.sources.cli import _get_assembled_path
+    to_assemble = get_pickle_paths()
+    for node_type, paths in to_assemble.items():
+        assembled_path = _get_assembled_path(node_type)
+        assemble_type(paths, assembled_path, force_assemble=force_assemble)
+
+
 if __name__ == "__main__":
     main()
