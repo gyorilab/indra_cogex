@@ -1491,7 +1491,30 @@ def enrich_statements(
     mesh_terms: Optional[List[str]] = None,
     remove_medscan: bool = True,
 ) -> List[Statement]:
-    """Add additional evidence to the statements using the evidence graph."""
+    """Add additional evidence to the statements using the evidence graph
+
+    Parameters
+    ----------
+    stmts :
+        The statements to enrich.
+    client :
+        The Neo4j client.
+    evidence_map :
+        A mapping of statement hashes to evidence objects. If None, the
+        evidence will be queried from the database.
+    evidence_limit :
+        The maximum number of evidence objects to return for each statement.
+    mesh_terms :
+        A list of MeSH term IDs to filter evidence by linked publications.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
+
+    Returns
+    -------
+    :
+        The enriched statements with additional evidence. Optionally filtered
+        by MeSH terms.
+    """
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
     evidence_map: Dict[int, List[Evidence]] = evidence_map or {}
