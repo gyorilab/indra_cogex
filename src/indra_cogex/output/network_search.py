@@ -117,6 +117,7 @@ def from_cogex(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFrame
         sif_df,
         z_score_df,
         on=["agA_ns", "agA_id", "agA_name", "agB_ns", "agB_id", "agB_name"],
-        how="outer",
+        # Do left join to keep all indra_rel relations and add logp values where available
+        how="left",
     )
     return sif_df
