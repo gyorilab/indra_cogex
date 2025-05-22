@@ -1022,14 +1022,12 @@ def get_evidences_for_stmt_hashes(
     query = f"""\
         MATCH (n:Evidence){mesh_pattern}
         WHERE
-            n.stmt_hash IN $stmt_hashes
-            AND n.source_api <> $source_api {mesh_filter}
+            n.stmt_hash IN $stmt_hashes {mesh_filter}
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
 
     query_params = {
         "stmt_hashes": list(stmt_hashes),
-        "source_api": "medscan",
     }
     if mesh_terms:
         query_params["mesh_terms"] = mesh_terms
