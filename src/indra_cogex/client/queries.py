@@ -1489,6 +1489,7 @@ def enrich_statements(
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     evidence_limit: Optional[int] = None,
     mesh_terms: Optional[List[str]] = None,
+    remove_medscan: bool = True,
 ) -> List[Statement]:
     """Add additional evidence to the statements using the evidence graph."""
     # If the evidence_map is provided, check if it covers all the hashes
@@ -1507,6 +1508,7 @@ def enrich_statements(
             client=client,
             limit=evidence_limit,
             mesh_terms=mesh_terms,
+            remove_medscan=remove_medscan,
         )
         evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(
