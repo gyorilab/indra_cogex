@@ -25,7 +25,7 @@ from indra_cogex.client.enrichment.utils import (
     get_go,
     get_phenotype_gene_sets,
     get_reactome,
-    get_wikipathways,
+    get_wikipathways, get_statement_metadata_for_pairs,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
@@ -404,6 +404,12 @@ def indra_upstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
+    # Set defaults for filtering
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 1
+    if minimum_belief is None:
+        minimum_belief = 0.0
+
     return gsea(
         gene_sets=get_entity_to_targets(
             client=client,
@@ -412,6 +418,10 @@ def indra_upstream_gsea(
         ),
         scores=scores,
         directory=directory,
+        client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+        is_downstream=False,
         **kwargs,
     )
 
@@ -453,6 +463,12 @@ def indra_downstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
+    # Set defaults for filtering
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 1
+    if minimum_belief is None:
+        minimum_belief = 0.0
+
     return gsea(
         gene_sets=get_entity_to_regulators(
             client=client,
@@ -461,6 +477,10 @@ def indra_downstream_gsea(
         ),
         scores=scores,
         directory=directory,
+        client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+        is_downstream=True,
         **kwargs,
     )
 
@@ -474,6 +494,7 @@ GSEA_RETURN_COLUMNS = [
     "FDR q-val",
     "geneset_size",
     "matched_size",
+    "statements"
 ]
 
 
@@ -483,6 +504,11 @@ def gsea(
     directory: Union[None, Path, str] = None,
     alpha: Optional[float] = None,
     keep_insignificant: bool = True,
+    # New optional parameters for statement metadata
+    client: Optional[Neo4jClient] = None,
+    minimum_belief: float = 0.0,
+    minimum_evidence_count: int = 1,
+    is_downstream: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA on pre-ranked data.
@@ -501,6 +527,14 @@ def gsea(
         The cutoff for significance. Defaults to 0.05
     keep_insignificant :
         If false, removes results with a p value less than alpha.
+    client :
+        Neo4j client for fetching statement metadata (optional)
+    minimum_belief :
+        Minimum belief score for statement filtering
+    minimum_evidence_count :
+        Minimum evidence count for statement filtering
+    is_downstream :
+        Whether this is downstream analysis (gene → regulator)
     kwargs :
         Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
@@ -517,16 +551,74 @@ def gsea(
         directory.mkdir(exist_ok=True, parents=True)
         directory = directory.as_posix()
 
+    # Keep original logic with format conversion for consistency
     curie_to_name = dict(gene_sets.keys())
+
+    # DEBUG: Show what we're working with
+    print(f"\n🔧 GSEA FUNCTION DEBUG:")
+    print(f"Gene sets count: {len(gene_sets)}")
+    if gene_sets:
+        sample_curie, sample_gene_set = next(iter(gene_sets.items()))
+        print(f"Sample gene set key: {sample_curie}")
+        print(f"Sample gene set values (first 5): {list(sample_gene_set)[:5]}")
+        print(f"Gene set value types: {type(next(iter(sample_gene_set)))}")
+
+    print(f"Scores count: {len(scores)}")
+    if scores:
+        sample_score_keys = list(scores.keys())[:5]
+        print(f"Sample score keys: {sample_score_keys}")
+        print(f"Score key types: {type(next(iter(scores.keys())))}")
+
+    # Convert gene sets from integers to strings to match scores format
+    # All gene set functions return integer HGNC IDs, but scores use string HGNC IDs
+    print(f"🔄 Applying int→str conversion...")
     curie_to_gene_sets = {
-        curie: hgnc_gene_ids for (curie, _), hgnc_gene_ids in gene_sets.items()
+        curie: {str(gene_id) for gene_id in hgnc_gene_ids}
+        for (curie, _), hgnc_gene_ids in gene_sets.items()
     }
+
+    # DEBUG: Show conversion result
+    if curie_to_gene_sets:
+        sample_converted = next(iter(curie_to_gene_sets.values()))
+        print(f"Converted gene set sample: {list(sample_converted)[:5]}")
+        print(f"Converted value types: {type(next(iter(sample_converted)))}")
+
+        # Check overlap
+        if scores:
+            overlap = set(scores.keys()) & sample_converted
+            print(f"Overlap count: {len(overlap)}")
+            if overlap:
+                print(f"Sample overlapping IDs: {list(overlap)[:3]}")
+            else:
+                print("❌ NO OVERLAP - Still have format mismatch!")
+
+    print(f"✅ Gene set conversion complete")
 
     kwargs.setdefault("permutation_num", 100)
     kwargs.setdefault("format", "svg")
+
+    # Try to add gseapy parameters that might help with gene ID matching
+    kwargs.setdefault("min_size", 1)  # Allow very small gene sets
+    kwargs.setdefault("max_size", 50000)  # Allow very large gene sets
+
+    # Convert gene sets to ensure they're sets, not frozensets or other types
+    curie_to_gene_sets_final = {}
+    for curie, gene_set in curie_to_gene_sets.items():
+        # Ensure it's a regular set of strings
+        final_set = set(str(gene_id) for gene_id in gene_set)
+        curie_to_gene_sets_final[curie] = final_set
+
+    # DEBUG: Show what we're passing to gseapy
+    print(f"\n🎯 FINAL ATTEMPT - PASSING TO GSEAPY.PRERANK:")
+    print(f"kwargs: {kwargs}")
+    sample_curie = next(iter(curie_to_gene_sets_final.keys()))
+    sample_final_set = curie_to_gene_sets_final[sample_curie]
+    print(f"Final gene set '{sample_curie}': {list(sample_final_set)[:5]}")
+    print(f"Final gene set types: {[type(x) for x in list(sample_final_set)[:3]]}")
+
     res = gseapy.prerank(
         rnk=pd.Series(scores),
-        gene_sets=curie_to_gene_sets,
+        gene_sets=curie_to_gene_sets_final,
         outdir=directory,
         **kwargs,
     )
@@ -537,7 +629,54 @@ def gsea(
     rv["Name"] = rv["Term"].map(curie_to_name)
     rv["matched_size"] = rv['Tag %'].apply(lambda s: s.split('/')[0])
     rv["geneset_size"] = rv['Tag %'].apply(lambda s: s.split('/')[1])
-    rv = rv[GSEA_RETURN_COLUMNS]
+
+    # Filter columns BEFORE adding statements (statements not in original GSEA_RETURN_COLUMNS)
+    base_columns = [col for col in GSEA_RETURN_COLUMNS if col != "statements"]
+    rv = rv[base_columns]
+
     if not keep_insignificant:
         rv = rv[rv["NOM p-val"] < alpha]
+
+    # Add statement metadata AFTER filtering columns but BEFORE final return
+    if client is not None and not rv.empty and len(rv) > 0:
+        try:
+            print(f"\n🔧 Adding statement metadata...")
+            print(f"Results shape: {rv.shape}")
+
+            # Get input genes from scores
+            input_genes = set(scores.keys())
+            print(f"Input genes sample: {list(input_genes)[:5]}")
+
+            # Build (regulator, gene) pairs for all enriched results
+            regulator_gene_pairs = [
+                (row["Term"], gene_id)  # Term contains the curie
+                for _, row in rv.iterrows()
+                for gene_id in input_genes
+            ]
+            print(f"Generated {len(regulator_gene_pairs)} regulator-gene pairs")
+
+            # Fetch statement metadata
+            metadata_map = get_statement_metadata_for_pairs(
+                regulator_gene_pairs,
+                client=client,
+                is_downstream=is_downstream,
+                minimum_belief=minimum_belief,
+                minimum_evidence=minimum_evidence_count
+            )
+            print(f"Got metadata for {len(metadata_map)} regulators")
+
+            # Add statements column
+            rv["statements"] = rv["Term"].map(lambda curie: metadata_map.get(curie, []))
+            print(f"✅ Added statements column successfully")
+
+        except Exception as e:
+            # If statement metadata fails, just log and continue without it
+            print(f"⚠️ Warning: Could not fetch statement metadata: {e}")
+            import traceback
+            traceback.print_exc()
+            rv["statements"] = [[] for _ in range(len(rv))]
+    else:
+        print(
+            f"\n⏭️ Skipping statement metadata: client={client is not None}, rv.empty={rv.empty}, len(rv)={len(rv) if not rv.empty else 0}")
+
     return rv
