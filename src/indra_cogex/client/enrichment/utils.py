@@ -16,7 +16,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    TypeVar,
+    TypeVar, List,
 )
 
 import pystow
@@ -950,6 +950,84 @@ def get_negative_stmt_sets(
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
+
+
+def get_statement_metadata_for_pairs(
+    regulator_gene_pairs: List[Tuple[str, str]],
+    minimum_belief: float = 0.0,
+    minimum_evidence: Optional[int] = None,
+    is_downstream: bool = False,
+    *,
+    client: Neo4jClient,
+) -> Dict[str, List[Dict]]:
+    """
+    Fetch INDRA statement metadata for a list of (regulator, gene) pairs.
+
+    Parameters
+    ----------
+    regulator_gene_pairs : List[Tuple[str, str]]
+        A list of (regulator_curie, gene_curie) pairs to query.
+    client : Neo4jClient
+        Neo4j client for database access.
+    minimum_belief : float
+        Belief score threshold.
+    minimum_evidence : Optional[int]
+        Evidence count threshold.
+    is_downstream : bool
+        Whether the relationship is downstream (gene ➝ regulator).
+
+    Returns
+    -------
+    Dict[str, List[Dict]]
+        Mapping of regulator curies to a list of statement metadata dicts.
+    """
+    metadata_by_regulator = defaultdict(list)
+
+    # Normalize input genes
+    regulator_gene_pairs = [
+        (reg.lower(), norm_id("HGNC", gene.split(":")[-1]))
+        for reg, gene in regulator_gene_pairs
+    ]
+
+    # UNWIND Cypher query for batch querying
+    query = """
+    UNWIND $pairs AS pair
+    WITH pair[0] AS regulator_id, pair[1] AS gene_id
+    MATCH (reg:BioEntity {id: regulator_id})-[r]->(gene:BioEntity {id: gene_id})
+    WHERE type(r) IN ['indra_rel', 'has_indication', 'isa']
+      AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
+    RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief, r.evidence_count AS evidence_count
+    """
+
+    if is_downstream:
+        query = """
+        UNWIND $pairs AS pair
+        WITH pair[0] AS regulator_id, pair[1] AS gene_id
+        MATCH (gene:BioEntity {id: gene_id})-[r]->(reg:BioEntity {id: regulator_id})
+        WHERE type(r) IN ['indra_rel', 'has_indication', 'isa']
+          AND (type(r) <> 'indra_rel' OR r.belief > $minimum_belief)
+        RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief, r.evidence_count AS evidence_count
+        """
+
+    params = {
+        "pairs": regulator_gene_pairs,
+        "minimum_belief": minimum_belief
+    }
+
+    results = client.query_tx(query, **params)
+
+    # Filter based on evidence and group by regulator
+    for reg, gene, stmt_hash, belief, ev_count in results:
+        if minimum_evidence and ev_count < minimum_evidence:
+            continue
+        metadata_by_regulator[reg].append({
+            "gene": gene,
+            "stmt_hash": stmt_hash,
+            "belief": belief,
+            "evidence_count": ev_count
+        })
+
+    return dict(metadata_by_regulator)
 
 
 def get_mouse_cache(force_cache_refresh: bool = False):
