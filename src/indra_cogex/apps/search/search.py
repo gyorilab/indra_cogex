@@ -11,6 +11,7 @@ from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
+from indra_cogex.apps.utils import render_statements
 from indra_cogex.analysis.gene_analysis import parse_phosphosite_list
 from indra_cogex.apps.utils import render_statements, resolve_email
 from indra_cogex.client import Neo4jClient, autoclient
