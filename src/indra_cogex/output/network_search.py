@@ -11,7 +11,36 @@ from indra_cogex.client import Neo4jClient
 logger = logging.getLogger(__name__)
 
 
-def from_cogex(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFrame:
+def sif_with_logp(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFrame:
+    """Get a dataframe with all indra_rel relations and their logp values.
+
+    Parameters
+    ----------
+    client :
+        A Neo4jClient instance to query the database.
+    limit :
+        An optional limit on the number of relations to return.
+        If None, no limit is applied.
+
+    Returns
+    -------
+    :
+        A pandas DataFrame with the following columns:
+        - agA_ns: Namespace of the first agent
+        - agA_id: ID of the first agent
+        - agA_name: Name of the first agent
+        - agB_ns: Namespace of the second agent
+        - agB_id: ID of the second agent
+        - agB_name: Name of the second agent
+        - stmt_type: Type of the statement (e.g., 'phosphorylation')
+        - evidence_count: Number of pieces of evidence supporting the statement
+        - stmt_hash: Hash of the statement
+        - residue: Residue involved in the statement (if applicable)
+        - position: Position of the residue (if applicable)
+        - source_counts: A dictionary with counts of sources for the statement
+        - belief: Belief score of the statement
+        - logp: Logarithm of the p-value for the codependent_with relation
+    """
     # First get all indra_rel relations
     indra_rel_query = """\
     MATCH p=(source:BioEntity)-[rel:indra_rel]->(target:BioEntity)
@@ -65,6 +94,9 @@ def from_cogex(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFrame
     ).astype(
         {
             "position": "Int64",  # nullable int
+            "evidence_count": "int64",  # int
+            "stmt_hash": "int64",  # int
+            "belief": "float64",  # float
         }
     )
 
