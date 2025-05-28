@@ -61,6 +61,8 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     python -m adeft.download && \
     # Download protmapper resources
     python -m protmapper.resources && \
+    # Download gilda resources
+    RUN python -m gilda.resources && \
     # Install BioNetGen
     cd $DIRPATH && \
     wget "https://github.com/RuleWorld/bionetgen/releases/download/BioNetGen-2.4.0/BioNetGen-2.4.0-Linux.tgz" \
@@ -77,9 +79,6 @@ RUN python -m indra_cogex.client.enrichment.utils --force
 
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --cache
-
-# Run the gilda resource file download so it doesn't happen at runtime
-RUN python -m gilda.resources
 
 ENV GUNICORN_CONF /usr/local/lib/python3.8/dist-packages/indra_cogex/apps/gunicorn.conf.py
 
