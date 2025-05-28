@@ -862,7 +862,11 @@ def get_mesh_ids_for_pmids(
 
 @autoclient()
 def get_evidences_for_mesh(
-    mesh_term: Tuple[str, str], include_child_terms: bool = True, include_db_evidence: bool = True, *,
+    mesh_term: Tuple[str, str],
+    include_child_terms: bool = True,
+    include_db_evidence: bool = True,
+    remove_medscan: bool = True,
+    *,
     client: Neo4jClient
 ) -> Dict[int, List[Evidence]]:
     """Return the evidence objects for the given MESH term.
@@ -877,6 +881,8 @@ def get_evidences_for_mesh(
         If True, also match against the child MESH terms of the given MESH ID
     include_db_evidence :
         If True, include and prioritize database evidence. If False, exclude it.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -920,7 +926,7 @@ def get_evidences_for_mesh(
     """ % (single_mesh_match, where_clause, db_filter, db_filter)
 
     result = client.query_tx(query, **query_params)
-    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=True)
+    return _get_ev_dict_from_hash_ev_query(result, remove_medscan=remove_medscan)
 
 
 @autoclient()
@@ -952,7 +958,6 @@ def get_evidences_for_stmt_hash(
     :
         The evidence objects for the given statement hash.
     """
-    remove_medscan = True  # Always remove medscan for now
     query_params = {"stmt_hash": stmt_hash}
     if remove_medscan:
         where_clause = "WHERE n.source_api <> $source_api\n"
@@ -979,7 +984,7 @@ def get_evidences_for_stmt_hash(
         query += "\nLIMIT %d" % limit
     ev_jsons = [json.loads(r) for r in
                 client.query_tx(query, squeeze=True, **query_params)]
-    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=True)
+    return _filter_out_medscan_evidence(ev_list=ev_jsons, remove_medscan=remove_medscan)
 
 
 @autoclient()
@@ -1022,14 +1027,12 @@ def get_evidences_for_stmt_hashes(
     query = f"""\
         MATCH (n:Evidence){mesh_pattern}
         WHERE
-            n.stmt_hash IN $stmt_hashes
-            AND n.source_api <> $source_api {mesh_filter}
+            n.stmt_hash IN $stmt_hashes {mesh_filter}
         RETURN n.stmt_hash, collect(n.evidence){limit_box}
     """
 
     query_params = {
         "stmt_hashes": list(stmt_hashes),
-        "source_api": "medscan",
     }
     if mesh_terms:
         query_params["mesh_terms"] = mesh_terms
@@ -1491,8 +1494,32 @@ def enrich_statements(
     evidence_map: Optional[Dict[int, List[Evidence]]] = None,
     evidence_limit: Optional[int] = None,
     mesh_terms: Optional[List[str]] = None,
+    remove_medscan: bool = True,
 ) -> List[Statement]:
-    """Add additional evidence to the statements using the evidence graph."""
+    """Add additional evidence to the statements using the evidence graph
+
+    Parameters
+    ----------
+    stmts :
+        The statements to enrich.
+    client :
+        The Neo4j client.
+    evidence_map :
+        A mapping of statement hashes to evidence objects. If None, the
+        evidence will be queried from the database.
+    evidence_limit :
+        The maximum number of evidence objects to return for each statement.
+    mesh_terms :
+        A list of MeSH term IDs to filter evidence by linked publications.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
+
+    Returns
+    -------
+    :
+        The enriched statements with additional evidence. Optionally filtered
+        by MeSH terms.
+    """
     # If the evidence_map is provided, check if it covers all the hashes
     # and if not, query for the evidence objects
     evidence_map: Dict[int, List[Evidence]] = evidence_map or {}
@@ -1509,6 +1536,7 @@ def enrich_statements(
             client=client,
             limit=evidence_limit,
             mesh_terms=mesh_terms,
+            remove_medscan=remove_medscan,
         )
         evidence_count = sum(len(v) for v in missing_evidences.values())
         logger.info(
