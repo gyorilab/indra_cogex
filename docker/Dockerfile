@@ -64,7 +64,7 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     # Download protmapper resources
     python -m protmapper.resources && \
     # Download gilda resources
-    RUN python -m gilda.resources && \
+    python -m gilda.resources && \
     # Install BioNetGen
     cd $DIRPATH && \
     wget "https://github.com/RuleWorld/bionetgen/releases/download/BioNetGen-2.4.0/BioNetGen-2.4.0-Linux.tgz" \
