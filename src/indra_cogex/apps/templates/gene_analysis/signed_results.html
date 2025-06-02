@@ -66,7 +66,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for curie, name, correct, incorrect, ambig, p, conservative_p in df.values %}
+        {% for curie, name, correct, incorrect, ambig, p, conservative_p, statements in df.values %}
             {% set pos_gene_list = [] %}
             {% set neg_gene_list = [] %}
             {% for gene_id in positive_genes.keys() %}
@@ -75,7 +75,9 @@
             {% for gene_id in negative_genes.keys() %}
                 {% do neg_gene_list.append("HGNC:" + gene_id) %}
             {% endfor %}
-            <tr>
+            <tr class="clickable-row"
+               data-statements='{{ statements | tojson }}'
+               data-regulator-name="{{ name | e }}">
                 <td><a href="https://bioregistry.io/{{ curie }}" target="_blank">{{ curie }}</a></td>
                 <td>{{ name }}</td>
                 <td>{{ correct }}</td>
@@ -146,4 +148,5 @@
             </div>
         </div>
     </div>
+{% include 'gene_analysis/metadata_preview.html' %}
 {% endblock %}
