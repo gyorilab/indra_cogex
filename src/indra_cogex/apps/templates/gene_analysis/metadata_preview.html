@@ -1,10 +1,340 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<!-- templates/partials/metadata-preview.html -->
+
+<style>
+/* Statement Metadata Preview Styles */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+    background-color: #f8f9fa !important;
+}
+
+.metadata-preview-row {
+    background-color: #f1f3f4;
+    border-top: none !important;
+    animation: slideDown 0.3s ease-out;
+}
+
+.metadata-preview-content {
+    padding: 15px 20px;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.metadata-statement {
+    margin: 8px 0;
+    padding: 6px 12px;
+    background-color: white;
+    border-radius: 4px;
+    border-left: 3px solid #dee2e6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.metadata-statement:first-child {
+    margin-top: 0;
+}
+
+.metadata-statement:last-child {
+    margin-bottom: 0;
+}
+
+.metadata-no-statements {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.metadata-toggle-indicator {
+    float: right;
+    font-size: 0.8em;
+    color: #6c757d;
+    transition: transform 0.2s ease;
+}
+
+.metadata-toggle-indicator.expanded {
+    transform: rotate(180deg);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .metadata-preview-content {
+        padding: 10px 15px;
+        font-size: 0.85em;
+    }
+
+    .metadata-statement {
+        padding: 4px 8px;
+        margin: 6px 0;
+    }
+}
+</style>
+
+<script>
+/**
+ * Statement Metadata Preview Component
+ * Makes table rows clickable to show/hide statement metadata inline
+ */
+class StatementMetadataPreview {
+    constructor() {
+        this.expandedRows = new Set();
+        this.init();
+    }
+
+    init() {
+        // Add click listeners to all clickable rows
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest('.clickable-row');
+            if (row) {
+                this.toggleMetadataRow(row);
+            }
+        });
+
+        // Add toggle indicators to clickable rows
+        this.addToggleIndicators();
+    }
+
+    /**
+     * Add visual indicators to show rows are clickable
+     */
+    addToggleIndicators() {
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        clickableRows.forEach(row => {
+            // Skip if indicator already exists
+            if (row.querySelector('.metadata-toggle-indicator')) return;
+
+            const lastCell = row.querySelector('td:last-child');
+            if (lastCell) {
+                const indicator = document.createElement('span');
+                indicator.className = 'metadata-toggle-indicator';
+                indicator.innerHTML = '▼';
+                indicator.title = 'Click to show/hide statement metadata';
+                lastCell.appendChild(indicator);
+            }
+        });
+    }
+
+    /**
+     * Toggle metadata preview for a table row
+     */
+    toggleMetadataRow(row) {
+        const rowId = this.getRowId(row);
+        const isExpanded = this.expandedRows.has(rowId);
+
+        if (isExpanded) {
+            this.hideMetadataRow(row, rowId);
+        } else {
+            this.showMetadataRow(row, rowId);
+        }
+    }
+
+    /**
+     * Show metadata preview row
+     */
+    showMetadataRow(row, rowId) {
+        // Hide any other expanded rows first (optional - comment out for multiple expansions)
+        this.hideAllMetadataRows();
+
+        const statements = this.getStatementsData(row);
+        const regulatorName = this.getRegulatorName(row);
+        const tableId = this.getTableId(row);
+        const isDownstream = this.isDownstreamDirection(tableId);
+
+        // Create and insert metadata row
+        const metadataRow = this.createMetadataRow(statements, regulatorName, isDownstream, row.cells.length);
+        row.parentNode.insertBefore(metadataRow, row.nextSibling);
+
+        // Update state
+        this.expandedRows.add(rowId);
+        this.updateToggleIndicator(row, true);
+    }
+
+    /**
+     * Hide metadata preview row
+     */
+    hideMetadataRow(row, rowId) {
+        const metadataRow = row.nextSibling;
+        if (metadataRow && metadataRow.classList.contains('metadata-preview-row')) {
+            metadataRow.remove();
+        }
+
+        this.expandedRows.delete(rowId);
+        this.updateToggleIndicator(row, false);
+    }
+
+    /**
+     * Hide all expanded metadata rows
+     */
+    hideAllMetadataRows() {
+        const metadataRows = document.querySelectorAll('.metadata-preview-row');
+        metadataRows.forEach(row => row.remove());
+
+        const indicators = document.querySelectorAll('.metadata-toggle-indicator');
+        indicators.forEach(indicator => indicator.classList.remove('expanded'));
+
+        this.expandedRows.clear();
+    }
+
+    /**
+     * Create the metadata preview row HTML
+     */
+    createMetadataRow(statements, regulatorName, isDownstream, colSpan) {
+        const row = document.createElement('tr');
+        row.className = 'metadata-preview-row';
+
+        const cell = document.createElement('td');
+        cell.colSpan = colSpan;
+
+        const content = document.createElement('div');
+        content.className = 'metadata-preview-content';
+
+        if (!statements || statements.length === 0) {
+            content.innerHTML = '<div class="metadata-no-statements">No statement metadata available</div>';
+        } else {
+            const statementsHtml = statements.map(stmt =>
+                this.formatStatement(stmt, regulatorName, isDownstream)
+            ).join('');
+            content.innerHTML = statementsHtml;
+        }
+
+        cell.appendChild(content);
+        row.appendChild(cell);
+
+        return row;
+    }
+
+    /**
+     * Format a single statement with icon and arrow
+     */
+    formatStatement(stmt, regulatorName, isDownstream) {
+        const { icon, arrow } = this.getStatementDisplay(stmt.stmt_type);
+        const belief = parseFloat(stmt.belief).toFixed(2);
+
+        let direction;
+        if (isDownstream) {
+            direction = `${stmt.gene_name} ${arrow} ${regulatorName}`;
+        } else {
+            direction = `${regulatorName} ${arrow} ${stmt.gene_name}`;
+        }
+
+        return `
+            <div class="metadata-statement">
+                ${icon} ${stmt.stmt_type}: ${direction} | Belief: ${belief} | Evidence: ${stmt.evidence_count}
+            </div>
+        `;
+    }
+
+    /**
+     * Get statement type display configuration
+     */
+    getStatementDisplay(stmtType) {
+        const displays = {
+            'Activation': { icon: '✅', arrow: '→' },
+            'Inhibition': { icon: '🚫', arrow: '⊸' },
+            'Phosphorylation': { icon: '🧪', arrow: '→' },
+            'Dephosphorylation': { icon: '🔄', arrow: '←' },
+            'IncreaseAmount': { icon: '📈', arrow: '↗' },
+            'DecreaseAmount': { icon: '📉', arrow: '↘' },
+            'Complex': { icon: '🔁', arrow: '↔' },
+            'Ubiquitination': { icon: '🏷️', arrow: '→' },
+            'Deubiquitination': { icon: '🏷️', arrow: '←' },
+            'Acetylation': { icon: '⚛️', arrow: '→' },
+            'Deacetylation': { icon: '⚛️', arrow: '←' },
+            'Methylation': { icon: '🧬', arrow: '→' },
+            'Demethylation': { icon: '🧬', arrow: '←' },
+            'Hydroxylation': { icon: '💧', arrow: '→' },
+            'Sumoylation': { icon: '🔗', arrow: '→' },
+            'Desumoylation': { icon: '🔗', arrow: '←' },
+            'Translocation': { icon: '🚚', arrow: '→' },
+            'ActiveForm': { icon: '⚡', arrow: '→' },
+            'HasActivity': { icon: '🎯', arrow: '→' },
+            'indra_rel': { icon: '🔄', arrow: '⇄' }
+        };
+
+        return displays[stmtType] || { icon: '🔄', arrow: '⇄' };
+    }
+
+    /**
+     * Determine if this is a downstream relationship
+     */
+    isDownstreamDirection(tableId) {
+        return tableId && tableId.includes('downstream');
+    }
+
+    /**
+     * Extract statements data from row attributes
+     */
+    getStatementsData(row) {
+        try {
+            const statementsJson = row.getAttribute('data-statements');
+            return statementsJson ? JSON.parse(statementsJson) : null;
+        } catch (e) {
+            console.warn('Failed to parse statements data:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract regulator name from row attributes
+     */
+    getRegulatorName(row) {
+        return row.getAttribute('data-regulator-name') || 'Unknown';
+    }
+
+    /**
+     * Get table ID for direction determination
+     */
+    getTableId(row) {
+        const table = row.closest('table');
+        return table ? table.id : '';
+    }
+
+    /**
+     * Generate unique row identifier
+     */
+    getRowId(row) {
+        return row.rowIndex + '_' + this.getTableId(row);
+    }
+
+    /**
+     * Update toggle indicator visual state
+     */
+    updateToggleIndicator(row, isExpanded) {
+        const indicator = row.querySelector('.metadata-toggle-indicator');
+        if (indicator) {
+            if (isExpanded) {
+                indicator.classList.add('expanded');
+            } else {
+                indicator.classList.remove('expanded');
+            }
+        }
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new StatementMetadataPreview();
+});
+
+// Also initialize if DOM is already loaded (for dynamic content)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        new StatementMetadataPreview();
+    });
+} else {
+    new StatementMetadataPreview();
+}
+</script>
