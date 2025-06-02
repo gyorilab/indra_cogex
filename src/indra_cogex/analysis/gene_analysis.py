@@ -402,7 +402,7 @@ def kinase_analysis(
         [tuple(site.split("-")) for site in phosphosite_list]
     )
     if errors:
-        print(f"Warning: Skipped invalid phosphosites: {errors}")
+        logger.error(f"Warning: Skipped invalid phosphosites: {errors}")
 
     # Parse background if provided
     parsed_background = None
@@ -411,7 +411,7 @@ def kinase_analysis(
             [tuple(site.split("-")) for site in background]
         )
         if background_errors:
-            print(f"Warning: Skipped invalid background phosphosites: {background_errors}")
+            logger.error(f"Warning: Skipped invalid background phosphosites: {background_errors}")
 
     return kinase_ora(
         client=client,
