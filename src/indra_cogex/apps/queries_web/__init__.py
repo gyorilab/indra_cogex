@@ -27,6 +27,7 @@ from indra_cogex.analysis import (
     gene_continuous_analysis_example_data,
     source_targets_explanation
 )
+from indra_cogex.apps.search import search
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 logger = logging.getLogger(__name__)
@@ -202,7 +203,8 @@ FUNCTION_CATEGORIES = {
             "get_stmts_for_stmt_hashes",
             "get_statements",
             "get_mesh_annotated_evidence",
-            "get_network"
+            "get_network",
+            "get_network_for_statements"
         ]
     },
     'drug_targets': {
@@ -490,11 +492,6 @@ examples_dict = {
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
     # For EC
     "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
-    "network_type": fields.String(example="paper"),
-    "identifier": {
-        "get_network": fields.Raw(example=["PUBMED", "23356518"]),
-        "default": fields.Raw(example=["PUBMED", "23356518"])
-    },
 }
 
 # Parameters to always skip in the examples and in the documentation
@@ -532,7 +529,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["explain_downstream"]]
+    [(source_targets_explanation, fn) for fn in ["explain_downstream"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 
 )
 

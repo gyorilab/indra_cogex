@@ -1094,4 +1094,3 @@ def test_is_cell_line_sensitive_to_drug():
     # Test a relationship that shouldn't exist
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
-

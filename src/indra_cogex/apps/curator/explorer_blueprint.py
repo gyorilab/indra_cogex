@@ -5,7 +5,7 @@ import time
 from typing import Any, Callable, List, Mapping, Optional, Tuple
 
 import flask
-from flask import Response, abort, redirect, render_template, url_for
+from flask import Response, abort, redirect, render_template, url_for, jsonify, session
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
 from flask import request
@@ -26,7 +26,7 @@ from indra_cogex.client.curation import (
     get_ppi_source_counts,
     get_tf_statements,
 )
-from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes
+from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes, get_network
 
 from .utils import get_conflict_source_counts
 from ..utils import (
@@ -97,6 +97,7 @@ def explore_go(term: str):
         order_by_ev_count=True,
         return_source_counts=True,
     )
+
     return _enrich_render_statements(
         stmts,
         title=f"GO Explorer: {term}",
@@ -111,6 +112,7 @@ def explore_go(term: str):
         source_counts=source_counts,
         prefix="go",
         identifier=term,
+        store_hashes_in_session=True
     )
 
 
@@ -123,6 +125,7 @@ def _enrich_render_statements(
     include_db_evidence: bool = False,
     source_counts: Optional[Mapping[int, Mapping[str, int]]] = None,
     prefix: Optional[str] = None,
+    store_hashes_in_session: bool = False,
     identifier: Optional[str] = None,
 ) -> Response:
     if curations is None:
@@ -152,6 +155,7 @@ def _enrich_render_statements(
         no_stmts_message=no_stmts_message,
         include_db_evidence=include_db_evidence,
         prefix=prefix,
+        store_hashes_in_session=store_hashes_in_session,
         identifier=identifier
         # no limit necessary here since it was already applied above
     )
@@ -684,6 +688,7 @@ def _explore_paper(
         prefix=prefix,
         identifier=identifier,
         filter_curated=filter_curated,
+        store_hashes_in_session=True,
         include_db_evidence=include_db_evidence,
     )
 
@@ -804,6 +809,7 @@ def subnetwork():
             order_by_ev_count=True,
             return_source_counts=True,
         )
+
         return _enrich_render_statements(
             stmts,
             title="Subnetwork Explorer",
@@ -818,6 +824,7 @@ def subnetwork():
             no_stmts_message="No statements found for the given nodes.",
             include_db_evidence=include_db_evidence,
             source_counts=source_counts,
+            store_hashes_in_session=True,
             prefix="subnetwork",
             identifier=','.join(f"{ns}:{id}" for ns, id in nodes)
         )
@@ -826,6 +833,29 @@ def subnetwork():
     # Set the checkboxstate based on URL parameter
     form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
+
+
+@explorer_blueprint.route("/api/get_network_from_hashes", methods=["POST"])
+def get_network_from_hashes():
+    """Get network visualization data from statement hashes."""
+    logger.info("Starting get_network_from_hashes endpoint")
+
+    data = request.json
+    include_db_evidence = data.get('include_db_evidence', True)
+
+    # Use simplified get_network function which gets statements from session
+    logger.info("Generating network visualization using statements from session")
+    network_data = get_network(
+        include_db_evidence=include_db_evidence
+    )
+
+    if "error" in network_data:
+        logger.warning(f"Error generating network: {network_data['error']}")
+    else:
+        logger.info(
+            f"Network generated with {len(network_data.get('nodes', []))} nodes and {len(network_data.get('edges', []))} edges")
+
+    return jsonify(network_data)
 
 
 @explorer_blueprint.route("/statement/<int:stmt_hash>", methods=["GET"])
