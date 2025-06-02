@@ -394,8 +394,8 @@ examples_dict = {
     "agent_name": fields.String(example="MEK"),
     "agent": fields.String(example="MEK"),
     "other_agent": fields.String(example="ERK"),
-    "agent_role": fields.String(example="Subject"),
-    "other_role": fields.String(example="Object"),
+    "agent_role": fields.String(example="subject"),
+    "other_role": fields.String(example="object"),
     "stmt_source": fields.String(example="reach"),
     "stmt_sources": fields.List(fields.String, example=["reach", "sparser"]),
     "mesh_terms": fields.List(fields.String, example=None),
@@ -498,14 +498,19 @@ examples_dict = {
 }
 
 # Parameters to always skip in the examples and in the documentation
-SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix", "file_path"}
+SKIP_GLOBAL = {
+    "client",
+    "return_evidence_counts",
+    "kwargs",
+    "subject_prefix",
+    "object_prefix",
+    "file_path",
+    "remove_medscan",
+}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
     "get_stmts_for_stmt_hashes": {"return_evidence_counts", "evidence_map"},
-    "get_evidences_for_stmt_hash": {"remove_medscan"},
-    "get_evidences_for_stmt_hashes": {"remove_medscan"},
     "get_statements": {"mesh_term", "include_child_terms"}
 }
 

@@ -26,7 +26,7 @@ RUN apt-get update && \
     apt-get install -y openjdk-8-jdk && \
     # jnius-indra requires cython which requires gcc
     apt-get install -y git wget zip unzip bzip2 gcc graphviz graphviz-dev \
-        pkg-config python3-pip && \
+        pkg-config python3-pip cmake libxml2-dev swig && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Set default character encoding
@@ -52,7 +52,9 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     # Install Python dependencies
     pip install --upgrade pip && \
     # Install cython first for pyjnius
-    pip install cython && \
+    pip install "cython<3" && \
+    pip install "pyjnius==1.1.4" && \
+    pip install --prefer-binary python-libsbml || true && \
     pip install -e .[all] && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
@@ -61,6 +63,8 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     python -m adeft.download && \
     # Download protmapper resources
     python -m protmapper.resources && \
+    # Download gilda resources
+    python -m gilda.resources && \
     # Install BioNetGen
     cd $DIRPATH && \
     wget "https://github.com/RuleWorld/bionetgen/releases/download/BioNetGen-2.4.0/BioNetGen-2.4.0-Linux.tgz" \

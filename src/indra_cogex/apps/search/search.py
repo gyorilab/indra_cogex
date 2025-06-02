@@ -215,6 +215,7 @@ def get_ora_statements(
     minimum_belief: float = 0.0,
     minimum_evidence: Optional[int] = None,
     is_downstream: bool = False,
+    remove_medscan: bool = True,
     *,
     client: Neo4jClient,
 ) -> Tuple[List[Statement], Mapping[int, int]]:
@@ -232,6 +233,8 @@ def get_ora_statements(
         Minimum number of evidences required for a statement to be included
     is_downstream : bool
         Whether this is a downstream analysis
+    remove_medscan : bool
+        Whether to remove MedScan evidence from the results
     client : Neo4jClient
         The Neo4j client to use for querying
 
@@ -305,7 +308,8 @@ def get_ora_statements(
     # Enrich statements with complete evidence (no limit)
     stmts = enrich_statements(
         stmts,
-        client=client
+        client=client,
+        remove_medscan=remove_medscan,
     )
 
     # Create evidence count mapping
@@ -337,6 +341,9 @@ def search_ora_statements():
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid minimum_evidence or minimum_belief value"}), 400
 
+    _, _, user_email = resolve_email()
+    remove_medscan = not bool(user_email)
+
     try:
         # Get all statements
         statements, evidence_counts = get_ora_statements(
@@ -344,7 +351,8 @@ def search_ora_statements():
             genes=genes,
             minimum_belief=minimum_belief,
             minimum_evidence=minimum_evidence,
-            is_downstream=is_downstream
+            is_downstream=is_downstream,
+            remove_medscan=remove_medscan,
         )
 
         logger.debug(f"Total statements before filtering: {len(statements)}")
