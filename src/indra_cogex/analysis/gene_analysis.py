@@ -1,6 +1,5 @@
 import logging
 import re
-from os import abort
 from typing import Dict, Optional, Union, Tuple, List, Iterable, Collection
 
 import pandas as pd
@@ -223,7 +222,7 @@ def signed_analysis(
         minimum_belief=minimum_belief,
     )
 
-    # 🧬 Attach INDRA statement metadata
+    # Attach INDRA statement metadata
     if isinstance(results, pd.DataFrame) and not results.empty:
         regulator_gene_pairs = [
             (row["curie"], gene_id)
@@ -234,7 +233,7 @@ def signed_analysis(
         metadata_map = get_statement_metadata_for_pairs(
             regulator_gene_pairs,
             client=client,
-            is_downstream=False,  # always upstream causes
+            is_downstream=False,
             minimum_belief=minimum_belief,
             minimum_evidence=minimum_evidence_count
         )
