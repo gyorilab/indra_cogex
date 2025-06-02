@@ -590,10 +590,12 @@ def kinase_ora(
             )
             curie_to_statements[curie] = [
                 {
-                    "gene": agent.name if (agent := s.agent_list()[1]) else None,
+                    "gene": s.agent_list()[1].db_refs.get("HGNC"),
+                    "gene_name": s.agent_list()[1].name,
                     "stmt_hash": s.get_hash(),
                     "belief": s.belief,
-                    "evidence_count": len(s.evidence) if s.evidence else 0
+                    "evidence_count": len(s.evidence),
+                    "stmt_type": type(s).__name__
                 }
                 for s in stmt_list
             ]
