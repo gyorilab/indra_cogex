@@ -1,6 +1,10 @@
 """
 Download and parse the ClinicalTrials.gov data using Trialsynth.
 """
+# Todo:
+#  1. Consider subclassing the Grounder and Annotator classes from trialsynth
+#  2. Add metadata to the reference relationships about the type of reference:
+#     "results", "background" or "derived".
 import os
 from typing import Union, Dict
 
