@@ -25,7 +25,7 @@ from indra_cogex.client.enrichment.utils import (
     get_go,
     get_phenotype_gene_sets,
     get_reactome,
-    get_wikipathways,
+    get_wikipathways, get_statement_metadata_for_pairs,
 )
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 
@@ -404,6 +404,12 @@ def indra_upstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
+    # Set defaults for filtering
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 1
+    if minimum_belief is None:
+        minimum_belief = 0.0
+
     return gsea(
         gene_sets=get_entity_to_targets(
             client=client,
@@ -412,6 +418,10 @@ def indra_upstream_gsea(
         ),
         scores=scores,
         directory=directory,
+        client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+        is_downstream=False,
         **kwargs,
     )
 
@@ -453,6 +463,12 @@ def indra_downstream_gsea(
     :
         A pandas dataframe with the GSEA results
     """
+    # Set defaults for filtering
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 1
+    if minimum_belief is None:
+        minimum_belief = 0.0
+
     return gsea(
         gene_sets=get_entity_to_regulators(
             client=client,
@@ -461,6 +477,10 @@ def indra_downstream_gsea(
         ),
         scores=scores,
         directory=directory,
+        client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+        is_downstream=True,
         **kwargs,
     )
 
@@ -474,6 +494,7 @@ GSEA_RETURN_COLUMNS = [
     "FDR q-val",
     "geneset_size",
     "matched_size",
+    "statements"
 ]
 
 
@@ -483,6 +504,11 @@ def gsea(
     directory: Union[None, Path, str] = None,
     alpha: Optional[float] = None,
     keep_insignificant: bool = True,
+    # New optional parameters for statement metadata
+    client: Optional[Neo4jClient] = None,
+    minimum_belief: float = 0.0,
+    minimum_evidence_count: int = 1,
+    is_downstream: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
     """Run GSEA on pre-ranked data.
@@ -501,6 +527,14 @@ def gsea(
         The cutoff for significance. Defaults to 0.05
     keep_insignificant :
         If false, removes results with a p value less than alpha.
+    client :
+        Neo4j client for fetching statement metadata (optional)
+    minimum_belief :
+        Minimum belief score for statement filtering
+    minimum_evidence_count :
+        Minimum evidence count for statement filtering
+    is_downstream :
+        Whether this is downstream analysis (gene → regulator)
     kwargs :
         Remaining keyword arguments to pass through to :func:`gseapy.prerank`
 
@@ -517,19 +551,39 @@ def gsea(
         directory.mkdir(exist_ok=True, parents=True)
         directory = directory.as_posix()
 
+    # Extract curie to name mapping and convert gene sets format
     curie_to_name = dict(gene_sets.keys())
+
+    # Convert gene sets from integers to strings to match scores format
+    # All gene set functions return integer HGNC IDs, but scores use string HGNC IDs
     curie_to_gene_sets = {
-        curie: hgnc_gene_ids for (curie, _), hgnc_gene_ids in gene_sets.items()
+        curie: {str(gene_id) for gene_id in hgnc_gene_ids}
+        for (curie, _), hgnc_gene_ids in gene_sets.items()
     }
 
+    # Set default parameters for gseapy
     kwargs.setdefault("permutation_num", 100)
     kwargs.setdefault("format", "svg")
+
+    # Set gene set size limits to allow small and large gene sets
+    kwargs.setdefault("min_size", 1)
+    kwargs.setdefault("max_size", 50000)
+
+    # Convert gene sets to ensure they're regular sets of strings
+    curie_to_gene_sets_final = {
+        curie: set(str(gene_id) for gene_id in gene_set)
+        for curie, gene_set in curie_to_gene_sets.items()
+    }
+
+    # Run GSEA analysis
     res = gseapy.prerank(
         rnk=pd.Series(scores),
-        gene_sets=curie_to_gene_sets,
+        gene_sets=curie_to_gene_sets_final,
         outdir=directory,
         **kwargs,
     )
+
+    # Process results
     # Full column list as of gseapy 1.1.2:
     # Name, Term, ES, NES, NOM p-val, FDR q-val, FWER p-val, Tag %, Gene %,
     # Lead_genes
@@ -537,7 +591,42 @@ def gsea(
     rv["Name"] = rv["Term"].map(curie_to_name)
     rv["matched_size"] = rv['Tag %'].apply(lambda s: s.split('/')[0])
     rv["geneset_size"] = rv['Tag %'].apply(lambda s: s.split('/')[1])
-    rv = rv[GSEA_RETURN_COLUMNS]
+
+    # Filter columns BEFORE adding statements (statements not in original GSEA_RETURN_COLUMNS)
+    base_columns = [col for col in GSEA_RETURN_COLUMNS if col != "statements"]
+    rv = rv[base_columns]
+
     if not keep_insignificant:
         rv = rv[rv["NOM p-val"] < alpha]
+
+    # Add statement metadata AFTER filtering columns but BEFORE final return
+    if client is not None and not rv.empty and len(rv) > 0:
+        try:
+            # Get input genes from scores
+            input_genes = set(scores.keys())
+
+            # Build (regulator, gene) pairs for all enriched results
+            regulator_gene_pairs = [
+                (row["Term"], gene_id)  # Term contains the curie
+                for _, row in rv.iterrows()
+                for gene_id in input_genes
+            ]
+
+            # Fetch statement metadata
+            metadata_map = get_statement_metadata_for_pairs(
+                regulator_gene_pairs,
+                client=client,
+                is_downstream=is_downstream,
+                minimum_belief=minimum_belief,
+                minimum_evidence=minimum_evidence_count
+            )
+
+            # Add statements column
+            rv["statements"] = rv["Term"].map(lambda curie: metadata_map.get(curie, []))
+
+        except Exception as e:
+            # If statement metadata fails, just log and continue without it
+            print(f"Warning: Could not fetch statement metadata: {e}")
+            rv["statements"] = [[] for _ in range(len(rv))]
+
     return rv

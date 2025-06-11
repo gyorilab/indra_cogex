@@ -11,7 +11,6 @@ from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
-from indra_cogex.analysis.gene_analysis import parse_phosphosite_list
 from indra_cogex.apps.utils import render_statements, resolve_email
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
@@ -456,20 +455,15 @@ def get_signed_statements(
         rel_types = ["indra_rel"]
 
     query = """
-        MATCH p = (gene:BioEntity)-[r]-(target:BioEntity)
-        WHERE target.id = $target_id
-        AND type(r) IN $rel_types
-        AND gene.id IN $gene_list
-        AND r.belief > $minimum_belief
-        AND r.evidence_count >= $minimum_evidence
-        AND NOT gene.obsolete
-        AND (
-            (startNode(r) = gene AND r.stmt_type IN $stmt_types_gene_to_target)
-            OR
-            (startNode(r) = target AND r.stmt_type IN $stmt_types_target_to_gene)
-        )
-        RETURN p
-        """
+            MATCH p = (target:BioEntity {id: $target_id})-[r]->(gene:BioEntity)
+            WHERE type(r) IN $rel_types
+            AND gene.id IN $gene_list
+            AND r.belief > $minimum_belief
+            AND r.evidence_count >= $minimum_evidence
+            AND NOT gene.obsolete
+            AND r.stmt_type IN $allowed_stmt_types
+            RETURN DISTINCT p
+            """
 
     flattened_rels = []
 
@@ -480,19 +474,14 @@ def get_signed_statements(
             "rel_types": rel_types,
             "minimum_belief": minimum_belief,
             "minimum_evidence": minimum_evidence,
-            "stmt_types_gene_to_target": [
-                'DecreaseAmount',
-                'Inhibition'
-            ],
-            "stmt_types_target_to_gene": [
+            "allowed_stmt_types": [
                 'IncreaseAmount',
-                'Activation',
-                'Complex'
+                'Activation'
             ]
         }
         pos_results = client.query_tx(query, **pos_params)
         for result in pos_results:
-            path = result[0]
+            path = result[0]  # Get the Neo4j path directly
             rel = client.neo4j_to_relation(path)
             flattened_rels.append(rel)
 
@@ -503,18 +492,14 @@ def get_signed_statements(
             "rel_types": rel_types,
             "minimum_belief": minimum_belief,
             "minimum_evidence": minimum_evidence,
-            "stmt_types_gene_to_target": [
-                'IncreaseAmount',
-                'Activation'
-            ],
-            "stmt_types_target_to_gene": [
+            "allowed_stmt_types": [
                 'DecreaseAmount',
                 'Inhibition'
             ]
         }
         neg_results = client.query_tx(query, **neg_params)
         for result in neg_results:
-            path = result[0]
+            path = result[0]  # Get the Neo4j path directly
             rel = client.neo4j_to_relation(path)
             flattened_rels.append(rel)
 
@@ -717,6 +702,7 @@ def get_kinase_phosphosite_statements(
         - List of INDRA statements representing the relationships
         - Dictionary mapping statement hashes to their evidence counts
     """
+    from indra_cogex.analysis.gene_analysis import parse_phosphosite_list
     # Normalize kinase ID
     namespace = kinase_id.split(':')[0].lower()
     id_part = kinase_id.split(':')[1]
