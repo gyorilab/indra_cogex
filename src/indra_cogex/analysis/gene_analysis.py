@@ -224,19 +224,45 @@ def signed_analysis(
 
     # Attach INDRA statement metadata
     if isinstance(results, pd.DataFrame) and not results.empty:
-        regulator_gene_pairs = [
+
+        # Separate calls for positive and negative genes with filtering
+        positive_pairs = [
             (row["curie"], gene_id)
             for _, row in results.iterrows()
-            for gene_id in all_genes
+            for gene_id in positive_gene_set
         ]
 
-        metadata_map = get_statement_metadata_for_pairs(
-            regulator_gene_pairs,
+        negative_pairs = [
+            (row["curie"], gene_id)
+            for _, row in results.iterrows()
+            for gene_id in negative_gene_set
+        ]
+
+        # Get metadata with appropriate statement type filtering
+        pos_metadata = get_statement_metadata_for_pairs(
+            positive_pairs,
             client=client,
             is_downstream=False,
             minimum_belief=minimum_belief,
-            minimum_evidence=minimum_evidence_count
+            minimum_evidence=minimum_evidence_count,
+            allowed_stmt_types=['Activation', 'IncreaseAmount']  # NEW!
         )
+
+        neg_metadata = get_statement_metadata_for_pairs(
+            negative_pairs,
+            client=client,
+            is_downstream=False,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence_count,
+            allowed_stmt_types=['Inhibition', 'DecreaseAmount']  # NEW!
+        )
+
+        # Combine the results
+        metadata_map = {}
+        for regulator, statements in pos_metadata.items():
+            metadata_map.setdefault(regulator, []).extend(statements)
+        for regulator, statements in neg_metadata.items():
+            metadata_map.setdefault(regulator, []).extend(statements)
 
         results["statements"] = results["curie"].map(lambda c: metadata_map.get(c, []))
 
