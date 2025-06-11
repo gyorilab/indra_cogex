@@ -32,6 +32,12 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.metadata-statement.group-separator {
+    margin-top: 16px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 12px;
+}
+
 .metadata-statement:first-child {
     margin-top: 0;
 }
@@ -153,13 +159,93 @@ class StatementMetadataPreview {
         const tableId = this.getTableId(row);
         const isDownstream = this.isDownstreamDirection(tableId);
 
+        // Group and sort statements
+        const groupedStatements = this.groupAndSortStatements(statements, regulatorName, isDownstream);
+
         // Create and insert metadata row
-        const metadataRow = this.createMetadataRow(statements, regulatorName, isDownstream, row.cells.length);
+        const metadataRow = this.createMetadataRow(groupedStatements, regulatorName, isDownstream, row.cells.length);
         row.parentNode.insertBefore(metadataRow, row.nextSibling);
 
         // Update state
         this.expandedRows.add(rowId);
         this.updateToggleIndicator(row, true);
+    }
+
+    /**
+     * Group statements by source-target pairs and sort by evidence count
+     */
+    groupAndSortStatements(statements, regulatorName, isDownstream) {
+        if (!statements || statements.length === 0) {
+            return [];
+        }
+
+        console.log('Original statements:', statements);
+        console.log('Regulator name:', regulatorName);
+        console.log('Is downstream:', isDownstream);
+
+        // Create groups based on source-target pairs
+        const groups = new Map();
+
+        statements.forEach(stmt => {
+            // Determine source and target based on direction
+            let source, target;
+            if (isDownstream) {
+                source = stmt.gene_name;
+                target = regulatorName;
+            } else {
+                source = regulatorName;
+                target = stmt.gene_name;
+            }
+
+            // Create a unique key for the source-target pair
+            const pairKey = `${source}→${target}`;
+            console.log('Creating pair key:', pairKey, 'for statement:', stmt);
+
+            if (!groups.has(pairKey)) {
+                groups.set(pairKey, []);
+            }
+            groups.get(pairKey).push(stmt);
+        });
+
+        console.log('Groups created:', groups);
+
+        // Sort statements within each group by evidence count (descending)
+        groups.forEach((group, key) => {
+            console.log(`Sorting group ${key} before:`, group.map(s => `${s.stmt_type}:${s.evidence_count}`));
+            group.sort((a, b) => {
+                const aEvidence = parseInt(a.evidence_count) || 0;
+                const bEvidence = parseInt(b.evidence_count) || 0;
+                return bEvidence - aEvidence;
+            });
+            console.log(`Sorting group ${key} after:`, group.map(s => `${s.stmt_type}:${s.evidence_count}`));
+        });
+
+        // Convert groups to array and sort by highest evidence count in each group
+        const groupsArray = Array.from(groups.entries()).map(([key, statements]) => ({
+            key: key,
+            statements: statements,
+            maxEvidence: Math.max(...statements.map(s => parseInt(s.evidence_count) || 0))
+        }));
+
+        // Sort groups by their maximum evidence count (descending)
+        groupsArray.sort((a, b) => b.maxEvidence - a.maxEvidence);
+
+        console.log('Groups sorted by max evidence:', groupsArray.map(g => `${g.key}:${g.maxEvidence}`));
+
+        // Flatten while preserving group order and marking group separators
+        const result = [];
+        groupsArray.forEach((group, groupIndex) => {
+            group.statements.forEach((stmt, stmtIndex) => {
+                // Mark the first statement of each group (except the very first) as a group separator
+                if (groupIndex > 0 && stmtIndex === 0) {
+                    stmt._isGroupStart = true;
+                }
+                result.push(stmt);
+            });
+        });
+
+        console.log('Final result:', result);
+        return result;
     }
 
     /**
@@ -230,8 +316,11 @@ class StatementMetadataPreview {
             direction = `${regulatorName} ${arrow} ${stmt.gene_name}`;
         }
 
+        // Add group separator class if this is the start of a new group
+        const separatorClass = stmt._isGroupStart ? ' group-separator' : '';
+
         return `
-            <div class="metadata-statement">
+            <div class="metadata-statement${separatorClass}">
                 ${icon} ${stmt.stmt_type}: ${direction} | Belief: ${belief} | Evidence: ${stmt.evidence_count}
             </div>
         `;
