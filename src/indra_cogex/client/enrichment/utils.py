@@ -953,11 +953,19 @@ def get_negative_stmt_sets(
     )
 
 
+def _normalize_target_id(curie: str) -> str:
+    """Only normalize if it's likely an Entrez gene or HGNC numeric code"""
+    if curie.lower().startswith("hgnc:") or curie.isdigit():
+        return norm_id("HGNC", curie.split(":")[-1])
+    return curie.lower()
+
+
 def get_statement_metadata_for_pairs(
     regulator_gene_pairs: List[Tuple[str, str]],
     minimum_belief: float = 0.0,
     minimum_evidence: Optional[int] = None,
     is_downstream: bool = False,
+    allowed_stmt_types: Optional[List[str]] = None,  # NEW PARAMETER
     *,
     client: Neo4jClient,
 ) -> Dict[str, List[Dict]]:
@@ -973,6 +981,8 @@ def get_statement_metadata_for_pairs(
         Minimum evidence count to include a statement.
     is_downstream : bool
         Whether the direction is downstream (gene -> regulator).
+    allowed_stmt_types : Optional[List[str]]
+        List of statement types to filter by. If None, includes all types.
     client : Neo4jClient
         Neo4j client instance.
 
@@ -985,29 +995,32 @@ def get_statement_metadata_for_pairs(
 
     # Normalize IDs
     regulator_gene_pairs = [
-        (reg.lower(), norm_id("HGNC", gene.split(":")[-1]))
+        (reg, norm_id("HGNC", gene.split(":")[-1]))
         for reg, gene in regulator_gene_pairs
     ]
 
+    # Add statement type filter if specified
+    stmt_type_filter = ""
+    if allowed_stmt_types is not None:
+        stmt_type_filter = "AND r.stmt_type IN $allowed_stmt_types"
+
     query = (
-        """
+        f"""
         UNWIND $pairs AS pair
         WITH pair[0] AS regulator_id, pair[1] AS gene_id
-        MATCH (reg:BioEntity {id: regulator_id})-[r:indra_rel]->(gene:BioEntity {id: gene_id})
-        WHERE r.belief > $minimum_belief
-        RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash,
-               r.belief AS belief, r.evidence_count AS evidence_count,
-               r.stmt_type AS stmt_type, gene.name AS gene_name
+        MATCH (reg:BioEntity {{id: regulator_id}})-[r:indra_rel]->(gene:BioEntity {{id: gene_id}})
+        WHERE r.belief > $minimum_belief {stmt_type_filter}
+        RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief,
+               r.evidence_count AS evidence_count, r.stmt_type AS stmt_type, gene.name AS gene_name
         """
-        if not is_downstream else
-        """
+        if not is_downstream
+        else f"""
         UNWIND $pairs AS pair
         WITH pair[0] AS regulator_id, pair[1] AS gene_id
-        MATCH (gene:BioEntity {id: gene_id})-[r:indra_rel]->(reg:BioEntity {id: regulator_id})
-        WHERE r.belief > $minimum_belief
-        RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash,
-               r.belief AS belief, r.evidence_count AS evidence_count,
-               r.stmt_type AS stmt_type, gene.name AS gene_name
+        MATCH (gene:BioEntity {{id: gene_id}})-[r:indra_rel]->(reg:BioEntity {{id: regulator_id}})
+        WHERE r.belief > $minimum_belief {stmt_type_filter}
+        RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief,
+               r.evidence_count AS evidence_count, r.stmt_type AS stmt_type, gene.name AS gene_name
         """
     )
 
@@ -1016,11 +1029,16 @@ def get_statement_metadata_for_pairs(
         "minimum_belief": minimum_belief
     }
 
+    # Add statement types to params if specified
+    if allowed_stmt_types is not None:
+        params["allowed_stmt_types"] = allowed_stmt_types
+
     results = client.query_tx(query, **params)
 
     for reg, gene, stmt_hash, belief, ev_count, stmt_type, gene_name in results:
         if minimum_evidence and ev_count < minimum_evidence:
             continue
+
         metadata_by_regulator[reg].append({
             "gene": gene,
             "stmt_hash": stmt_hash,
