@@ -17,7 +17,7 @@ from typing import (
     Union,
 )
 
-from flask import render_template, request
+from flask import render_template, request, session
 from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
 from indra.statements import Statement
 from indra.util.statement_presentation import _get_available_ev_source_counts
@@ -84,6 +84,7 @@ def render_statements(
     source_counts_dict: Optional[Mapping[int, Mapping[str, int]]] = None,
     include_db_evidence=True,
     is_proteocentric=False,
+    store_hashes_in_session: bool = False,
     **kwargs,
 ) -> str:
     """Render INDRA statements.
@@ -129,6 +130,27 @@ def render_statements(
         remove_medscan=remove_medscan,
         source_counts_per_hash=source_counts_dict,
     )
+    # Store hashes in session if requested
+    if store_hashes_in_session and formatted_stmts:
+        # Extract hashes from formatted_stmts (tuples with hash at index 2)
+        try:
+            # Handle the fact that the hash is a string with quotes
+            statement_hashes = []
+            for stmt_tuple in formatted_stmts:
+                # Extract the hash string, which is at index 2
+                hash_str = stmt_tuple[2]
+                # Remove quotes if present
+                hash_str = hash_str.strip('"\'')
+                # Convert to integer
+                statement_hashes.append(int(hash_str))
+
+            session['statement_hashes'] = statement_hashes
+            session['include_db_evidence'] = include_db_evidence
+
+            logger.info(f"Stored {len(statement_hashes)} statement hashes in session")
+        except (IndexError, ValueError, TypeError) as e:
+            logger.error(f"Error storing statement hashes: {str(e)}")
+
     end_time = time.time() - start_time
 
     if evidence_lookup_time:
