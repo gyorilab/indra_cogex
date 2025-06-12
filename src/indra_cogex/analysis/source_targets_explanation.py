@@ -14,10 +14,8 @@ import logging
 import itertools
 import os
 import pickle
-from collections import defaultdict
 from typing import List, Tuple, Optional, Dict, Any
 from io import BytesIO
-from bs4 import BeautifulSoup
 
 import pandas as pd
 import matplotlib
@@ -28,7 +26,6 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 from indra.databases import hgnc_client
-from indra.assemblers.html import HtmlAssembler
 from indra.statements import *
 
 from indra_cogex.client import *
@@ -247,11 +244,11 @@ def assemble_protein_stmt_htmls(stmts_df):
                 try:
                     stmt_jsons.append(json.loads(sj))
                 except Exception as e:
-                    print(f"Error decoding stmt_json string: {sj[:100]} -> {e}")
+                    logger.error(f"Error decoding stmt_json string: {sj[:100]} -> {e}")
             elif isinstance(sj, dict):
                 stmt_jsons.append(sj)
             else:
-                print(f"Skipping unexpected stmt_json type: {type(sj)} -> {sj}")
+                logger.warning(f"Skipping unexpected stmt_json type: {type(sj)} -> {sj}")
 
         stmts = stmts_from_json(stmt_jsons)
 
@@ -588,6 +585,7 @@ def run_explain_downstream_analysis(
     target_hgnc_ids,
     output_dir=None,
     curations=None,
+    minimal_output=False,
     *,
     client
 ):
@@ -606,6 +604,10 @@ def run_explain_downstream_analysis(
         of the web app, this will be done automatically, if this function is called
         standalone, curations need to be provided manually. In order to not provide
         any curations outside the context of the web app, pass an empty list.
+    minimal_output : bool
+        If True, removes HTML styled text and other rendering-specific data from
+        statement formatting. Should be set to True for REST API calls and False
+        for web form workflows.
     client :
         The client instance
 
@@ -644,12 +646,12 @@ def run_explain_downstream_analysis(
                 try:
                     stmt_jsons.append(json.loads(sj))
                 except json.JSONDecodeError as e:
-                    print(f"Failed to decode JSON string: {sj[:100]}... -> {e}")
+                    logger.warning(f"Failed to decode JSON string: {sj[:100]}... -> {e}")
                     continue
             elif isinstance(sj, dict):
                 stmt_jsons.append(sj)
             else:
-                print(f"Unexpected type in stmt_json column: {type(sj)} -> {sj}")
+                logger.warning(f"Unexpected type in stmt_json column: {type(sj)} -> {sj}")
                 continue
 
         stmts = stmts_from_json(stmt_jsons)
@@ -662,13 +664,25 @@ def run_explain_downstream_analysis(
             for sh, sc in gene_stmts_df[["stmt_hash", "source_counts"]].values
         }
 
-        stmt_data_per_gene[name] = format_stmts(
+        stmt_rows = format_stmts(
             stmts,
             evidence_counts=evidence_counts,
-            remove_medscan=True,  # fixme: provide from outside based on login
+            remove_medscan=True,
             source_counts_per_hash=source_counts_per_hash,
             curations=curations,
         )
+
+        # Strip out HTML and badges if minimal_output is set
+        if minimal_output:
+            stripped_stmt_rows = []
+            for row in stmt_rows:
+                row_list = list(row)
+                row_list[1] = json.dumps(None)
+                row_list[5] = json.dumps([])
+                stripped_stmt_rows.append(tuple(row_list))
+            stmt_data_per_gene[name] = stripped_stmt_rows
+        else:
+            stmt_data_per_gene[name] = stmt_rows
 
     results['statements'] = stmt_data_per_gene
 
@@ -788,6 +802,7 @@ def source_target_analysis(
     targets: List[str],
     output_dir: Optional[str] = None,
     curations: Optional[List[Dict[str, Any]]] = None,
+    minimal_output: bool = False,
     *,
     client,
     id_type: str = 'hgnc.symbol'
@@ -810,6 +825,10 @@ def source_target_analysis(
         of the web app, this will be done automatically, if this function is called
         standalone, curations need to be provided manually. In order to not provide
         any curations outside the context of the web app, pass an empty list.
+    minimal_output : bool, optional
+        If True, removes HTML styled text and other rendering-specific data from
+        statement formatting. Should be set to True for REST API calls and False
+        for web form workflows.
     client :
         The client instance
     id_type : str
@@ -844,4 +863,5 @@ def source_target_analysis(
         output_dir=output_dir,
         client=client,
         curations=curations,
+        minimal_output=minimal_output
     )
