@@ -411,7 +411,7 @@ examples_dict = {
             example=[["HGNC", "6840"], ["HGNC", "1097"]]
         )
     },
-    #"output_dir": fields.List(fields.String, example=None),
+    "minimal_output": fields.Boolean(example=True),
     "include_indirect": fields.Boolean(example=True),
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
