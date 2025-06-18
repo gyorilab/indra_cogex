@@ -687,7 +687,6 @@ def _explore_paper(
     return render_statements(
         stmts,
         title=f"Publication Explorer: {prefix}:{identifier}",
-        #limit=proxies.limit,
         curations=curations,
         description=f"""
             Explore statements with evidences occurring in 
