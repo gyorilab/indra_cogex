@@ -25,7 +25,7 @@ curation_cache: CurationCache = LocalProxy(
     lambda: current_app.extensions[STATEMENT_CURATION_CACHE]
 )
 
-limit: int = LocalProxy(lambda: request.args.get("limit", type=int, default=25))
+limit: int = LocalProxy(lambda: request.args.get("limit", type=int, default=100))
 
 filter_curated: bool = LocalProxy(
     lambda: request.args.get("filter_curated", default="true").lower() in {"true", "t"}
