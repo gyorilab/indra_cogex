@@ -7,7 +7,7 @@ from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
 
 import networkx as nx
-from flask import session
+from flask import session, request
 
 from indra.assemblers.indranet import IndraNetAssembler
 from indra.statements import Agent, Evidence, Statement
@@ -3341,6 +3341,36 @@ def get_network(
 
         if not statements:
             return {"nodes": [], "edges": []}
+
+        # Filter out complex binding statements with external nodes for subnetwork explorer
+        if request.endpoint == 'explorer.subnetwork':
+            # Get the input nodes - identify core nodes as the most connected ones
+            from collections import Counter
+            node_counts = Counter()
+            for stmt in statements:
+                for agent in stmt.agent_list():
+                    if agent:
+                        node_counts[agent.name] += 1
+
+            # Get top 3 most connected nodes (these should be the input nodes: MEK, ERK, RAF)
+            core_nodes = {name for name, _ in node_counts.most_common(3)}
+
+            # Filter statements
+            filtered_statements = []
+            for stmt in statements:
+                if stmt.__class__.__name__ == 'Complex':
+                    # Get all agent names in this complex
+                    agent_names = {agent.name for agent in stmt.agent_list() if agent}
+
+                    # Only keep if ALL agents are in the core input set
+                    if agent_names.issubset(core_nodes):
+                        filtered_statements.append(stmt)
+                    # else: skip this complex statement
+                else:
+                    # Keep all non-Complex statements
+                    filtered_statements.append(stmt)
+
+            statements = filtered_statements
 
         # Create network using IndraNetAssembler with direction-preserving method
         assembler = IndraNetAssembler(statements)
