@@ -38,12 +38,52 @@
     padding-top: 12px;
 }
 
+.metadata-statement.consolidated-complex {
+    cursor: pointer;
+    position: relative;
+}
+
+.metadata-statement.consolidated-complex:hover {
+    background-color: #f8f9fa;
+}
+
 .metadata-statement:first-child {
     margin-top: 0;
 }
 
 .metadata-statement:last-child {
     margin-bottom: 0;
+}
+
+.complex-nested-statements {
+    margin-top: 8px;
+    padding-left: 20px;
+    border-left: 2px solid #e9ecef;
+    display: none;
+}
+
+.complex-nested-statements.expanded {
+    display: block;
+}
+
+.complex-nested-statement {
+    margin: 4px 0;
+    padding: 4px 8px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.complex-toggle-indicator {
+    float: right;
+    font-size: 0.7em;
+    color: #999;
+    transition: transform 0.2s ease;
+}
+
+.complex-toggle-indicator.expanded {
+    transform: rotate(180deg);
 }
 
 .metadata-no-statements {
@@ -86,6 +126,10 @@
         padding: 4px 8px;
         margin: 6px 0;
     }
+
+    .complex-nested-statements {
+        padding-left: 15px;
+    }
 }
 </style>
 
@@ -97,12 +141,22 @@
 class StatementMetadataPreview {
     constructor() {
         this.expandedRows = new Set();
+        this.expandedComplexStatements = new Set();
         this.init();
     }
 
     init() {
         // Add click listeners to all clickable rows
         document.addEventListener('click', (e) => {
+            // Handle complex statement expansion
+            if (e.target.closest('.consolidated-complex')) {
+                e.stopPropagation();
+                const complexStatement = e.target.closest('.consolidated-complex');
+                this.toggleComplexStatement(complexStatement);
+                return;
+            }
+
+            // Handle main row expansion
             const row = e.target.closest('.clickable-row');
             if (row) {
                 this.toggleMetadataRow(row);
@@ -114,12 +168,27 @@ class StatementMetadataPreview {
     }
 
     /**
-     * Add visual indicators to show rows are clickable
+     * Toggle nested complex statement details
      */
+    toggleComplexStatement(complexElement) {
+        const statementId = complexElement.getAttribute('data-complex-id');
+        const nestedContainer = complexElement.querySelector('.complex-nested-statements');
+        const indicator = complexElement.querySelector('.complex-toggle-indicator');
+
+        if (this.expandedComplexStatements.has(statementId)) {
+            nestedContainer.classList.remove('expanded');
+            indicator.classList.remove('expanded');
+            this.expandedComplexStatements.delete(statementId);
+        } else {
+            nestedContainer.classList.add('expanded');
+            indicator.classList.add('expanded');
+            this.expandedComplexStatements.add(statementId);
+        }
+    }
+
     addToggleIndicators() {
         const clickableRows = document.querySelectorAll('.clickable-row');
         clickableRows.forEach(row => {
-            // Skip if indicator already exists
             if (row.querySelector('.metadata-toggle-indicator')) return;
 
             const lastCell = row.querySelector('td:last-child');
@@ -179,15 +248,9 @@ class StatementMetadataPreview {
             return [];
         }
 
-        console.log('Original statements:', statements);
-        console.log('Regulator name:', regulatorName);
-        console.log('Is downstream:', isDownstream);
-
-        // Create groups based on source-target pairs
         const groups = new Map();
 
         statements.forEach(stmt => {
-            // Determine source and target based on direction
             let source, target;
             if (isDownstream) {
                 source = stmt.gene_name;
@@ -197,46 +260,41 @@ class StatementMetadataPreview {
                 target = stmt.gene_name;
             }
 
-            // Create a unique key for the source-target pair
             const pairKey = `${source}→${target}`;
-            console.log('Creating pair key:', pairKey, 'for statement:', stmt);
-
             if (!groups.has(pairKey)) {
                 groups.set(pairKey, []);
             }
             groups.get(pairKey).push(stmt);
         });
 
-        console.log('Groups created:', groups);
-
-        // Sort statements within each group by evidence count (descending)
         groups.forEach((group, key) => {
-            console.log(`Sorting group ${key} before:`, group.map(s => `${s.stmt_type}:${s.evidence_count}`));
             group.sort((a, b) => {
                 const aEvidence = parseInt(a.evidence_count) || 0;
                 const bEvidence = parseInt(b.evidence_count) || 0;
                 return bEvidence - aEvidence;
             });
-            console.log(`Sorting group ${key} after:`, group.map(s => `${s.stmt_type}:${s.evidence_count}`));
+
+            const processedGroup = this.consolidateComplexStatementsInGroup(group, regulatorName, isDownstream);
+            groups.set(key, processedGroup);
         });
 
-        // Convert groups to array and sort by highest evidence count in each group
         const groupsArray = Array.from(groups.entries()).map(([key, statements]) => ({
             key: key,
             statements: statements,
-            maxEvidence: Math.max(...statements.map(s => parseInt(s.evidence_count) || 0))
+            maxEvidence: Math.max(...statements.map(s => {
+                if (s._isConsolidated) {
+                    return s._maxEvidence;
+                } else {
+                    return parseInt(s.evidence_count) || 0;
+                }
+            }))
         }));
 
-        // Sort groups by their maximum evidence count (descending)
         groupsArray.sort((a, b) => b.maxEvidence - a.maxEvidence);
 
-        console.log('Groups sorted by max evidence:', groupsArray.map(g => `${g.key}:${g.maxEvidence}`));
-
-        // Flatten while preserving group order and marking group separators
         const result = [];
         groupsArray.forEach((group, groupIndex) => {
             group.statements.forEach((stmt, stmtIndex) => {
-                // Mark the first statement of each group (except the very first) as a group separator
                 if (groupIndex > 0 && stmtIndex === 0) {
                     stmt._isGroupStart = true;
                 }
@@ -244,9 +302,82 @@ class StatementMetadataPreview {
             });
         });
 
-        console.log('Final result:', result);
         return result;
     }
+
+    /**
+     * Consolidate Complex statements within a single source-target group
+     */
+    consolidateComplexStatementsInGroup(statements, regulatorName, isDownstream) {
+        const nonComplexStatements = [];
+        const complexStatements = [];
+
+        statements.forEach(stmt => {
+            if (stmt.stmt_type === 'Complex') {
+                complexStatements.push(stmt);
+            } else {
+                nonComplexStatements.push(stmt);
+            }
+        });
+
+        if (complexStatements.length <= 1) {
+            return [...nonComplexStatements, ...complexStatements];
+        }
+
+        const complexGroups = new Map();
+
+        complexStatements.forEach(stmt => {
+            let source, target;
+            if (isDownstream) {
+                source = stmt.gene_name;
+                target = regulatorName;
+            } else {
+                source = regulatorName;
+                target = stmt.gene_name;
+            }
+
+            const consolidationKey = `Complex:${source}↔${target}`;
+
+            if (!complexGroups.has(consolidationKey)) {
+                complexGroups.set(consolidationKey, {
+                    statements: [],
+                    representativeStatement: stmt,
+                    maxEvidence: parseInt(stmt.evidence_count) || 0
+                });
+            }
+
+            const group = complexGroups.get(consolidationKey);
+            group.statements.push(stmt);
+            group.maxEvidence = Math.max(group.maxEvidence, parseInt(stmt.evidence_count) || 0);
+        });
+
+        const consolidatedComplexStatements = [];
+        complexGroups.forEach((group, key) => {
+            if (group.statements.length === 1) {
+                consolidatedComplexStatements.push(group.statements[0]);
+            } else {
+                const consolidated = {
+                    ...group.representativeStatement,
+                    _isConsolidated: true,
+                    _consolidatedStatements: group.statements,
+                    _consolidationCount: group.statements.length,
+                    _maxEvidence: group.maxEvidence,
+                    _consolidationKey: key
+                };
+                consolidatedComplexStatements.push(consolidated);
+            }
+        });
+
+        consolidatedComplexStatements.sort((a, b) => {
+            const aEvidence = a._isConsolidated ? a._maxEvidence : (parseInt(a.evidence_count) || 0);
+            const bEvidence = b._isConsolidated ? b._maxEvidence : (parseInt(b.evidence_count) || 0);
+            return bEvidence - aEvidence;
+        });
+
+        return [...nonComplexStatements, ...consolidatedComplexStatements];
+    }
+
+
 
     /**
      * Hide metadata preview row
@@ -258,6 +389,7 @@ class StatementMetadataPreview {
         }
 
         this.expandedRows.delete(rowId);
+        this.expandedComplexStatements.clear(); // Clear complex expansions too
         this.updateToggleIndicator(row, false);
     }
 
@@ -272,6 +404,7 @@ class StatementMetadataPreview {
         indicators.forEach(indicator => indicator.classList.remove('expanded'));
 
         this.expandedRows.clear();
+        this.expandedComplexStatements.clear();
     }
 
     /**
@@ -307,7 +440,6 @@ class StatementMetadataPreview {
      */
     formatStatement(stmt, regulatorName, isDownstream) {
         const { icon, arrow } = this.getStatementDisplay(stmt.stmt_type);
-        const belief = parseFloat(stmt.belief).toFixed(2);
 
         let direction;
         if (isDownstream) {
@@ -319,11 +451,36 @@ class StatementMetadataPreview {
         // Add group separator class if this is the start of a new group
         const separatorClass = stmt._isGroupStart ? ' group-separator' : '';
 
-        return `
-            <div class="metadata-statement${separatorClass}">
-                ${icon} ${stmt.stmt_type}: ${direction} | Belief: ${belief} | Evidence: ${stmt.evidence_count}
-            </div>
-        `;
+        if (stmt._isConsolidated) {
+            const belief = parseFloat(stmt.belief).toFixed(2);
+            const consolidationId = `complex_${Math.random().toString(36).substr(2, 9)}`;
+
+            const nestedStatementsHtml = stmt._consolidatedStatements.map(nestedStmt => {
+                const nestedBelief = parseFloat(nestedStmt.belief).toFixed(2);
+                return `
+                    <div class="complex-nested-statement">
+                        ${icon} ${nestedStmt.stmt_type}: ${direction} | Belief: ${nestedBelief} | Evidence: ${nestedStmt.evidence_count}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="metadata-statement consolidated-complex${separatorClass}" data-complex-id="${consolidationId}">
+                    ${icon} ${stmt.stmt_type}: ${direction} (${stmt._consolidationCount} variants) | Max Evidence: ${stmt._maxEvidence}
+                    <span class="complex-toggle-indicator">▼</span>
+                    <div class="complex-nested-statements">
+                        ${nestedStatementsHtml}
+                    </div>
+                </div>
+            `;
+        } else {
+            const belief = parseFloat(stmt.belief).toFixed(2);
+            return `
+                <div class="metadata-statement${separatorClass}">
+                    ${icon} ${stmt.stmt_type}: ${direction} | Belief: ${belief} | Evidence: ${stmt.evidence_count}
+                </div>
+            `;
+        }
     }
 
     /**
