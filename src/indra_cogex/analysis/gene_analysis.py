@@ -245,7 +245,7 @@ def signed_analysis(
             is_downstream=False,
             minimum_belief=minimum_belief,
             minimum_evidence=minimum_evidence_count,
-            allowed_stmt_types=['Activation', 'IncreaseAmount']  # NEW!
+            allowed_stmt_types=['Activation', 'IncreaseAmount']
         )
 
         neg_metadata = get_statement_metadata_for_pairs(
@@ -254,7 +254,7 @@ def signed_analysis(
             is_downstream=False,
             minimum_belief=minimum_belief,
             minimum_evidence=minimum_evidence_count,
-            allowed_stmt_types=['Inhibition', 'DecreaseAmount']  # NEW!
+            allowed_stmt_types=['Inhibition', 'DecreaseAmount']
         )
 
         # Combine the results
