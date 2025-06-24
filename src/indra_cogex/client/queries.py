@@ -3342,37 +3342,20 @@ def get_network(
         if not statements:
             return {"nodes": [], "edges": []}
 
-        # Filter out complex binding statements with external nodes for subnetwork explorer
-        if request.endpoint == 'explorer.subnetwork':
-            # Get the input nodes - identify core nodes as the most connected ones
-            from collections import Counter
-            node_counts = Counter()
-            for stmt in statements:
-                for agent in stmt.agent_list():
-                    if agent:
-                        node_counts[agent.name] += 1
-
-            # Get top 3 most connected nodes (these should be the input nodes: MEK, ERK, RAF)
-            core_nodes = {name for name, _ in node_counts.most_common(3)}
-
-            # Filter statements
+        # Filter out Complex statements if input nodes are stored in session
+        input_node_names = set(session.pop('subnetwork_input_nodes', []))  # pop to use once
+        if input_node_names:
             filtered_statements = []
             for stmt in statements:
                 if stmt.__class__.__name__ == 'Complex':
-                    # Get all agent names in this complex
                     agent_names = {agent.name for agent in stmt.agent_list() if agent}
-
-                    # Only keep if ALL agents are in the core input set
-                    if agent_names.issubset(core_nodes):
+                    if agent_names.issubset(input_node_names):
                         filtered_statements.append(stmt)
-                    # else: skip this complex statement
                 else:
-                    # Keep all non-Complex statements
                     filtered_statements.append(stmt)
-
             statements = filtered_statements
 
-        # Create network using IndraNetAssembler with direction-preserving method
+        # Build graph from statements
         assembler = IndraNetAssembler(statements)
         graph = assembler.make_model(method='df', graph_type='multi_graph')
 
@@ -3380,14 +3363,14 @@ def get_network(
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
-        # Map db_refs
+        # Build node db_refs mapping
         entity_db_refs = {}
         for stmt in statements:
             for agent in stmt.agent_list():
                 if agent and hasattr(agent, 'db_refs'):
                     entity_db_refs[agent.name] = agent.db_refs
 
-        # Process nodes
+        # Build nodes
         nodes = []
         for node_id in graph.nodes():
             db_refs = entity_db_refs.get(node_id, {})
@@ -3435,7 +3418,7 @@ def get_network(
                 'uniprot': db_refs.get('UP', '')
             })
 
-        # Process edges: only one edge per (source, target, stmt_type)
+        # Build edges
         edges = []
         edge_count = 0
         seen_keys = set()
@@ -3444,17 +3427,14 @@ def get_network(
             stmt_type = data.get('stmt_type', 'Interaction')
 
             if stmt_type == 'Complex':
-                # Treat Complex as undirected: only one edge per unordered pair
                 edge_key = tuple(sorted([source, target]))
             else:
-                # For all others, preserve direction and type
                 edge_key = (source, target, stmt_type)
 
             if edge_key in seen_keys:
                 continue
             seen_keys.add(edge_key)
 
-            stmt_type = data.get('stmt_type', 'Interaction')
             edge_stmt = next(
                 (
                     s for s in statements
@@ -3496,7 +3476,7 @@ def get_network(
                 'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
                 'interaction': actual_stmt_type.lower(),
                 'polarity': 'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
-                'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
+                            'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
                 'support_type': 'database' if include_db_evidence else 'literature',
                 'type': actual_stmt_type
             }
@@ -3523,6 +3503,7 @@ def get_network(
         import traceback
         traceback.print_exc()
         return {"nodes": [], "edges": [], "error": str(e)}
+
 
 
 if __name__ == "__main__":
