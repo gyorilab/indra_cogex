@@ -801,7 +801,7 @@ def subnetwork():
     nodes = [tuple(node.split(':', maxsplit=1))
              for node in request.args.get('nodes', '').split(',') if node]
 
-    if nodes:  # If nodes are provided in the URL, process them
+    if nodes: 
 
         # Store for filtering Complex statements in get_network
         input_node_names = [identifier for prefix, identifier in nodes]

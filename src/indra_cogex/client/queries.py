@@ -3343,7 +3343,7 @@ def get_network(
             return {"nodes": [], "edges": []}
 
         # Filter out Complex statements if input nodes are stored in session
-        input_node_names = set(session.pop('subnetwork_input_nodes', []))  # pop to use once
+        input_node_names = set(session.pop('subnetwork_input_nodes', []))
         if input_node_names:
             filtered_statements = []
             for stmt in statements:
