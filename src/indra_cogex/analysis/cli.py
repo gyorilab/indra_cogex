@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import logging
-import pickle
 from datetime import datetime
 from pathlib import Path
 
-from indra_cogex.analysis.source_targets_explanation import explain_downstream
+from indra_cogex.analysis.source_targets_explanation import souce_target_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -53,19 +52,33 @@ def main():
     else:
         output_dir = Path(args.output_dir)
 
+    # Ensure output directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Convert Path to string for compatibility with the function
+    output_dir_str = str(output_dir)
+
     try:
-        # Run the analysis using the existing explain_downstream function
-        result = explain_downstream(
+        # Run the analysis with the output directory parameter
+        result = souce_target_analysis(
             args.source,
             args.targets,
+            output_dir=output_dir_str,  # Pass the output directory
             id_type=args.id_type
         )
-        # Save as pickle
-        # todo: save individual results i.e. plots, tables, etc. as separate files
-        output_dir.mkdir(parents=True, exist_ok=True)
-        with (output_dir / 'analysis_results.pkl').open("wb") as f:
-            pickle.dump(file=f, obj=result)
-        logger.info(f'Analysis results saved to {output_dir}')
+
+        # Log where the results were saved
+        logger.info(f'Analysis complete. Results saved to {output_dir}')
+
+        # Log individual files that were created (if debug logging is enabled)
+        if logger.isEnabledFor(logging.DEBUG):
+            for item in output_dir.glob('**/*'):
+                if item.is_file():
+                    rel_path = item.relative_to(output_dir)
+                    logger.debug(f'Created file: {rel_path}')
+
+            # Provide a summary of what was generated
+            logger.info(f'Generated {sum(1 for _ in output_dir.glob("**/*") if _.is_file())} files')
 
     except Exception as e:
         logger.error(f'Analysis failed: {str(e)}')

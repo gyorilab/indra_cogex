@@ -195,6 +195,49 @@
                 return $(this).text().trim() === 'Statements';
             }).addClass('statements-header');
         });
+        // Vue js section
+
+        // Define globals
+        // Sources dict = {databases: [...], readers: [...]}
+        Vue.prototype.$sources = {{ sources_dict|safe }};
+        // Define endpoints
+        Vue.prototype.$stmt_hash_url = "{{ url_for('data_display.get_evidence', stmt_hash='') }}";
+        Vue.prototype.$curation_url = "{{ url_for('data_display.submit_curation_endpoint', hash_val='') }}";
+        Vue.prototype.$curation_list_url = "{{ url_for('data_display.list_curations', stmt_hash='', src_hash='') }}".slice(0, -2);
+
+        let app = new Vue({
+            el: '#vue-app',
+            data: {
+                stmt_sections: [
+                    {% for gene, stmt_data in results.statements.items() %}
+                    {
+                        gene: "{{ gene }}",
+                        statements: [
+                            {% for stmt_tuple in stmt_data %}
+                            {
+                                ev_array: {{ stmt_tuple[0]|safe }},
+                                english: {{ stmt_tuple[1]|safe }},
+                                hash: {{ stmt_tuple[2]|safe }},
+                                sources: {{ stmt_tuple[3]|safe }},
+                                total_evidence: {{ stmt_tuple[4]|int }},
+                                badges: {{ stmt_tuple[5]|safe }}
+                            }{% if not loop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+            },
+            methods: {
+                updateIncludeDbEvidence() {
+                    let currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
+                    window.location.href = currentUrl.toString();
+                }
+            }
+        });
     </script>
 {% endblock %}
 
@@ -220,6 +263,61 @@
         </table>
     </div>
 {% endmacro %}
+
+{% block head %}
+    {{ super() }}
+    <!-- Vue 2 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+
+    <!-- Indralab-vue, for access to <statement> component and its child components -->
+    <script src="{{ vue_src_js or url_for('data_display.serve_indralab_vue', file='IndralabVue.umd.min.js') }}"></script>
+    <link href="{{ vue_src_css or url_for('data_display.serve_indralab_vue', file='IndralabVue.css') }}"
+          rel="stylesheet">
+
+    <!-- Source badge CSS -->
+    <link href="{{ url_for('static', filename='source_badges.css') }}" rel="stylesheet">
+
+    <style>
+        .badge-subject {
+            background-color: #4a36aa;
+            color: #FFFFFF;
+        }
+
+        .badge-object {
+            background-color: #2d8e4c;
+            color: #FFFFFF;
+        }
+
+        .badge-other {
+            background-color: #606060;
+            color: #FFFFFF;
+        }
+
+        .badge-source {
+            font-size: 8pt;
+            margin: 0;
+            padding-left: 5px;
+            cursor: pointer;
+        }
+
+        .nvm {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .col-1 {
+            flex: 12%;
+            max-width: 12%;
+        }
+
+        .col-10 {
+            flex: 76%;
+            max-width: 76%;
+        }
+    </style>
+{% endblock %}
+
+{% block containerattr %}class="col-md-10 col-lg-10" id="vue-app"{% endblock %}
 
 {% block container %}
     <div class="card card-body bg-light">
@@ -258,12 +356,28 @@
                 <!-- Database badges will be inserted here by JavaScript -->
 
                 <div id="gene-statements-container">
-                    {% for gene, statement in results.statements.items() %}
-                        <h3>{{ gene }}</h3>
-                        {% if gene != 'database_badges' %}
-                            {{ statement | safe }}
-                        {% endif %}
-                    {% endfor %}
+                    <div
+                        class="row"
+                        v-for="(stmt_section, index) in stmt_sections"
+                        :key="index"
+                    >
+                        <div class="list-group list-group-flush col">
+                            <h3 v-html="stmt_section.gene"></h3>
+                            <statement
+                                    class="list-group-item"
+                                    v-for="st_obj in stmt_section.statements"
+                                    :key="st_obj.hash"
+                                    :evidence="st_obj.ev_array"
+                                    :english="st_obj.english"
+                                    :hash="st_obj.hash"
+                                    :sources="st_obj.sources"
+                                    :total_evidence="st_obj.total_evidence"
+                                    :badges="st_obj.badges"
+                                    :loadable="true"
+                                    :sources_left_of_badges="true"
+                            ></statement>
+                        </div>
+                    </div>
                 </div>
             {% endif %}
 
@@ -307,92 +421,92 @@
             {% endif %}
 
             {% if results.upstream and results.upstream.get('shared_proteins') %}
-    <h3>Upstream Analysis</h3>
-    <p>
-        Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
-        {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
-            Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
-        {% endif %}
-    </p>
+                <h3>Upstream Analysis</h3>
+                <p>
+                    Shared upstream regulatory mechanisms: molecules that regulate both source and target genes.
+                    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+                        Showing top {{ results.upstream.get('shared_proteins')|length }} most significant regulators.
+                    {% endif %}
+                </p>
 
-    {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
-        <!-- Display enrichment results as a table with pagination -->
-        <h4>Enriched Upstream Regulators</h4>
-        <div class="datatable-wrapper">
-            <table class="table table-sm table-hover datatable" id="upstream-table">
-                <thead>
-                    <tr>
-                        <th>CURIE</th>
-                        <th>Name</th>
-                        <th>p-value</th>
-                        <th>q-value</th>
-                        <th>Statements</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for _, row in results.upstream.get('shared_entities').iterrows() %}
-                        <tr>
-                            <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
-                            <td>{{ row.name }}</td>
-                            <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
-                            <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
-                            <td>
-                                {% if 'curie' in row and row.curie and ':' in row.curie %}
-                                    <!-- Using full CURIE format with namespace:id -->
-                                    {% set namespace = row.curie.split(':')[0] %}
-                                    {% set id = row.curie.split(':')[1] %}
-                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% else %}
-                                    <!-- Fallback to name-based search -->
-                                    <a href="{{ url_for('search.search', agent=row.name) }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <!-- Display proteins with pagination using DataTables -->
-        <h4>Shared Proteins</h4>
-        <div class="datatable-wrapper">
-            <table class="table table-sm table-hover datatable" id="shared-proteins-table">
-                <thead>
-                    <tr>
-                        <th>Regulator</th>
-                        <th>Statements</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for protein in results.upstream.get('shared_proteins') %}
-                        <tr>
-                            <td>{{ protein }}</td>
-                            <td>
-                                {% if ':' in protein|string %}
-                                    <!-- Protein is a CURIE with namespace:id format -->
-                                    {% set namespace = protein.split(':')[0] %}
-                                    {% set id = protein.split(':')[1] %}
-                                    <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% else %}
-                                    <!-- Protein is a name -->
-                                    <a href="{{ url_for('search.search', agent=protein) }}"
-                                       class="btn btn-primary"
-                                       target="_blank">View Statements</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
-{% endif %}
+                {% if results.upstream.get('shared_entities') is not none and not results.upstream.get('shared_entities').empty %}
+                    <!-- Display enrichment results as a table with pagination -->
+                    <h4>Enriched Upstream Regulators</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="upstream-table">
+                            <thead>
+                                <tr>
+                                    <th>CURIE</th>
+                                    <th>Name</th>
+                                    <th>p-value</th>
+                                    <th>q-value</th>
+                                    <th>Statements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for _, row in results.upstream.get('shared_entities').iterrows() %}
+                                    <tr>
+                                        <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
+                                        <td>{{ row.name }}</td>
+                                        <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
+                                        <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
+                                        <td>
+                                            {% if 'curie' in row and row.curie and ':' in row.curie %}
+                                                <!-- Using full CURIE format with namespace:id -->
+                                                {% set namespace = row.curie.split(':')[0] %}
+                                                {% set id = row.curie.split(':')[1] %}
+                                                <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% else %}
+                                                <!-- Fallback to name-based search -->
+                                                <a href="{{ url_for('search.search', agent=row.name) }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <!-- Display proteins with pagination using DataTables -->
+                    <h4>Shared Proteins</h4>
+                    <div class="datatable-wrapper">
+                        <table class="table table-sm table-hover datatable" id="shared-proteins-table">
+                            <thead>
+                                <tr>
+                                    <th>Regulator</th>
+                                    <th>Statements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for protein in results.upstream.get('shared_proteins') %}
+                                    <tr>
+                                        <td>{{ protein }}</td>
+                                        <td>
+                                            {% if ':' in protein|string %}
+                                                <!-- Protein is a CURIE with namespace:id format -->
+                                                {% set namespace = protein.split(':')[0] %}
+                                                {% set id = protein.split(':')[1] %}
+                                                <a href="{{ url_for('search.search', agent_tuple='["' + namespace + '", "' + id + '"]') }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% else %}
+                                                <!-- Protein is a name -->
+                                                <a href="{{ url_for('search.search', agent=protein) }}"
+                                                   class="btn btn-primary"
+                                                   target="_blank">View Statements</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
     <!-- Add extra space at bottom to prevent footer overlap -->
