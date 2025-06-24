@@ -131,7 +131,17 @@ def _enrich_render_statements(
     if curations is None:
         curations = curation_cache.get_curation_cache()
     stmts = remove_curated_statements(stmts, curations=curations, include_db_evidence=include_db_evidence)
-    stmts = stmts[: proxies.limit]
+
+    # Apply selective limits based on endpoint
+    if request.endpoint == 'explorer.go_term':
+        # GO Explorer gets limit of 100
+        stmts = stmts[:100]
+    elif request.endpoint == 'explorer.subnetwork':
+        # Subnetwork Explorer gets no limit
+        pass  # Don't apply any limit
+    else:
+        # Other explorers that use this function keep original behavior
+        stmts = stmts[:proxies.limit]
 
     logger.info(f"Enriching {len(stmts)} statements")
     start_time = time.time()
@@ -677,7 +687,6 @@ def _explore_paper(
     return render_statements(
         stmts,
         title=f"Publication Explorer: {prefix}:{identifier}",
-        limit=proxies.limit,
         curations=curations,
         description=f"""
             Explore statements with evidences occurring in 
@@ -792,7 +801,11 @@ def subnetwork():
     nodes = [tuple(node.split(':', maxsplit=1))
              for node in request.args.get('nodes', '').split(',') if node]
 
-    if nodes:  # If nodes are provided in the URL, process them
+    if nodes: 
+
+        # Store for filtering Complex statements in get_network
+        input_node_names = [identifier for prefix, identifier in nodes]
+        session['subnetwork_input_nodes'] = input_node_names
 
         nodes_html = " ".join(
             f"""\
