@@ -10,7 +10,7 @@ import networkx as nx
 from flask import session, request
 
 from indra.assemblers.indranet import IndraNetAssembler
-from indra.statements import Agent, Evidence, Statement
+from indra.statements import Agent, Evidence, Statement, Complex
 from indra.sources import SOURCE_INFO
 
 from indra_cogex.apps.constants import AGENT_NAME_CACHE
@@ -3347,7 +3347,7 @@ def get_network(
         if input_node_names:
             filtered_statements = []
             for stmt in statements:
-                if stmt.__class__.__name__ == 'Complex':
+                if isinstance(stmt, Complex):
                     agent_names = {agent.name for agent in stmt.agent_list() if agent}
                     if agent_names.issubset(input_node_names):
                         filtered_statements.append(stmt)
