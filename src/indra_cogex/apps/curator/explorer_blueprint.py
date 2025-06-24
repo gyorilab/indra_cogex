@@ -803,6 +803,10 @@ def subnetwork():
 
     if nodes:  # If nodes are provided in the URL, process them
 
+        # Store for filtering Complex statements in get_network
+        input_node_names = [identifier for prefix, identifier in nodes]
+        session['subnetwork_input_nodes'] = input_node_names
+
         nodes_html = " ".join(
             f"""\
             <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
