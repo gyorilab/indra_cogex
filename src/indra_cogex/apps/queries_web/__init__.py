@@ -523,7 +523,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]]
+    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 
 )
 
