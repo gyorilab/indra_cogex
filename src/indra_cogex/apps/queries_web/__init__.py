@@ -497,7 +497,7 @@ examples_dict = {
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix", "file_path", "curations", "output_dir"}
+               "subject_prefix", "object_prefix", "file_path","remove_medscan", "curations", "output_dir"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
@@ -523,7 +523,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]]
+    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 
 )
 
