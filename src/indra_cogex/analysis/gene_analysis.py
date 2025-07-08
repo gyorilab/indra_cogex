@@ -92,6 +92,8 @@ def discrete_analysis(
         background_gene_ids = list(background_genes)
 
     results = {}
+
+    # Run all analyses (unchanged)
     for analysis_name, analysis_func in [
         ("go", go_ora),
         ("wikipathways", wikipathways_ora),
@@ -119,47 +121,32 @@ def discrete_analysis(
                 background_gene_ids=background_gene_ids
             )
 
-            # Extract kinases and TFs from upstream results
+            # Extract kinases and TFs
             if analysis_name == "indra-upstream" and analysis_result is not None:
-                results[analysis_name] = analysis_result  # original upstream
-                kinase_results = pd.DataFrame(columns=analysis_result.columns)
-                tf_results = pd.DataFrame(columns=analysis_result.columns)
+                results[analysis_name] = analysis_result
 
-                for _, row in analysis_result.iterrows():
-                    if row['curie'].lower().startswith('hgnc:'):
-                        gene_name = row['name']
-                        if is_kinase(gene_name):
-                            kinase_results = pd.concat([kinase_results, pd.DataFrame([row])], ignore_index=True)
-                        if is_transcription_factor(gene_name):
-                            tf_results = pd.concat([tf_results, pd.DataFrame([row])], ignore_index=True)
+                # Fast vectorized extraction (replaces the slow concatenation loop)
+                if not analysis_result.empty:
+                    hgnc_mask = analysis_result['curie'].str.lower().str.startswith('hgnc:')
+                    kinase_mask = hgnc_mask & analysis_result['name'].apply(is_kinase)
+                    tf_mask = hgnc_mask & analysis_result['name'].apply(is_transcription_factor)
 
-                if not kinase_results.empty:
-                    results["indra-upstream-kinases"] = kinase_results
-                if not tf_results.empty:
-                    results["indra-upstream-tfs"] = tf_results
+                    if kinase_mask.any():
+                        results["indra-upstream-kinases"] = analysis_result[kinase_mask].copy()
+                    if tf_mask.any():
+                        results["indra-upstream-tfs"] = analysis_result[tf_mask].copy()
             else:
                 results[analysis_name] = analysis_result
 
-    # Enrich INDRA results with statement metadata
-    for result_key in results:
-        if result_key.startswith("indra-"):
-            df = results[result_key]
-            if isinstance(df, pd.DataFrame) and not df.empty:
-                regulator_gene_pairs = [
-                    (row["curie"], gene_id)
-                    for _, row in df.iterrows()
-                    for gene_id in gene_set
-                ]
-                is_downstream = result_key == "indra-downstream"
-                metadata_map = get_statement_metadata_for_pairs(
-                    regulator_gene_pairs,
-                    client=client,
-                    is_downstream=is_downstream,
-                    minimum_belief=minimum_belief,
-                    minimum_evidence=minimum_evidence_count
-                )
-                df["statements"] = df["curie"].map(lambda c: metadata_map.get(c, []))
-                results[result_key] = df
+    # Optimized statement metadata enrichment
+    if indra_path_analysis:
+        results = enrich_with_optimized_metadata(
+            results=results,
+            gene_set=gene_set,
+            client=client,
+            minimum_belief=minimum_belief,
+            minimum_evidence_count=minimum_evidence_count
+        )
 
     return results
 
