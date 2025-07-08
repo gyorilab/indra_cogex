@@ -450,15 +450,8 @@ def get_network_for_statements(
                             'type': entity_type
                         }
 
-        # Get target name (handles descriptive names for central node)
-        target_name = target_id_str.split(':')[-1]
-        try:
-            query = "MATCH (n:BioEntity {id: $target_id}) RETURN n.name"
-            result = client.query_tx(query, target_id=target_id_str.lower())
-            if result and result[0][0]:
-                target_name = result[0][0]
-        except Exception:
-            pass
+        # Get target name from statements (same as other entities)
+        target_name = entity_info_dict.get(target_id_str, {}).get('name', target_id_str.split(':')[-1])
 
         # Create target node
         target_node = {
@@ -536,13 +529,18 @@ def get_network_for_statements(
                     if not agent or not hasattr(agent, 'db_refs'):
                         continue
 
-                    # Find agent's entity ID
+                    # Find agent's entity ID using SAME logic as node creation
                     agent_entity_id = None
                     if 'HGNC' in agent.db_refs:
                         agent_entity_id = f"HGNC:{agent.db_refs['HGNC']}"
                     else:
-                        # Check other entity types
-                        for db_type in ['CHEBI', 'MESH', 'GO', 'REACTOME', 'WIKIPATHWAYS', 'FPLX']:
+                        # Use same priority order as node creation
+                        target_namespace = target_id_str.split(':')[0]
+                        priority_order = [target_namespace] + [db for db in
+                                                               ['CHEBI', 'MESH', 'GO', 'REACTOME', 'WIKIPATHWAYS',
+                                                                'FPLX'] if db != target_namespace]
+
+                        for db_type in priority_order:
                             if db_type in agent.db_refs:
                                 db_value = agent.db_refs[db_type]
                                 agent_entity_id = db_value if db_value.startswith(
