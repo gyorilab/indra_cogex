@@ -4,7 +4,8 @@ from typing import Set
 from wtforms import BooleanField, FileField, FloatField, IntegerField, RadioField
 from wtforms.validators import DataRequired
 
-indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)")
+indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slow)",
+                                         default=True)
 minimum_evidence_field = IntegerField(
     "Minimum Evidence Count",
     default=1,
