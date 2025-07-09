@@ -2,13 +2,14 @@
 
 """A collection of analyses possible on gene lists (of HGNC identifiers)."""
 
-from typing import Collection, Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Collection, Iterable, List, Mapping, Optional, Set, Tuple, Union
 import logging
 import numpy as np
 import pandas as pd
 from scipy.stats import fisher_exact
 from statsmodels.stats.multitest import multipletests
 
+from indra_cogex.apps.search.search import get_kinase_phosphosite_statements
 from indra_cogex.client.enrichment.utils import (
     get_entity_to_regulators,
     get_entity_to_targets,
@@ -150,8 +151,8 @@ def gene_ontology_single_ora(
 
 
 def _do_ora(
-    curie_to_target_sets: Mapping[Tuple[str, str], Set[str]],
-    query: Iterable[str],
+    curie_to_target_sets: Mapping[Tuple[str, str], Set[Union[str, Tuple[str, str]]]],
+    query: Iterable[Union[str, Tuple[str, str]]],
     count: int,
     method: Optional[str] = "fdr_bh",
     alpha: Optional[float] = None,
@@ -565,14 +566,42 @@ def kinase_ora(
 
     if not overlap:
         logger.warning("No overlap between query phosphosites and known targets, returning empty DataFrame")
-        return pd.DataFrame(columns=['curie', 'name', 'p', 'q', 'mlp', 'mlq'])
+        return pd.DataFrame(columns=['curie', 'name', 'p', 'q', 'mlp', 'mlq', 'statements'])
 
-    return _do_ora(
+    # Perform ORA
+    df = _do_ora(
         curie_to_target_sets=kinase_to_phosphosites,
         query=phosphosite_ids,
         count=count,
         **kwargs
     )
+
+    # Attach INDRA statement metadata
+    if not df.empty and "curie" in df.columns:
+        curie_to_statements = {}
+        for curie in df["curie"].unique():
+            kinase_id = curie.lower()
+            stmt_list, _ = get_kinase_phosphosite_statements(
+                kinase_id=kinase_id,
+                phosphosites=[f"{gene}-{site}" for (gene, site) in phosphosite_ids],
+                minimum_belief=minimum_belief,
+                minimum_evidence=minimum_evidence_count,
+                client=client
+            )
+            curie_to_statements[curie] = [
+                {
+                    "gene": s.agent_list()[1].db_refs.get("HGNC"),
+                    "gene_name": s.agent_list()[1].name,
+                    "stmt_hash": s.get_hash(),
+                    "belief": s.belief,
+                    "evidence_count": len(s.evidence),
+                    "stmt_type": type(s).__name__
+                }
+                for s in stmt_list
+            ]
+        df["statements"] = df["curie"].map(curie_to_statements)
+
+    return df
 
 
 def main():

@@ -1,0 +1,584 @@
+<!-- templates/partials/metadata-preview.html -->
+
+<style>
+/* Statement Metadata Preview Styles */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+    background-color: #f8f9fa !important;
+}
+
+.metadata-preview-row {
+    background-color: #f1f3f4;
+    border-top: none !important;
+    animation: slideDown 0.3s ease-out;
+}
+
+.metadata-preview-content {
+    padding: 15px 20px;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.metadata-statement {
+    margin: 8px 0;
+    padding: 6px 12px;
+    background-color: white;
+    border-radius: 4px;
+    border-left: 3px solid #dee2e6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.metadata-statement.group-separator {
+    margin-top: 16px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 12px;
+}
+
+.metadata-statement.consolidated-complex {
+    cursor: pointer;
+    position: relative;
+}
+
+.metadata-statement.consolidated-complex:hover {
+    background-color: #f8f9fa;
+}
+
+.metadata-statement:first-child {
+    margin-top: 0;
+}
+
+.metadata-statement:last-child {
+    margin-bottom: 0;
+}
+
+.complex-nested-statements {
+    margin-top: 8px;
+    padding-left: 20px;
+    border-left: 2px solid #e9ecef;
+    display: none;
+}
+
+.complex-nested-statements.expanded {
+    display: block;
+}
+
+.complex-nested-statement {
+    margin: 4px 0;
+    padding: 4px 8px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.complex-toggle-indicator {
+    float: right;
+    font-size: 0.7em;
+    color: #999;
+    transition: transform 0.2s ease;
+}
+
+.complex-toggle-indicator.expanded {
+    transform: rotate(180deg);
+}
+
+.metadata-no-statements {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.metadata-toggle-indicator {
+    float: right;
+    font-size: 0.8em;
+    color: #6c757d;
+    transition: transform 0.2s ease;
+}
+
+.metadata-toggle-indicator.expanded {
+    transform: rotate(180deg);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .metadata-preview-content {
+        padding: 10px 15px;
+        font-size: 0.85em;
+    }
+
+    .metadata-statement {
+        padding: 4px 8px;
+        margin: 6px 0;
+    }
+
+    .complex-nested-statements {
+        padding-left: 15px;
+    }
+}
+</style>
+
+<script>
+/**
+ * Statement Metadata Preview Component
+ * Makes table rows clickable to show/hide statement metadata inline
+ */
+class StatementMetadataPreview {
+    constructor() {
+        this.expandedRows = new Set();
+        this.expandedComplexStatements = new Set();
+        this.init();
+    }
+
+    init() {
+        // Add click listeners to all clickable rows
+        document.addEventListener('click', (e) => {
+            // Handle complex statement expansion
+            if (e.target.closest('.consolidated-complex')) {
+                e.stopPropagation();
+                const complexStatement = e.target.closest('.consolidated-complex');
+                this.toggleComplexStatement(complexStatement);
+                return;
+            }
+
+            // Handle main row expansion
+            const row = e.target.closest('.clickable-row');
+            if (row) {
+                this.toggleMetadataRow(row);
+            }
+        });
+
+        // Add toggle indicators to clickable rows
+        this.addToggleIndicators();
+    }
+
+    /**
+     * Toggle nested complex statement details
+     */
+    toggleComplexStatement(complexElement) {
+        const statementId = complexElement.getAttribute('data-complex-id');
+        const nestedContainer = complexElement.querySelector('.complex-nested-statements');
+        const indicator = complexElement.querySelector('.complex-toggle-indicator');
+
+        if (this.expandedComplexStatements.has(statementId)) {
+            nestedContainer.classList.remove('expanded');
+            indicator.classList.remove('expanded');
+            this.expandedComplexStatements.delete(statementId);
+        } else {
+            nestedContainer.classList.add('expanded');
+            indicator.classList.add('expanded');
+            this.expandedComplexStatements.add(statementId);
+        }
+    }
+
+    addToggleIndicators() {
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        clickableRows.forEach(row => {
+            if (row.querySelector('.metadata-toggle-indicator')) return;
+
+            const lastCell = row.querySelector('td:last-child');
+            if (lastCell) {
+                const indicator = document.createElement('span');
+                indicator.className = 'metadata-toggle-indicator';
+                indicator.innerHTML = '▼';
+                indicator.title = 'Click to show/hide statement metadata';
+                lastCell.appendChild(indicator);
+            }
+        });
+    }
+
+    /**
+     * Toggle metadata preview for a table row
+     */
+    toggleMetadataRow(row) {
+        const rowId = this.getRowId(row);
+        const isExpanded = this.expandedRows.has(rowId);
+
+        if (isExpanded) {
+            this.hideMetadataRow(row, rowId);
+        } else {
+            this.showMetadataRow(row, rowId);
+        }
+    }
+
+    /**
+     * Show metadata preview row
+     */
+    showMetadataRow(row, rowId) {
+        // Hide any other expanded rows first (optional - comment out for multiple expansions)
+        this.hideAllMetadataRows();
+
+        const statements = this.getStatementsData(row);
+        const regulatorName = this.getRegulatorName(row);
+        const tableId = this.getTableId(row);
+        const isDownstream = this.isDownstreamDirection(tableId);
+
+        // Group and sort statements
+        const groupedStatements = this.groupAndSortStatements(statements, regulatorName, isDownstream);
+
+        // Create and insert metadata row
+        const metadataRow = this.createMetadataRow(groupedStatements, regulatorName, isDownstream, row.cells.length);
+        row.parentNode.insertBefore(metadataRow, row.nextSibling);
+
+        // Update state
+        this.expandedRows.add(rowId);
+        this.updateToggleIndicator(row, true);
+    }
+
+    /**
+     * Group statements by source-target pairs and sort by evidence count
+     */
+    groupAndSortStatements(statements, regulatorName, isDownstream) {
+        if (!statements || statements.length === 0) {
+            return [];
+        }
+
+        const groups = new Map();
+
+        statements.forEach(stmt => {
+            let source, target;
+            if (isDownstream) {
+                source = stmt.gene_name;
+                target = regulatorName;
+            } else {
+                source = regulatorName;
+                target = stmt.gene_name;
+            }
+
+            const pairKey = `${source}→${target}`;
+            if (!groups.has(pairKey)) {
+                groups.set(pairKey, []);
+            }
+            groups.get(pairKey).push(stmt);
+        });
+
+        groups.forEach((group, key) => {
+            group.sort((a, b) => {
+                const aEvidence = parseInt(a.evidence_count) || 0;
+                const bEvidence = parseInt(b.evidence_count) || 0;
+                return bEvidence - aEvidence;
+            });
+
+            const processedGroup = this.consolidateComplexStatementsInGroup(group, regulatorName, isDownstream);
+            groups.set(key, processedGroup);
+        });
+
+        const groupsArray = Array.from(groups.entries()).map(([key, statements]) => ({
+            key: key,
+            statements: statements,
+            maxEvidence: Math.max(...statements.map(s => {
+                if (s._isConsolidated) {
+                    return s._maxEvidence;
+                } else {
+                    return parseInt(s.evidence_count) || 0;
+                }
+            }))
+        }));
+
+        groupsArray.sort((a, b) => b.maxEvidence - a.maxEvidence);
+
+        const result = [];
+        groupsArray.forEach((group, groupIndex) => {
+            group.statements.forEach((stmt, stmtIndex) => {
+                if (groupIndex > 0 && stmtIndex === 0) {
+                    stmt._isGroupStart = true;
+                }
+                result.push(stmt);
+            });
+        });
+
+        return result;
+    }
+
+    /**
+     * Consolidate Complex statements within a single source-target group
+     */
+    consolidateComplexStatementsInGroup(statements, regulatorName, isDownstream) {
+        const nonComplexStatements = [];
+        const complexStatements = [];
+
+        statements.forEach(stmt => {
+            if (stmt.stmt_type === 'Complex') {
+                complexStatements.push(stmt);
+            } else {
+                nonComplexStatements.push(stmt);
+            }
+        });
+
+        if (complexStatements.length <= 1) {
+            return [...nonComplexStatements, ...complexStatements];
+        }
+
+        const complexGroups = new Map();
+
+        complexStatements.forEach(stmt => {
+            let source, target;
+            if (isDownstream) {
+                source = stmt.gene_name;
+                target = regulatorName;
+            } else {
+                source = regulatorName;
+                target = stmt.gene_name;
+            }
+
+            const consolidationKey = `Complex:${source}↔${target}`;
+
+            if (!complexGroups.has(consolidationKey)) {
+                complexGroups.set(consolidationKey, {
+                    statements: [],
+                    representativeStatement: stmt,
+                    maxEvidence: parseInt(stmt.evidence_count) || 0
+                });
+            }
+
+            const group = complexGroups.get(consolidationKey);
+            group.statements.push(stmt);
+            group.maxEvidence = Math.max(group.maxEvidence, parseInt(stmt.evidence_count) || 0);
+        });
+
+        const consolidatedComplexStatements = [];
+        complexGroups.forEach((group, key) => {
+            if (group.statements.length === 1) {
+                consolidatedComplexStatements.push(group.statements[0]);
+            } else {
+                const consolidated = {
+                    ...group.representativeStatement,
+                    _isConsolidated: true,
+                    _consolidatedStatements: group.statements,
+                    _consolidationCount: group.statements.length,
+                    _maxEvidence: group.maxEvidence,
+                    _consolidationKey: key
+                };
+                consolidatedComplexStatements.push(consolidated);
+            }
+        });
+
+        consolidatedComplexStatements.sort((a, b) => {
+            const aEvidence = a._isConsolidated ? a._maxEvidence : (parseInt(a.evidence_count) || 0);
+            const bEvidence = b._isConsolidated ? b._maxEvidence : (parseInt(b.evidence_count) || 0);
+            return bEvidence - aEvidence;
+        });
+
+        return [...nonComplexStatements, ...consolidatedComplexStatements];
+    }
+
+
+
+    /**
+     * Hide metadata preview row
+     */
+    hideMetadataRow(row, rowId) {
+        const metadataRow = row.nextSibling;
+        if (metadataRow && metadataRow.classList.contains('metadata-preview-row')) {
+            metadataRow.remove();
+        }
+
+        this.expandedRows.delete(rowId);
+        this.expandedComplexStatements.clear(); // Clear complex expansions too
+        this.updateToggleIndicator(row, false);
+    }
+
+    /**
+     * Hide all expanded metadata rows
+     */
+    hideAllMetadataRows() {
+        const metadataRows = document.querySelectorAll('.metadata-preview-row');
+        metadataRows.forEach(row => row.remove());
+
+        const indicators = document.querySelectorAll('.metadata-toggle-indicator');
+        indicators.forEach(indicator => indicator.classList.remove('expanded'));
+
+        this.expandedRows.clear();
+        this.expandedComplexStatements.clear();
+    }
+
+    /**
+     * Create the metadata preview row HTML
+     */
+    createMetadataRow(statements, regulatorName, isDownstream, colSpan) {
+        const row = document.createElement('tr');
+        row.className = 'metadata-preview-row';
+
+        const cell = document.createElement('td');
+        cell.colSpan = colSpan;
+
+        const content = document.createElement('div');
+        content.className = 'metadata-preview-content';
+
+        if (!statements || statements.length === 0) {
+            content.innerHTML = '<div class="metadata-no-statements">No statement metadata available</div>';
+        } else {
+            const statementsHtml = statements.map(stmt =>
+                this.formatStatement(stmt, regulatorName, isDownstream)
+            ).join('');
+            content.innerHTML = statementsHtml;
+        }
+
+        cell.appendChild(content);
+        row.appendChild(cell);
+
+        return row;
+    }
+
+    /**
+     * Format a single statement with icon and arrow
+     */
+    formatStatement(stmt, regulatorName, isDownstream) {
+        const { icon, arrow } = this.getStatementDisplay(stmt.stmt_type);
+
+        let direction;
+        if (isDownstream) {
+            direction = `${stmt.gene_name} ${arrow} ${regulatorName}`;
+        } else {
+            direction = `${regulatorName} ${arrow} ${stmt.gene_name}`;
+        }
+
+        // Add group separator class if this is the start of a new group
+        const separatorClass = stmt._isGroupStart ? ' group-separator' : '';
+
+        if (stmt._isConsolidated) {
+            const belief = parseFloat(stmt.belief).toFixed(2);
+            const consolidationId = `complex_${Math.random().toString(36).substr(2, 9)}`;
+
+            const nestedStatementsHtml = stmt._consolidatedStatements.map(nestedStmt => {
+                const nestedBelief = parseFloat(nestedStmt.belief).toFixed(2);
+                return `
+                    <div class="complex-nested-statement">
+                        ${icon} ${nestedStmt.stmt_type}: ${direction} | Belief: ${nestedBelief} | Evidence: ${nestedStmt.evidence_count}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="metadata-statement consolidated-complex${separatorClass}" data-complex-id="${consolidationId}">
+                    ${icon} ${stmt.stmt_type}: ${direction} (${stmt._consolidationCount} variants) | Max Evidence: ${stmt._maxEvidence}
+                    <span class="complex-toggle-indicator">▼</span>
+                    <div class="complex-nested-statements">
+                        ${nestedStatementsHtml}
+                    </div>
+                </div>
+            `;
+        } else {
+            const belief = parseFloat(stmt.belief).toFixed(2);
+            return `
+                <div class="metadata-statement${separatorClass}">
+                    ${icon} ${stmt.stmt_type}: ${direction} | Belief: ${belief} | Evidence: ${stmt.evidence_count}
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Get statement type display configuration
+     */
+    getStatementDisplay(stmtType) {
+        const displays = {
+            'Activation': { icon: '✅', arrow: '→' },
+            'Inhibition': { icon: '🚫', arrow: '⊸' },
+            'Phosphorylation': { icon: '🧪', arrow: '→' },
+            'Dephosphorylation': { icon: '🔄', arrow: '←' },
+            'IncreaseAmount': { icon: '📈', arrow: '↗' },
+            'DecreaseAmount': { icon: '📉', arrow: '↘' },
+            'Complex': { icon: '🔁', arrow: '↔' },
+            'Ubiquitination': { icon: '🏷️', arrow: '→' },
+            'Deubiquitination': { icon: '🏷️', arrow: '←' },
+            'Acetylation': { icon: '⚛️', arrow: '→' },
+            'Deacetylation': { icon: '⚛️', arrow: '←' },
+            'Methylation': { icon: '🧬', arrow: '→' },
+            'Demethylation': { icon: '🧬', arrow: '←' },
+            'Hydroxylation': { icon: '💧', arrow: '→' },
+            'Sumoylation': { icon: '🔗', arrow: '→' },
+            'Desumoylation': { icon: '🔗', arrow: '←' },
+            'Translocation': { icon: '🚚', arrow: '→' },
+            'ActiveForm': { icon: '⚡', arrow: '→' },
+        };
+
+        return displays[stmtType] || { icon: '🔄', arrow: '⇄' };
+    }
+
+    /**
+     * Determine if this is a downstream relationship
+     */
+    isDownstreamDirection(tableId) {
+        return tableId && tableId.includes('downstream');
+    }
+
+    /**
+     * Extract statements data from row attributes
+     */
+    getStatementsData(row) {
+        try {
+            const statementsJson = row.getAttribute('data-statements');
+            return statementsJson ? JSON.parse(statementsJson) : null;
+        } catch (e) {
+            console.warn('Failed to parse statements data:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract regulator name from row attributes
+     */
+    getRegulatorName(row) {
+        return row.getAttribute('data-regulator-name') || 'Unknown';
+    }
+
+    /**
+     * Get table ID for direction determination
+     */
+    getTableId(row) {
+        const table = row.closest('table');
+        return table ? table.id : '';
+    }
+
+    /**
+     * Generate unique row identifier
+     */
+    getRowId(row) {
+        return row.rowIndex + '_' + this.getTableId(row);
+    }
+
+    /**
+     * Update toggle indicator visual state
+     */
+    updateToggleIndicator(row, isExpanded) {
+        const indicator = row.querySelector('.metadata-toggle-indicator');
+        if (indicator) {
+            if (isExpanded) {
+                indicator.classList.add('expanded');
+            } else {
+                indicator.classList.remove('expanded');
+            }
+        }
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new StatementMetadataPreview();
+});
+
+// Also initialize if DOM is already loaded (for dynamic content)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        new StatementMetadataPreview();
+    });
+} else {
+    new StatementMetadataPreview();
+}
+</script>

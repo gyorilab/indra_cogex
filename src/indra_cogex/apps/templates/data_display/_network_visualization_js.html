@@ -134,9 +134,14 @@ function initializeNetwork(prefix, identifier) {
     let payload = {};
 
     if (prefix === 'statements') {
-        // For statements, we use an empty payload
-        // The backend will use session data for statements
-        console.log("Using empty payload for statements visualization");
+        // Pass the original parameters for stateless approach
+        {% if network_params is defined %}
+        const networkParams = {{ network_params|tojson|safe }};
+        {% else %}
+        const networkParams = {};
+        {% endif %}
+        payload = networkParams;
+        console.log("Using parameters for stateless statements visualization:", payload);
     } else {
         // For other prefixes (go, subnetwork, paper), use include_db_evidence
         if (typeof app !== 'undefined' && app && 'include_db_evidence' in app) {

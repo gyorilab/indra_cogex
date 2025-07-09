@@ -16,15 +16,17 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    TypeVar,
+    TypeVar, List,
 )
 
+import pandas as pd
 import pystow
 
 from indra.databases.hgnc_client import is_kinase
 from indra.databases.identifiers import get_ns_id_from_identifiers
 from indra.ontology.bio import bio_ontology
 from indra_cogex.apps.constants import PYOBO_RESOURCE_FILE_VERSIONS, APP_CACHE_MODULE
+from indra_cogex.client import get_stmts_for_stmt_hashes
 
 from indra_cogex.client.neo4j_client import Neo4jClient, autoclient
 from indra_cogex.representation import norm_id
@@ -950,6 +952,223 @@ def get_negative_stmt_sets(
         minimum_belief=minimum_belief,
         minimum_evidence_count=minimum_evidence_count,
     )
+
+
+def _normalize_target_id(curie: str) -> str:
+    """Only normalize if it's likely an Entrez gene or HGNC numeric code"""
+    if curie.lower().startswith("hgnc:") or curie.isdigit():
+        return norm_id("HGNC", curie.split(":")[-1])
+    return curie.lower()
+
+
+def get_statement_metadata_for_pairs(
+    regulator_gene_pairs: List[Tuple[str, str]],
+    minimum_belief: float = 0.0,
+    minimum_evidence: Optional[int] = None,
+    is_downstream: bool = False,
+    allowed_stmt_types: Optional[List[str]] = None,  # NEW PARAMETER
+    *,
+    client: Neo4jClient,
+) -> Dict[str, List[Dict]]:
+    """Fetch INDRA statement metadata (including stmt_type) for given (regulator, gene) pairs.
+
+    Parameters
+    ----------
+    regulator_gene_pairs : List[Tuple[str, str]]
+        A list of (regulator_curie, gene_curie) pairs.
+    minimum_belief : float
+        Minimum belief score to include a statement.
+    minimum_evidence : Optional[int]
+        Minimum evidence count to include a statement.
+    is_downstream : bool
+        Whether the direction is downstream (gene -> regulator).
+    allowed_stmt_types : Optional[List[str]]
+        List of statement types to filter by. If None, includes all types.
+    client : Neo4jClient
+        Neo4j client instance.
+
+    Returns
+    -------
+    Dict[str, List[Dict]]
+        Mapping from regulator_id to list of statement metadata dicts.
+    """
+    if not regulator_gene_pairs:
+        return {}
+
+    metadata_by_regulator = defaultdict(list)
+
+    # Normalize IDs
+    regulator_gene_pairs = [
+        (reg, norm_id("HGNC", gene.split(":")[-1]))
+        for reg, gene in regulator_gene_pairs
+    ]
+
+    # Pre-built queries instead of f-string conditionals
+    stmt_type_filter = ""
+    if allowed_stmt_types is not None:
+        stmt_type_filter = "AND r.stmt_type IN $allowed_stmt_types"
+
+    # Pre-defined query templates
+    UPSTREAM_QUERY = f"""
+            UNWIND $pairs AS pair
+            WITH pair[0] AS regulator_id, pair[1] AS gene_id
+            MATCH (reg:BioEntity {{id: regulator_id}})-[r:indra_rel]->(gene:BioEntity {{id: gene_id}})
+            WHERE r.belief > $minimum_belief {stmt_type_filter}
+            RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief,
+                   r.evidence_count AS evidence_count, r.stmt_type AS stmt_type, gene.name AS gene_name
+        """
+
+    DOWNSTREAM_QUERY = f"""
+            UNWIND $pairs AS pair
+            WITH pair[0] AS regulator_id, pair[1] AS gene_id
+            MATCH (gene:BioEntity {{id: gene_id}})-[r:indra_rel]->(reg:BioEntity {{id: regulator_id}})
+            WHERE r.belief > $minimum_belief {stmt_type_filter}
+            RETURN regulator_id, gene_id, r.stmt_hash AS stmt_hash, r.belief AS belief,
+                   r.evidence_count AS evidence_count, r.stmt_type AS stmt_type, gene.name AS gene_name
+        """
+
+    # Select appropriate query
+    query = DOWNSTREAM_QUERY if is_downstream else UPSTREAM_QUERY
+
+    params = {
+        "pairs": regulator_gene_pairs,
+        "minimum_belief": minimum_belief
+    }
+
+    if allowed_stmt_types is not None:
+        params["allowed_stmt_types"] = allowed_stmt_types
+
+    results = client.query_tx(query, **params)
+
+    for reg, gene, stmt_hash, belief, ev_count, stmt_type, gene_name in results:
+        if minimum_evidence and ev_count < minimum_evidence:
+            continue
+
+        metadata_by_regulator[reg].append({
+            "gene": gene,
+            "stmt_hash": stmt_hash,
+            "belief": belief,
+            "evidence_count": ev_count,
+            "stmt_type": stmt_type or "indra_rel",
+            "gene_name": gene_name
+        })
+
+    return dict(metadata_by_regulator)
+
+
+def enrich_with_optimized_metadata(
+    results: Dict[str, pd.DataFrame],
+    gene_set: set,
+    client: Neo4jClient,
+    minimum_belief: float,
+    minimum_evidence_count: int
+) -> Dict[str, pd.DataFrame]:
+    """
+    OPTIMIZED metadata enrichment - replaces the cartesian product bottleneck
+
+    Instead of creating R×G pairs and querying each individually,
+    we do ONE smart query to get all existing relationships.
+    """
+
+    # Get all INDRA results that need metadata
+    indra_results = {k: v for k, v in results.items() if k.startswith("indra-")}
+
+    if not indra_results:
+        return results
+
+    # Collect all unique regulators across all INDRA results
+    all_regulators = set()
+    for df in indra_results.values():
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            all_regulators.update(df["curie"].tolist())
+
+    if not all_regulators:
+        return results
+
+    # SINGLE OPTIMIZED QUERY instead of cartesian product
+    metadata_cache = get_all_relationships_single_query(
+        regulators=list(all_regulators),
+        genes=list(gene_set),
+        client=client,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count
+    )
+
+    # Apply metadata to each INDRA result
+    for result_key, df in indra_results.items():
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            is_downstream = result_key == "indra-downstream"
+
+            # Map statements efficiently
+            df["statements"] = df["curie"].apply(
+                lambda curie: metadata_cache.get((curie, is_downstream), [])
+            )
+            results[result_key] = df
+
+    return results
+
+
+def get_all_relationships_single_query(
+    regulators: List[str],
+    genes: List[str],
+    client: Neo4jClient,
+    minimum_belief: float = 0.0,
+    minimum_evidence_count: int = 1
+) -> Dict[Tuple[str, bool], List[Dict]]:
+    """
+    SINGLE QUERY to get all regulator-gene relationships
+
+    This replaces 50,000+ individual queries with ONE smart query
+    """
+
+    # Normalize gene IDs
+    normalized_genes = [norm_id("HGNC", gene.split(":")[-1]) for gene in genes]
+
+    # SINGLE QUERY to get ALL relationships in both directions
+    query = """
+    MATCH (reg:BioEntity)-[r:indra_rel]-(gene:BioEntity)
+    WHERE reg.id IN $regulators 
+      AND gene.id IN $genes
+      AND r.belief > $minimum_belief
+      AND r.evidence_count >= $minimum_evidence_count
+    RETURN reg.id as regulator_id, 
+           gene.id as gene_id,
+           r.stmt_hash as stmt_hash, 
+           r.belief as belief,
+           r.evidence_count as evidence_count, 
+           r.stmt_type as stmt_type,
+           gene.name as gene_name,
+           CASE 
+             WHEN startNode(r) = reg THEN false 
+             ELSE true 
+           END as is_downstream
+    """
+
+    # Execute single query
+    results = client.query_tx(
+        query,
+        regulators=regulators,
+        genes=normalized_genes,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count
+    )
+
+    # Organize results by (regulator_id, is_downstream)
+    metadata_cache = defaultdict(list)
+
+    for reg_id, gene_id, stmt_hash, belief, ev_count, stmt_type, gene_name, is_downstream in results:
+        key = (reg_id, is_downstream)
+
+        metadata_cache[key].append({
+            "gene": gene_id,
+            "stmt_hash": stmt_hash,
+            "belief": belief,
+            "evidence_count": ev_count,
+            "stmt_type": stmt_type or "indra_rel",
+            "gene_name": gene_name
+        })
+
+    return dict(metadata_cache)
 
 
 def get_mouse_cache(force_cache_refresh: bool = False):

@@ -5,6 +5,7 @@ from typing import Dict, Optional, Union, Tuple, List, Iterable, Collection
 import pandas as pd
 
 from indra.databases import hgnc_client
+from indra_cogex.client.enrichment.utils import get_statement_metadata_for_pairs, enrich_with_optimized_metadata
 from indra_cogex.client.neo4j_client import autoclient, Neo4jClient
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
@@ -83,17 +84,16 @@ def discrete_analysis(
     """
     gene_set, errors = parse_gene_list(gene_list)
     if errors:
-        logger.warning(
-            f"Failed to parse the following gene identifiers: {', '.join(errors)}"
-        )
+        logger.warning(f"Failed to parse the following gene identifiers: {', '.join(errors)}")
 
+    background_gene_ids = None
     if background_gene_list:
         background_genes, _ = parse_gene_list(background_gene_list)
         background_gene_ids = list(background_genes)
-    else:
-        background_gene_ids = None
 
     results = {}
+
+    # Run all analyses (unchanged)
     for analysis_name, analysis_func in [
         ("go", go_ora),
         ("wikipathways", wikipathways_ora),
@@ -102,7 +102,7 @@ def discrete_analysis(
         ("indra-upstream", indra_upstream_ora),
         ("indra-downstream", indra_downstream_ora)
     ]:
-        # Run non-INDRA analysis
+        # Non-INDRA ORAs
         if analysis_name in {"go", "wikipathways", "reactome", "phenotype"}:
             analysis_result = analysis_func(
                 client=client, gene_ids=gene_set, method=method, alpha=alpha,
@@ -110,56 +110,43 @@ def discrete_analysis(
                 background_gene_ids=background_gene_ids
             )
             results[analysis_name] = analysis_result
-        else:
-            # Run INDRA analysis if enabled
-            if indra_path_analysis:
-                analysis_result = analysis_func(
-                    client=client, gene_ids=gene_set, method=method, alpha=alpha,
-                    keep_insignificant=keep_insignificant,
-                    minimum_evidence_count=minimum_evidence_count,
-                    minimum_belief=minimum_belief,
-                    background_gene_ids=background_gene_ids
-                )
 
-                # Process INDRA Upstream results to identify kinases and TFs
-                if analysis_name == "indra-upstream" and analysis_result is not None:
-                    results[analysis_name] = analysis_result  # Keep original results
-                    logger.info(f"Total INDRA upstream results: {len(analysis_result)}")
+        # INDRA ORAs
+        elif indra_path_analysis:
+            analysis_result = analysis_func(
+                client=client, gene_ids=gene_set, method=method, alpha=alpha,
+                keep_insignificant=keep_insignificant,
+                minimum_evidence_count=minimum_evidence_count,
+                minimum_belief=minimum_belief,
+                background_gene_ids=background_gene_ids
+            )
 
-                    # Create separate DataFrames for kinases and TFs
-                    kinase_results = pd.DataFrame(columns=analysis_result.columns)
-                    tf_results = pd.DataFrame(columns=analysis_result.columns)
+            # Extract kinases and TFs
+            if analysis_name == "indra-upstream" and analysis_result is not None:
+                results[analysis_name] = analysis_result
 
-                    # Process each regulator
-                    for _, row in analysis_result.iterrows():
-                        try:
-                            # Check if it's a HGNC identifier
-                            if row['curie'].lower().startswith('hgnc:'):
-                                gene_name = row['name']
+                # Fast vectorized extraction (replaces the slow concatenation loop)
+                if not analysis_result.empty:
+                    hgnc_mask = analysis_result['curie'].str.lower().str.startswith('hgnc:')
+                    kinase_mask = hgnc_mask & analysis_result['name'].apply(is_kinase)
+                    tf_mask = hgnc_mask & analysis_result['name'].apply(is_transcription_factor)
 
-                                # Check if it's a kinase
-                                if is_kinase(gene_name):
-                                    kinase_results = pd.concat([kinase_results, pd.DataFrame([row])], ignore_index=True)
-                                    logger.debug(f"Identified kinase: {gene_name}")
+                    if kinase_mask.any():
+                        results["indra-upstream-kinases"] = analysis_result[kinase_mask].copy()
+                    if tf_mask.any():
+                        results["indra-upstream-tfs"] = analysis_result[tf_mask].copy()
+            else:
+                results[analysis_name] = analysis_result
 
-                                # Check if it's a TF
-                                if is_transcription_factor(gene_name):
-                                    tf_results = pd.concat([tf_results, pd.DataFrame([row])], ignore_index=True)
-                                    logger.debug(f"Identified TF: {gene_name}")
-
-                        except Exception as e:
-                            logger.warning(f"Error processing regulator {row['curie']}: {str(e)}")
-                            continue
-
-                    logger.info(f"Identified {len(kinase_results)} kinases and {len(tf_results)} transcription factors")
-
-                    # Add results to the output dictionary
-                    if not kinase_results.empty:
-                        results["indra-upstream-kinases"] = kinase_results
-                    if not tf_results.empty:
-                        results["indra-upstream-tfs"] = tf_results
-                else:
-                    results[analysis_name] = analysis_result
+    # Optimized statement metadata enrichment
+    if indra_path_analysis:
+        results = enrich_with_optimized_metadata(
+            results=results,
+            gene_set=gene_set,
+            client=client,
+            minimum_belief=minimum_belief,
+            minimum_evidence_count=minimum_evidence_count
+        )
 
     return results
 
@@ -202,16 +189,15 @@ def signed_analysis(
     pd.DataFrame or None
         A DataFrame containing analysis results, or None if an error occurs.
     """
-    positive_gene_set, postitive_erros = parse_gene_list(positive_genes)
-    negative_gene_set, negative_errors = parse_gene_list(negative_genes)
-    if postitive_erros:
-        logger.warning(
-            f"Failed to parse the following positive gene identifiers: {', '.join(postitive_erros)}"
-        )
-    if negative_errors:
-        logger.warning(
-            f"Failed to parse the following negative gene identifiers: {', '.join(negative_errors)}"
-        )
+    positive_gene_set, pos_errors = parse_gene_list(positive_genes)
+    negative_gene_set, neg_errors = parse_gene_list(negative_genes)
+
+    if pos_errors:
+        logger.warning(f"Failed to parse positive gene IDs: {', '.join(pos_errors)}")
+    if neg_errors:
+        logger.warning(f"Failed to parse negative gene IDs: {', '.join(neg_errors)}")
+
+    all_genes = list(positive_gene_set | negative_gene_set)
 
     results = reverse_causal_reasoning(
         client=client,
@@ -222,6 +208,50 @@ def signed_analysis(
         minimum_evidence_count=minimum_evidence_count,
         minimum_belief=minimum_belief,
     )
+
+    # Attach INDRA statement metadata
+    if isinstance(results, pd.DataFrame) and not results.empty:
+
+        # Separate calls for positive and negative genes with filtering
+        positive_pairs = [
+            (row["curie"], gene_id)
+            for _, row in results.iterrows()
+            for gene_id in positive_gene_set
+        ]
+
+        negative_pairs = [
+            (row["curie"], gene_id)
+            for _, row in results.iterrows()
+            for gene_id in negative_gene_set
+        ]
+
+        # Get metadata with appropriate statement type filtering
+        pos_metadata = get_statement_metadata_for_pairs(
+            positive_pairs,
+            client=client,
+            is_downstream=False,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence_count,
+            allowed_stmt_types=['Activation', 'IncreaseAmount']
+        )
+
+        neg_metadata = get_statement_metadata_for_pairs(
+            negative_pairs,
+            client=client,
+            is_downstream=False,
+            minimum_belief=minimum_belief,
+            minimum_evidence=minimum_evidence_count,
+            allowed_stmt_types=['Inhibition', 'DecreaseAmount']
+        )
+
+        # Combine the results
+        metadata_map = {}
+        for regulator, statements in pos_metadata.items():
+            metadata_map.setdefault(regulator, []).extend(statements)
+        for regulator, statements in neg_metadata.items():
+            metadata_map.setdefault(regulator, []).extend(statements)
+
+        results["statements"] = results["curie"].map(lambda c: metadata_map.get(c, []))
 
     return results
 
@@ -385,7 +415,7 @@ def kinase_analysis(
         [tuple(site.split("-")) for site in phosphosite_list]
     )
     if errors:
-        print(f"Warning: Skipped invalid phosphosites: {errors}")
+        logger.error(f"Warning: Skipped invalid phosphosites: {errors}")
 
     # Parse background if provided
     parsed_background = None
@@ -394,7 +424,7 @@ def kinase_analysis(
             [tuple(site.split("-")) for site in background]
         )
         if background_errors:
-            print(f"Warning: Skipped invalid background phosphosites: {background_errors}")
+            logger.error(f"Warning: Skipped invalid background phosphosites: {background_errors}")
 
     return kinase_ora(
         client=client,

@@ -12,8 +12,7 @@ from indra_cogex.analysis.metabolite_analysis import (
     metabolite_discrete_analysis,
     enzyme_analysis
 )
-from indra_cogex.client import Neo4jClient
-from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS, count_phosphosites
+from indra_cogex.client.enrichment.discrete import EXAMPLE_GENE_IDS
 from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
 from indra_cogex.client.enrichment.signed import (
     EXAMPLE_POSITIVE_HGNC_IDS,

@@ -445,6 +445,7 @@ examples_dict = {
     "negative_genes": fields.List(fields.String, example=EXAMPLE_NEGATIVE_HGNC_IDS),
     "gene_names": fields.List(fields.String, example=continuous_analysis_example_names),
     "target_id": fields.String(example="hgnc:646"),
+    "regulator_type": fields.String(example=None),
     "is_downstream": fields.Boolean(example=False),
     "minimum_evidence": fields.Float(example=2),
     "log_fold_change": fields.List(fields.Float, example=continuous_analysis_example_data),
@@ -497,7 +498,7 @@ examples_dict = {
 
 # Parameters to always skip in the examples and in the documentation
 SKIP_GLOBAL = {"client", "return_evidence_counts", "kwargs",
-               "subject_prefix", "object_prefix", "file_path", "curations", "output_dir"}
+               "subject_prefix", "object_prefix", "file_path","remove_medscan", "curations", "output_dir"}
 
 # Parameters to skip for specific functions
 SKIP_ARGUMENTS = {
@@ -523,7 +524,8 @@ module_functions = (
         "signed_analysis",
         "continuous_analysis",
         "kinase_analysis"]] +
-    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]]
+    [(source_targets_explanation, fn) for fn in ["source_target_analysis"]] +
+    [(search, fn) for fn in ["get_network_for_statements"]]
 
 )
 
