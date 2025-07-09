@@ -5,7 +5,7 @@ from typing import Dict, Optional, Union, Tuple, List, Iterable, Collection
 import pandas as pd
 
 from indra.databases import hgnc_client
-from indra_cogex.client.enrichment.utils import get_statement_metadata_for_pairs
+from indra_cogex.client.enrichment.utils import get_statement_metadata_for_pairs, enrich_with_optimized_metadata
 from indra_cogex.client.neo4j_client import autoclient, Neo4jClient
 from indra_cogex.client.enrichment.continuous import (
     get_human_scores,
