@@ -1116,7 +1116,7 @@ def get_all_relationships_single_query(
     minimum_evidence_count: int = 1
 ) -> Dict[Tuple[str, bool], List[Dict]]:
     """
-     SINGLE QUERY to get all regulator-gene relationships
+    SINGLE QUERY to get all regulator-gene relationships
 
     This replaces 50,000+ individual queries with ONE smart query
     """
