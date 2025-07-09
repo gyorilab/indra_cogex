@@ -576,7 +576,7 @@ def kinase_ora(
         **kwargs
     )
 
-    # 🆕 Attach INDRA statement metadata
+    # Attach INDRA statement metadata
     if not df.empty and "curie" in df.columns:
         curie_to_statements = {}
         for curie in df["curie"].unique():
