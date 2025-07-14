@@ -379,7 +379,10 @@ examples_dict = {
     "downstream_targets": fields.Boolean(example=False),
     "include_child_terms": fields.Boolean(example=True),
     "return_source_counts": fields.Boolean(example=False),
-    "order_by_ev_count": fields.Boolean(example=False),
+    "order_by_ev_count": {
+        "indra_mediated_subnetwork": fields.Boolean(example=True),
+        "default": fields.Boolean(example=False),
+    },
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": {
@@ -418,7 +421,7 @@ examples_dict = {
     "evidence_limit": fields.Integer(example=30),
     "nodes": fields.List(
         fields.List(fields.String),
-        example=[["FPLX", "MEK"], ["FPLX", "ERK"]]
+        example=[["HGNC", "10013"], ["HGNC", "10006"]]
     ),
     "offset": fields.Integer(example=1),
     # Analysis API
