@@ -326,8 +326,8 @@ def indra_subnetwork_tissue(
         The subnetwork induced by the given nodes and expressed in the given tissue.
     """
     genes = get_genes_in_tissue(client=client, tissue=tissue)
-    relevant_genes = {g.grounding() for g in genes} & set(nodes)
-    return indra_subnetwork(client, relevant_genes)
+    relevant_genes = {g.grounding() for g in genes} & {tuple(nc) for nc in nodes}
+    return indra_subnetwork(list(relevant_genes), client=client)
 
 
 @autoclient()
