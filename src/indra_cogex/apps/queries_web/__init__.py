@@ -6,7 +6,8 @@ The endpoints are created dynamically based on the functions in the following mo
 - indra_cogex.client.queries
 - indra_cogex.client.subnetwork
 - indra_cogex.analysis.metabolite_analysis
-- indra_cogex.analysis.gene_analysis
+- indra_cogex.analysis.gene_analysis,
+- indra_cogex.analysis.source_targets_explanation
 """
 import csv
 import logging
@@ -343,7 +344,10 @@ examples_dict = {
         "get_enzyme_activities_for_gene": fields.List(fields.String, example=["hgnc", "10007"]),
         "default": fields.List(fields.String, example=["HGNC", "9896"])
     },
-    "go_term": fields.List(fields.String, example=["GO", "GO:0000978"]),
+    "go_term": {
+        "indra_subnetwork_go": fields.List(fields.String, example=["GO", "GO:1900745"]),
+        "default": fields.List(fields.String, example=["GO", "GO:0000978"])
+    },
     "drug": {
         "get_sensitive_cell_lines_for_drug": fields.List(fields.String, example=["mesh", "C586365"]),
         "default": fields.List(fields.String, example=["CHEBI", "CHEBI:27690"])
@@ -379,10 +383,7 @@ examples_dict = {
     "downstream_targets": fields.Boolean(example=False),
     "include_child_terms": fields.Boolean(example=True),
     "return_source_counts": fields.Boolean(example=False),
-    "order_by_ev_count": {
-        "indra_mediated_subnetwork": fields.Boolean(example=True),
-        "default": fields.Boolean(example=False),
-    },
+    "order_by_ev_count": fields.Boolean(example=True),
     # NOTE: statement hashes are too large to be int for JavaScript
     "stmt_hash": fields.String(example="12198579805553967"),
     "stmt_hashes": {
@@ -419,10 +420,20 @@ examples_dict = {
     "filter_medscan": fields.Boolean(example=True),
     "limit": fields.Integer(example=30),
     "evidence_limit": fields.Integer(example=30),
-    "nodes": fields.List(
-        fields.List(fields.String),
-        example=[["HGNC", "10013"], ["HGNC", "10006"]]
-    ),
+    "nodes": {
+        "default": fields.List(
+            fields.List(fields.String),
+            example=[["HGNC", "10013"], ["FPLX", "GPCR"]]
+        ),
+        "indra_mediated_subnetwork": fields.List(
+            fields.List(fields.String),
+            example=[["HGNC", "10013"], ["HGNC", "10006"]]
+        ),
+        "indra_subnetwork_tissue": fields.List(
+            fields.List(fields.String),
+            example=[['HGNC', '12856'], ['HGNC', '1266'], ['HGNC', '30412']]
+        ),
+    },
     "offset": fields.Integer(example=1),
     # Analysis API
     # Metabolite analysis, and gene analysis examples (discrete, signed, continuous)
