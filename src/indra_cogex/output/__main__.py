@@ -31,19 +31,7 @@ from indra_cogex.output.network_search import sif_with_logp, get_stmt_hash_to_me
     help="Skip uploading the results to S3. Useful for local testing.",
 )
 def main(limit: int, date: str, skip_upload: bool):
-    """Main function to run the script.
-
-    Parameters
-    ----------
-    limit :
-        An optional limit on the number of relations to process.
-        If None, no limit is applied.
-    date :
-        The date to use for the S3 prefix in the format YYYY-MM-DD. Defaults to
-        today.
-    skip_upload :
-        If True, skip uploading the results to S3. Useful for local testing.
-    """
+    """Main function dumping the latest SIF and statement hash-mesh ID mappings"""
     client = Neo4jClient()
     sif_df = sif_with_logp(client, limit=limit)
     mesh_map = get_stmt_hash_to_mesh_map(client, limit=limit)
