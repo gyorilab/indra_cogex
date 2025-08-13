@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Optional
+from typing import Optional, Tuple, List
 
 import pandas as pd
 from tqdm import tqdm
@@ -159,7 +159,7 @@ def get_stmt_hash_to_mesh_map(
     client: Neo4jClient,
     batch_size: int = 100_000,
     limit: Optional[int] = None
-) -> pd.DataFrame:
+) -> List[Tuple[str, str]]:
     """Get a dataframe mapping statement hashes to mesh IDs.
 
     Parameters
@@ -207,4 +207,4 @@ def get_stmt_hash_to_mesh_map(
                 break
             results = client.query_tx(query, offset=len(rows), limit=batch_size)
 
-    return pd.DataFrame(rows, columns=["stmt_hash", "mesh_id"])
+    return rows
