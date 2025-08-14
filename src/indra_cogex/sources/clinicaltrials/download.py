@@ -32,6 +32,8 @@ os.environ["DATA_DIR"] = str(TRIALSYNTH_PATH.base.absolute())
 # Initializes the configuration for the clinical trials module in trialsynth
 ctconfig = config.CTConfig()
 
+logger = logging.getLogger(__name__)
+
 
 def ensure_clinical_trials_df(
     *,
@@ -65,6 +67,7 @@ def ensure_clinical_trials_df(
             ctconfig.trials_path,
         )
     ):
+        logger.info("ClinicalTrials.gov data already processed, skipping download.")
         return
 
     ctp = process.CTProcessor(
