@@ -6,7 +6,7 @@ Download and parse the ClinicalTrials.gov data using Trialsynth.
 #  2. Add metadata to the reference relationships about the type of reference:
 #     "results", "background" or "derived".
 import os
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 
 import pystow
 import pandas as pd
