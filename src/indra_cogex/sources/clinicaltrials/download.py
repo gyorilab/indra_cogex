@@ -32,29 +32,6 @@ os.environ["DATA_DIR"] = str(TRIALSYNTH_PATH.base.absolute())
 # Initializes the configuration for the clinical trials module in trialsynth
 ctconfig = config.CTConfig()
 
-#: The fields that are used by default. A full list can be found
-#: here: https://classic.clinicaltrials.gov/api/info/study_fields_list
-DEFAULT_FIELDS = [
-    "NCTId",
-    "BriefTitle",
-    "Condition",
-    "ConditionMeshTerm",
-    "ConditionMeshId",
-    "InterventionName",
-    "InterventionType",
-    "InterventionMeshTerm",
-    "InterventionMeshId",
-    "StudyType",
-    "DesignAllocation",
-    "OverallStatus",
-    "Phase",
-    "WhyStopped",
-    "SecondaryIdType",
-    "SecondaryId",
-    "StartDate",  # Month [day], year: "November 1, 2023", "May 1984" or NaN
-    "StartDateType",  # "Actual" or "Anticipated" (or NaN)
-    "ReferencePMID",  # these are tagged as relevant by the author, but not necessarily about the trial
-]
 
 def ensure_clinical_trials_df(
     *,
