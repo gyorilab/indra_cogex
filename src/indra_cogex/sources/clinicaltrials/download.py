@@ -56,17 +56,44 @@ DEFAULT_FIELDS = [
     "ReferencePMID",  # these are tagged as relevant by the author, but not necessarily about the trial
 ]
 
+def ensure_clinical_trials_df(
+    *,
+    redownload: bool = False,
+    reprocess: bool = False,
+    max_pages: Optional[int] = None
+):
+    """Download and parse the ClinicalTrials.gov data using Trialsynth.
 
-def ensure_clinical_trials_df(*, refresh: bool = False):
-    """Download and parse the ClinicalTrials.gov dataframe or load
-    it, if it's already available.
-
-    If refresh is set to true, it will overwrite the existing file.
+    Parameters
+    ----------
+    redownload :
+        If True, redownload the raw data, even if it already exists. This will
+        also set `reprocess` to True, since redownloading the data means that it
+        needs to be reprocessed. Default: False.
+    reprocess :
+        If True, reprocess the data, even if it already exists. This will
+        reprocess the raw data
+    max_pages :
+        The maximum number of pages to download from the ClinicalTrials.gov API.
+        If None, all pages will be downloaded. Default: None.
     """
+    if redownload:
+        reprocess = True
+
+    # Check the processed trialsynth data directory
+    if not reprocess and all(
+        p.exists() for p in (
+            ctconfig.edges_path,
+            ctconfig.bio_entities_path,
+            ctconfig.trials_path,
+        )
+    ):
+        return
+
     ctp = process.CTProcessor(
-        reload_api_data=refresh, store_samples=True, validate=False
+        reload_api_data=redownload, store_samples=True, validate=False
     )
-    ctp.run()
+    ctp.run(max_pages=max_pages)
 
 
 def _mesh_to_chebi(row) -> Union[str, None]:
