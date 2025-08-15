@@ -325,7 +325,3 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     trials_nodes_df["study_type"] = trials_nodes_df["labels:LABEL[]"].apply(_get_study_type)
 
     return trials_nodes_df
-
-
-if __name__ == "__main__":
-    ensure_clinical_trials_df(refresh=True)
