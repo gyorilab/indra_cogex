@@ -32,6 +32,14 @@ os.environ["DATA_DIR"] = str(TRIALSYNTH_PATH.base.absolute())
 # Initializes the configuration for the clinical trials module in trialsynth
 ctconfig = config.CTConfig()
 
+
+#: Labels to keep for interventions in the bioentity nodes.
+INTERVENTION_LABELS = {
+    "DRUG",
+    "DIETARY_SUPPLEMENT",
+}
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -180,6 +188,27 @@ def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.Dat
         return row["name"]
 
     bioentity_nodes_df["name"] = bioentity_nodes_df.apply(_nsid_to_name, axis=1)
+
+    # Filter to interventions that are labeled as drugs or dietary supplements
+    def _intervention_filter(row) -> bool:
+        """Check if the row is an intervention that should be kept."""
+        labels = row["labels:LABEL[]"].lower()
+        if "condition" in labels:
+            # We keep conditions as they are not interventions
+            return True
+        # Check if the labels contain any of the allowed intervention labels
+        if any(label.lower() in labels for label in INTERVENTION_LABELS):
+            return True
+        # Check if the curie is from chebi
+        if row["curie:CURIE"].lower().startswith("chebi:"):
+            return True
+        return False
+
+    # Filter the interventions to the ones that are labeled as drugs or dietary
+    # supplements or where the curie is from chebi
+    bioentity_nodes_df = bioentity_nodes_df[
+        bioentity_nodes_df.apply(_intervention_filter, axis=1)
+    ]
 
     return bioentity_nodes_df[["bioentity_mapped", "name"]]
 
