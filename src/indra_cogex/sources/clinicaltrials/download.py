@@ -229,25 +229,38 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     # randomized:boolean
     # start_year:int
     # start_year_anticipated:boolean
+    # completion_year:int
+    # completion_year_anticipated:boolean
+    # last_update_submit_year:int
     # status  # Completed, terminated etc...
     # study_type  # Observational, interventional etc...
     # why_stopped
 
-    # Trialsynth trial nodes file has the following columns:
+    # Trialsynth has the following headers:
     # curie:CURIE
-    # title:string
-    # labels:LABEL[] <-- Contains 'Allocation: RANDOMIZED' if randomized
-    # design:DESIGN
-    # conditions:CURIE[]
+    # title:string <- Corresponds to BriefTitle
+    # official_title:string <- Corresponds to OfficialTitle
+    # brief_summary:string,
+    # detailed_description:string,
+    # labels:LABEL[] - scsv of clinical_trials, intervention, observational, expanded_access
+    # design:DESIGN - e.g. 'Purpose: PREVENTION; Allocation: RANDOMIZED;Masking: DOUBLE; Assignment: '
+    # conditions:CURIE[] - scsv of mesh conditions, e.g. 'mesh:D000001;mesh:D000002'
     # interventions:CURIE[]
     # primary_outcome:OUTCOME[]
     # secondary_outcome:OUTCOME[]
     # secondary_ids:CURIE[]
     # source_registry:string
     # phases:PHASE[]
-    # start_year:int
-    # labels:LABEL[]
+    # start_year:integer
+    # start_year_anticipated:boolean
+    # primary_completion_year:integer
+    # primary_completion_year_type:string
+    # completion_year:integer
+    # completion_year_type:string
+    # last_update_submit_year:integer
+    # status:string
     # why_stopped:string
+    # references:string[]
 
     # Translate the headers to CoGEx format, these map 1:1
     headers_translation = {
@@ -283,8 +296,18 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     trials_nodes_df["randomized:boolean"] = trials_nodes_df["labels:LABEL[]"].str.contains(
         "Allocation: RANDOMIZED")
 
-    # Add the start_year:int column, defaulting to 0 (unknown)
+    # Set the start_year:int column
     trials_nodes_df["start_year"] = trials_nodes_df["start_year:integer"].apply(
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
+
+    # Set the completion_year column
+    trials_nodes_df["completion_year"] = trials_nodes_df["completion_year:integer"].apply(
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
+
+    # Set the last_update_submit_year column
+    trials_nodes_df["last_update_submit_year"] = trials_nodes_df["last_update_submit_year:integer"].apply(
         lambda x: int(x) if pd.notna(x) else None
     ).astype("Int64")
 
