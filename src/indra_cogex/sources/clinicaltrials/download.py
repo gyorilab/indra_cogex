@@ -6,7 +6,7 @@ Download and parse the ClinicalTrials.gov data using Trialsynth.
 #  2. Add metadata to the reference relationships about the type of reference:
 #     "results", "background" or "derived".
 import os
-from typing import Union, Dict, Optional
+from typing import Dict, Optional
 
 import pystow
 import pandas as pd
@@ -76,22 +76,29 @@ def ensure_clinical_trials_df(
     ctp.run(max_pages=max_pages)
 
 
-def _mesh_to_chebi(row) -> Union[str, None]:
-    """Convert a MeSH CURIE to a ChEBI CURIE if possible for intervention edges"""
-    mesh_curie = row.get("bioentity", None)
-    if mesh_curie is None:
-        return None
-    if (not mesh_curie.lower().startswith("mesh:") or
-        row["rel_type:string"] != "has_intervention"):
+def _mesh_to_chebi(row) -> str:
+    """Convert a MeSH CURIE to a ChEBI CURIE if possible for interventions"""
+    # Some interventions in the trialsynth data are directly from mesh
+    # annotations and don't go through grounding, where chebi is prioritized
+    # over mesh
+    curie = row["curie:CURIE"]
+    if curie is None:
+        raise ValueError(
+            "The row does not have a 'bioentity' column, cannot convert to CHEBI."
+        )
+    if "condition" in row["labels:LABEL[]"] or not curie.lower().startswith("mesh:"):
         # If it's not mesh or it's not an intervention row just return the
         # original CURIE
-        return mesh_curie
+        return curie
 
+    # At this point we know that the CURIE is a MeSH CURIE and we want to
+    # convert it to a ChEBI CURIE if possible.
+    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345")
     chebi_ns, chebi_id = bio_ontology.map_to(
-        ns1="MESH", id1=mesh_curie.split(":")[1], ns2="CHEBI"
+        ns1="MESH", id1=curie.split(":")[1], ns2="CHEBI"
     ) or (None, None)
     # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345")
-    return chebi_id if chebi_id else mesh_curie
+    return chebi_id if chebi_id else curie
 
 
 def process_trialsynth_edges() -> pd.DataFrame:
