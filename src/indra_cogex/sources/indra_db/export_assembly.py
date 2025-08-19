@@ -83,7 +83,7 @@ def export_assembly(force: bool = False):
 
     # Create grounded and unique dumps
     # from processed statement in readonly pipeline
-    # Takes ~6.5 h
+    # Takes ~3.5 h on the server
     if force or not grounded_stmts_fname.exists() or not unique_stmts_fname.exists():
         with (gzip.open(processed_stmts_fname, "rt") as fh,
               gzip.open(grounded_stmts_fname, "wt") as fh_out_gr,
@@ -94,7 +94,7 @@ def export_assembly(force: bool = False):
             writer_uniq = csv.writer(fh_out_uniq, delimiter="\t")
             for sh, stmt_json_str in tqdm.tqdm(
                 reader,
-                total=63928997,  # Note this is a hard-coded estimate
+                total=95_000_000,  # Note this is a hard-coded estimate
                 desc="Gathering grounded and unique statements",
                 unit_scale=True,
                 unit="stmt"
