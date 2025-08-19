@@ -25,8 +25,8 @@ class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
     node_types = ["BioEntity", "ClinicalTrial"]
 
-    def __init__(self):
-        ensure_clinical_trials_df()
+    def __init__(self, reprocess: bool = False, redownload: bool = False):
+        ensure_clinical_trials_df(reprocess=reprocess, redownload=redownload)
 
         self.trials_df = process_trialsynth_trial_nodes()
         # Warm up bio ontology
