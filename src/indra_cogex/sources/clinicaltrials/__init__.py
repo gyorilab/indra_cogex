@@ -64,9 +64,12 @@ class ClinicaltrialsProcessor(Processor):
                         row["start_year_anticipated:boolean"]
                     ),
                     "completion_year:int": or_na(row["completion_year"]),
-                    "completion_year_anticipated:boolean": row[
-                        "completion_year_anticipated"].lower() == "estimated",
-                    "last_update_year:int": or_na(row["last_update_submit_year"]),
+                    "completion_year_anticipated:boolean": get_bool(
+                        row["completion_year_type:string"].lower() == "estimated"
+                    ) if pd.notna(row["completion_year_type:string"]) else None,
+                    "last_update_year:int": or_na(
+                        row["last_update_submit_year:integer"]
+                    ),
                 },
             )
 
