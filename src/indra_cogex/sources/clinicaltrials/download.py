@@ -90,12 +90,12 @@ def _mesh_to_chebi(row) -> str:
     # Some interventions in the trialsynth data are directly from mesh
     # annotations and don't go through grounding, where chebi is prioritized
     # over mesh
-    curie = row["curie:CURIE"]
+    curie = row["bioentity"]
     if curie is None:
         raise ValueError(
             "The row does not have a 'bioentity' column, cannot convert to CHEBI."
         )
-    if "condition" in row["labels:LABEL[]"] or not curie.lower().startswith("mesh:"):
+    if row["rel_type:string"] == "condition" or not curie.lower().startswith("mesh:"):
         # If it's not mesh or it's not an intervention row just return the
         # original CURIE
         return curie
@@ -201,7 +201,7 @@ def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.Dat
         if any(label.lower() in labels for label in INTERVENTION_LABELS):
             return True
         # Check if the curie is from chebi
-        if row["curie:CURIE"].lower().startswith("chebi:"):
+        if row["bioentity"].lower().startswith("chebi:"):
             return True
         return False
 
