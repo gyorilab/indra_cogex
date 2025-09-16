@@ -57,6 +57,12 @@ def _get_assembled_path(node_type: str) -> Path:
     help="If true, automatically loads the data through ``neo4j-admin import``",
 )
 @click.option(
+    "--force_import",
+    is_flag=True,
+    help="If true, forces the import even if the database already exists. This "
+         "sets the --force flag of neo4j-admin import.",
+)
+@click.option(
     "--with_sudo",
     is_flag=True,
     help="If true, sudo is prepended to the neo4j-admin import command",
@@ -79,6 +85,7 @@ def main(
     assemble: bool,
     force_assemble: bool,
     run_import: bool,
+    force_import: bool,
     with_sudo: bool,
     config: Optional[TextIO],
     skip_failed_processors: bool,
@@ -205,7 +212,7 @@ def main(
         sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        {sudo_prefix} neo4j-admin import \\
+        {sudo_prefix} neo4j-admin import {'--force' if force_import else ''} \\
           --database=indra \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
