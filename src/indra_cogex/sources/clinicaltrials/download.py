@@ -320,4 +320,10 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     # Add study type column
     trials_nodes_df["study_type"] = trials_nodes_df["labels:LABEL[]"].apply(_get_study_type)
 
+    # Clean up
+    # Remove newlines and 2+ whitespaces from the why_stopped column
+    trials_nodes_df["why_stopped"] = trials_nodes_df["why_stopped"].str.replace(
+        r"\s+", " ", regex=True
+    ).str.strip()
+
     return trials_nodes_df
