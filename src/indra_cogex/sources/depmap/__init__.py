@@ -294,6 +294,14 @@ class DepmapProcessor(Processor):
         for (a, a_hgnc_id), genes in \
                 tqdm(self.sigs_by_gene.items(), desc='Processing DepMap into relations'):
             for (b, b_hgnc_id), logp in genes.items():
+                # Skip logp values that are NaN or inf
+                if pd.isna(logp) or not np.isfinite(logp):
+                    tqdm.write(
+                        f"WARNING: Skipping correlation relation between {a} "
+                        f"and {b} due to NaN or inf logp value: {logp}"
+                    )
+                    continue
+
                 yield Relation(
                     source_ns="HGNC",
                     source_id=a_hgnc_id,
