@@ -36,6 +36,7 @@ from indra_cogex.sources.processor_util import (
     DataTypeError,
     UnknownTypeError,
     NewLineInStringError,
+    InfinityValueError,
 )
 
 __all__ = [
@@ -185,6 +186,9 @@ class Processor(ABC):
             nodes = list(validate_nodes(nodes, metadata))
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad node data type in node data values for {processor_name}")
+            raise e
+        except InfinityValueError as e:
+            logger.error(f"Infinity value detected in node data values for {processor_name}")
             raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in node data values for {processor_name}")
@@ -355,6 +359,10 @@ def validate_nodes(
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Bad node data type(s) detected")
             raise e
+        except InfinityValueError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("Infinity value detected")
+            raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Newline in string detected")
@@ -414,6 +422,10 @@ def validate_relations(
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {rel} - {e}")
             logger.error("Bad relation data type(s) detected")
+            raise e
+        except InfinityValueError as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("Infinity value detected")
             raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {rel} - {e}")
