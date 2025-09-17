@@ -148,6 +148,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type int, "
                     f"but got value of type {type(val)} instead."
                 )
+            _check_noinfinity(val)
     elif data_type == "float" or data_type == "double":
         for val in value_list:
             if isinstance(val, str):
@@ -168,6 +169,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type float, "
                     f"but got value of type {type(val)} instead."
                 )
+            _check_noinfinity(val)
     elif data_type == "boolean":
         for val in value_list:
             if not isinstance(val, str) or val not in ("true", "false"):
