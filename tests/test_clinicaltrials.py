@@ -1,37 +1,33 @@
 from indra_cogex.sources.clinicaltrials import ClinicaltrialsProcessor
-import os
+from indra_cogex.sources.processor_util import data_validator
 
 
 def test_get_nodes():
-    path = os.path.join(os.path.dirname(__file__), "test_clinical_trials.csv")
-    cp = ClinicaltrialsProcessor(path)
+    cp = ClinicaltrialsProcessor(max_pages=1)
     nodes = list(cp.get_nodes())
     assert nodes
-    assert len(nodes) >= len(cp.has_trial_cond_ns) + len(cp.tested_in_int_ns)
-
-    assert cp.has_trial_cond_ns
-    assert len(cp.has_trial_cond_ns) == len(cp.has_trial_cond_id)
-    assert len(cp.has_trial_cond_id) == len(cp.has_trial_nct)
-
-    assert cp.tested_in_int_ns
-    assert len(cp.tested_in_int_ns) == len(cp.tested_in_int_id)
-    assert len(cp.tested_in_int_id) == len(cp.tested_in_nct)
+    assert any(
+        node.db_ns.lower() == "clinicaltrials" and
+        node.db_id.startswith("NCT") for node in nodes
+    )
 
     for node in nodes:
-        assert node.db_ns != ""
-        assert node.db_id != ""
-
+        assert set(node.labels) & {"BioEntity", "ClinicalTrial"}
+        for prop_key, value in node.data.items():
+            data_type = prop_key.split(":")[1] if ":" in prop_key else "string"
+            data_validator(data_type, value)
 
 def test_get_relations():
-    path = os.path.join(os.path.dirname(__file__), "test_clinical_trials.csv")
-    cp = ClinicaltrialsProcessor(path)
-    nodes = list(cp.get_nodes())
-    assert nodes
+    cp = ClinicaltrialsProcessor(max_pages=1)
     relations = list(cp.get_relations())
     assert relations
     for relation in relations:
         assert relation.source_ns
         assert relation.source_id
-        assert relation.target_ns == "CLINICALTRIALS"
+        assert relation.target_ns.lower() == "clinicaltrials"
         assert relation.target_id
-        assert relation.rel_type == "has_trial" or relation.rel_type == "tested_in"
+        assert relation.target_id.startswith("NCT")
+        assert relation.rel_type in {"has_trial", "tested_in"}
+        for prop_key, value in relation.data.items():
+            data_type = prop_key.split(":")[1] if ":" in prop_key else "string"
+            data_validator(data_type, value)
