@@ -61,7 +61,7 @@ class Node:
         data :
             An optional data dictionary associated with the node.
         validate_data :
-            If True, validate the data dictionary. Default: True.
+            If True, validate the data dictionary. Default: False.
         """
         if not db_ns or not db_id:
             raise ValueError("Missing namespace or ID.")
