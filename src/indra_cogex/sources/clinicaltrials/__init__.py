@@ -25,8 +25,17 @@ class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
     node_types = ["BioEntity", "ClinicalTrial"]
 
-    def __init__(self, reprocess: bool = False, redownload: bool = False):
-        ensure_clinical_trials_df(reprocess=reprocess, redownload=redownload)
+    def __init__(
+        self,
+        reprocess: bool = False,
+        redownload: bool = False,
+        max_pages: int = None,  # Primarily used for testing
+    ):
+        ensure_clinical_trials_df(
+            reprocess=reprocess,
+            redownload=redownload,
+            max_pages=max_pages
+        )
 
         self.trials_df = process_trialsynth_trial_nodes()
         # Warm up bio ontology
