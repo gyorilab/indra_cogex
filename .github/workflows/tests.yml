@@ -25,6 +25,8 @@ jobs:
           echo $PYTEST_ADDOPTS
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz graphviz-dev
           pip install "tox<4.0.0"
           BIOONTOLOGY_VERSION=1.30
           echo "bio ontology version: ${BIOONTOLOGY_VERSION}"
