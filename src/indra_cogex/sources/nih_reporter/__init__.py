@@ -21,7 +21,7 @@ downloads at: https://reporter.nih.gov/exporter available as zipped csv files pe
 
 import re
 import logging
-from datetime import datetime, UTC, date
+import datetime
 from typing import Iterable, Any
 import zipfile
 from collections import defaultdict
@@ -89,7 +89,8 @@ class NihReporterProcessor(Processor):
 
         # Download the data files if they are not present
         if download or force_download:
-            last_year = datetime.now(UTC).year - 1
+            from datetime import datetime
+            last_year = datetime.utcnow().year - 1
             logger.info(
                 "Downloading NIH RePORTER data files %s force redownload..."
                 % ("with" if force_download else "without")
@@ -247,10 +248,7 @@ def download_files(
     first_year=1985,
     last_year: int = None
 ):
-    current_year = date.today().year
-    if last_year is None:
-        last_year = current_year - 1
-    logger.info(f"Last year set to {last_year}")
+    current_year = datetime.date.today().year
     for subset, url_pattern in download_urls.items():
         # These files are indexed by year
         if subset in ["project", "publink"]:
@@ -267,7 +265,7 @@ def download_files(
         # year as reference.
         else:
             timestamp = int(
-                datetime(year=current_year, month=1, day=1).timestamp()
+                datetime.datetime(year=current_year, month=1, day=1).timestamp()
             )
             url = download_urls[subset]
             base_folder.ensure(
