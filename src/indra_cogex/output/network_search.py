@@ -11,7 +11,11 @@ from indra_cogex.client import Neo4jClient
 logger = logging.getLogger(__name__)
 
 
-def sif_with_logp(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFrame:
+def sif_with_logp(
+    client: Neo4jClient,
+    limit: Optional[int] = None,
+    batch_size: int = 250_000
+) -> pd.DataFrame:
     """Get a dataframe with all indra_rel relations and their logp values.
 
     Parameters
@@ -20,8 +24,13 @@ def sif_with_logp(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFr
         A Neo4jClient instance to query the database.
     limit :
         An optional limit on the number of relations to return.
-        If None, no limit is applied.
-
+        If None, no limit is applied. The limit is applied to both
+        indra_rel and codependent_with relations. Use to test on a
+        smaller subset of the data.
+    batch_size :
+        The number of relations to fetch in each batch.
+        Defaults to 250,000. If the limit is set, this will be adjusted to the
+        limit.
     Returns
     -------
     :
@@ -41,40 +50,82 @@ def sif_with_logp(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFr
         - belief: Belief score of the statement
         - logp: Logarithm of the p-value for the codependent_with relation
     """
+    if limit and limit < batch_size:
+        batch_size = limit
     # First get all indra_rel relations
+
+    # Count how many relations there are in total
+    if limit is None:
+        count_query = """\
+        MATCH (:BioEntity)-[rel:indra_rel]->(:BioEntity)
+        RETURN count(DISTINCT rel) AS count"""
+        count = client.query_tx(count_query)[0][0]
+        logger.info(f"Found {count} indra_rel relations")
+        total_rels = count
+    else:
+        logger.info(f"Limiting to {limit} indra_rel relations")
+        total_rels = limit
+
     indra_rel_query = """\
     MATCH p=(source:BioEntity)-[rel:indra_rel]->(target:BioEntity)
-    RETURN DISTINCT p"""
-    if limit is not None:
-        indra_rel_query += f"\nLIMIT {int(limit)}"
+    RETURN DISTINCT p
+    SKIP $skip
+    LIMIT $limit
+    """
 
+    # Batched retrieval of statement relations
     logger.info("Getting indra_rel relations")
     stmt_rows = []
-    for rel in tqdm(
-        client.query_relations(indra_rel_query),
+    offset = 0
+    remaining = limit
+    with tqdm(
+        total=total_rels,
         desc="Creating indra_rel dataframe",
         unit="relation",
         unit_scale=True,
-    ):
-        stmt_json = json.loads(rel.data["stmt_json"])
-        source_count = json.loads(rel.data["source_counts"])
-        stmt_rows.append(
-            (
-                rel.source_ns,
-                rel.source_id,
-                rel.source_name,
-                rel.target_ns,
-                rel.target_id,
-                rel.target_name,
-                rel.data["stmt_type"],
-                rel.data["evidence_count"],  # int
-                rel.data["stmt_hash"],  # int
-                stmt_json.get("residue"),
-                stmt_json.get("position"),  # int
-                source_count,  # dict[str, int], sum() == evidence_count
-                rel.data["belief"],  # float
+    ) as pbar:
+        while True:
+            current_limit = batch_size if remaining is None else min(batch_size, remaining)
+            results = client.query_relations(
+                indra_rel_query,
+                skip=offset,
+                limit=current_limit
             )
-        )
+            if not results:
+                break
+            for rel in results:
+                stmt_json = json.loads(rel.data["stmt_json"])
+                source_count = json.loads(rel.data["source_counts"])
+                stmt_rows.append(
+                    (
+                        rel.source_ns,
+                        rel.source_id,
+                        rel.source_name,
+                        rel.target_ns,
+                        rel.target_id,
+                        rel.target_name,
+                        rel.data["stmt_type"],
+                        rel.data["evidence_count"],  # int
+                        rel.data["stmt_hash"],  # int
+                        stmt_json.get("residue"),
+                        stmt_json.get("position"),  # int
+                        source_count,  # dict[str, int], sum() == evidence_count
+                        rel.data["belief"],  # float
+                    )
+                )
+            # Update progress bar and offset
+            new_rels = len(results)
+            offset += new_rels
+            pbar.update(new_rels)
+            if remaining is not None:
+                remaining -= new_rels
+                if remaining <= 0:
+                    break
+            # If we got fewer results than requested, we are done
+            if new_rels < current_limit:
+                break
+
+    # Create the dataframe
     sif_df = pd.DataFrame(
         stmt_rows, columns=[
             "agA_ns",
@@ -100,32 +151,68 @@ def sif_with_logp(client: Neo4jClient, limit: Optional[int] = None) -> pd.DataFr
         }
     )
 
+    # Count the total number of codependent_with relations
+    if limit is None:
+        z_count_query = """\
+        MATCH (:BioEntity)-[rel:codependent_with]->(:BioEntity)
+        RETURN count(DISTINCT rel) AS count"""
+        total_z = client.query_tx(z_count_query)[0][0]
+        logger.info(f"Found {total_z} codependent_with relations")
+    else:
+        logger.info(f"Limiting to {limit} codependent_with relations")
+        total_z = limit
+
     # Then get all the codependent_with relations
     z_score_query = """\
     MATCH p=(source:BioEntity)-[rel:codependent_with]->(target:BioEntity)
-    RETURN DISTINCT p"""
-    if limit is not None:
-        z_score_query += f"\nLIMIT {int(limit)}"
-
+    RETURN DISTINCT p
+    SKIP $skip
+    LIMIT $limit
+    """
     logger.info("Getting codependent_with relations")
     z_score_rows = []
-    for rel in tqdm(
-        client.query_relations(z_score_query),
-        desc="Creating codependent_with dataframe",
+    offset = 0
+    remaining = limit
+    with tqdm(
+        total=total_z,
+        desc="codependent_with batches",
         unit="relation",
         unit_scale=True,
-    ):
-        z_score_rows.append(
-            (
-                rel.source_ns,
-                rel.source_id,
-                rel.source_name,
-                rel.target_ns,
-                rel.target_id,
-                rel.target_name,
-                rel.data["logp"],
+    ) as pbar:
+        while True:
+            current_limit = batch_size if remaining is None else min(batch_size, remaining)
+            results = client.query_relations(
+                z_score_query,
+                skip=offset,
+                limit=current_limit
             )
-        )
+            if not results:
+                break
+            for rel in results:
+                z_score_rows.append(
+                    (
+                        rel.source_ns,
+                        rel.source_id,
+                        rel.source_name,
+                        rel.target_ns,
+                        rel.target_id,
+                        rel.target_name,
+                        rel.data["logp"],
+                    )
+                )
+            # Update progress bar and offset
+            new_rels = len(results)
+            offset += new_rels
+            pbar.update(new_rels)
+            if remaining is not None:
+                remaining -= new_rels
+                if remaining <= 0:
+                    break
+            # If we got fewer results than requested, we are done
+            if new_rels < current_limit:
+                break
+
+    # Create the dataframe
     z_score_df = pd.DataFrame(
         z_score_rows,
         columns=[
