@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Reset agent and other agent inputs
             agentNameInput.value = agentText || '';
             otherAgentInput.value = otherAgentText || '';
+            RelhiddenInput.value = "[]";
 
             // Reset roles and button states
             roleButtons.forEach(button => button.classList.remove('active'));
