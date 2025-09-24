@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+from abc import abstractmethod
 from hashlib import md5
 from itertools import chain
 from typing import Tuple, Mapping, Iterable, List, Set
@@ -113,6 +114,16 @@ class PubmedProcessor(Processor):
             )
         return edges_path
 
+    @abstractmethod
+    def _get_nodes(self):
+        """This method should be overridden by subclasses to yield nodes."""
+        return
+
+    @abstractmethod
+    def _get_relations(self):
+        """This method should be overridden by subclasses to yield relations."""
+        return
+
 
 class PublicationProcessor(PubmedProcessor):
     importable = True
@@ -166,8 +177,8 @@ class PublicationProcessor(PubmedProcessor):
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
-            # NOTE tested with 100000 batch size but given that total is ~290M
-            # and each line is lightweight, trying with larger batch here
+            # Given each line is lightweight and that total is ~350M trying
+            # with larger batch size here. Total time us typically 15-20 hours.
             batch_size = 10_000_000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
@@ -284,20 +295,21 @@ def ensure_text_refs(fname):
     if os.path.exists(fname):
         logger.info(f"Found existing text refs in {fname}")
         return
-    from indra_db import get_db
-
-    db = get_db("primary")
-    os.environ["PGPASSWORD"] = db.url.password
-    logger.info(f"Dumping text refs into {fname}")
-    command = textwrap.dedent(
-        f"""
-        psql -d {db.url.database} -h {db.url.host} -U {db.url.username}
-        -c "COPY (SELECT id, pmid, pmcid, doi, pii, url, manuscript_id 
-        FROM public.text_ref) TO STDOUT"
-        | gzip > {fname}
-    """
-    ).replace("\n", " ")
-    os.system(command)
+    from indra_cogex.sources.indra_db.export_assembly import (
+        download_s3_file,
+        get_latest_timestamp_prefix,
+    )
+    from indra_cogex.sources.indra_db.locations import DUMP_BUCKET, DUMP_PREFIX
+    s3_base_prefix = get_latest_timestamp_prefix(
+        bucket=DUMP_BUCKET, prefix=DUMP_PREFIX
+    )
+    s3_key = f"{s3_base_prefix}{text_refs_fname.name}"
+    download_s3_file(
+        bucket=DUMP_BUCKET,
+        s3_key=s3_key,
+        local_path=text_refs_fname,
+        force=False,
+    )
 
 
 def extract_info_from_medline_xml(
@@ -534,7 +546,7 @@ def download_medline_pubmed_xml_resource(
         If True, will raise error instead of skipping the file when
         checksums do not match. Default: False.
     """
-    for xml_file, stow, base_url in xml_path_generator(description="Download"):
+    for xml_file, stow, base_url in xml_path_generator(description="Downloading PubMed XML files"):
         # Check if resource already exists
         if not force and stow.exists():
             continue
@@ -603,6 +615,8 @@ def xml_path_generator(
         all_urls = baseline_urls + update_urls
         for pubmed_url in tqdm(
             all_urls,
+            unit="file",
+            unit_scale=True,
             desc=description,
         ):
             yield _get_tuple(pubmed_url)

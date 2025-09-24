@@ -8,7 +8,9 @@ from indra_cogex.sources.processor import validate_headers
 from indra_cogex.sources.processor_util import (
     data_validator,
     DataTypeError,  # If the value does not validate against the Neo4j data type
-    UnknownTypeError  # If data_type is not recognized as a Neo4j data type
+    UnknownTypeError,  # If data_type is not recognized as a Neo4j data type
+    NewLineInStringError,  # Raised when a string value contains a newline character
+    InfinityValueError,  # Raised when a float value is +/-infinity
 )
 
 
@@ -56,6 +58,8 @@ def test_data_validator():
     data_validator("string", 1)
     # data_validator("point", "1")  # Not implemented yet
 
+
+def test_data_type_error():
     try:
         data_validator("int", "1x5d23f")
         assert False, "Expected exception"
@@ -64,12 +68,46 @@ def test_data_validator():
         assert "int" in str(e)
         assert "1" in str(e)
 
+
+def test_unknown_type_error():
     try:
         data_validator("notatype", "1")
         assert False, "Expected exception"
     except Exception as e:
         assert isinstance(e, UnknownTypeError)
         assert "notatype" in str(e)
+
+
+def test_newline_error():
+    try:
+        data_validator("string", "a string with a newline\n")
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NewLineInStringError)
+        assert "string" in str(e)
+        assert "newline" in str(e)
+    try:
+        data_validator("string", "a string with a carriage return\r")
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NewLineInStringError)
+        assert "string" in str(e)
+        assert "newline" in str(e)
+
+
+def test_infinity_error():
+    try:
+        data_validator("float", float("inf"))
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, InfinityValueError)
+        assert "infinity" in str(e)
+    try:
+        data_validator("float", float("-inf"))
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, InfinityValueError)
+        assert "infinity" in str(e)
 
 
 class MockProcessor(Processor, object):

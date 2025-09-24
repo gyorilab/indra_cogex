@@ -1,5 +1,10 @@
-from indra_cogex.representation import node_query, norm_id, triple_query, \
-    triple_parameter_query
+from indra_cogex.representation import (
+    node_query,
+    norm_id,
+    triple_query,
+    triple_parameter_query,
+    dump_norm_id
+)
 
 
 def test_norm_id():
@@ -7,6 +12,16 @@ def test_norm_id():
     assert norm_id("CHEBI", "CHEBI:12345") == "chebi:12345"
     assert norm_id("CHEBI", "12345") == "chebi:12345"
     assert norm_id("chebi", "12345") == "chebi:12345"
+    try:
+        # Should error with AttributeError with current implementation
+        # If implementation changes it will be caught here
+        assert norm_id("indra_evidence", "175613") == "indra_evidence:175613"
+    except AttributeError:
+        pass
+
+
+def test_dump_norm_id():
+    assert dump_norm_id("indra_evidence", "175613") == "indra_evidence:175613"
 
 
 def test_node_query():

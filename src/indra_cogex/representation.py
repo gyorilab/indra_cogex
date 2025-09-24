@@ -2,7 +2,14 @@
 
 """Representations for nodes and relations to upload to Neo4j."""
 
-__all__ = ["Node", "Relation", "indra_stmts_from_relations", "norm_id", "generate_paper_clause"]
+__all__ = [
+    "Node",
+    "Relation",
+    "indra_stmts_from_relations",
+    "norm_id",
+    "generate_paper_clause",
+    "dump_norm_id"
+]
 
 import codecs
 from typing import (
@@ -54,7 +61,7 @@ class Node:
         data :
             An optional data dictionary associated with the node.
         validate_data :
-            If True, validate the data dictionary. Default: True.
+            If True, validate the data dictionary. Default: False.
         """
         if not db_ns or not db_id:
             raise ValueError("Missing namespace or ID.")
@@ -254,6 +261,21 @@ def standardize(
     if db_ns is None or db_id is None:
         return prefix, identifier, name
     return db_ns, db_id, name
+
+
+def dump_norm_id(db_ns, db_id) -> str:
+    """Wrapper for norm_id to be used in node dumping."""
+    # Note: this is needed because some of the processors use custom namespaces e.g.,
+    # 'indra_evidence' for node identification and norm_id returns None for those
+    try:
+        norm_curie = norm_id(db_ns, db_id)
+        return norm_curie
+    except AttributeError:
+        # Rather than changing the behavior of norm_id, we just check for an
+        # AttributeError coming from the NoneType object trying to access
+        # the attribute 'startswith'
+        return f"{db_ns}:{db_id}"
+
 
 
 def norm_id(db_ns, db_id) -> str:

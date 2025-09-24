@@ -18,7 +18,7 @@ from . import DbProcessor, EvidenceProcessor
     help="Download latest processed data of indra_db from S3 and generate grounded and unique statements.",
 )
 @click.pass_context
-def _main(ctx: click.Context):
+def _main(ctx: click.Context, sync_data: bool):
     if sync_data:
         click.secho("Getting data from S3 and processing with export_assembly.py", fg="yellow")
         export_assembly()

@@ -29,12 +29,14 @@ from tqdm import tqdm
 from indra.statements.validate import assert_valid_db_refs, assert_valid_evidence
 from indra.statements import Evidence
 
-from indra_cogex.representation import Node, Relation, norm_id
+from indra_cogex.representation import Node, Relation, dump_norm_id
 from indra_cogex.sources.processor_util import (
     NEO4J_DATA_TYPES,
     data_validator,
     DataTypeError,
     UnknownTypeError,
+    NewLineInStringError,
+    InfinityValueError,
 )
 
 __all__ = [
@@ -185,10 +187,16 @@ class Processor(ABC):
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad node data type in node data values for {processor_name}")
             raise e
+        except InfinityValueError as e:
+            logger.error(f"Infinity value detected in node data values for {processor_name}")
+            raise e
+        except NewLineInStringError as e:
+            logger.error(f"Newline in string detected in node data values for {processor_name}")
+            raise e
 
         node_rows = (
             (
-                norm_id(node.db_ns, node.db_id),
+                dump_norm_id(node.db_ns, node.db_id),
                 ";".join(node.labels),
                 *[node.data.get(key, "") for key in metadata],
             )
@@ -243,8 +251,8 @@ class Processor(ABC):
 
         edge_rows = (
             (
-                norm_id(rel.source_ns, rel.source_id),
-                norm_id(rel.target_ns, rel.target_id),
+                dump_norm_id(rel.source_ns, rel.source_id),
+                dump_norm_id(rel.target_ns, rel.target_id),
                 rel.rel_type,
                 *[rel.data.get(key) for key in metadata],
             )
@@ -351,6 +359,14 @@ def validate_nodes(
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Bad node data type(s) detected")
             raise e
+        except InfinityValueError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("Infinity value detected")
+            raise e
+        except NewLineInStringError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("Newline in string detected")
+            raise e
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
             continue
@@ -406,6 +422,14 @@ def validate_relations(
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"{idx}: {rel} - {e}")
             logger.error("Bad relation data type(s) detected")
+            raise e
+        except InfinityValueError as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("Infinity value detected")
+            raise e
+        except NewLineInStringError as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("Newline in string detected")
             raise e
         except Exception as e:
             logger.info(f"{idx}: {rel} - {e}")

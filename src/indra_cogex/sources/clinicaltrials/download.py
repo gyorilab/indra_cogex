@@ -1,156 +1,329 @@
 """
-NOTE: ClinicalTrials.gov are working on a more modern API that is currently
-in Beta: https://beta.clinicaltrials.gov/data-about-studies/learn-about-api
-Once this API is released, we should switch to using it. The instructions for
-using the current/old API are below.
-
-Downloading the clinical trials data is now fully automated, but for posterity,
-here are the instructions for getting the file manually:
-
-To obtain the custom download for ingest, do the following::
-
-    1. Go to https://clinicaltrials.gov/api/gui/demo/simple_study_fields
-
-    2. Enter the following in the form:
-
-    expr=
-    fields=NCTId,BriefTitle,Condition,ConditionMeshTerm,ConditionMeshId,InterventionName,InterventionType,InterventionMeshTerm,InterventionMeshId,StudyType
-    min_rnk=1
-    max_rnk=500000  # or any number larger than the current number of studies
-    fmt=csv
-
-    3. Send Request
-
-    4. Enter the captcha characters into the text box and then press enter
-    (make sure to use the enter key and not press any buttons).
-
-    5. The website will display "please wait… " for a couple of minutes, finally,
-    the Save to file button will be active.
-
-    6. Click the Save to file button to download the response as a txt file.
-
-    7. Rename the txt file to clinical_trials.csv and then compress it as
-    gzip clinical_trials.csv to get clinical_trials.csv.gz, then place
-    this file into <pystow home>/indra/cogex/clinicaltrials/
+Download and parse the ClinicalTrials.gov data using Trialsynth.
 """
-
-from typing import Optional, List
+import logging
+import os
+from typing import Dict, Optional
 
 import pystow
-import requests
-from tqdm.auto import tqdm, trange
 import pandas as pd
-import io
+
+from indra.ontology.bio import bio_ontology
+from trialsynth.clinical_trials_dot_gov import config, process
 
 __all__ = [
-    "CLINICAL_TRIALS_PATH",
     "ensure_clinical_trials_df",
-    "get_clinical_trials_df",
+    "process_trialsynth_edges",
+    "process_trialsynth_bioentity_nodes",
+    "process_trialsynth_trial_nodes",
 ]
 
-CLINICAL_TRIALS_PATH = pystow.join(
+CLINICAL_TRIALS_MODULE = pystow.module(
     "indra",
     "cogex",
     "clinicaltrials",
-    name="clinical_trials.tsv.gz",
 )
+TRIALSYNTH_PATH = CLINICAL_TRIALS_MODULE.module("trialsynth")
+os.environ["DATA_DIR"] = str(TRIALSYNTH_PATH.base.absolute())
 
-#: The fields that are used by default. A full list can be found
-#: here: https://classic.clinicaltrials.gov/api/info/study_fields_list
-DEFAULT_FIELDS = [
-    "NCTId",
-    "BriefTitle",
-    "Condition",
-    "ConditionMeshTerm",
-    "ConditionMeshId",
-    "InterventionName",
-    "InterventionType",
-    "InterventionMeshTerm",
-    "InterventionMeshId",
-    "StudyType",
-    "DesignAllocation",
-    "OverallStatus",
-    "Phase",
-    "WhyStopped",
-    "SecondaryIdType",
-    "SecondaryId",
-    "StartDate",  # Month [day], year: "November 1, 2023", "May 1984" or NaN
-    "StartDateType",  # "Actual" or "Anticipated" (or NaN)
-    "ReferencePMID",  # these are tagged as relevant by the author, but not necessarily about the trial
-]
+# Initializes the configuration for the clinical trials module in trialsynth
+ctconfig = config.CTConfig()
 
 
-def ensure_clinical_trials_df(*, refresh: bool = False) -> pd.DataFrame:
-    """Download and parse the ClinicalTrials.gov dataframe or load
-    it, if it's already available.
+#: Labels to keep for interventions in the bioentity nodes.
+INTERVENTION_LABELS = {
+    "DRUG",
+    "DIETARY_SUPPLEMENT",
+}
 
-    If refresh is set to true, it will overwrite the existing file.
+
+logger = logging.getLogger(__name__)
+
+
+def ensure_clinical_trials_df(
+    *,
+    redownload: bool = False,
+    reprocess: bool = False,
+    max_pages: Optional[int] = None
+):
+    """Download and parse the ClinicalTrials.gov data using Trialsynth.
+
+    Parameters
+    ----------
+    redownload :
+        If True, redownload the raw data, even if it already exists. This will
+        also set `reprocess` to True, since redownloading the data means that it
+        needs to be reprocessed. Default: False.
+    reprocess :
+        If True, reprocess the data, even if it already exists. This will
+        reprocess the raw data
+    max_pages :
+        The maximum number of pages to download from the ClinicalTrials.gov API.
+        If None, all pages will be downloaded. Default: None.
     """
-    if CLINICAL_TRIALS_PATH.is_file() and not refresh:
-        return pd.read_csv(CLINICAL_TRIALS_PATH, sep="\t")
-    df = get_clinical_trials_df()
-    df.to_csv(CLINICAL_TRIALS_PATH, sep="\t", index=False, compression="gzip")
-    return df
+    if redownload:
+        reprocess = True
+
+    # Check the processed trialsynth data directory
+    if not reprocess and all(
+        p.exists() for p in (
+            ctconfig.edges_path,
+            ctconfig.bio_entities_path,
+            ctconfig.trials_path,
+        )
+    ):
+        logger.info("ClinicalTrials.gov data already processed, skipping download.")
+        return
+
+    ctp = process.CTProcessor(
+        reload_api_data=redownload, store_samples=True, validate=False
+    )
+    ctp.run(max_pages=max_pages)
 
 
-def get_clinical_trials_df(
-    page_size: int = 1_000, fields: Optional[List[str]] = None
-) -> pd.DataFrame:
-    """Download the ClinicalTrials.gov dataframe.
+def _mesh_to_chebi(row) -> str:
+    """Convert a MeSH CURIE to a ChEBI CURIE if possible for interventions"""
+    # Some interventions in the trialsynth data are directly from mesh
+    # annotations and don't go through grounding, where chebi is prioritized
+    # over mesh
+    curie = row["bioentity"]
+    if curie is None:
+        raise ValueError(
+            "The row does not have a 'bioentity' column, cannot convert to CHEBI."
+        )
+    if row["rel_type:string"] == "condition" or not curie.lower().startswith("mesh:"):
+        # If it's not mesh or it's not an intervention row just return the
+        # original CURIE
+        return curie
 
-    If fields is None, will default to :data:`FIELDS`.
+    # At this point we know that the CURIE is a MeSH CURIE and we want to
+    # convert it to a ChEBI CURIE if possible.
+    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345")
+    chebi_ns, chebi_id = bio_ontology.map_to(
+        ns1="MESH", id1=curie.split(":")[1], ns2="CHEBI"
+    ) or (None, None)
+    # The bio_ontology has chebi nodes stored as ("CHEBI", "CHEBI:12345")
+    return chebi_id if chebi_id else curie
 
-    Download takes about 10 minutes and is shown with a progress bar.
+
+def process_trialsynth_edges() -> pd.DataFrame:
+    """Convert the edge file from the trialsynth to CoGEx format
+
+    Returns
+    -------
+    :
+        The converted edges DataFrame with CoGEx format headers and intervention
+         values converted to Chebi identifiers.
     """
-    if page_size > 1_000:
-        page_size = 1_000
-    if fields is None:
-        fields = DEFAULT_FIELDS
-    base_params = {
-        "expr": "",
-        "min_rnk": 1,
-        "max_rnk": page_size,
-        "fmt": "csv",
-        "fields": ",".join(fields),
+    headers_translation = {
+        "from:CURIE": "trial",
+        "to:CURIE": "bioentity",
     }
-    url = "https://classic.clinicaltrials.gov/api/query/study_fields"
 
-    #: This is the number of dummy rows at the beginning of the document
-    #: before the actual CSV starts
-    skiprows = 9
+    # Read the edges file from trialsynth
+    edges_df = pd.read_csv(ctconfig.edges_path, sep="\t", compression="gzip")
 
-    beginning = '"NStudiesAvail: '
-    res = requests.get(url, params=base_params)
-    for line in res.text.splitlines()[:skiprows]:
-        if line.startswith(beginning):
-            total = int(line[len(beginning):].strip('"'))
-            break
-    else:
-        raise ValueError("could not parse total trials")
+    # Rename the columns to match CoGEx format
+    edges_df.rename(columns=headers_translation, inplace=True)
 
-    pages = 1 + total // page_size
+    # Only translate has_intervention edges from mesh to chebi, but use a new column
+    # for the resulting values and fill in with the untranslated values for the rows
+    # that were not translated
+    edges_df["bioentity_mapped"] = edges_df.apply(_mesh_to_chebi, axis=1)
 
-    tqdm.write(
-        f"There are {total:,} clinical trials available, iterable in {pages:,} pages of size {page_size:,}."
+    # Drop the "source_registry:string" column
+    if "source_registry:string" in edges_df.columns:
+        edges_df.drop(columns=["source_registry:string"], inplace=True)
+
+    return edges_df
+
+
+def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.DataFrame:
+    """Convert the bioentity nodes file from the trialsynth to CoGEx format
+
+    Returns
+    -------
+    :
+        writeme
+    """
+    headers_translation = {
+        "curie:CURIE": "bioentity",
+        "term:string": "name",
+    }
+
+    # Read the bioentity nodes file from trialsynth
+    bioentity_nodes_df = pd.read_csv(
+        ctconfig.bio_entities_path, sep="\t", compression="gzip"
     )
 
-    first_page_df = pd.read_csv(io.StringIO(res.text), skiprows=skiprows)
+    # Rename the columns to match CoGEx format
+    bioentity_nodes_df.rename(columns=headers_translation, inplace=True)
 
-    dfs = [first_page_df]
+    def _map_to_chebi(row) -> str:
+        if "intervention" in row["labels:LABEL[]"].lower():
+            return mesh_chebi_map.get(
+                row["bioentity"], row["bioentity"]
+            )
+        return row["bioentity"]
 
-    # start on page "1" because we already did page 0 above. Note that we're zero-indexed,
-    # so "1" is actually is the second page
-    for page in trange(1, pages, unit="page", desc="Downloading ClinicalTrials.gov"):
-        min_rnk = page_size * page + 1
-        max_rnk = page_size * (page + 1)
-        res = requests.get(
-            url, params={**base_params, "min_rnk": min_rnk, "max_rnk": max_rnk}
-        )
-        page_df = pd.read_csv(io.StringIO(res.text), skiprows=skiprows)
-        dfs.append(page_df)
+    # Translate the same rows that were translated in the edges file:
+    # Any mesh id that is an intervention should be attempted to be converted to chebi
+    bioentity_nodes_df["bioentity_mapped"] = bioentity_nodes_df.apply(_map_to_chebi, axis=1)
 
-    return pd.concat(dfs)
+    # Map names for the chebi mapped bioentities
+    def _nsid_to_name(row) -> str:
+        if pd.isna(row["bioentity_mapped"]) or row["bioentity_mapped"] is None:
+            return row["name"]
+        if "intervention" in row["labels:LABEL[]"].lower() and \
+            row["bioentity_mapped"].lower().startswith("chebi:"):
+            # If it's an intervention, get the name from the chebi id, use the
+            # existing name as default
+            mapped_name = bio_ontology.get_name(
+                ns="CHEBI", id=row["bioentity_mapped"].upper()
+            )
+            return mapped_name or row["name"]
+        return row["name"]
+
+    bioentity_nodes_df["name"] = bioentity_nodes_df.apply(_nsid_to_name, axis=1)
+
+    # Filter to interventions that are labeled as drugs or dietary supplements
+    def _intervention_filter(row) -> bool:
+        """Check if the row is an intervention that should be kept."""
+        labels = row["labels:LABEL[]"].lower()
+        if "condition" in labels:
+            # We keep conditions as they are not interventions
+            return True
+        # Check if the labels contain any of the allowed intervention labels
+        if any(label.lower() in labels for label in INTERVENTION_LABELS):
+            return True
+        # Check if the curie is from chebi
+        if row["bioentity"].lower().startswith("chebi:"):
+            return True
+        return False
+
+    # Filter the interventions to the ones that are labeled as drugs or dietary
+    # supplements or where the curie is from chebi
+    bioentity_nodes_df = bioentity_nodes_df[
+        bioentity_nodes_df.apply(_intervention_filter, axis=1)
+    ]
+
+    return bioentity_nodes_df[["bioentity_mapped", "name"]]
 
 
-if __name__ == "__main__":
-    ensure_clinical_trials_df(refresh=True)
+def process_trialsynth_trial_nodes() -> pd.DataFrame:
+    """Convert the trial nodes file from the trialsynth to CoGEx format
+
+    Returns
+    -------
+    :
+        writeme
+    """
+    # Cogex headers:
+    # id:ID
+    # :LABEL
+    # phase:int  <-- -1 for unknown phase
+    # randomized:boolean
+    # start_year:int
+    # start_year_anticipated:boolean
+    # completion_year:int
+    # completion_year_anticipated:boolean
+    # last_update_submit_year:int
+    # status  # Completed, terminated etc...
+    # study_type  # Observational, interventional etc...
+    # why_stopped
+
+    # Trialsynth has the following headers:
+    # curie:CURIE
+    # title:string <- Corresponds to BriefTitle
+    # official_title:string <- Corresponds to OfficialTitle
+    # brief_summary:string,
+    # detailed_description:string,
+    # labels:LABEL[] - scsv of clinical_trials, intervention, observational, expanded_access
+    # design:DESIGN - e.g. 'Purpose: PREVENTION; Allocation: RANDOMIZED;Masking: DOUBLE; Assignment: '
+    # conditions:CURIE[] - scsv of mesh conditions, e.g. 'mesh:D000001;mesh:D000002'
+    # interventions:CURIE[]
+    # primary_outcome:OUTCOME[]
+    # secondary_outcome:OUTCOME[]
+    # secondary_ids:CURIE[]
+    # source_registry:string
+    # phases:PHASE[]
+    # start_year:integer
+    # start_year_anticipated:boolean
+    # primary_completion_year:integer
+    # primary_completion_year_type:string
+    # completion_year:integer
+    # completion_year_type:string
+    # last_update_submit_year:integer
+    # status:string
+    # why_stopped:string
+    # references:string[]
+
+    # Translate the headers to CoGEx format, these map 1:1
+    headers_translation = {
+        "curie:CURIE": "id:ID",
+        "why_stopped:string": "why_stopped",
+        "status:string": "status",
+    }
+
+    def _get_phase(phase_string: str) -> int:
+        if pd.notna(phase_string):
+            # The phase string is a list of phases, e.g. "PHASE1|PHASE2"
+            # Get the highest phase number
+            max_phase = max(
+                int(p[-1]) if p[-1].isdigit() else -1
+                for p in phase_string.split("|")
+            )
+            return max_phase
+        return -1
+
+    # Read the trial nodes file from trialsynth
+    trials_nodes_df = pd.read_csv(ctconfig.trials_path, sep="\t", compression="gzip")
+
+    # Rename the columns to match CoGEx format
+    trials_nodes_df.rename(columns=headers_translation, inplace=True)
+
+    # Add the :LABEL column
+    trials_nodes_df[":LABEL"] = "ClinicalTrial"
+
+    # Add the phase column, defaulting to -1 (unknown), pick the max phase
+    trials_nodes_df["phase:int"] = trials_nodes_df["phases:PHASE[]"].apply(_get_phase)
+
+    # Set the randomized boolean column based on the labels containing 'Allocation: RANDOMIZED'
+    trials_nodes_df["randomized:boolean"] = trials_nodes_df["labels:LABEL[]"].str.contains(
+        "Allocation: RANDOMIZED")
+
+    # Set the start_year:int column
+    trials_nodes_df["start_year"] = trials_nodes_df["start_year:integer"].apply(
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
+
+    # Set the completion_year column
+    trials_nodes_df["completion_year"] = trials_nodes_df["completion_year:integer"].apply(
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
+
+    # Set the last_update_submit_year column
+    trials_nodes_df["last_update_submit_year"] = trials_nodes_df["last_update_submit_year:integer"].apply(
+        lambda x: int(x) if pd.notna(x) else None
+    ).astype("Int64")
+
+    # fixme: need a better way to get the study type out
+    def _get_study_type(labels: str) -> str:
+        if pd.isna(labels):
+            return "unknown"
+        # The study type is in the labels, e.g. "Study Type: Interventional"
+        for label in labels.split(";"):
+            for study_type in ["interventional", "observational", "expanded access"]:
+                if study_type in label.lower():
+                    return study_type
+        return "unknown"
+    # Add study type column
+    trials_nodes_df["study_type"] = trials_nodes_df["labels:LABEL[]"].apply(_get_study_type)
+
+    # Clean up
+    # Remove newlines and 2+ whitespaces from the why_stopped column
+    trials_nodes_df["why_stopped"] = trials_nodes_df["why_stopped"].str.replace(
+        r"\s+", " ", regex=True
+    ).str.strip()
+
+    return trials_nodes_df

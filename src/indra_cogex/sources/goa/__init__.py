@@ -12,7 +12,7 @@ from ...representation import Node, Relation
 
 logger = logging.getLogger(__name__)
 
-GOA_URL = "http://geneontology.org/gene-associations/goa_human.gaf.gz"
+GOA_URL = "https://current.geneontology.org/annotations/goa_human.gaf.gz"
 EVIDENCE_CODES = {
     "EXP",
     "IDA",
@@ -59,8 +59,15 @@ class GoaProcessor(Processor):
 def load_goa(url: str) -> pd.DataFrame:
     """Get the Gene Ontology Annotations database as a dataframe.
 
-    :param url: The URL to the GOA database file.
-    :return: The GOA database as a dataframe
+    Parameters
+    ----------
+    url :
+        The URL to the GOA database file.
+
+    Returns
+    -------
+    :
+        The GOA database as a dataframe
     """
     logger.info("Loading GO annotations from %s", url)
     df = pd.read_csv(

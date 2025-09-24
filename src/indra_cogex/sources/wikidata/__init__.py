@@ -141,7 +141,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
     GROUP BY ?journal ?journalLabel ?issn_l ?publisher ?publisherLabel ?isni
     """)
 
-    def __init__(self):
+    def __init__(self, allow_skip_citescore: bool = False):
         self.publisher_data_path = self.module.join(name="publisher_data.tsv.gz")
         self.journal_data_path = self.module.join(name="journal_data.tsv.gz")
         self.pub_jour_relations_data_path = self.module.join(
@@ -150,6 +150,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
             name="scopus_citescore.xlsx")
         self.issn_nlm_map = None
         self.citescore_df = None
+        self.allow_skip_citescore = allow_skip_citescore
 
     @staticmethod
     def _load_issn_nlm_map():
@@ -167,7 +168,7 @@ class JournalPublisherProcessor(WikiDataProcessor):
         return issn_nlm_map
 
     def _load_citescore_map(self):
-        if self.citescore_df is not None:
+        if self.citescore_df is not None or self.allow_skip_citescore:
             return
 
         # Columns are:
@@ -248,14 +249,17 @@ class JournalPublisherProcessor(WikiDataProcessor):
             # Skip if we don't have an NLM ID or an ISNI ID for the relation
             if nlm_id and publisher_isni:
                 # CiteScore
-                try:
-                    citescore_row = self.citescore_df.loc[journal_name]
-                except KeyError:
-                    # Set all values to None
-                    citescore_row = {
-                        col: None for col in self.citescore_df.columns
-                    }
-                    missing_citescore_data += 1
+                if self.citescore_df is None and self.allow_skip_citescore:
+                    citescore_row = {}
+                else:
+                    try:
+                        citescore_row = self.citescore_df.loc[journal_name]
+                    except KeyError:
+                        # Set all values to None
+                        citescore_row = {
+                            col: None for col in self.citescore_df.columns
+                        }
+                        missing_citescore_data += 1
 
                 yield JournalPublisherTuple(
                     journal_wd_id=journal_wd_id,
@@ -263,22 +267,23 @@ class JournalPublisherProcessor(WikiDataProcessor):
                     journal_issn_list=journal_issn_list,
                     journal_issn_l=journal_issn_l,
                     nlm_id=nlm_id,
-                    citescore=citescore_row["CiteScore"],
-                    category_rank=citescore_row["Rank"],
-                    percentile=citescore_row["Percentile"],
-                    category=citescore_row["Category"],
-                    citations_2019_22=citescore_row["2019-22 Citations"],
-                    documents_2019_22=citescore_row["2019-22 Documents"],
-                    percent_cited_2019_22=citescore_row["% Cited"],
-                    snip=citescore_row["SNIP"],
-                    sjr=citescore_row["SJR"],
+                    citescore=citescore_row.get("CiteScore"),
+                    category_rank=citescore_row.get("Rank"),
+                    percentile=citescore_row.get("Percentile"),
+                    category=citescore_row.get("Category"),
+                    citations_2019_22=citescore_row.get("2019-22 Citations"),
+                    documents_2019_22=citescore_row.get("2019-22 Documents"),
+                    percent_cited_2019_22=citescore_row.get("% Cited"),
+                    snip=citescore_row.get("SNIP"),
+                    sjr=citescore_row.get("SJR"),
                     publisher_wd_id=publisher_wd_id,
                     publisher_name=publisher_name,
                     publisher_isni=publisher_isni
                 )
-        logger.info(
-            f"Missing CiteScore data for {missing_citescore_data} journals"
-        )
+        if missing_citescore_data > 0 and not self.allow_skip_citescore:
+            logger.info(
+                f"Missing CiteScore data for {missing_citescore_data} journals"
+            )
 
     def process_data(self, force: bool = False):
         """Dump data to CSV

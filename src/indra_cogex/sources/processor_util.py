@@ -2,7 +2,7 @@
 # and
 # https://neo4j.com/docs/api/python-driver/current/api.html#data-types
 # for available data types.
-from typing import Literal, Any
+from typing import Literal, Any, Union
 
 NEO4J_DATA_TYPES = (
     "int",
@@ -63,6 +63,37 @@ class UnknownTypeError(TypeError):
     """Raised when a data type is not recognized."""
 
 
+class NewLineInStringError(ValueError):
+    """Raised when a string value contains a newline character."""
+
+
+class InfinityValueError(ValueError):
+    """Raised when a float value is infinity."""
+
+
+def _check_no_newlines(value: str):
+    if "\n" in value or "\r" in value:
+        raise NewLineInStringError(
+            f"String value '{value}' contains a newline character."
+        )
+
+
+def _check_noinfinity(value: Union[float | str]):
+    if isinstance(value, float) and (value == float("inf") or value == float("-inf")):
+        raise InfinityValueError(
+            f"Float value '{value}' is infinity, which is not allowed in Neo4j."
+        )
+    if isinstance(value, str):
+        try:
+            fval = float(value)
+            if fval == float("inf") or fval == float("-inf"):
+                raise InfinityValueError(
+                    f"Float value '{value}' is infinity, which is not allowed in Neo4j."
+                )
+        except ValueError:
+            pass
+
+
 def data_validator(data_type: str, value: Any):
     """Validate that the data type matches the value.
 
@@ -101,6 +132,7 @@ def data_validator(data_type: str, value: Any):
         for val in value_list:
             if isinstance(val, str):
                 # Try to convert to int
+                _check_noinfinity(val)
                 try:
                     val = int(val)
                 except ValueError as e:
@@ -116,10 +148,12 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type int, "
                     f"but got value of type {type(val)} instead."
                 )
+            _check_noinfinity(val)
     elif data_type == "float" or data_type == "double":
         for val in value_list:
             if isinstance(val, str):
                 # Try to convert to float
+                _check_noinfinity(val)
                 try:
                     val = float(val)
                 except ValueError as e:
@@ -135,6 +169,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type float, "
                     f"but got value of type {type(val)} instead."
                 )
+            _check_noinfinity(val)
     elif data_type == "boolean":
         for val in value_list:
             if not isinstance(val, str) or val not in ("true", "false"):
@@ -160,6 +195,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type str, "
                     f"but got value of type {type(val)} instead."
                 )
+            _check_no_newlines(val)
     elif data_type == "string":
         for val in value_list:
             # Catch string representations of numbers
@@ -179,6 +215,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type str, "
                     f"int or float, but got value of type {type(val)} instead."
                 )
+            _check_no_newlines(val)
     elif data_type == "point":
         raise NotImplementedError(
             "Neo4j point data type validation is not implemented"

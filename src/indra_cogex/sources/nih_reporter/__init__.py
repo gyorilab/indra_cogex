@@ -174,11 +174,12 @@ class NihReporterProcessor(Processor):
             df = pandas.read_csv(patent_file)
             # Drop duplicated IDs and iterate over rows
             for _, row in df.drop_duplicates(subset=["PATENT_ID"]).iterrows():
-                pat_id = row["PATENT_ID"].strip()
+                # Strip whitespace and remove any whitespace in patent IDs
+                pat_id = row["PATENT_ID"].strip().replace(" ", "").replace("\t", "")
                 if pat_id and pat_id not in patent_ids:
                     yield Node(
                         db_ns="GOOGLE.PATENT",
-                        db_id="US%s" % row["PATENT_ID"],
+                        db_id="US%s" % pat_id,
                         data={"name": clean_text(row["PATENT_TITLE"])},
                         labels=["Patent"],
                     )
@@ -242,7 +243,10 @@ def _read_first_df(zip_file_path):
 
 
 def download_files(
-    base_folder: pystow.Module, force=False, first_year=1985, last_year=2021
+    base_folder: pystow.Module,
+    force=False,
+    first_year=1985,
+    last_year: int = None
 ):
     current_year = datetime.date.today().year
     for subset, url_pattern in download_urls.items():
