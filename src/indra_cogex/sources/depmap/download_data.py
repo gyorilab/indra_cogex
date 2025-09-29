@@ -1,4 +1,3 @@
-"""Depends on https://github.com/cthoyt/depmap_downloader/blob/main/src/depmap_downloader/api.py"""
 import datetime
 import logging
 from functools import lru_cache
