@@ -154,7 +154,7 @@ def sif_with_logp_ingestion_files(
 def sif_with_logp_graph(
     client: Neo4jClient,
     limit: Optional[int] = None,
-    batch_size: int = 250_000
+    batch_size: int = 10_000
 ) -> pd.DataFrame:
     """Get a dataframe with all indra_rel relations and their logp values.
 
@@ -169,7 +169,7 @@ def sif_with_logp_graph(
         smaller subset of the data.
     batch_size :
         The number of relations to fetch in each batch.
-        Defaults to 250,000. If the limit is set, this will be adjusted to the
+        Defaults to 10,000. If the limit is set, this will be adjusted to the
         limit.
     Returns
     -------
@@ -234,8 +234,9 @@ def sif_with_logp_graph(
             if not results:
                 break
             for rel in results:
-                stmt_json = json.loads(rel.data["stmt_json"])
-                source_count = json.loads(rel.data["source_counts"])
+                stmt_json = load_stmt_json_str(rel.data["stmt_json"])
+                position = stmt_json.get("position")
+                position = int(position) if position is not None else None
                 stmt_rows.append(
                     (
                         rel.source_ns,
@@ -248,8 +249,8 @@ def sif_with_logp_graph(
                         rel.data["evidence_count"],  # int
                         rel.data["stmt_hash"],  # int
                         stmt_json.get("residue"),
-                        stmt_json.get("position"),  # int
-                        source_count,  # dict[str, int], sum() == evidence_count
+                        position,  # int or None
+                        rel.data["source_counts"],
                         rel.data["belief"],  # float
                     )
                 )
