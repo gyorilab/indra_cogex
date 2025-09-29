@@ -145,6 +145,9 @@ def sif_with_logp_ingestion_files(
         assembled_nodes_df.set_index("id:ID")["name"]
     )
 
+    # Now drop the :START_ID and :END_ID columns
+    merged_df.drop(columns=[":START_ID", ":END_ID"], inplace=True)
+
     return merged_df
 
 
