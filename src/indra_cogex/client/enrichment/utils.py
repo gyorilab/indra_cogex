@@ -515,6 +515,32 @@ def get_sqlite_cache(
     return gene_sets
 
 
+def get_sqlite_genes_with_confidence_cache(
+    cache_name: str,
+    background_gene_ids: Optional[Iterable[str]] = None
+) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
+    # Connect to the SQLite database
+    conn = sqlite3.connect(SQLITE_CACHE_PATH)
+    cursor = conn.cursor()
+
+    # Get the subset of the table corresponding to the cache_name (first column)
+    cursor.execute(
+        f"SELECT curie, name, gene_id, belief, evidence_count "
+        f"FROM {SQLITE_GENES_WITH_CONFIDENCE_TABLE} WHERE cache_name = ?",
+        (cache_name,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    gene_sets = {}
+    # Loop through the rows and build the dictionary, applying background filtering
+    # if necessary
+    for curie, name, gene_id, belief, evidence_count in rows:
+        if background_gene_ids and gene_id not in background_gene_ids:
+            continue
+        gene_sets.setdefault((curie, name), {})[gene_id] = (belief, evidence_count)
+    return gene_sets
+
+
 @autoclient()
 def get_wikipathways(
     *,
