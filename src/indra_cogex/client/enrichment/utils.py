@@ -4,6 +4,7 @@
 
 import logging
 import pickle
+import sqlite3
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
@@ -57,6 +58,9 @@ POSITIVES_GENE_SETS_PATH = APP_CACHE_MODULE.join(name="positives.pkl")
 KINASE_PHOSPHOSITE_PATH = APP_CACHE_MODULE.join(name="kinase_phosphosites.pkl")
 
 GENE_SET_CACHE: Dict[str, Any] = {}
+SQLITE_CACHE_PATH = APP_CACHE_MODULE.join(name="query_cache.db")
+SQLITE_GENE_SET_TABLE = "gene_sets"
+SQLITE_REGULATOR_TARGET_TABLE = "regulator_target_sets"
 
 
 @autoclient()
@@ -1232,6 +1236,132 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     # get_mouse_cache()
     # get_rat_cache()
     logger.info("Finished building caches for gene set enrichment analysis.")
+
+
+def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
+    """Build the SQLite cache for CoGEx.
+
+    Parameters
+    ----------
+    db_path :
+        The path to the SQLite database file. Default: SQLITE_CACHE_PATH.
+    force :
+        If True, the current cache will be ignored and the database will be
+        rebuilt. The current database will be overwritten. Default: False.
+    """
+    if db_path.exists() and not force:
+        logger.info(f"SQLite cache already exists at {db_path}. Skipping build.")
+        return
+
+    if force:
+        logger.info(f"Force rebuilding SQLite cache at {db_path}.")
+        db_path.unlink(missing_ok=True)
+
+    # Table 1
+    # Table for (curie, name) to gene set mapping
+    # Use for GO, Reactome, WikiPathways, Phenotypes
+    gene_set_table = f"""
+    CREATE TABLE {SQLITE_GENE_SET_TABLE} (
+        cache_name TEXT NOT NULL,     -- which dataset (1 of 5)
+        curie TEXT NOT NULL,          -- outer key part 1
+        name TEXT NOT NULL,           -- outer key part 2
+        value TEXT NOT NULL,          -- one entry in the set
+        PRIMARY KEY (cache_name, curie, name, value)
+    );
+    """
+
+    # Table 2
+    # Table for (curie, name) to {inner_key: (float_val, int_val)} mapping
+    # Use for
+    regulator_target_table = f"""
+    CREATE TABLE {SQLITE_REGULATOR_TARGET_TABLE} (
+        cache_name TEXT NOT NULL,     -- which dataset (1 of 4)
+        id TEXT NOT NULL,             -- outer key part 1
+        name TEXT NOT NULL,           -- outer key part 2
+        inner_key TEXT NOT NULL,      -- the nested key
+        float_val REAL NOT NULL,      -- float value
+        int_val INTEGER NOT NULL,     -- int value
+        PRIMARY KEY (cache_name, id, name, inner_key)
+    );
+    """
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(gene_set_table)
+    cursor.execute(regulator_target_table)
+    conn.commit()
+    conn.close()
+    logger.info(f"Built SQLite cache at {db_path}.")
+
+    # Populate the cache
+
+    # For table 1, we have 5 datasets
+    gene_set_table_datasets = {
+        # Returns set of gene IDs
+        "go": get_go,
+        "reactome": get_reactome,
+        "wikipathways": get_wikipathways,
+        "phenotypes": get_phenotype_gene_sets,
+        # Returns set of (gene, site) tuples
+        "kinase_phosphosites": get_kinase_phosphosites,
+    }
+
+    # For table 2, we have 4 datasets
+    regulator_target_table_datasets = {
+        "entity_to_targets": get_entity_to_targets,
+        "entity_to_regulators": get_entity_to_regulators,
+        "positive_statements": get_positive_stmt_sets,
+        "negative_statements": get_negative_stmt_sets,
+    }
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    logger.info("Populating SQLite gene set cache")
+    for cache_name, func in tqdm(
+        gene_set_table_datasets.items(), desc="Populating gene set table"
+    ):
+        data = func(cache=False)
+        if cache_name == "kinase_phosphosites":
+            # Flatten (gene, site) tuples into "gene:site" strings for storage
+            data = {
+                key: {f"{gene}:{site}" for gene, site in values}
+                for key, values in data.items()
+            }
+
+        # Prepare data for insertion
+        to_insert = []
+        sorted_keys = sorted(data.keys(), key=lambda x: (x[0], x[1]))
+        for (curie, name) in sorted_keys:
+            values = data[(curie, name)]
+            for value in sorted(values):
+                to_insert.append((cache_name, curie, name, value))
+
+        # Insert data into the database
+        cursor.executemany(
+            f"INSERT OR IGNORE INTO {SQLITE_GENE_SET_TABLE} "
+            f"(cache_name, curie, name, value) VALUES (?, ?, ?, ?);",
+            to_insert
+        )
+        conn.commit()
+
+    logger.info("Populating SQLite cache for regulator-target mappings")
+    for cache_name, func in tqdm(
+        regulator_target_table_datasets.items(),
+        desc="Populating regulator-target table"
+    ):
+        data = func(cache=False)
+        to_insert = [
+            (cache_name, curie, name, inner_key, float_val, int_val)
+            for (curie, name), inner_dict in data.items()
+            for inner_key, (float_val, int_val) in inner_dict.items()
+        ]
+        cursor.executemany(
+            f"INSERT OR IGNORE INTO {SQLITE_REGULATOR_TARGET_TABLE} "
+            f"(cache_name, id, name, inner_key, float_val, int_val) VALUES (?, ?, ?, ?, ?, ?);",
+            to_insert
+        )
+        conn.commit()
+    conn.close()
+    logger.info(f"Finished building and populating SQLite caches at {db_path}.")
 
 
 if __name__ == "__main__":
