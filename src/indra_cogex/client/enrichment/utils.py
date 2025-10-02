@@ -5,6 +5,7 @@
 import logging
 import pickle
 import sqlite3
+from tqdm import tqdm
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
@@ -60,7 +61,6 @@ KINASE_PHOSPHOSITE_PATH = APP_CACHE_MODULE.join(name="kinase_phosphosites.pkl")
 GENE_SET_CACHE: Dict[str, Any] = {}
 SQLITE_CACHE_PATH = APP_CACHE_MODULE.join(name="query_cache.db")
 SQLITE_GENE_SET_TABLE = "gene_sets"
-SQLITE_REGULATOR_TARGET_TABLE = "regulator_target_sets"
 
 
 @autoclient()
@@ -1257,7 +1257,6 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         logger.info(f"Force rebuilding SQLite cache at {db_path}.")
         db_path.unlink(missing_ok=True)
 
-    # Table 1
     # Table for (curie, name) to gene set mapping
     # Use for GO, Reactome, WikiPathways, Phenotypes
     gene_set_table = f"""
@@ -1270,56 +1269,34 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     );
     """
 
-    # Table 2
-    # Table for (curie, name) to {inner_key: (float_val, int_val)} mapping
-    # Use for
-    regulator_target_table = f"""
-    CREATE TABLE {SQLITE_REGULATOR_TARGET_TABLE} (
-        cache_name TEXT NOT NULL,     -- which dataset (1 of 4)
-        id TEXT NOT NULL,             -- outer key part 1
-        name TEXT NOT NULL,           -- outer key part 2
-        inner_key TEXT NOT NULL,      -- the nested key
-        float_val REAL NOT NULL,      -- float value
-        int_val INTEGER NOT NULL,     -- int value
-        PRIMARY KEY (cache_name, id, name, inner_key)
-    );
-    """
-
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(gene_set_table)
-    cursor.execute(regulator_target_table)
     conn.commit()
     conn.close()
     logger.info(f"Built SQLite cache at {db_path}.")
 
     # Populate the cache
-
-    # For table 1, we have 5 datasets
     gene_set_table_datasets = {
         # Returns set of gene IDs
         "go": get_go,
         "reactome": get_reactome,
         "wikipathways": get_wikipathways,
         "phenotypes": get_phenotype_gene_sets,
-        # Returns set of (gene, site) tuples
-        "kinase_phosphosites": get_kinase_phosphosites,
-    }
-
-    # For table 2, we have 4 datasets
-    regulator_target_table_datasets = {
         "entity_to_targets": get_entity_to_targets,
         "entity_to_regulators": get_entity_to_regulators,
         "positive_statements": get_positive_stmt_sets,
         "negative_statements": get_negative_stmt_sets,
+        # Returns set of (gene, site) tuples
+        "kinase_phosphosites": get_kinase_phosphosites,
     }
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     logger.info("Populating SQLite gene set cache")
     for cache_name, func in tqdm(
-        gene_set_table_datasets.items(), desc="Populating gene set table"
+        gene_set_table_datasets.items(), desc="Populating SQLite cache"
     ):
-        data = func(cache=False)
+        data = func()
         if cache_name == "kinase_phosphosites":
             # Flatten (gene, site) tuples into "gene:site" strings for storage
             data = {
@@ -1343,25 +1320,8 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         )
         conn.commit()
 
-    logger.info("Populating SQLite cache for regulator-target mappings")
-    for cache_name, func in tqdm(
-        regulator_target_table_datasets.items(),
-        desc="Populating regulator-target table"
-    ):
-        data = func(cache=False)
-        to_insert = [
-            (cache_name, curie, name, inner_key, float_val, int_val)
-            for (curie, name), inner_dict in data.items()
-            for inner_key, (float_val, int_val) in inner_dict.items()
-        ]
-        cursor.executemany(
-            f"INSERT OR IGNORE INTO {SQLITE_REGULATOR_TARGET_TABLE} "
-            f"(cache_name, id, name, inner_key, float_val, int_val) VALUES (?, ?, ?, ?, ?, ?);",
-            to_insert
-        )
-        conn.commit()
     conn.close()
-    logger.info(f"Finished building and populating SQLite caches at {db_path}.")
+    logger.info(f"Finished building and populating SQLite cache at {db_path}.")
 
 
 if __name__ == "__main__":
