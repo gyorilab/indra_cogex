@@ -327,6 +327,7 @@ def get_go(
     *,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
@@ -337,6 +338,8 @@ def get_go(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
 
     Returns
     -------
@@ -344,25 +347,23 @@ def get_go(
         A dictionary whose keys that are 2-tuples of CURIE and name of each GO term
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_gene_set_cache("go", background_gene_ids)
-        except Exception as e:
-            logger.warning(f"Could not load GO gene sets from SQLite cache: {e}. "
-                           f"Run Neo4j query instead.")
-    query = dedent(
-        """\
-        MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
-        WHERE NOT gene.obsolete
-        RETURN term.id, term.name, collect(gene.id) as gene_curies;
-    """
-    )
-    return collect_gene_sets(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-        include_ontology_children=True,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache("go", background_gene_ids)
+    else:
+        query = dedent(
+            """\
+            MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
+            WHERE NOT gene.obsolete
+            RETURN term.id, term.name, collect(gene.id) as gene_curies;
+        """
+        )
+        gene_sets = collect_gene_sets(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+            include_ontology_children=True,
+        )
+    return gene_sets
 
 
 def get_sqlite_gene_set_cache(
@@ -427,6 +428,7 @@ def get_wikipathways(
     *,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -437,6 +439,8 @@ def get_wikipathways(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
 
     Returns
     -------
@@ -444,25 +448,23 @@ def get_wikipathways(
         A dictionary whose keys that are 2-tuples of CURIE and name of each WikiPathway
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_gene_set_cache("wikipathways", background_gene_ids)
-        except Exception as e:
-            logger.warning(f"Could not load WikiPathways gene sets from SQLite cache: {e}. "
-                           f"Run Neo4j query instead.")
-    query = dedent(
-        """\
-        MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
-        WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete
-        RETURN pathway.id, pathway.name, collect(gene.id);
-    """
-    )
-    return collect_gene_sets(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache("wikipathways", background_gene_ids)
+    else:
+        query = dedent(
+            """\
+            MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
+            WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
+            AND NOT gene.obsolete
+            RETURN pathway.id, pathway.name, collect(gene.id);
+        """
+        )
+        gene_sets = collect_gene_sets(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+        )
+    return gene_sets
 
 
 @autoclient()
@@ -470,6 +472,7 @@ def get_reactome(
     *,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -480,6 +483,8 @@ def get_reactome(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
 
     Returns
     -------
@@ -487,25 +492,23 @@ def get_reactome(
         A dictionary whose keys that are 2-tuples of CURIE and name of each Reactome
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_gene_set_cache("reactome", background_gene_ids)
-        except Exception as e:
-            logger.warning(f"Could not load Reactome gene sets from SQLite cache: {e}. "
-                           f"Run Neo4j query instead.")
-    query = dedent(
-        """\
-        MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
-        WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete
-        RETURN pathway.id, pathway.name, collect(gene.id);
-    """
-    )
-    return collect_gene_sets(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache("reactome", background_gene_ids)
+    else:
+        query = dedent(
+            """\
+            MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
+            WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
+            AND NOT gene.obsolete
+            RETURN pathway.id, pathway.name, collect(gene.id);
+        """
+        )
+        gene_sets = collect_gene_sets(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+        )
+    return gene_sets
 
 
 @autoclient(cache=True)
@@ -585,6 +588,7 @@ def get_phenotype_gene_sets(
     *,
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
@@ -595,6 +599,8 @@ def get_phenotype_gene_sets(
     background_gene_ids :
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
 
     Returns
     -------
@@ -602,25 +608,23 @@ def get_phenotype_gene_sets(
         A dictionary whose keys that are 2-tuples of CURIE and name of each phenotype
         gene set and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_gene_set_cache("phenotype", background_gene_ids)
-        except Exception as e:
-            logger.warning(f"Could not load phenotype gene sets from SQLite cache: {e}. "
-                           f"Run Neo4j query instead.")
-    query = dedent(
-        """\
-        MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
-        WHERE s.id STARTS WITH "hp" and gene.id STARTS WITH "hgnc"
-        AND NOT gene.obsolete
-        RETURN s.id, s.name, collect(gene.id);
-    """
-    )
-    return collect_gene_sets(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache("phenotypes", background_gene_ids)
+    else:
+        query = dedent(
+            """\
+            MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
+            WHERE s.id STARTS WITH "hp" and gene.id STARTS WITH "hgnc"
+            AND NOT gene.obsolete
+            RETURN s.id, s.name, collect(gene.id);
+        """
+        )
+        gene_sets = collect_gene_sets(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+        )
+    return gene_sets
 
 
 def filter_gene_set_confidences(
@@ -685,39 +689,57 @@ def get_entity_to_targets(
     )
 
 
+@autoclient()
 def get_entity_to_targets_raw(
     *,
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_genes_with_confidence_cache(
-                "entity_to_targets", background_gene_ids
-            )
-        except Exception as e:
-            logger.warning(f"Could not load entity to target gene sets from SQLite "
-                           f"cache: {e}. Falling back on Neo4j query.")
+    """Get all regulator to target relationships
 
-    query = dedent(
-        f"""\
-        MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
-        WHERE
-            gene.id STARTS WITH "hgnc"                  // Collecting human genes only
-            AND NOT gene.obsolete                       // Skip obsolete
-            AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
-            AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-        RETURN
-            regulator.id,
-            regulator.name,
-            collect([gene.id, r.belief, r.evidence_count]);
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        entity and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with the
+        given HGNC gene.
     """
-    )
-    genes_with_confidence = collect_genes_with_confidence(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        genes_with_confidence = get_sqlite_genes_with_confidence_cache(
+            "entity_to_targets", background_gene_ids
+        )
+    else:
+        query = dedent(
+            f"""\
+            MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
+            WHERE
+                gene.id STARTS WITH "hgnc"                  // Collecting human genes only
+                AND NOT gene.obsolete                       // Skip obsolete
+                AND r.stmt_type <> "Complex"                // Ignore complexes since they are non-directional
+                AND NOT regulator.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            RETURN
+                regulator.id,
+                regulator.name,
+                collect([gene.id, r.belief, r.evidence_count]);
+        """
+        )
+        genes_with_confidence = collect_genes_with_confidence(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+        )
     return genes_with_confidence
 
 
@@ -740,8 +762,8 @@ def get_entity_to_regulators(
         List of HGNC gene identifiers for the background gene set. If not
         given, all genes with HGNC IDs are used as the background.
     minimum_evidence_count :
-        The minimum number of evidences for a relationship to count it as a regulator.
-        Defaults to 1 (i.e., cutoff not applied.
+        The minimum number of evidences for a relationship to count it as a
+        regulator. Defaults to 1 (i.e., cutoff not applied.
     minimum_belief :
         The minimum belief for a relationship to count it as a regulator.
         Defaults to 0.0 (i.e., cutoff not applied).
@@ -749,8 +771,8 @@ def get_entity_to_regulators(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
-        and whose values are sets of HGNC gene identifiers (as strings)
+        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        entity and whose values are sets of HGNC gene identifiers (as strings).
     """
     genes_with_confidence = get_entity_to_regulators_raw(
         client=client,
@@ -763,39 +785,57 @@ def get_entity_to_regulators(
     )
 
 
+@autoclient()
 def get_entity_to_regulators_raw(
     *,
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            genes_with_confidence = get_sqlite_genes_with_confidence_cache(
-                "entity_to_regulators", background_gene_ids
-            )
-            return genes_with_confidence
-        except Exception as e:
-            logger.warning(f"Could not load entity to regulator gene sets from SQLite "
-                           f"cache: {e}. Falling back on Neo4j query.")
-    query = dedent(
-        f"""\
-        MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
-        WHERE
-            gene.id STARTS WITH "hgnc"               // Collecting human genes only
-            AND NOT gene.obsolete                    // Skip obsolete
-            AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
-            AND NOT target.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
-        RETURN
-            target.id,
-            target.name,
-            collect([gene.id, r.belief, r.evidence_count]);
+    """Get all target to regulator relationships
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        entity and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with the
+        given HGNC gene.
     """
-    )
-    genes_with_confidence = collect_genes_with_confidence(
-        client=client,
-        query=query,
-        background_gene_ids=background_gene_ids,
-    )
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        genes_with_confidence = get_sqlite_genes_with_confidence_cache(
+            "entity_to_regulators", background_gene_ids
+        )
+    else:
+        query = dedent(
+            f"""\
+            MATCH (gene:BioEntity)-[r:indra_rel]->(target:BioEntity)
+            WHERE
+                gene.id STARTS WITH "hgnc"               // Collecting human genes only
+                AND NOT gene.obsolete                    // Skip obsolete
+                AND r.stmt_type <> "Complex"             // Ignore complexes since they are non-directional
+                AND NOT target.id STARTS WITH "uniprot"  // This is a simple way to ignore non-human proteins
+            RETURN
+                target.id,
+                target.name,
+                collect([gene.id, r.belief, r.evidence_count]);
+        """
+        )
+        genes_with_confidence = collect_genes_with_confidence(
+            client=client,
+            query=query,
+            background_gene_ids=background_gene_ids,
+        )
     return genes_with_confidence
 
 def minimum_evidence_helper(
@@ -901,24 +941,44 @@ def get_positive_stmt_sets(
     )
 
 
+@autoclient()
 def get_positive_stmt_sets_raw(
     *,
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_genes_with_confidence_cache(
-                "positive_stmt_sets", background_gene_ids
-            )
-        except Exception as e:
-            logger.warning(f"Could not load positive statement gene sets from SQLite "
-                           f"cache: {e}. Falling back on Neo4j query.")
-    return collect_genes_with_confidence(
-        query=_query(POSITIVE_STMT_TYPES),
-        client=client,
-        background_gene_ids=background_gene_ids,
-    )
+    """Get all positive regulator to target relationships
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        entity and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with the
+        given HGNC gene.
+    """
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        genes_with_confidence = get_sqlite_genes_with_confidence_cache(
+            "positive_statements", background_gene_ids
+        )
+    else:
+        genes_with_confidence = collect_genes_with_confidence(
+            query=_query(POSITIVE_STMT_TYPES),
+            client=client,
+            background_gene_ids=background_gene_ids,
+        )
+    return genes_with_confidence
 
 
 @autoclient()
@@ -964,24 +1024,44 @@ def get_negative_stmt_sets(
     )
 
 
+@autoclient()
 def get_negative_stmt_sets_raw(
     *,
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
+    use_sqlite_cache: bool = True,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            return get_sqlite_genes_with_confidence_cache(
-                "negative_stmt_sets", background_gene_ids
-            )
-        except Exception as e:
-            logger.warning(f"Could not load negative statement gene sets from SQLite "
-                           f"cache: {e}. Falling back on Neo4j query.")
-    return collect_genes_with_confidence(
-        query=_query(NEGATIVE_STMT_TYPES),
-        client=client,
-        background_gene_ids=background_gene_ids,
-    )
+    """Get all negative regulator to target relationships
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        entity and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with the
+        given HGNC gene.
+    """
+    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+        genes_with_confidence = get_sqlite_genes_with_confidence_cache(
+            "negative_statements", background_gene_ids
+        )
+    else:
+        genes_with_confidence = collect_genes_with_confidence(
+            query=_query(NEGATIVE_STMT_TYPES),
+            client=client,
+            background_gene_ids=background_gene_ids,
+        )
+    return genes_with_confidence
 
 
 def _normalize_target_id(curie: str) -> str:
@@ -1359,7 +1439,7 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     for cache_name, func in tqdm(
         gene_set_table_datasets.items(), desc="Populating gene set cache"
     ):
-        data = func()
+        data = func(use_sqlite_cache=False)
         if cache_name == "kinase_phosphosites":
             # Flatten (gene, site) tuples into "gene:site" strings for storage
             data = {
