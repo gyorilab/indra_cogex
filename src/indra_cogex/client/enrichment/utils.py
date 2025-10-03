@@ -18,6 +18,7 @@ from typing import (
     Tuple,
     TypeVar,
     List,
+    Literal,
 )
 from indra.databases.hgnc_client import is_kinase
 from indra.databases.identifiers import get_ns_id_from_identifiers
@@ -44,7 +45,20 @@ X = TypeVar("X")
 Y = TypeVar("Y")
 SQLITE_CACHE_PATH = APP_CACHE_MODULE.join(name="query_cache.db")
 SQLITE_GENE_SET_TABLE = "gene_sets"
+GeneSets = Literal[
+    "go",
+    "wikipathways",
+    "reactome",
+    "phenotypes",
+    "kinase_phosphosites",
+]
 SQLITE_GENES_WITH_CONFIDENCE_TABLE = "regulator_target_sets"
+ConfidenceGeneSet = Literal[
+    "entity_to_targets",
+    "entity_to_regulators",
+    "positive_statements",
+    "negative_statements",
+]
 
 
 @autoclient()
@@ -352,7 +366,7 @@ def get_go(
 
 
 def get_sqlite_gene_set_cache(
-    cache_name: str,
+    cache_name: GeneSets,
     background_gene_ids: Optional[Iterable[str]] = None
 ) -> Dict[Tuple[str, str], Set[str]]:
     # Connect to the SQLite database
@@ -366,6 +380,10 @@ def get_sqlite_gene_set_cache(
     )
     rows = cursor.fetchall()
     conn.close()
+
+    if len(rows) == 0:
+        raise ValueError(f"No entries found in cache for {cache_name}")
+
     gene_sets = {}
     # Loop through the rows and build the dictionary, applying background filtering
     # if necessary
@@ -377,7 +395,7 @@ def get_sqlite_gene_set_cache(
 
 
 def get_sqlite_genes_with_confidence_cache(
-    cache_name: str,
+    cache_name: ConfidenceGeneSet,
     background_gene_ids: Optional[Iterable[str]] = None
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     # Connect to the SQLite database
@@ -386,13 +404,15 @@ def get_sqlite_genes_with_confidence_cache(
 
     # Get the subset of the table corresponding to the cache_name (first column)
     cursor.execute(
-        f"SELECT curie, name, gene_id, belief, evidence_count "
+        f"SELECT curie, name, inner_key, belief, ev_count "
         f"FROM {SQLITE_GENES_WITH_CONFIDENCE_TABLE} WHERE cache_name = ?",
         (cache_name,)
     )
     rows = cursor.fetchall()
     conn.close()
     gene_sets = {}
+    if len(rows) == 0:
+        raise ValueError(f"No entries found in cache for {cache_name}")
     # Loop through the rows and build the dictionary, applying background filtering
     # if necessary
     for curie, name, gene_id, belief, evidence_count in rows:
@@ -1289,8 +1309,8 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     gene_set_table = f"""
     CREATE TABLE {SQLITE_GENE_SET_TABLE} (
         cache_name TEXT NOT NULL,     -- which dataset (1 of 5)
-        curie TEXT NOT NULL,          -- outer key part 1
-        name TEXT NOT NULL,           -- outer key part 2
+        curie TEXT NOT NULL,          -- key part 1
+        name TEXT NOT NULL,           -- key part 2
         value TEXT NOT NULL,          -- one entry in the set
         PRIMARY KEY (cache_name, curie, name, value)
     );
@@ -1299,12 +1319,12 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     regulator_target_table = f"""
     CREATE TABLE {SQLITE_GENES_WITH_CONFIDENCE_TABLE} (
         cache_name TEXT NOT NULL,     -- which dataset (1 of 4)
-        id TEXT NOT NULL,             -- outer key part 1
+        curie TEXT NOT NULL,          -- outer key part 1
         name TEXT NOT NULL,           -- outer key part 2
         inner_key TEXT NOT NULL,      -- the nested key
-        float_val REAL NOT NULL,      -- float value
-        int_val INTEGER NOT NULL,     -- int value
-        PRIMARY KEY (cache_name, id, name, inner_key)
+        belief REAL NOT NULL,         -- float value
+        ev_count INTEGER NOT NULL,    -- int value
+        PRIMARY KEY (cache_name, curie, name, inner_key)
     );
     """
 
@@ -1368,7 +1388,7 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         genes_with_confidence_datasets.items(),
         desc="Populating genes with confidence cache"
     ):
-        data = func(client=client)
+        data = func(use_sqlite_cache=False)
         # Prepare data for insertion
         to_insert = []
         sorted_keys = sorted(data.keys(), key=lambda x: (x[0], x[1]))
@@ -1381,7 +1401,7 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         # Insert data into the database
         cursor.executemany(
             f"INSERT OR IGNORE INTO {SQLITE_GENES_WITH_CONFIDENCE_TABLE} "
-            f"(cache_name, id, name, inner_key, float_val, int_val) "
+            f"(cache_name, curie, name, inner_key, belief, ev_count) "
             f"VALUES (?, ?, ?, ?, ?, ?);",
             to_insert
         )
