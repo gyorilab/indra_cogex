@@ -1125,10 +1125,27 @@ def get_all_relationships_single_query(
     minimum_belief: float = 0.0,
     minimum_evidence_count: int = 1
 ) -> Dict[Tuple[str, bool], List[Dict]]:
-    """
-    SINGLE QUERY to get all regulator-gene relationships
+    """Query to get all regulator-gene relationships
 
-    This replaces 50,000+ individual queries with ONE smart query
+    Parameters
+    ----------
+    regulators :
+        List of regulator CURIEs.
+    genes :
+        List of gene CURIEs (HGNC).
+    client :
+        The Neo4j client.
+    minimum_belief :
+        Minimum belief score to include a relationship.
+    minimum_evidence_count :
+        Minimum evidence count to include a relationship.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys are (regulator_id, is_downstream) tuples and
+        whose values are lists of statement metadata dictionaries.
+
     """
 
     # Normalize gene IDs
