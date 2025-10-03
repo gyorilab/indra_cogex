@@ -1263,6 +1263,10 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         logger.info(f"Force rebuilding SQLite cache at {db_path}.")
         db_path.unlink(missing_ok=True)
 
+    client = Neo4jClient()
+    if not client.ping():
+        raise RuntimeError("Cannot connect to Neo4j database. Cannot build SQLite cache.")
+
     # Table for (curie, name) to gene set mapping
     # Use for GO, Reactome, WikiPathways, Phenotypes
     gene_set_table = f"""
@@ -1347,7 +1351,7 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         genes_with_confidence_datasets.items(),
         desc="Populating genes with confidence cache"
     ):
-        data = func()
+        data = func(client=client)
         # Prepare data for insertion
         to_insert = []
         sorted_keys = sorted(data.keys(), key=lambda x: (x[0], x[1]))
