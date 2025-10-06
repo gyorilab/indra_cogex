@@ -50,7 +50,6 @@ GeneSets = Literal[
     "wikipathways",
     "reactome",
     "phenotypes",
-    "kinase_phosphosites",
 ]
 SQLITE_GENES_WITH_CONFIDENCE_TABLE = "regulator_target_sets"
 ConfidenceGeneSet = Literal[
@@ -58,6 +57,7 @@ ConfidenceGeneSet = Literal[
     "entity_to_regulators",
     "positive_statements",
     "negative_statements",
+    "kinase_phosphosites",
 ]
 
 
@@ -201,12 +201,12 @@ def collect_genes_with_confidence(
     return curie_to_hgnc_ids
 
 
-def collect_phosphosite_sets(
+def collect_phosphosites_with_confidence(
     client: Neo4jClient,
     query: str,
     background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
-) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
-    """Collect phosphosite sets based on the given query.
+) -> Dict[Tuple[str, str], Dict[Tuple[str, str, str], Tuple[float, int]]]:
+    """Collect phosphosites based on the given query.
 
     Parameters
     ----------
@@ -231,48 +231,54 @@ def collect_phosphosite_sets(
         return {}
 
     # Process results to extract phosphosite information
-    kinase_map = {}
+    kinase_map = defaultdict(dict)
+    max_beliefs: Dict[Tuple[str, str, str, str, str], float] = {}
+    max_ev_counts: Dict[Tuple[str, str, str, str, str], int] = {}
 
     # Cache for fplx entities to avoid repeated lookups
     fplx_kinase_cache = {}
 
     for row in raw_results:
-        kinase_id, kinase_name, substrate_id, substrate_name, stmt_json = row
+        # kinase id, kinase name,
+        #   [substrate.id, substrate.name, r.belief, r.evidence_count, r.stmt_json]
+        phosphosites = set()
+        kinase_curie = row[0]
+        kinase_name = row[1]
 
         # Check if entity is a kinase (HGNC) or kinase family (FPLX)
-        if kinase_id.startswith('hgnc:'):
+        if kinase_curie.startswith('hgnc:'):
             if not is_kinase(kinase_name):
                 continue
-        elif kinase_id.startswith('fplx:'):
+        elif kinase_curie.startswith('fplx:'):
             # Check cache first
-            if kinase_id in fplx_kinase_cache:
-                if not fplx_kinase_cache[kinase_id]:
+            if kinase_curie in fplx_kinase_cache:
+                if not fplx_kinase_cache[kinase_curie]:
                     continue
             else:
                 # Query for members using the isa relationship
                 fplx_query = f"""
                 MATCH (gene:BioEntity)-[:isa]->(family:BioEntity)
-                WHERE family.id = '{kinase_id}' AND gene.id STARTS WITH 'hgnc:'
+                WHERE family.id = '{kinase_curie}' AND gene.id STARTS WITH 'hgnc:'
                 RETURN gene.name
                 """
                 member_results = client.query_tx(fplx_query)
 
                 if not member_results or len(member_results) == 0:
-                    fplx_kinase_cache[kinase_id] = False
+                    fplx_kinase_cache[kinase_curie] = False
                     continue
 
                 # Check if at least 50% of members are kinases
                 kinase_count = 0
                 total_count = len(member_results)
 
-                for row in member_results:
-                    gene_name = row[0]  # Get gene name from query result
+                for res in member_results:
+                    gene_name = res[0]  # Get gene name from query result
                     if is_kinase(gene_name):
                         kinase_count += 1
 
                 # Consider it a kinase family if the majority of members are kinases
                 is_kinase_family = (kinase_count / total_count) >= 0.5
-                fplx_kinase_cache[kinase_id] = is_kinase_family
+                fplx_kinase_cache[kinase_curie] = is_kinase_family
 
                 if not is_kinase_family:
                     continue
@@ -280,28 +286,36 @@ def collect_phosphosite_sets(
             continue
 
         # Create the kinase key
-        kinase_key = (kinase_id, kinase_name)
-
-        if kinase_key not in kinase_map:
-            kinase_map[kinase_key] = set()
+        kinase_key = (kinase_curie, kinase_name)
 
         # Extract phosphosite details from stmt_json
-        try:
-            if stmt_json:
-                stmt_data = load_stmt_json_str(stmt_json)
+        for subs_curie, subs_name, belief, ev_count, stmt_json_str in row[2]:
+            stmt_data = load_stmt_json_str(stmt_json_str)
 
-                # Collect residue and position if available
-                residue = stmt_data.get('residue')
-                position = stmt_data.get('position')
+            # Collect residue and position if available
+            residue = stmt_data.get('residue')
+            position = stmt_data.get('position')
 
-                if residue and position:
-                    # Use the substrate name directly (not ID)
-                    phosphosite = (substrate_name, f"{residue}{position}")
-                    kinase_map[kinase_key].add(phosphosite)
-        except (json.JSONDecodeError, AttributeError, TypeError):
-            continue
+            if residue and position:
+                substrate_id = subs_curie.lower().replace("hgnc:", "")
+                phosphosite = (substrate_id, subs_name, f"{residue}{position}")
+                conf_key = (kinase_curie, kinase_name, *phosphosite)
 
-    res = kinase_map
+                max_beliefs[conf_key] = max(belief, max_beliefs.get(conf_key, 0.0))
+                max_ev_counts[conf_key] = max(
+                    ev_count, max_ev_counts.get(conf_key, 0)
+                )
+                phosphosites.add(phosphosite)
+
+        kinase_map[kinase_key] = {
+            phosphosite: (
+                max_beliefs[(kinase_curie, kinase_name, *phosphosite)],
+                max_ev_counts[(kinase_curie, kinase_name, *phosphosite)],
+            )
+            for phosphosite in phosphosites
+        }
+
+    res = dict(kinase_map)
 
     # Apply background filtering if provided
     if background_phosphosites:
@@ -317,7 +331,7 @@ def collect_phosphosite_sets(
             else:
                 continue
 
-        return filtered_res
+        res = filtered_res
 
     return res
 
@@ -397,18 +411,20 @@ def get_sqlite_gene_set_cache(
 
 def get_sqlite_genes_with_confidence_cache(
     cache_name: ConfidenceGeneSet,
-    background_gene_ids: Optional[Iterable[str]] = None
+    background_gene_ids: Optional[Iterable[str]] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
+    limit: Optional[int] = None,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     # Connect to the SQLite database
-    conn = sqlite3.connect(SQLITE_CACHE_PATH)
+    conn = sqlite3.connect(sqlite_db_path)
     cursor = conn.cursor()
 
     # Get the subset of the table corresponding to the cache_name (first column)
-    cursor.execute(
-        f"SELECT curie, name, inner_key, belief, ev_count "
-        f"FROM {SQLITE_GENES_WITH_CONFIDENCE_TABLE} WHERE cache_name = ?",
-        (cache_name,)
-    )
+    query = (f"SELECT curie, name, inner_key, belief, ev_count FROM "
+             f"{SQLITE_GENES_WITH_CONFIDENCE_TABLE} WHERE cache_name = ?")
+    if limit is not None:
+        query += f" LIMIT {limit}"
+    cursor.execute(query, (cache_name,))
     rows = cursor.fetchall()
     conn.close()
     gene_sets = {}
@@ -417,9 +433,16 @@ def get_sqlite_genes_with_confidence_cache(
     # Loop through the rows and build the dictionary, applying background filtering
     # if necessary
     for curie, name, gene_id, belief, evidence_count in rows:
-        if background_gene_ids and gene_id not in background_gene_ids:
+        # For kinase_phosphosites, we need to split on '|'
+        if '|' in gene_id:
+            check_id = gene_id.split('|')[0]
+            inner_key = tuple(gene_id.split('|'))
+        else:
+            check_id = gene_id
+            inner_key = gene_id
+        if background_gene_ids and check_id not in background_gene_ids:
             continue
-        gene_sets.setdefault((curie, name), {})[gene_id] = (belief, evidence_count)
+        gene_sets.setdefault((curie, name), {})[inner_key] = (belief, evidence_count)
     return gene_sets
 
 
@@ -518,7 +541,28 @@ def get_kinase_phosphosites(
     background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
-) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
+):
+    phosphosites_with_confidence = get_kinase_phosphosites_raw(
+        client=client,
+        background_phosphosites=background_phosphosites,
+    )
+
+    return filter_phosphosite_set_confidences(
+        phosphosites_with_confidence,
+        minimum_belief=minimum_belief,
+        minimum_evidence_count=minimum_evidence_count,
+    )
+
+
+@autoclient(cache=True)
+def get_kinase_phosphosites_raw(
+    *,
+    client: Neo4jClient,
+    background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
+    use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
+) -> Dict[Tuple[str, str], Dict[Tuple[str, str, str], Tuple[float, int]]]:
     """Get a mapping from each kinase to the set of phosphosites it phosphorylates
 
     Parameters
@@ -529,12 +573,13 @@ def get_kinase_phosphosites(
         Optional set of (gene, site) tuples to filter returned phosphosites.
         Each tuple is (substrate_gene_name, site) where `site` is
         residue+position (e.g. "S123").
-    minimum_evidence_count :
-        Minimum evidence count required for a phosphorylation relationship to be
-        included. Default: 1.
-    minimum_belief :
-        Minimum belief score required for a phosphorylation relationship to be
-        included. Default: 0.0.
+    use_sqlite_cache :
+        If True, use the SQLite cache if it exists. Default: True.
+    limit :
+        If given, limit the number of kinases returned to this number.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default: indra_cogex
+        app cache path.
 
     Returns
     -------
@@ -542,45 +587,39 @@ def get_kinase_phosphosites(
         Mapping from (kinase_curie, kinase_name) to a set of
         (substrate_gene_name, site) tuples representing phosphosites.
     """
-    if SQLITE_CACHE_PATH.exists():
-        try:
-            res = get_sqlite_gene_set_cache("kinase_phosphosites", None)
-            # Convert the sets of gene IDs to sets of (gene, site) tuples
-            converted_res = {}
-            for (kinase_curie, kinase_name), gene_ids in res.items():
-                phosphosite_tuples = set()
-                for gene_id in gene_ids:
-                    gene_name, site = gene_id.split(':', 1)
-                    phosphosite_tuples.add((gene_name, site))
-                if phosphosite_tuples:
-                    converted_res[(kinase_curie, kinase_name)] = phosphosite_tuples
-            return converted_res
-        except Exception as e:
-            logger.warning(f"Could not load kinase phosphosite sets from SQLite "
-                           f"cache: {e}. Falling back on Neo4j query.")
+    if sqlite_db_path.exists() and use_sqlite_cache:
 
-    query = dedent(
-        f"""\
-        MATCH (kinase:BioEntity)-[r:indra_rel]->(substrate:BioEntity)
-        WHERE
-            r.stmt_type = 'Phosphorylation'
-            AND substrate.id STARTS WITH "hgnc"
-            AND NOT substrate.obsolete
-            AND r.evidence_count >= {minimum_evidence_count}
-            AND r.belief >= {minimum_belief}
-        RETURN
-            kinase.id,
-            kinase.name,
-            substrate.id,
-            substrate.name,
-            r.stmt_json;
-        """
-    )
-    return collect_phosphosite_sets(
-        client=client,
-        query=query,
-        background_phosphosites=background_phosphosites,
-    )
+            res = get_sqlite_genes_with_confidence_cache(
+                "kinase_phosphosites",
+                background_gene_ids=background_phosphosites,
+                sqlite_db_path=sqlite_db_path,
+                limit=limit
+            )
+    else:
+        query = dedent(
+            f"""\
+            MATCH (kinase:BioEntity)-[r:indra_rel]->(substrate:BioEntity)
+            WHERE
+                r.stmt_type = 'Phosphorylation'
+                AND substrate.id STARTS WITH "hgnc"
+                AND NOT substrate.obsolete
+            RETURN
+                kinase.id,
+                kinase.name,
+                collect(
+                    [substrate.id, substrate.name, r.belief, r.evidence_count, r.stmt_json]
+                )
+            """
+        )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
+        res = collect_phosphosites_with_confidence(
+            client=client,
+            query=query,
+            background_phosphosites=background_phosphosites,
+        )
+
+    return res
 
 
 @autoclient()
@@ -645,6 +684,26 @@ def filter_gene_set_confidences(
             if belief >= minimum_belief and ev_count >= minimum_evidence_count
         }
     return rv
+
+
+def filter_phosphosite_set_confidences(
+    data: Dict[Tuple[str, str], Dict[Tuple[str, str, str], Tuple[float, int]]],
+    minimum_belief: Optional[float] = 0.0,
+    minimum_evidence_count: Optional[int] = 0,
+) -> Dict[Tuple[str, str], Set[Tuple[str, str, str]]]:
+    if minimum_belief is None:
+        minimum_belief = 0.0
+    if minimum_evidence_count is None:
+        minimum_evidence_count = 0
+
+    filtered_data = {}
+    for kinase_key, phosphosite_dict in data.items():
+        filtered_data[kinase_key] = {
+            phosphosite
+            for phosphosite, (belief, ev_count) in phosphosite_dict.items()
+            if belief >= minimum_belief and ev_count >= minimum_evidence_count
+        }
+    return filtered_data
 
 
 @autoclient()
