@@ -342,6 +342,8 @@ def get_go(
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get GO gene sets.
 
@@ -358,19 +360,26 @@ def get_go(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each GO term
+        A dictionary whose keys are 2-tuples of CURIE and name of each GO term
         and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
-        gene_sets = get_sqlite_gene_set_cache("go", background_gene_ids)
+    if sqlite_db_path.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache(
+            "go",
+            background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit,
+        )
     else:
         query = dedent(
             """\
             MATCH (gene:BioEntity)-[:associated_with]->(term:BioEntity)
             WHERE NOT gene.obsolete
-            RETURN term.id, term.name, collect(gene.id) as gene_curies;
+            RETURN term.id, term.name, collect(gene.id) as gene_curies
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         gene_sets = collect_gene_sets(
             client=client,
             query=query,
@@ -382,17 +391,19 @@ def get_go(
 
 def get_sqlite_gene_set_cache(
     cache_name: GeneSets,
-    background_gene_ids: Optional[Iterable[str]] = None
+    background_gene_ids: Optional[Iterable[str]] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
+    limit: Optional[int] = None,
 ) -> Dict[Tuple[str, str], Set[str]]:
     # Connect to the SQLite database
-    conn = sqlite3.connect(SQLITE_CACHE_PATH)
+    conn = sqlite3.connect(sqlite_db_path)
     cursor = conn.cursor()
 
     # Get the subset of the table corresponding to the cache_name (first column)
-    cursor.execute(
-        f"SELECT curie, name, value FROM {SQLITE_GENE_SET_TABLE} WHERE cache_name = ?",
-        (cache_name,)
-    )
+    query = f"SELECT curie, name, value FROM {SQLITE_GENE_SET_TABLE} WHERE cache_name = ?"
+    if limit is not None:
+        query += f" LIMIT {limit}"
+    cursor.execute(query, (cache_name,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -452,6 +463,8 @@ def get_wikipathways(
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get WikiPathways gene sets.
 
@@ -468,20 +481,27 @@ def get_wikipathways(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each WikiPathway
+        A dictionary whose keys are 2-tuples of CURIE and name of each WikiPathway
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
-        gene_sets = get_sqlite_gene_set_cache("wikipathways", background_gene_ids)
+    if sqlite_db_path.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache(
+            "wikipathways",
+            background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
+        )
     else:
         query = dedent(
             """\
             MATCH (pathway:BioEntity)-[:haspart]->(gene:BioEntity)
             WHERE pathway.id STARTS WITH "wikipathways" and gene.id STARTS WITH "hgnc"
             AND NOT gene.obsolete
-            RETURN pathway.id, pathway.name, collect(gene.id);
+            RETURN pathway.id, pathway.name, collect(gene.id)
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         gene_sets = collect_gene_sets(
             client=client,
             query=query,
@@ -496,6 +516,8 @@ def get_reactome(
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get Reactome gene sets.
 
@@ -512,20 +534,27 @@ def get_reactome(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each Reactome
+        A dictionary whose keys are 2-tuples of CURIE and name of each Reactome
         pathway and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
-        gene_sets = get_sqlite_gene_set_cache("reactome", background_gene_ids)
+    if sqlite_db_path.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache(
+            "reactome",
+            background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
+        )
     else:
         query = dedent(
             """\
             MATCH (pathway:BioEntity)-[:haspart]-(gene:BioEntity)
             WHERE pathway.id STARTS WITH "reactome" and gene.id STARTS WITH "hgnc"
             AND NOT gene.obsolete
-            RETURN pathway.id, pathway.name, collect(gene.id);
+            RETURN pathway.id, pathway.name, collect(gene.id)
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         gene_sets = collect_gene_sets(
             client=client,
             query=query,
@@ -628,6 +657,8 @@ def get_phenotype_gene_sets(
     background_gene_ids: Optional[Iterable[str]] = None,
     client: Neo4jClient,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Get HPO phenotype gene sets.
 
@@ -644,20 +675,27 @@ def get_phenotype_gene_sets(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each phenotype
+        A dictionary whose keys are 2-tuples of CURIE and name of each phenotype
         gene set and whose values are sets of HGNC gene identifiers (as strings)
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
-        gene_sets = get_sqlite_gene_set_cache("phenotypes", background_gene_ids)
+    if sqlite_db_path.exists() and use_sqlite_cache:
+        gene_sets = get_sqlite_gene_set_cache(
+            "phenotypes",
+            background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
+        )
     else:
         query = dedent(
             """\
             MATCH (s:BioEntity)-[:phenotype_has_gene]-(gene:BioEntity)
             WHERE s.id STARTS WITH "hp" and gene.id STARTS WITH "hgnc"
             AND NOT gene.obsolete
-            RETURN s.id, s.name, collect(gene.id);
+            RETURN s.id, s.name, collect(gene.id)
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         gene_sets = collect_gene_sets(
             client=client,
             query=query,
@@ -734,7 +772,7 @@ def get_entity_to_targets(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        A dictionary whose keys are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
     genes_with_confidence = get_entity_to_targets_raw(
@@ -748,12 +786,12 @@ def get_entity_to_targets(
     )
 
 
-@autoclient()
 def get_entity_to_targets_raw(
-    *,
-    client: Neo4jClient,
+    client: Optional[Neo4jClient] = None,
     background_gene_ids: Optional[Iterable[str]] = None,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Get all regulator to target relationships
 
@@ -770,14 +808,17 @@ def get_entity_to_targets_raw(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        A dictionary whose keys are 2-tuples of CURIE and name of each
         entity and whose values are dicts of HGNC gene identifiers (as strings)
         pointing to the maximum belief and evidence count associated with the
         given HGNC gene.
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+    if sqlite_db_path.exists() and use_sqlite_cache:
         genes_with_confidence = get_sqlite_genes_with_confidence_cache(
-            "entity_to_targets", background_gene_ids
+            "entity_to_targets",
+            background_gene_ids=background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
         )
     else:
         query = dedent(
@@ -791,9 +832,11 @@ def get_entity_to_targets_raw(
             RETURN
                 regulator.id,
                 regulator.name,
-                collect([gene.id, r.belief, r.evidence_count]);
+                collect([gene.id, r.belief, r.evidence_count])
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         genes_with_confidence = collect_genes_with_confidence(
             client=client,
             query=query,
@@ -830,7 +873,7 @@ def get_entity_to_regulators(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        A dictionary whose keys are 2-tuples of CURIE and name of each
         entity and whose values are sets of HGNC gene identifiers (as strings).
     """
     genes_with_confidence = get_entity_to_regulators_raw(
@@ -850,6 +893,8 @@ def get_entity_to_regulators_raw(
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Get all target to regulator relationships
 
@@ -866,14 +911,17 @@ def get_entity_to_regulators_raw(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        A dictionary whose keys are 2-tuples of CURIE and name of each
         entity and whose values are dicts of HGNC gene identifiers (as strings)
         pointing to the maximum belief and evidence count associated with the
         given HGNC gene.
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+    if sqlite_db_path.exists() and use_sqlite_cache:
         genes_with_confidence = get_sqlite_genes_with_confidence_cache(
-            "entity_to_regulators", background_gene_ids
+            "entity_to_regulators",
+            background_gene_ids=background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
         )
     else:
         query = dedent(
@@ -887,9 +935,11 @@ def get_entity_to_regulators_raw(
             RETURN
                 target.id,
                 target.name,
-                collect([gene.id, r.belief, r.evidence_count]);
+                collect([gene.id, r.belief, r.evidence_count])
         """
         )
+        if limit is not None:
+            query += f"\nLIMIT {limit}"
         genes_with_confidence = collect_genes_with_confidence(
             client=client,
             query=query,
@@ -928,6 +978,7 @@ def _query(
     stmt_types: Iterable[str],
     minimum_evidence_count: Optional[int] = None,
     minimum_belief: Optional[float] = None,
+    limit: Optional[int] = None,
 ) -> str:
     """Return a query over INDRA relations f the given statement types."""
     query_range = ", ".join(f'"{stmt_type}"' for stmt_type in sorted(stmt_types))
@@ -939,7 +990,7 @@ def _query(
         belief_line = ""
     else:
         belief_line = f"AND r.belief >= {minimum_belief}"
-    return dedent(
+    query_str = dedent(
         f"""\
         MATCH (regulator:BioEntity)-[r:indra_rel]->(gene:BioEntity)
         WHERE gene.id STARTS WITH "hgnc"                // Collecting human genes only
@@ -948,12 +999,15 @@ def _query(
             AND NOT gene.obsolete                       // Skip obsolete
             {evidence_line}
             {belief_line}
-        RETURN 
-            regulator.id, 
-            regulator.name, 
-            collect([gene.id, r.belief, r.evidence_count]);
+        RETURN
+            regulator.id,
+            regulator.name,
+            collect([gene.id, r.belief, r.evidence_count])
     """
     )
+    if limit is not None:
+        query_str += f"\nLIMIT {limit}"
+    return query_str
 
 
 @autoclient()
@@ -1006,6 +1060,8 @@ def get_positive_stmt_sets_raw(
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Get all positive regulator to target relationships
 
@@ -1022,18 +1078,21 @@ def get_positive_stmt_sets_raw(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        A dictionary whose keys are 2-tuples of CURIE and name of each
         entity and whose values are dicts of HGNC gene identifiers (as strings)
         pointing to the maximum belief and evidence count associated with the
         given HGNC gene.
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+    if sqlite_db_path.exists() and use_sqlite_cache:
         genes_with_confidence = get_sqlite_genes_with_confidence_cache(
-            "positive_statements", background_gene_ids
+            "positive_statements",
+            background_gene_ids=background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
         )
     else:
         genes_with_confidence = collect_genes_with_confidence(
-            query=_query(POSITIVE_STMT_TYPES),
+            query=_query(POSITIVE_STMT_TYPES, limit=limit),
             client=client,
             background_gene_ids=background_gene_ids,
         )
@@ -1089,6 +1148,8 @@ def get_negative_stmt_sets_raw(
     client: Neo4jClient,
     background_gene_ids: Optional[Iterable[str]] = None,
     use_sqlite_cache: bool = True,
+    limit: Optional[int] = None,
+    sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
     """Get all negative regulator to target relationships
 
@@ -1110,13 +1171,16 @@ def get_negative_stmt_sets_raw(
         pointing to the maximum belief and evidence count associated with the
         given HGNC gene.
     """
-    if SQLITE_CACHE_PATH.exists() and use_sqlite_cache:
+    if sqlite_db_path.exists() and use_sqlite_cache:
         genes_with_confidence = get_sqlite_genes_with_confidence_cache(
-            "negative_statements", background_gene_ids
+            "negative_statements",
+            background_gene_ids=background_gene_ids,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
         )
     else:
         genes_with_confidence = collect_genes_with_confidence(
-            query=_query(NEGATIVE_STMT_TYPES),
+            query=_query(NEGATIVE_STMT_TYPES, limit=limit),
             client=client,
             background_gene_ids=background_gene_ids,
         )
