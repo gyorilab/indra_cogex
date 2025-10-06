@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     List,
     Literal,
+    Union,
 )
 from indra.databases.hgnc_client import is_kinase
 from indra.databases.identifiers import get_ns_id_from_identifiers
@@ -36,7 +37,8 @@ __all__ = [
     "get_phenotype_gene_sets",
     "get_entity_to_targets",
     "get_entity_to_regulators",
-    "get_kinase_phosphosites"
+    "get_kinase_phosphosites",
+    "SQLITE_CACHE_PATH",
 ]
 
 logger = logging.getLogger(__name__)
@@ -1484,7 +1486,12 @@ def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = Fals
     logger.info("Finished building caches for gene set enrichment analysis.")
 
 
-def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
+def build_sqlite_cache(
+    db_path: Path = SQLITE_CACHE_PATH,
+    force: bool = False,
+    limit: Optional[int] = None,
+    return_cache: bool = False,
+) -> Optional[Dict[str, Dict]]:
     """Build the SQLite cache for CoGEx.
 
     Parameters
@@ -1494,6 +1501,18 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     force :
         If True, the current cache will be ignored and the database will be
         rebuilt. The current database will be overwritten. Default: False.
+    limit :
+        If given, limits the number of rows processed from Neo4j for each
+        dataset. This is useful for testing and development. Default: None.
+    return_cache :
+        If True, returns the results from the graph database queries in a
+        dictionary. This is useful for testing. Default: False.
+
+    Returns
+    -------
+    :
+        If return_cache is True, returns a dictionary with the data used to
+        populate the SQLite cache. Otherwise, returns None.
     """
     if db_path.exists() and not force:
         logger.info(f"SQLite cache already exists at {db_path}. Skipping build.")
@@ -1540,35 +1559,24 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
     logger.info(f"Built SQLite cache at {db_path}.")
 
     # Populate the cache
-    gene_set_table_datasets = {
-        # Returns set of gene IDs
-        "go": get_go,
-        "reactome": get_reactome,
-        "wikipathways": get_wikipathways,
-        "phenotypes": get_phenotype_gene_sets,
-        # Returns set of (gene, site) tuples
-        "kinase_phosphosites": get_kinase_phosphosites,
-    }
-    genes_with_confidence_datasets = {
-        # Returns dict of gene ID to (belief, evidence_count)
-        "entity_to_targets": get_entity_to_targets_raw,
-        "entity_to_regulators": get_entity_to_regulators_raw,
-        "positive_statements": get_positive_stmt_sets_raw,
-        "negative_statements": get_negative_stmt_sets_raw,
-    }
+    logger.info("Warming up bioontology...")
+    bio_ontology.initialize()
+    cache_data = {}
+    if return_cache:
+        cache_data[SQLITE_GENE_SET_TABLE] = {}
+        cache_data[SQLITE_GENES_WITH_CONFIDENCE_TABLE] = {}
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     logger.info("Populating SQLite gene set cache")
     for cache_name, func in tqdm(
         gene_set_table_datasets.items(), desc="Populating gene set cache"
     ):
-        data = func(use_sqlite_cache=False)
-        if cache_name == "kinase_phosphosites":
-            # Flatten (gene, site) tuples into "gene:site" strings for storage
-            data = {
-                key: {f"{gene}:{site}" for gene, site in values}
-                for key, values in data.items()
-            }
+        data = func(use_sqlite_cache=False, limit=limit)
+
+        # Store in return cache if requested
+        if return_cache:
+            cache_data[SQLITE_GENE_SET_TABLE][cache_name] = data
 
         # Prepare data for insertion
         to_insert = []
@@ -1591,7 +1599,22 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
         genes_with_confidence_datasets.items(),
         desc="Populating genes with confidence cache"
     ):
-        data = func(use_sqlite_cache=False)
+        data = func(use_sqlite_cache=False, limit=limit)
+
+        # Store in return cache if requested
+        if return_cache:
+            cache_data[SQLITE_GENES_WITH_CONFIDENCE_TABLE][cache_name] = data
+
+        if cache_name == "kinase_phosphosites":
+            # Make the inner key 3-tuple a string (curie, name, site)
+            flat_key_data = {}
+            for (curie, name), values in data.items():
+                flat_key_data[(curie, name)] = {}
+                for (gene_curie, gene_name, site), (belief, ev_count) in values.items():
+                    inner_key = f"{gene_curie}|{gene_name}|{site}"
+                    flat_key_data[(curie, name)][inner_key] = (belief, ev_count)
+            data = flat_key_data
+
         # Prepare data for insertion
         to_insert = []
         sorted_keys = sorted(data.keys(), key=lambda x: (x[0], x[1]))
@@ -1612,6 +1635,25 @@ def build_sqlite_cache(db_path: Path = SQLITE_CACHE_PATH, force: bool = False):
 
     conn.close()
     logger.info(f"Finished building and populating SQLite cache at {db_path}.")
+
+    return cache_data or None
+
+
+gene_set_table_datasets = {
+    # Returns set of gene IDs
+    "go": get_go,
+    "reactome": get_reactome,
+    "wikipathways": get_wikipathways,
+    "phenotypes": get_phenotype_gene_sets,
+}
+genes_with_confidence_datasets = {
+    # Returns dict of gene ID to (belief, evidence_count)
+    "entity_to_targets": get_entity_to_targets_raw,
+    "entity_to_regulators": get_entity_to_regulators_raw,
+    "positive_statements": get_positive_stmt_sets_raw,
+    "negative_statements": get_negative_stmt_sets_raw,
+    "kinase_phosphosites": get_kinase_phosphosites_raw,
+}
 
 
 if __name__ == "__main__":
