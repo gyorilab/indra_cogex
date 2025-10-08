@@ -76,9 +76,6 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
 # CoGEx specific setup
 RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
 
-# Force rebuild the pickle caches for the GSEA and MSEA apps
-RUN python -m indra_cogex.client.enrichment.utils --force
-
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --cache
 
