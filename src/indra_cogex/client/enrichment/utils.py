@@ -609,7 +609,7 @@ def get_kinase_phosphosites(
     background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
-) -> Dict[Tuple[str, str], Set[Tuple[str, str, str]]]:
+) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
     """Get kinase phosphosites with confidence filtering.
 
     Parameters
@@ -627,7 +627,7 @@ def get_kinase_phosphosites(
     -------
     :
         A mapping from (kinase_curie, kinase_name) to a set of
-        (substrate id, substrate name, site) tuples representing phosphosites.
+        (substrate name, site) tuples representing phosphosites.
     """
     phosphosites_with_confidence = get_kinase_phosphosites_raw(
         client=client,
@@ -671,17 +671,17 @@ def get_kinase_phosphosites_raw(
     Returns
     -------
     :
-        Mapping from (kinase_curie, kinase_name) to a set of
-        (substrate_gene_name, site) tuples representing phosphosites.
+        Mapping from (kinase_curie, kinase_name) to a dict mapping
+        (substrate id, substrate name, site) tuples to (max_belief, max_evidence_count)
+        tuples.
     """
     if sqlite_db_path.exists() and use_sqlite_cache:
-
-            res = get_sqlite_genes_with_confidence_cache(
-                "kinase_phosphosites",
-                background_gene_ids=background_phosphosites,
-                sqlite_db_path=sqlite_db_path,
-                limit=limit
-            )
+        res = get_sqlite_genes_with_confidence_cache(
+            "kinase_phosphosites",
+            background_gene_ids=background_phosphosites,
+            sqlite_db_path=sqlite_db_path,
+            limit=limit
+        )
     else:
         query = dedent(
             f"""\
@@ -810,7 +810,7 @@ def filter_phosphosite_set_confidences(
     data: Dict[Tuple[str, str], Dict[Tuple[str, str, str], Tuple[float, int]]],
     minimum_belief: Optional[float] = 0.0,
     minimum_evidence_count: Optional[int] = 0,
-) -> Dict[Tuple[str, str], Set[Tuple[str, str, str]]]:
+) -> Dict[Tuple[str, str], Set[Tuple[str, str]]]:
     """Filter the phosphosite confidences from a dictionary
 
     Parameters
@@ -840,11 +840,13 @@ def filter_phosphosite_set_confidences(
 
     filtered_data = {}
     for kinase_key, phosphosite_dict in data.items():
-        filtered_data[kinase_key] = {
-            phosphosite
-            for phosphosite, (belief, ev_count) in phosphosite_dict.items()
-            if belief >= minimum_belief and ev_count >= minimum_evidence_count
-        }
+        res_set = set()
+        for phosphosite, (belief, ev_count) in phosphosite_dict.items():
+            phosphosite_id, phosphosite_name, site = phosphosite
+            if belief >= minimum_belief and ev_count >= minimum_evidence_count:
+                res_set.add((phosphosite_name, site))
+        if res_set:
+            filtered_data[kinase_key] = res_set
     return filtered_data
 
 
