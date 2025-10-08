@@ -1,3 +1,4 @@
+"""These tests require connection to the INDRA CoGEx graph database"""
 import pytest
 
 from indra_cogex.client.enrichment.utils import (
