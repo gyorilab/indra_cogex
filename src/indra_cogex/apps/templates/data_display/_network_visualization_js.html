@@ -201,7 +201,7 @@ function initializeNetwork(prefix, identifier) {
                     color: '#000000',
                     face: 'arial',
                     vadjust: -40,
-                    bold: prefix !== 'statements',
+                    bold: prefix !== 'statements' ? "bold 26px arial" : "16px arial",
                     size: prefix === 'statements' ? 16 : 26
                 },
                 size: prefix === 'statements' ? 30 : 60,
@@ -224,7 +224,10 @@ function initializeNetwork(prefix, identifier) {
                     type: 'dynamic'
                 },
                 shadow: prefix !== 'statements',
-                opacity: prefix === 'statements' ? 0.8 : 1.0
+                color: {
+                    color: prefix === 'statements' ? 'rgba(60,60,60,0.8)' : 'rgba(60,60,60,1)',
+                    highlight: 'rgba(60,60,60,1)'
+                }
             },
             physics: {
                 enabled: true,
@@ -252,6 +255,13 @@ function initializeNetwork(prefix, identifier) {
                 improvedLayout: true
             }
         };
+
+        const rect = container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+            console.warn("Container not ready yet — retrying initialization.");
+            requestAnimationFrame(() => initializeNetwork(prefix, identifier));
+            return;
+        }
 
         // Initialize the network
         const network = new vis.Network(container, {nodes, edges}, options);
