@@ -27,7 +27,7 @@ from indra_cogex.client.curation import (
     get_tf_statements,
 )
 from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes, get_network
-
+from indra_cogex.client import Neo4jClient
 from .utils import get_conflict_source_counts
 from ..utils import (
     remove_curated_pa_hashes,
@@ -716,58 +716,64 @@ class NodesForm(FlaskForm):
 
     def get_nodes(self) -> List[Tuple[str, str]]:
         """
-        Get the CURIEs from the form, handling both newlines and commas as separators.
-
-        Returns
-        -------
-        :
-
-            List of (namespace, identifier) tuples, sorted for consistency
-
-        Raises
-        ------
-        ValueError
-            If any identifier is malformed
+        Collect raw node identifiers without strict CURIE validation.
+        This lets the backend handle flexible normalization.
         """
         if not self.curies.data:
             return []
 
-        # First split into lines, then split each line by commas
+        # Split by newlines and commas
         entries = [
             entry.strip()
             for line in self.curies.data.split("\n")
-            for entry in line.strip().split(",")
-            if entry.strip()  # Only keep non-empty entries
+            for entry in line.split(",")
+            if entry.strip()
         ]
 
-        # Process all valid entries and collect invalid ones
-        processed_nodes = set()
-        invalid_entries = []
+        # Just return them as raw strings
+        return entries
 
-        for entry in entries:
-            try:
-                if ':' in entry:
-                    ns, id_part = entry.split(':', maxsplit=1)
-                    if ns.strip() and id_part.strip():  # Ensure both parts exist
-                        clean_entry = f"{ns.strip()}:{id_part.strip()}"
-                        processed = tuple(process_identifier(clean_entry))
-                        processed_nodes.add(processed)
-                    else:
-                        invalid_entries.append(entry)
-                else:
-                    invalid_entries.append(entry)
-            except ValueError:
-                invalid_entries.append(entry)
 
-        if invalid_entries:
-            self.curies.errors.append(
+def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Parse and normalize a list of node inputs into (prefix, identifier) tuples."""
 
-                f"Invalid identifier(s): {', '.join(invalid_entries)}. "
-                "Expected format: 'namespace:identifier' (e.g., 'FPLX:MEK')"
-            )
-            return []
+    normalized_nodes = []
+    errors = []
 
-        return sorted(processed_nodes)
+    for entry in node_list:
+        entry = entry.strip()
+        if not entry:
+            continue
+
+        # Case 1: Already CURIE-like
+        if ":" in entry:
+            prefix, ident = entry.split(":", 1)
+            prefix = prefix.lower()
+            normalized_nodes.append((prefix, ident))
+            continue
+
+        # Case 2: Numeric (assume HGNC numeric ID)
+        if entry.isnumeric():
+            normalized_nodes.append(("hgnc", entry))
+            continue
+
+        # Case 3: Try symbol or name lookup in Neo4j
+        query = f"""
+        MATCH (n:BioEntity)
+        WHERE toUpper(n.name) = '{entry.upper()}'
+           OR '{entry.upper()}' IN n.synonyms
+        RETURN n.id LIMIT 1
+        """
+        res = client.query(query)
+        if res:
+            curie = res[0].data['n.id']
+            prefix, ident = curie.split(":", 1)
+            normalized_nodes.append((prefix, ident))
+        else:
+            errors.append(entry)
+
+    return normalized_nodes, errors
+
 
 
 @explorer_blueprint.route("/subnetwork", methods=["GET", "POST"])
@@ -796,12 +802,16 @@ def subnetwork():
                     include_db_evidence=str(include_db_evidence).lower()))
 
     # If it's a GET request or form is not valid
-    include_db_evidence = request.args.get('include_db_evidence',
-                                           'false').lower() == 'true'
-    nodes = [tuple(node.split(':', maxsplit=1))
-             for node in request.args.get('nodes', '').split(',') if node]
+    include_db_evidence = request.args.get("include_db_evidence", "false").lower() == "true"
+    raw_nodes = [n.strip() for n in request.args.get("nodes", "").split(",") if n.strip()]
 
-    if nodes: 
+    # Use your imported parse_node_list() for normalization
+    nodes, errors = parse_node_list(raw_nodes, client)
+
+    if errors:
+        flask.flash(f"Unrecognized inputs: {', '.join(errors)}")
+
+    if nodes:
 
         # Store for filtering Complex statements in get_network
         input_node_names = [identifier for prefix, identifier in nodes]
