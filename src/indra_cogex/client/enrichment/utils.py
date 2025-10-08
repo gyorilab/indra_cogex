@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 """Utilities for getting gene sets."""
-import json
 import logging
 import pandas as pd
 import sqlite3
@@ -43,8 +42,6 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-X = TypeVar("X")
-Y = TypeVar("Y")
 SQLITE_CACHE_PATH = APP_CACHE_MODULE.join(name="query_cache.db")
 SQLITE_GENE_SET_TABLE = "gene_sets"
 GeneSets = Literal[
@@ -159,7 +156,7 @@ def collect_genes_with_confidence(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each queried
+        A dictionary whose keys are 2-tuples of CURIE and name of each queried
         item and whose values are dicts of HGNC gene identifiers (as strings)
         pointing to the maximum belief and evidence count associated with
         the given HGNC gene.
@@ -222,8 +219,10 @@ def collect_phosphosites_with_confidence(
     Returns
     -------
     :
-        A dictionary whose keys are 2-tuples of entity ID and name,
-        and whose values are sets of (gene, site) tuples.
+        A dictionary whose keys are 2-tuples of (kinase_curie, kinase_name)
+        and whose values are dicts mapping (substrate id, substrate name, site)
+        tuples to a tuple of (max_belief, max_evidence_count) for that
+        phosphosite.
     """
     # Execute the query
     raw_results = client.query_tx(query)
@@ -358,6 +357,11 @@ def get_go(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of GO terms returned to this number.
 
     Returns
     -------
@@ -428,6 +432,29 @@ def get_sqlite_genes_with_confidence_cache(
     sqlite_db_path: Union[Path, str] = SQLITE_CACHE_PATH,
     limit: Optional[int] = None,
 ) -> Dict[Tuple[str, str], Dict[str, Tuple[float, int]]]:
+    """Get gene sets with confidence from the SQLite cache.
+
+    Parameters
+    ----------
+    cache_name :
+        The name of the cache to retrieve.
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set to filter the
+        returned values on. If not given, no filtering is applied.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of entries returned to this number.
+
+    Returns
+    -------
+    :
+        A dictionary whose keys are 2-tuples of CURIE and name of each queried
+        item and whose values are dicts of HGNC gene identifiers (as strings)
+        pointing to the maximum belief and evidence count associated with
+        the given HGNC gene.
+    """
     # Connect to the SQLite database
     conn = sqlite3.connect(sqlite_db_path)
     cursor = conn.cursor()
@@ -479,6 +506,11 @@ def get_wikipathways(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of WikiPathways returned to this number.
 
     Returns
     -------
@@ -532,6 +564,11 @@ def get_reactome(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of Reactome pathways returned to this number.
 
     Returns
     -------
@@ -572,7 +609,26 @@ def get_kinase_phosphosites(
     background_phosphosites: Optional[Set[Tuple[str, str]]] = None,
     minimum_evidence_count: Optional[int] = 1,
     minimum_belief: Optional[float] = 0.0,
-):
+) -> Dict[Tuple[str, str], Set[Tuple[str, str, str]]]:
+    """Get kinase phosphosites with confidence filtering.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    background_phosphosites :
+        Optional set of (gene, site) tuples to filter returned phosphosites.
+    minimum_evidence_count :
+        Minimum evidence count to include a phosphosite.
+    minimum_belief :
+        Minimum belief to include a phosphosite.
+
+    Returns
+    -------
+    :
+        A mapping from (kinase_curie, kinase_name) to a set of
+        (substrate id, substrate name, site) tuples representing phosphosites.
+    """
     phosphosites_with_confidence = get_kinase_phosphosites_raw(
         client=client,
         background_phosphosites=background_phosphosites,
@@ -609,8 +665,8 @@ def get_kinase_phosphosites_raw(
     limit :
         If given, limit the number of kinases returned to this number.
     sqlite_db_path :
-        Path to the SQLite database to use for caching. Default: indra_cogex
-        app cache path.
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
 
     Returns
     -------
@@ -673,6 +729,11 @@ def get_phenotype_gene_sets(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of phenotypes returned to this number.
 
     Returns
     -------
@@ -707,11 +768,30 @@ def get_phenotype_gene_sets(
 
 
 def filter_gene_set_confidences(
-    data: Dict[X, Dict[Y, Tuple[float, int]]],
+    data: Dict[Tuple[str, str], Dict[str, Tuple[float, int]]],
     minimum_belief: Optional[float] = None,
     minimum_evidence_count: Optional[int] = None,
-) -> Dict[X, Set[Y]]:
-    """Filter the confidences from a dictionary."""
+) -> Dict[Tuple[str, str], Set[str]]:
+    """Filter the confidences from a dictionary
+
+    Parameters
+    ----------
+    data :
+        A dictionary mapping keys are 2-tuples of CURIE and name to dictionaries
+        mapping keys of IDs to (belief, evidence_count) tuples.
+    minimum_belief :
+        Minimum belief to include a gene in the set. If None, no filtering
+        is applied.
+    minimum_evidence_count :
+        Minimum evidence count to include a gene in the set. If None, no
+        filtering is applied.
+
+    Returns
+    -------
+    :
+        A dictionary mapping keys are 2-tuples of CURIE and name to sets
+        of IDs that pass the filtering criteria.
+    """
     if minimum_belief is None:
         minimum_belief = 0.0
     if minimum_evidence_count is None:
@@ -731,6 +811,28 @@ def filter_phosphosite_set_confidences(
     minimum_belief: Optional[float] = 0.0,
     minimum_evidence_count: Optional[int] = 0,
 ) -> Dict[Tuple[str, str], Set[Tuple[str, str, str]]]:
+    """Filter the phosphosite confidences from a dictionary
+
+    Parameters
+    ----------
+    data :
+        A dictionary mapping keys are 2-tuples of (kinase_curie, kinase_name)
+        to dictionaries mapping keys of (substrate id, substrate name, site)
+        tuples to (belief, evidence_count) tuples.
+    minimum_belief :
+        Minimum belief to include a phosphosite in the set. If None, no filtering
+        is applied.
+    minimum_evidence_count :
+        Minimum evidence count to include a phosphosite in the set. If None, no
+        filtering is applied.
+
+    Returns
+    -------
+    :
+        A dictionary mapping keys are 2-tuples of (kinase_curie, kinase_name)
+        to sets of (substrate id, substrate name, site) tuples that pass the
+        filtering criteria.
+    """
     if minimum_belief is None:
         minimum_belief = 0.0
     if minimum_evidence_count is None:
@@ -806,6 +908,11 @@ def get_entity_to_targets_raw(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of entities returned to this number.
 
     Returns
     -------
@@ -909,6 +1016,11 @@ def get_entity_to_regulators_raw(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of entities returned to this number.
 
     Returns
     -------
@@ -1041,7 +1153,7 @@ def get_positive_stmt_sets(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        A dictionary whose keys are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
     res = get_positive_stmt_sets_raw(
@@ -1076,6 +1188,11 @@ def get_positive_stmt_sets_raw(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of entities returned to this number.
 
     Returns
     -------
@@ -1130,7 +1247,7 @@ def get_negative_stmt_sets(
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each entity
+        A dictionary whose keys are 2-tuples of CURIE and name of each entity
         and whose values are sets of HGNC gene identifiers (as strings)
     """
     res = get_negative_stmt_sets_raw(
@@ -1164,11 +1281,16 @@ def get_negative_stmt_sets_raw(
         given, all genes with HGNC IDs are used as the background.
     use_sqlite_cache :
         If True, use the SQLite cache if it exists. Default: True.
+    sqlite_db_path :
+        Path to the SQLite database to use for caching. Default:
+        APP_CACHE_MODULE found in `indra_cogex.apps.constants`.
+    limit :
+        If given, limit the number of entities returned to this number.
 
     Returns
     -------
     :
-        A dictionary whose keys that are 2-tuples of CURIE and name of each
+        A dictionary whose keys are 2-tuples of CURIE and name of each
         entity and whose values are dicts of HGNC gene identifiers (as strings)
         pointing to the maximum belief and evidence count associated with the
         given HGNC gene.
@@ -1201,7 +1323,7 @@ def get_statement_metadata_for_pairs(
     minimum_belief: float = 0.0,
     minimum_evidence: Optional[int] = None,
     is_downstream: bool = False,
-    allowed_stmt_types: Optional[List[str]] = None,  # NEW PARAMETER
+    allowed_stmt_types: Optional[List[str]] = None,
     *,
     client: Neo4jClient,
 ) -> Dict[str, List[Dict]]:
@@ -1298,11 +1420,31 @@ def enrich_with_optimized_metadata(
     minimum_belief: float,
     minimum_evidence_count: int
 ) -> Dict[str, pd.DataFrame]:
-    """
+    """Metadata enrichment for INDRA results in a results dictionary.
+
     OPTIMIZED metadata enrichment - replaces the cartesian product bottleneck
 
-    Instead of creating R×G pairs and querying each individually,
+    Instead of creating R by G pairs and querying each individually,
     we do ONE smart query to get all existing relationships.
+
+    Parameters
+    ----------
+    results :
+        A dictionary of results, mapping result type to DataFrame.
+    gene_set :
+        The set of gene CURIEs (HGNC) to consider as targets.
+    client :
+        The Neo4j client.
+    minimum_belief :
+        Minimum belief score to include a relationship.
+    minimum_evidence_count :
+        Minimum evidence count to include a relationship.
+
+    Returns
+    -------
+    :
+        The input results dictionary with INDRA results enriched with
+        statement metadata.
     """
 
     # Get all INDRA results that need metadata
@@ -1370,7 +1512,6 @@ def get_all_relationships_single_query(
     :
         A dictionary whose keys are (regulator_id, is_downstream) tuples and
         whose values are lists of statement metadata dictionaries.
-
     """
 
     # Normalize gene IDs
@@ -1619,4 +1760,12 @@ if __name__ == "__main__":
         help="Force a refresh of the cache.",
     )
     args = parser.parse_args()
-    build_caches(force_refresh=args.force_refresh)
+    build_sqlite_cache(force=args.force_refresh)
+
+    # Build the pyobo name-id mapping caches. Skip force refresh since the data
+    # isn't from CoGEx, rather change the version to download a new cache.
+    # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
+    # NOTE: This will build all files for the pyobo caches, but we only need names.tsv
+    # Instead, we copy names.tsv files during docker build for each resource.
+    # get_mouse_cache()
+    # get_rat_cache()
