@@ -143,7 +143,7 @@ class Neo4jClient:
         }
 
     def query_tx(
-        self, query: str, squeeze: bool = False, timeout: Optional[int] = None, **query_params
+        self, query: str, squeeze: bool = False
     ) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
@@ -175,7 +175,7 @@ class Neo4jClient:
             # where *args and **kwargs are passed through unchanged, meaning
             # do_cypher_tx can expect query and **query_params
             values = session.read_transaction(
-                do_cypher_tx, query, **query_params, timeout=timeout
+                do_cypher_tx, query, **query_params
             )
 
         if squeeze:
