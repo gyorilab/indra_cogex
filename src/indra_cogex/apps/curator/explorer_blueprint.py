@@ -783,23 +783,31 @@ def subnetwork():
     form = NodesForm()
 
     if form.validate_on_submit():  # Handle form submission
-        nodes = form.get_nodes()
-        logger.info(f"Processed nodes: {nodes}")
-        if not nodes:
+        raw_nodes = form.get_nodes()
+        logger.info(f"Processed raw nodes: {raw_nodes}")
+        if not raw_nodes:
             return render_template("curation/node_form.html", form=form)
 
-        if len(nodes) > 30:
+        if len(raw_nodes) > 30:
             flask.flash("Cannot query more than 30 nodes.")
             return render_template("curation/node_form.html", form=form)
 
         include_db_evidence = form.include_db_evidence.data
-        # Redirect to the same route with query parameters
-        nodes_arg = ','.join([f"{prefix}:{identifier}"
-                              for prefix, identifier in nodes])
+
+        # 🔹 Normalize inputs using the same parser as GET
+        nodes, errors = parse_node_list(raw_nodes, client)
+        if errors:
+            flask.flash(f"Unrecognized inputs: {', '.join(errors)}")
+
+        # Build redirect query
+        nodes_arg = ','.join([f"{prefix}:{identifier}" for prefix, identifier in nodes])
         return redirect(
-            url_for('.subnetwork',
-                    nodes=nodes_arg,
-                    include_db_evidence=str(include_db_evidence).lower()))
+            url_for(
+                '.subnetwork',
+                nodes=nodes_arg,
+                include_db_evidence=str(include_db_evidence).lower()
+            )
+        )
 
     # If it's a GET request or form is not valid
     include_db_evidence = request.args.get("include_db_evidence", "false").lower() == "true"
