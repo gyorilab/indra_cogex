@@ -1437,55 +1437,6 @@ def get_rat_cache(force_cache_refresh: bool = False):
     )
 
 
-def build_caches(force_refresh: bool = False, lazy_loading_ontology: bool = False):
-    """Call each gene set construction to build up cache
-
-    Parameters
-    ----------
-    force_refresh :
-        If True, the current cache will be ignored and the queries to get the
-        caches will be run again. The current results will overwrite any existing
-        cache. Default: False.
-    lazy_loading_ontology :
-        If True, the bioontology will be loaded lazily. If False, the bioontology
-        will be loaded immediately. The former is useful for testing and rapid development.
-        The latter is useful for production. Default: False.
-    """
-    if not lazy_loading_ontology:
-        logger.info("Warming up bioontology...")
-        bio_ontology.initialize()
-    logger.info("Building up caches for gene set enrichment analysis...")
-    get_go(force_cache_refresh=force_refresh)
-    get_reactome(force_cache_refresh=force_refresh)
-    get_wikipathways(force_cache_refresh=force_refresh)
-    get_phenotype_gene_sets(force_cache_refresh=force_refresh)
-    get_entity_to_targets(
-        minimum_evidence_count=1,
-        minimum_belief=0.0,
-        force_cache_refresh=force_refresh
-    )
-    get_entity_to_regulators(
-        minimum_evidence_count=1,
-        minimum_belief=0.0,
-        force_cache_refresh=force_refresh
-    )
-    get_negative_stmt_sets(force_cache_refresh=force_refresh)
-    get_positive_stmt_sets(force_cache_refresh=force_refresh)
-    get_kinase_phosphosites(
-        minimum_evidence_count=1,
-        minimum_belief=0.0,
-        force_cache_refresh=force_refresh
-    )
-    # Build the pyobo name-id mapping caches. Skip force refresh since the data
-    # isn't from CoGEx, rather change the version to download a new cache.
-    # See PYOBO_RESOURCE_FILE_VERSIONS in indra_cogex/apps/constants.py
-    # NOTE: This will build all files for the pyobo caches, but we only need names.tsv
-    # Instead, we copy names.tsv files during docker build for each resource.
-    # get_mouse_cache()
-    # get_rat_cache()
-    logger.info("Finished building caches for gene set enrichment analysis.")
-
-
 def build_sqlite_cache(
     db_path: Path = SQLITE_CACHE_PATH,
     force: bool = False,
