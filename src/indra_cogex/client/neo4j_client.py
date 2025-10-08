@@ -143,7 +143,7 @@ class Neo4jClient:
         }
 
     def query_tx(
-        self, query: str, squeeze: bool = False
+        self, query: str, squeeze: bool = False, **query_params
     ) -> Union[List[List[Any]], None]:
         """Run a read-only query and return the results.
 
@@ -154,6 +154,8 @@ class Neo4jClient:
         squeeze :
             If true, unpacks the 0-indexed element in each value returned.
             Useful when only returning value per row of the results.
+        timeout :
+            Query timeout in seconds (Neo4j will abort if exceeded).
         query_params :
             kwargs to pass to query
 
