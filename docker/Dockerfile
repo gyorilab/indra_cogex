@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG INDRA_NEO4J_URL
 ARG INDRA_NEO4J_USER
@@ -79,6 +79,6 @@ RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[w
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --cache
 
-ENV GUNICORN_CONF /usr/local/lib/python3.8/dist-packages/indra_cogex/apps/gunicorn.conf.py
+ENV GUNICORN_CONF /usr/local/lib/python3.10/dist-packages/indra_cogex/apps/gunicorn.conf.py
 
 ENTRYPOINT gunicorn -w 2 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
