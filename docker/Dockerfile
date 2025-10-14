@@ -59,6 +59,8 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
+    # Build the sqlite ontology cache
+    python -c "from indra.ontology.bio.sqlite_ontology import SqliteOntology; sqo = SqliteOntology()" && \
     # Download Adeft models
     python -m adeft.download && \
     # Download protmapper resources
