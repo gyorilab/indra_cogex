@@ -15,7 +15,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    TypeVar,
     List,
     Literal,
     Union,
