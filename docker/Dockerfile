@@ -60,7 +60,7 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
     # Build the sqlite ontology cache
-    python -c "from indra.ontology.bio.sqlite_ontology import SqliteOntology; sqo = SqliteOntology()" && \
+    python -c "from indra.ontology.bio.sqlite_ontology import build_sqlite_ontology; build_sqlite_ontology()" && \
     # Download Adeft models
     python -m adeft.download && \
     # Download protmapper resources
