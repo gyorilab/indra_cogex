@@ -82,7 +82,7 @@ RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[w
 RUN python -m indra_cogex.client.enrichment.utils --force
 
 # Save agent name in cache for search
-RUN python -m indra_cogex.apps.search.utils --cache
+RUN python -m indra_cogex.apps.search.utils --force
 
 ENV GUNICORN_CONF /usr/local/lib/python3.10/dist-packages/indra_cogex/apps/gunicorn.conf.py
 
