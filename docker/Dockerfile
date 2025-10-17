@@ -10,9 +10,11 @@ ARG RGD_VERSION
 # mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
 # full cache build process for these resources (which can take hours).
 RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
-    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
+    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/ && \
+    mkdir -p /root/.data/indra/cogex/assembled/
 COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
 COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
+COPY nodes_BioEntity.tsv.gz /root/.data/indra/cogex/assembled/nodes_BioEntity.tsv.gz
 
 # Setup copied and slightly modified from indra_docker Dockerfile
 ARG INDRA_BUILD_BRANCH
