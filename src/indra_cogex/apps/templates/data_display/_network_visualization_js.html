@@ -106,6 +106,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+//FIX: ADD RETRY LOGIC FOR RACE CONDITION
+function fetchWithRetry(url, options, maxRetries = 3, delay = 1000) {
+    return fetch(url, options)
+        .then(response => {
+            // If we get 202 (Accepted but not ready), retry after delay
+            if (response.status === 202 && maxRetries > 0) {
+                console.log(`Session not ready, retrying in ${delay}ms... (${maxRetries} retries left)`);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve(fetchWithRetry(url, options, maxRetries - 1, delay));
+                    }, delay);
+                });
+            }
+            return response;
+        });
+}
+
 // Unified function to initialize network for all types
 function initializeNetwork(prefix, identifier) {
     console.log("initializeNetwork called with:", prefix, identifier);
@@ -156,14 +173,14 @@ function initializeNetwork(prefix, identifier) {
 
     console.log("Final payload:", payload);
 
-    // Call the API to get network data
-    fetch(fetchUrl, {
+    // ✅ CHANGED: Use fetchWithRetry instead of fetch
+    fetchWithRetry(fetchUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
-    })
+    }, 3, 1000)  // 3 retries, 1 second delay
     .then(response => {
         console.log("API response status:", response.status);
         if (!response.ok) {
