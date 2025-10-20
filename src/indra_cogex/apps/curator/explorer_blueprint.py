@@ -71,7 +71,7 @@ class GeneOntologyForm(FlaskForm):
                     '<a href="#" onclick="event.preventDefault(); document.getElementById('
                     '\'term\').value=\'GO:0003677\'">GO:0003677</a> for Apoptotic Process)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
+    include_db_evidence = BooleanField('Include database evidence',
                                        default=True)
     submit = SubmitField("Submit")
 
@@ -182,7 +182,7 @@ class MeshDiseaseForm(FlaskForm):
         description='Choose a MeSH disease to explore (e.g., <a href="#" onclick="event.preventDefault(); '
                     'document.getElementById(\'term\').value=\'D006009\'">D006009</a> for Pompe Disease)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
+    include_db_evidence = BooleanField('Include database evidence',
                                        default=True)
     submit = SubmitField("Submit")
 
@@ -609,12 +609,12 @@ class PaperForm(FlaskForm):
                 """
     )
     include_db_evidence = BooleanField(
-        'Include Database Evidence',
+        'Include database evidence',
         default=True,
         description="Include evidence from curated databases extracted from the given paper"
     )
     filter_curated = BooleanField(
-        "Filter Curated Evidences",
+        "Filter curated evidences",
         default=False,
         description="Do not show statements that have been curated for correctness",
     )
@@ -813,7 +813,7 @@ def subnetwork():
 
     # If it's a GET request or form is not valid
     include_db_evidence = request.args.get('include_db_evidence',
-                                           'false').lower() == 'true'
+                                           'true').lower() == 'true'
     nodes = [tuple(node.split(':', maxsplit=1))
              for node in request.args.get('nodes', '').split(',') if node]
 
@@ -881,10 +881,7 @@ def subnetwork():
 
     # If no nodes provided, just render the form
     # Set the checkbox state based on URL parameter
-    if 'include_db_evidence' not in request.args:
-        form.include_db_evidence.data = True
-    else:
-        form.include_db_evidence.data = include_db_evidence
+    form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
 
 
