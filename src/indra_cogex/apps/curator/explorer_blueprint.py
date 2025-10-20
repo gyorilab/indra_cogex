@@ -34,6 +34,8 @@ from ..utils import (
     remove_curated_statements,
     render_statements,
 )
+from bioregistry import normalize_curie
+from indra.databases import hgnc_client
 from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
 from ...client.neo4j_client import process_identifier
 
@@ -735,8 +737,7 @@ class NodesForm(FlaskForm):
 
 
 def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tuple[str, str]], List[str]]:
-    """Parse and normalize a list of node inputs into (prefix, identifier) tuples."""
-
+    """Parse and normalize a list of node inputs into (prefix, identifier) tuples. """
     normalized_nodes = []
     errors = []
 
@@ -745,32 +746,26 @@ def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tup
         if not entry:
             continue
 
-        # Case 1: Already CURIE-like
-        if ":" in entry:
-            prefix, ident = entry.split(":", 1)
-            prefix = prefix.lower()
-            normalized_nodes.append((prefix, ident))
+        # First, try Bioregistry normalization for CURIE-like inputs
+        normalized = normalize_curie(entry)
+
+        if normalized:
+            # Successfully normalized by Bioregistry - split into prefix and identifier
+            prefix, identifier = normalized.split(":", 1)
+            normalized_nodes.append((prefix, identifier))
             continue
 
-        # Case 2: Numeric (assume HGNC numeric ID)
-        if entry.isnumeric():
-            normalized_nodes.append(("hgnc", entry))
+        # If Bioregistry didn't work, check if it's a human gene name
+        # Try to get HGNC ID from gene symbol/name
+        hgnc_id = hgnc_client.get_hgnc_id(entry)
+
+        if hgnc_id:
+            # Successfully found as a gene name
+            normalized_nodes.append(("hgnc", hgnc_id))
             continue
 
-        # Case 3: Try symbol or name lookup in Neo4j
-        query = f"""
-        MATCH (n:BioEntity)
-        WHERE toUpper(n.name) = '{entry.upper()}'
-           OR '{entry.upper()}' IN n.synonyms
-        RETURN n.id LIMIT 1
-        """
-        res = client.query_tx(query)
-        if res:
-            curie = res[0].data['n.id']
-            prefix, ident = curie.split(":", 1)
-            normalized_nodes.append((prefix, ident))
-        else:
-            errors.append(entry)
+        # If neither worked, add to errors
+        errors.append(entry)
 
     return normalized_nodes, errors
 
@@ -787,8 +782,19 @@ def subnetwork():
         session.pop('subnetwork_input_nodes', None)
         session.pop('include_db_evidence', None)
 
-        nodes = form.get_nodes()
-        logger.info(f"Processed nodes: {nodes}")
+        raw_nodes = form.get_nodes()  # Get raw strings from form
+        logger.info(f"Raw input nodes: {raw_nodes}")
+
+        if not raw_nodes:
+            return render_template("curation/node_form.html", form=form)
+
+        # Parse and normalize the nodes using the new implementation
+        nodes, errors = parse_node_list(raw_nodes, client)
+
+        # Show errors to user if any inputs couldn't be resolved
+        if errors:
+            flask.flash(f"Could not resolve the following inputs: {', '.join(errors)}")
+
         if not nodes:
             return render_template("curation/node_form.html", form=form)
 
@@ -798,7 +804,8 @@ def subnetwork():
 
         include_db_evidence = form.include_db_evidence.data
         # Redirect to the same route with query parameters
-        nodes_arg = ','.join(nodes)
+        # Format nodes as "prefix:identifier" strings for URL
+        nodes_arg = ','.join(f"{prefix}:{identifier}" for prefix, identifier in nodes)
         return redirect(
             url_for('.subnetwork',
                     nodes=nodes_arg,
@@ -874,7 +881,10 @@ def subnetwork():
 
     # If no nodes provided, just render the form
     # Set the checkbox state based on URL parameter
-    form.include_db_evidence.data = include_db_evidence
+    if 'include_db_evidence' not in request.args:
+        form.include_db_evidence.data = True
+    else:
+        form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
 
 
