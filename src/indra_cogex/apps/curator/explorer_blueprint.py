@@ -782,7 +782,7 @@ def subnetwork():
     form = NodesForm()
 
     if form.validate_on_submit():  # Handle form submission
-        # ✅ FIX 1: CLEAR OLD SESSION DATA BEFORE PROCESSING NEW SEARCH
+        # CLEAR OLD SESSION DATA BEFORE PROCESSING NEW SEARCH
         session.pop('statement_hashes', None)
         session.pop('subnetwork_input_nodes', None)
         session.pop('include_db_evidence', None)
@@ -811,7 +811,7 @@ def subnetwork():
              for node in request.args.get('nodes', '').split(',') if node]
 
     if nodes:
-        # ✅ FIX 2: CLEAR OLD SESSION DATA BEFORE PROCESSING GET REQUEST
+        # CLEAR OLD SESSION DATA BEFORE PROCESSING GET REQUEST
         session.pop('statement_hashes', None)
         session.pop('subnetwork_input_nodes', None)
 
@@ -831,7 +831,7 @@ def subnetwork():
             return_source_counts=True,
         )
 
-        # ✅ FIX 3: EXTRACT AND STORE GENE NAMES (not IDs)
+        # EXTRACT AND STORE GENE NAMES (not IDs)
         # Get the actual gene names from statements
         input_gene_names = set()
         for stmt in stmts:
@@ -883,7 +883,7 @@ def get_network_from_hashes():
     """Get network visualization data from statement hashes."""
     logger.info("Starting get_network_from_hashes endpoint")
 
-    # ✅ FIX 6: CHECK IF SESSION IS READY (for race condition)
+    # FIX 6: CHECK IF SESSION IS READY (for race condition)
     if 'statement_hashes' not in session:
         logger.warning("No statement_hashes in session - may be too early or session cleared")
         return jsonify({
