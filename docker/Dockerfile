@@ -44,12 +44,7 @@ ENV LC_ALL en_US.UTF-8
 ENV BNGPATH $DIRPATH/BioNetGen-2.4.0
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 
-RUN git clone https://github.com/sorgerlab/indra.git && \
-    cd indra && \
-    git checkout $INDRA_BUILD_BRANCH && \
-    git branch && \
-    mkdir /root/.config && \
-    mkdir /root/.config/indra && \
+RUN mkdir -p /root/.config/indra && \
     echo "[indra]" > /root/.config/indra/config.ini && \
     # Install Python dependencies
     pip install --upgrade pip && \
@@ -57,7 +52,7 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     pip install "cython<3" && \
     pip install "pyjnius==1.1.4" && \
     pip install --prefer-binary python-libsbml || true && \
-    pip install -e .[all] && \
+    pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
