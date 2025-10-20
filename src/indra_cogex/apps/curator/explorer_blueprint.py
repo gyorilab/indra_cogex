@@ -764,7 +764,7 @@ def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tup
            OR '{entry.upper()}' IN n.synonyms
         RETURN n.id LIMIT 1
         """
-        res = client.query(query)
+        res = client.query_tx(query)
         if res:
             curie = res[0].data['n.id']
             prefix, ident = curie.split(":", 1)
@@ -775,7 +775,6 @@ def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tup
     return normalized_nodes, errors
 
 
-
 @explorer_blueprint.route("/subnetwork", methods=["GET", "POST"])
 @jwt_required(optional=True)
 def subnetwork():
@@ -783,47 +782,38 @@ def subnetwork():
     form = NodesForm()
 
     if form.validate_on_submit():  # Handle form submission
-        raw_nodes = form.get_nodes()
-        logger.info(f"Processed raw nodes: {raw_nodes}")
-        if not raw_nodes:
+        # ✅ FIX 1: CLEAR OLD SESSION DATA BEFORE PROCESSING NEW SEARCH
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
+        session.pop('include_db_evidence', None)
+
+        nodes = form.get_nodes()
+        logger.info(f"Processed nodes: {nodes}")
+        if not nodes:
             return render_template("curation/node_form.html", form=form)
 
-        if len(raw_nodes) > 30:
+        if len(nodes) > 30:
             flask.flash("Cannot query more than 30 nodes.")
             return render_template("curation/node_form.html", form=form)
 
         include_db_evidence = form.include_db_evidence.data
-
-        # 🔹 Normalize inputs using the same parser as GET
-        nodes, errors = parse_node_list(raw_nodes, client)
-        if errors:
-            flask.flash(f"Unrecognized inputs: {', '.join(errors)}")
-
-        # Build redirect query
-        nodes_arg = ','.join([f"{prefix}:{identifier}" for prefix, identifier in nodes])
+        # Redirect to the same route with query parameters
+        nodes_arg = ','.join(nodes)
         return redirect(
-            url_for(
-                '.subnetwork',
-                nodes=nodes_arg,
-                include_db_evidence=str(include_db_evidence).lower()
-            )
-        )
+            url_for('.subnetwork',
+                    nodes=nodes_arg,
+                    include_db_evidence=str(include_db_evidence).lower()))
 
     # If it's a GET request or form is not valid
-    include_db_evidence = request.args.get("include_db_evidence", "false").lower() == "true"
-    raw_nodes = [n.strip() for n in request.args.get("nodes", "").split(",") if n.strip()]
-
-    # Use your imported parse_node_list() for normalization
-    nodes, errors = parse_node_list(raw_nodes, client)
-
-    if errors:
-        flask.flash(f"Unrecognized inputs: {', '.join(errors)}")
+    include_db_evidence = request.args.get('include_db_evidence',
+                                           'false').lower() == 'true'
+    nodes = [tuple(node.split(':', maxsplit=1))
+             for node in request.args.get('nodes', '').split(',') if node]
 
     if nodes:
-
-        # Store for filtering Complex statements in get_network
-        input_node_names = [identifier for prefix, identifier in nodes]
-        session['subnetwork_input_nodes'] = input_node_names
+        # ✅ FIX 2: CLEAR OLD SESSION DATA BEFORE PROCESSING GET REQUEST
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
 
         nodes_html = " ".join(
             f"""\
@@ -840,6 +830,28 @@ def subnetwork():
             order_by_ev_count=True,
             return_source_counts=True,
         )
+
+        # ✅ FIX 3: EXTRACT AND STORE GENE NAMES (not IDs)
+        # Get the actual gene names from statements
+        input_gene_names = set()
+        for stmt in stmts:
+            for agent in stmt.agent_list():
+                if agent and agent.name:
+                    input_gene_names.add(agent.name)
+
+        # Store the most frequent gene names (corresponding to input nodes)
+        from collections import Counter
+        # Count occurrences of each gene
+        gene_counts = Counter()
+        for stmt in stmts:
+            for agent in stmt.agent_list():
+                if agent and agent.name:
+                    gene_counts[agent.name] += 1
+
+        # Take top N genes where N = number of input nodes
+        top_genes = {name for name, _ in gene_counts.most_common(len(nodes))}
+        session['subnetwork_input_nodes'] = list(top_genes)
+        logger.info(f"Stored {len(top_genes)} gene names in session: {top_genes}")
 
         return _enrich_render_statements(
             stmts,
@@ -861,7 +873,7 @@ def subnetwork():
         )
 
     # If no nodes provided, just render the form
-    # Set the checkboxstate based on URL parameter
+    # Set the checkbox state based on URL parameter
     form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
 
@@ -871,10 +883,18 @@ def get_network_from_hashes():
     """Get network visualization data from statement hashes."""
     logger.info("Starting get_network_from_hashes endpoint")
 
+    # ✅ FIX 6: CHECK IF SESSION IS READY (for race condition)
+    if 'statement_hashes' not in session:
+        logger.warning("No statement_hashes in session - may be too early or session cleared")
+        return jsonify({
+            "nodes": [],
+            "edges": [],
+            "error": "Session not ready. Please wait for page to fully load."
+        }), 202  # 202 = Accepted but not ready yet
+
     data = request.json
     include_db_evidence = data.get('include_db_evidence', True)
 
-    # Use simplified get_network function which gets statements from session
     logger.info("Generating network visualization using statements from session")
     network_data = get_network(
         include_db_evidence=include_db_evidence
