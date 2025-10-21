@@ -3326,8 +3326,10 @@ def get_network(
         A dictionary containing nodes and edges in vis.js format for network visualization.
     """
     try:
-        # Get statement hashes from session
+        # Get session data
         statement_hashes = session.get('statement_hashes')
+        input_node_names = session.get('subnetwork_input_nodes')
+
         if not statement_hashes:
             return {"nodes": [], "edges": [], "error": "No statement hashes found in session"}
 
@@ -3342,24 +3344,26 @@ def get_network(
         if not statements:
             return {"nodes": [], "edges": []}
 
-        # Filter out Complex statements if input nodes are stored in session
-        input_node_names = set(session.pop('subnetwork_input_nodes', []))
+        # Filter Complex statements if input nodes specified
         if input_node_names:
-            filtered_statements = []
-            for stmt in statements:
-                if isinstance(stmt, Complex):
-                    agent_names = {agent.name for agent in stmt.agent_list() if agent}
-                    if agent_names.issubset(input_node_names):
-                        filtered_statements.append(stmt)
-                else:
-                    filtered_statements.append(stmt)
-            statements = filtered_statements
+            input_node_names_set = set(input_node_names)
+            statements = [
+                stmt for stmt in statements
+                if not isinstance(stmt, Complex) or
+                   {agent.name for agent in stmt.agent_list() if agent}.issubset(input_node_names_set)
+            ]
 
-        # Build graph from statements
+        if not statements:
+            return {"nodes": [], "edges": [], "error": "No network data available"}
+
+        # Build network graph
         assembler = IndraNetAssembler(statements)
         graph = assembler.make_model(method='df', graph_type='multi_graph')
 
-        # Find most connected node
+        if not graph.nodes():
+            return {"nodes": [], "edges": []}
+
+        # Find most connected node for central highlighting
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
@@ -3374,24 +3378,36 @@ def get_network(
         nodes = []
         for node_id in graph.nodes():
             db_refs = entity_db_refs.get(node_id, {})
-            node_type = next(iter(db_refs.keys()), "Other") if db_refs else "Other"
-            color, shape = "#607D8B", "ellipse"
+
+            # Determine node type and styling
+            node_type = "Other"
+            color = "#607D8B"
+            shape = "ellipse"
 
             if 'HGNC' in db_refs or 'FPLX' in db_refs:
                 node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
-                color, shape = "#4CAF50", "box"
+                color = "#4CAF50"
+                shape = "box"
             elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
                 node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
-                color, shape = "#FF9800", "diamond"
+                color = "#FF9800"
+                shape = "diamond"
             elif 'GO' in db_refs:
-                node_type, color, shape = "GO", "#2196F3", "hexagon"
+                node_type = "GO"
+                color = "#2196F3"
+                shape = "hexagon"
             elif 'MESH' in db_refs:
-                node_type, color, shape = "MESH", "#9C27B0", "triangle"
+                node_type = "MESH"
+                color = "#9C27B0"
+                shape = "triangle"
             elif 'UP' in db_refs:
-                node_type, color, shape = "UP", "#4CAF50", "box"
+                node_type = "UP"
+                color = "#4CAF50"
+                shape = "box"
             elif db_refs:
                 color = "#009688"
 
+            # Highlight central node
             size = 45 if node_id == central_node else 35
             font_size = 26 if node_id == central_node else 22
             border_width = 3 if node_id == central_node else 2
@@ -3426,6 +3442,7 @@ def get_network(
         for source, target, key, data in graph.edges(data=True, keys=True):
             stmt_type = data.get('stmt_type', 'Interaction')
 
+            # Create unique edge key
             if stmt_type == 'Complex':
                 edge_key = tuple(sorted([source, target]))
             else:
@@ -3435,20 +3452,33 @@ def get_network(
                 continue
             seen_keys.add(edge_key)
 
-            edge_stmt = next(
-                (
-                    s for s in statements
-                    if len(s.agent_list()) >= 2 and
-                       s.agent_list()[0] and s.agent_list()[1] and
-                       s.agent_list()[0].name == source and
-                       s.agent_list()[1].name == target and
-                       s.__class__.__name__ == stmt_type
-                ),
-                None
-            )
+            # Find the corresponding INDRA statement
+            edge_stmt = None
+            for s in statements:
+                if s.__class__.__name__ != stmt_type:
+                    continue
+
+                agent_names = {agent.name for agent in s.agent_list() if agent}
+
+                # For Complex: both nodes must be members of the complex
+                if stmt_type == 'Complex':
+                    if source in agent_names and target in agent_names:
+                        edge_stmt = s
+                        break
+                # For directional statements: match source→target order
+                else:
+                    if (len(s.agent_list()) >= 2 and
+                        s.agent_list()[0] and s.agent_list()[1] and
+                        s.agent_list()[0].name == source and
+                        s.agent_list()[1].name == target):
+                        edge_stmt = s
+                        break
+
             belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
 
-            color, dashes = "#999999", False
+            # Determine edge styling based on statement type
+            color = "#999999"
+            dashes = False
             arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
             width = 4
 
@@ -3470,13 +3500,17 @@ def get_network(
 
             actual_stmt_type = edge_stmt.__class__.__name__ if edge_stmt else stmt_type
 
+            # Build edge details for dialog box
             edge_details = {
                 'statement_type': actual_stmt_type,
                 'belief': belief,
                 'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
                 'interaction': actual_stmt_type.lower(),
-                'polarity': 'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
-                            'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else 'none',
+                'polarity': (
+                    'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
+                    'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else
+                    'none'
+                ),
                 'support_type': 'database' if include_db_evidence else 'literature',
                 'type': actual_stmt_type
             }
@@ -3499,9 +3533,9 @@ def get_network(
             'nodes': nodes,
             'edges': edges
         }
+
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error in get_network: {str(e)}")
         return {"nodes": [], "edges": [], "error": str(e)}
 
 
