@@ -204,17 +204,20 @@ def main(
         sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        {sudo_prefix} neo4j-admin database import {'--force' if force_import else ''} \\
-          --database=indra \\
+        {sudo_prefix} neo4j-admin database import full {'--force' if force_import else ''} \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
-          --skip-bad-relationships=true
+          --skip-bad-relationships=true \\
+          --strict
         """
         ).rstrip()
         for node_path in nodes_paths_for_import:
             command += f"\\\n --nodes {node_path}"
         for edge_path in edge_paths:
             command += f"\\\n --relationships {edge_path}"
+        # Specify the database name (if not the default "neo4j").
+        # See https://neo4j.com/docs/operations-manual/5/tools/neo4j-admin/neo4j-admin-import/#_parameters
+        command += "\\\n  indra"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
