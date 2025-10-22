@@ -204,7 +204,7 @@ def main(
         sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        {sudo_prefix} neo4j-admin database import full {'--force' if force_import else ''} \\
+        {sudo_prefix} neo4j-admin database import full {'--overwrite-destination' if force_import else ''} \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
           --skip-bad-relationships=true \\
