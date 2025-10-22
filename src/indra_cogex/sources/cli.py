@@ -70,6 +70,14 @@ def _iter_processors() -> Iterable[Type[Processor]]:
     is_flag=True,
     help="If true, skips processors that are missing required input files without erroring.",
 )
+@click.option(
+    "--database_name",
+    type=str,
+    default="neo4j",
+    help="The name of the Neo4j database to import into (default: neo4j). NOTE: The "
+         "database must already exist in the Neo4j instance. It is *not* created at "
+         "import.",
+)
 @verbose_option
 def main(
     process: bool,
@@ -81,6 +89,7 @@ def main(
     with_sudo: bool,
     config: Optional[TextIO],
     skip_failed_processors: bool,
+    database_name: str,
 ):
     """Generate and import Neo4j nodes and edges tables."""
     # Check which nodes labels need to be assembled (i.e. have multiple
@@ -217,7 +226,8 @@ def main(
             command += f"\\\n --relationships {edge_path}"
         # Specify the database name (if not the default "neo4j").
         # See https://neo4j.com/docs/operations-manual/5/tools/neo4j-admin/neo4j-admin-import/#_parameters
-        command += "\\\n  indra"
+        if database_name != "neo4j":
+            command += f"\\\n  {database_name}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
