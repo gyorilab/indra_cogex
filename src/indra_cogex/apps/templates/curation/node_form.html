@@ -5,8 +5,10 @@
 {% block header %}Subnetwork Exploration{% endblock %}
 
 {% block lead %}
-    This application lets you induce a subnetwork over a set of nodes and explore the resulting
-    statements using INDRA CoGEx. For example, try <a href="#" onClick="exampleSubnetwork()">FPLX:MEK,FPLX:ERK,FPLX:RAF</a>
+    This application lets you induce a subnetwork over a set of entities and explore the resulting
+    INDRA statements. The input form atakes a comma separated list of any combination of official gene symbols,
+    HGNC IDs, or any compact URI (CURIE) (e.g., chebi:114785) for any entity type such as small molecules, protein families,
+    biological processes, etc. For example, try <a href="#" onClick="exampleSubnetwork()">IL1B, IL1R1, TRAF6, MAP3K7, chebi:67559</a>
 {% endblock %}
 
 {% block scripts %}

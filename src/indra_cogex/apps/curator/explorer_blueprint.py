@@ -27,13 +27,15 @@ from indra_cogex.client.curation import (
     get_tf_statements,
 )
 from indra_cogex.client.queries import get_stmts_for_mesh, get_stmts_for_stmt_hashes, get_network
-
+from indra_cogex.client import Neo4jClient
 from .utils import get_conflict_source_counts
 from ..utils import (
     remove_curated_pa_hashes,
     remove_curated_statements,
     render_statements,
 )
+from bioregistry import normalize_curie
+from indra.databases import hgnc_client
 from ...client import get_stmts_for_paper, indra_subnetwork, indra_subnetwork_go
 from ...client.neo4j_client import process_identifier
 
@@ -69,7 +71,7 @@ class GeneOntologyForm(FlaskForm):
                     '<a href="#" onclick="event.preventDefault(); document.getElementById('
                     '\'term\').value=\'GO:0003677\'">GO:0003677</a> for Apoptotic Process)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
+    include_db_evidence = BooleanField('Include database evidence',
                                        default=True)
     submit = SubmitField("Submit")
 
@@ -180,7 +182,7 @@ class MeshDiseaseForm(FlaskForm):
         description='Choose a MeSH disease to explore (e.g., <a href="#" onclick="event.preventDefault(); '
                     'document.getElementById(\'term\').value=\'D006009\'">D006009</a> for Pompe Disease)',
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
+    include_db_evidence = BooleanField('Include database evidence',
                                        default=True)
     submit = SubmitField("Submit")
 
@@ -607,12 +609,12 @@ class PaperForm(FlaskForm):
                 """
     )
     include_db_evidence = BooleanField(
-        'Include Database Evidence',
+        'Include database evidence',
         default=True,
         description="Include evidence from curated databases extracted from the given paper"
     )
     filter_curated = BooleanField(
-        "Filter Curated Evidences",
+        "Filter curated evidences",
         default=False,
         description="Do not show statements that have been curated for correctness",
     )
@@ -710,64 +712,64 @@ class NodesForm(FlaskForm):
         validators=[DataRequired()],
         description="Please enter INDRA-flavored CURIEs separated by commas or new lines.",
     )
-    include_db_evidence = BooleanField('Include Database Evidence',
+    include_db_evidence = BooleanField('Include database evidence',
                                        default=True)
     submit = SubmitField("Submit")
 
     def get_nodes(self) -> List[Tuple[str, str]]:
         """
-        Get the CURIEs from the form, handling both newlines and commas as separators.
-
-        Returns
-        -------
-        :
-
-            List of (namespace, identifier) tuples, sorted for consistency
-
-        Raises
-        ------
-        ValueError
-            If any identifier is malformed
+        Collect raw node identifiers without strict CURIE validation.
+        This lets the backend handle flexible normalization.
         """
         if not self.curies.data:
             return []
 
-        # First split into lines, then split each line by commas
+        # Split by newlines and commas
         entries = [
             entry.strip()
             for line in self.curies.data.split("\n")
-            for entry in line.strip().split(",")
-            if entry.strip()  # Only keep non-empty entries
+            for entry in line.split(",")
+            if entry.strip()
         ]
 
-        # Process all valid entries and collect invalid ones
-        processed_nodes = set()
-        invalid_entries = []
+        # Just return them as raw strings
+        return entries
 
-        for entry in entries:
-            try:
-                if ':' in entry:
-                    ns, id_part = entry.split(':', maxsplit=1)
-                    if ns.strip() and id_part.strip():  # Ensure both parts exist
-                        clean_entry = f"{ns.strip()}:{id_part.strip()}"
-                        processed = tuple(process_identifier(clean_entry))
-                        processed_nodes.add(processed)
-                    else:
-                        invalid_entries.append(entry)
-                else:
-                    invalid_entries.append(entry)
-            except ValueError:
-                invalid_entries.append(entry)
 
-        if invalid_entries:
-            self.curies.errors.append(
+def parse_node_list(node_list: List[str], client: Neo4jClient) -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Parse and normalize a list of node inputs into (prefix, identifier) tuples."""
+    normalized_nodes = []
+    errors = []
 
-                f"Invalid identifier(s): {', '.join(invalid_entries)}. "
-                "Expected format: 'namespace:identifier' (e.g., 'FPLX:MEK')"
-            )
-            return []
+    for entry in node_list:
+        entry = entry.strip()
+        if not entry:
+            continue
 
-        return sorted(processed_nodes)
+        # This handles: "hgnc:10289", "HGNC:10289", "ncbigene:5594", etc.
+        normalized = normalize_curie(entry)
+
+        if normalized:
+            prefix, identifier = normalized.split(":", 1)
+            normalized_nodes.append((prefix, identifier))
+            continue
+
+        if entry.isdigit():
+            normalized_nodes.append(("hgnc", entry))
+            continue
+
+        # This handles: "MEK", "MAPK1", "TP53", etc.
+        hgnc_id = hgnc_client.get_hgnc_id(entry)
+
+        if hgnc_id:
+            # Successfully found as a gene name
+            normalized_nodes.append(("hgnc", hgnc_id))
+            continue
+
+        # If none of the above worked, add to errors
+        errors.append(entry)
+
+    return normalized_nodes, errors
 
 
 @explorer_blueprint.route("/subnetwork", methods=["GET", "POST"])
@@ -776,9 +778,23 @@ def subnetwork():
     """Get all statements induced by the nodes."""
     form = NodesForm()
 
-    if form.validate_on_submit():  # Handle form submission
-        nodes = form.get_nodes()
-        logger.info(f"Processed nodes: {nodes}")
+    if form.validate_on_submit():
+        # Clear old session data
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
+        session.pop('include_db_evidence', None)
+
+        raw_nodes = form.get_nodes()
+
+        if not raw_nodes:
+            return render_template("curation/node_form.html", form=form)
+
+        # Parse and normalize nodes
+        nodes, errors = parse_node_list(raw_nodes, client)
+
+        if errors:
+            flask.flash(f"Could not resolve the following inputs: {', '.join(errors)}")
+
         if not nodes:
             return render_template("curation/node_form.html", form=form)
 
@@ -787,34 +803,42 @@ def subnetwork():
             return render_template("curation/node_form.html", form=form)
 
         include_db_evidence = form.include_db_evidence.data
-        # Redirect to the same route with query parameters
-        nodes_arg = ','.join([f"{prefix}:{identifier}"
-                              for prefix, identifier in nodes])
+        nodes_arg = ','.join(f"{prefix}:{identifier}" for prefix, identifier in nodes)
+
         return redirect(
             url_for('.subnetwork',
                     nodes=nodes_arg,
                     include_db_evidence=str(include_db_evidence).lower()))
 
-    # If it's a GET request or form is not valid
-    include_db_evidence = request.args.get('include_db_evidence',
-                                           'false').lower() == 'true'
-    nodes = [tuple(node.split(':', maxsplit=1))
-             for node in request.args.get('nodes', '').split(',') if node]
+    # GET request handling
+    include_db_evidence = request.args.get('include_db_evidence', 'true').lower() == 'true'
+    raw_nodes = [node.strip() for node in request.args.get('nodes', '').split(',') if node.strip()]
 
-    if nodes: 
+    if raw_nodes:
+        # Parse and normalize nodes (same as POST)
+        nodes, errors = parse_node_list(raw_nodes, client)
 
-        # Store for filtering Complex statements in get_network
-        input_node_names = [identifier for prefix, identifier in nodes]
-        session['subnetwork_input_nodes'] = input_node_names
+        if errors:
+            flask.flash(f"Could not resolve: {', '.join(errors)}")
+            form.include_db_evidence.data = include_db_evidence
+            return render_template("curation/node_form.html", form=form)
 
+        if not nodes:
+            form.include_db_evidence.data = include_db_evidence
+            return render_template("curation/node_form.html", form=form)
+
+        # Clear old session data
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
+
+        # Build HTML badges for nodes
         nodes_html = " ".join(
-            f"""\
-            <a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">
-                {prefix}:{identifier}
-            </a>"""
+            f'<a class="badge badge-info" href="https://bioregistry.io/{prefix}:{identifier}" target="_blank">'
+            f'{prefix}:{identifier}</a>'
             for prefix, identifier in nodes
         )
 
+        # Get statements from database
         stmts, source_counts = indra_subnetwork(
             nodes=nodes,
             client=client,
@@ -823,12 +847,24 @@ def subnetwork():
             return_source_counts=True,
         )
 
+        # Extract gene names for filtering Complex statements
+        from collections import Counter
+        gene_counts = Counter(
+            agent.name
+            for stmt in stmts
+            for agent in stmt.agent_list()
+            if agent and agent.name
+        )
+
+        # Store top N gene names (where N = number of input nodes)
+        top_genes = {name for name, _ in gene_counts.most_common(len(nodes))}
+        session['subnetwork_input_nodes'] = list(top_genes)
+
         return _enrich_render_statements(
             stmts,
             title="Subnetwork Explorer",
             description=f"""\
             The subnetwork explorer shows statements between the following nodes.
-            {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
             </p>
             <p>
@@ -842,8 +878,7 @@ def subnetwork():
             identifier=','.join(f"{ns}:{id}" for ns, id in nodes)
         )
 
-    # If no nodes provided, just render the form
-    # Set the checkboxstate based on URL parameter
+    # No nodes provided - render form
     form.include_db_evidence.data = include_db_evidence
     return render_template("curation/node_form.html", form=form)
 
@@ -851,22 +886,19 @@ def subnetwork():
 @explorer_blueprint.route("/api/get_network_from_hashes", methods=["POST"])
 def get_network_from_hashes():
     """Get network visualization data from statement hashes."""
-    logger.info("Starting get_network_from_hashes endpoint")
+
+    # Check if session is ready (handles race conditions)
+    if 'statement_hashes' not in session:
+        return jsonify({
+            "nodes": [],
+            "edges": [],
+            "error": "Session not ready. Please wait for page to fully load."
+        }), 202
 
     data = request.json
     include_db_evidence = data.get('include_db_evidence', True)
 
-    # Use simplified get_network function which gets statements from session
-    logger.info("Generating network visualization using statements from session")
-    network_data = get_network(
-        include_db_evidence=include_db_evidence
-    )
-
-    if "error" in network_data:
-        logger.warning(f"Error generating network: {network_data['error']}")
-    else:
-        logger.info(
-            f"Network generated with {len(network_data.get('nodes', []))} nodes and {len(network_data.get('edges', []))} edges")
+    network_data = get_network(include_db_evidence=include_db_evidence)
 
     return jsonify(network_data)
 
