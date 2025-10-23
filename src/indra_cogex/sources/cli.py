@@ -11,23 +11,15 @@ from textwrap import dedent
 from typing import Iterable, Optional, TextIO, Type
 
 import click
-import pystow
 from more_click import verbose_option
 
 from . import processor_resolver
 from .processor import Processor
-from ..assembly import NodeAssembler
+from ..assembly import NodeAssembler, get_assembled_path
 
 
 def _iter_processors() -> Iterable[Type[Processor]]:
     return iter(processor_resolver)
-
-
-def _get_assembled_path(node_type: str) -> Path:
-    nodes_path = pystow.join(
-        "indra", "cogex", "assembled", name=f"nodes_{node_type}.tsv.gz"
-    )
-    return Path(nodes_path)
 
 
 @click.command()
@@ -169,7 +161,7 @@ def main(
             # Add nodes to assembly if needed
             for node_type, nodes in nodes_by_type.items():
                 if node_type in to_assemble:
-                    assembled_path = _get_assembled_path(node_type)
+                    assembled_path = get_assembled_path(node_type)
                     if force_assemble or (assemble and not assembled_path.exists()):
                         # Instantiate the assembler or add nodes to existing assembler
                         if node_type not in node_assemblers:
@@ -178,7 +170,7 @@ def main(
         elif processed:  # force_process=False, process=True/False
             # If we don't need to assemble, we'll just skip this
             for node_type, nodes_indra_path in processor_to_assemble_paths.items():
-                assembled_path = _get_assembled_path(node_type)
+                assembled_path = get_assembled_path(node_type)
                 if force_assemble or (assemble and not assembled_path.exists()):
                     # Instantiate the assembler or add nodes to existing assembler
                     if node_type not in node_assemblers:
@@ -193,7 +185,7 @@ def main(
 
     # Assemble nodes if we got any node assemblers above
     for node_type, assembler in node_assemblers.items():
-        assembled_path = _get_assembled_path(node_type)
+        assembled_path = get_assembled_path(node_type)
         click.secho(f"Assembling {node_type}", fg="green")
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
@@ -203,7 +195,7 @@ def main(
 
     # The assembled paths are added to the list of nodes to import separately
     for node_type in to_assemble:
-        assembled_path = _get_assembled_path(node_type)
+        assembled_path = get_assembled_path(node_type)
         if assembled_path.exists():
             nodes_paths_for_import.append(assembled_path)
 
@@ -309,10 +301,9 @@ def manual_assembly(force_assemble: bool = False):
     force_assemble :
         If True, reassemble the nodes even if the output file already exists
     """
-    from indra_cogex.sources.cli import _get_assembled_path
     to_assemble = get_pickle_paths()
     for node_type, paths in to_assemble.items():
-        assembled_path = _get_assembled_path(node_type)
+        assembled_path = get_assembled_path(node_type)
         assemble_type(paths, assembled_path, force_assemble=force_assemble)
 
 

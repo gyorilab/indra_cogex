@@ -138,14 +138,14 @@ def test_get_pathways_for_gene():
 @pytest.mark.nonpublic
 def test_get_shared_pathways_for_gene():
     client = _get_client()
-    gene1 = ("HGNC", "1097")
-    gene2 = ("HGNC", "6407")
+    gene1 = ("HGNC", "1097")  # BRAF
+    gene2 = ("HGNC", "6407")  # KRAS
     pathways = get_shared_pathways_for_genes([gene1, gene2], client=client)
     assert pathways
     assert isinstance(pathways[0], Node)
     assert pathways[0].db_ns in {"WIKIPATHWAYS", "REACTOME"}
     assert ("WIKIPATHWAYS", "WP4685") in {p.grounding() for p in pathways}
-    assert ("REACTOME", "R-HSA-6802952") in {p.grounding() for p in pathways}
+    assert ("REACTOME", "R-HSA-6802949") in {p.grounding() for p in pathways}
 
 
 @pytest.mark.nonpublic

@@ -338,7 +338,7 @@ def _get_dub_curies():
     return _make_curies(
         hgnc_id
         for _, hgnc_id in bio_ontology.get_children(
-            "FPLX", "Deubiquitinase", ns_filter="HGNC"
+            "FPLX", "Deubiquitinase", ns_filter={"HGNC"}
         )
     )
 
@@ -363,7 +363,7 @@ def get_dub_statements(
     )
 
 
-def _make_curies(hgnc_ids: List[str]) -> List[str]:
+def _make_curies(hgnc_ids: Iterable[str]) -> List[str]:
     return [f"hgnc:{hgnc_id}" for hgnc_id in sorted(hgnc_ids, key=int)]
 
 

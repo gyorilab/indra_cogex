@@ -504,7 +504,7 @@ def count_phosphosites(*, client: Neo4jClient) -> int:
 
 def kinase_ora(
     client: Neo4jClient,
-    phosphosite_ids: Iterable[Tuple[str, str]],  # List of (gene_id, site) tuples
+    phosphosite_ids: Iterable[Tuple[str, str]],  # List of (gene_curie, site) tuples
     background_phosphosite_ids: Optional[Collection[Tuple[str, str]]] = None,
     *,
     minimum_evidence_count: Optional[int] = 1,
