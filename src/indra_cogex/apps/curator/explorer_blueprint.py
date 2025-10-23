@@ -865,7 +865,6 @@ def subnetwork():
             title="Subnetwork Explorer",
             description=f"""\
             The subnetwork explorer shows statements between the following nodes.
-            {_database_text("Pathway Commons")}
             {EVIDENCE_TEXT}
             </p>
             <p>
