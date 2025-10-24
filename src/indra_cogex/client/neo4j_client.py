@@ -12,7 +12,7 @@ from indra.config import get_config
 from indra.databases import identifiers
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
-from neo4j import GraphDatabase, Transaction, unit_of_work
+from neo4j import GraphDatabase, ManagedTransaction, unit_of_work
 
 from indra_cogex.representation import Node, Relation, norm_id, \
     triple_query, triple_parameter_query
@@ -70,6 +70,8 @@ class Neo4jClient:
             auth=auth,
             max_connection_lifetime=3 * 60,
         )
+        self.driver.verify_connectivity()
+        logger.info("Connected to neo4j graph at %s", url)
 
     def __del__(self):
         # Safely shut down the driver as a Neo4jClient object is garbage collected
@@ -115,7 +117,7 @@ class Neo4jClient:
     def create_tx(
         self,
         query: str,
-        query_params: Optional[Mapping[str, Any]] = None,
+        query_params: Optional[dict[str, Any]] = None,
     ):
         """Run a transaction which writes to the neo4j instance.
 
@@ -127,7 +129,7 @@ class Neo4jClient:
             Parameters associated with the query.
         """
         with self.driver.session() as session:
-            return session.write_transaction(
+            return session.execute_write(
                 do_cypher_tx, query, query_params=query_params
             )
 
@@ -164,17 +166,17 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/4.4/api.html#session-construction
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#sessions-transactions
         # and
-        # https://neo4j.com/docs/api/python-driver/4.4/api.html#explicit-transactions
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#transaction
         # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#managed-transactions-transaction-functions
         with self.driver.session() as session:
             # do_cypher_tx is ultimately called as
             # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
             # where *args and **kwargs are passed through unchanged, meaning
             # do_cypher_tx can expect query and **query_params
-            values = session.read_transaction(
+            values = session.execute_read(
                 do_cypher_tx, query, **query_params
             )
 
@@ -989,7 +991,7 @@ class Neo4jClient:
         """Create a single property node index.
 
         Reference:
-        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-only-if-it-does-not-already-exist
+        https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-a-single-property-range-index-for-nodes
 
         Parameters
         ----------
@@ -1003,6 +1005,13 @@ class Neo4jClient:
             If True, ignore the indexes that already exist. If False,
             raise error if index already exists. Default: False.
         """
+        # Todo:
+        #  Checkout property constraints:
+        #  https://neo4j.com/docs/cypher-manual/25/constraints/managing-constraints/#create-property-type-constraints
+        #  And the new index types since Neo4j 5.x:
+        #  https://neo4j.com/docs/upgrade-migration-guide/current/version-5/migration/planning/#_choosing_a_replacement_index
+        #  Consider using the TEXT index (requires property type constraint):
+        #  https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-text-index
         logger.info(
             f"Creating index '{index_name}' for label '{label}' on property "
             f"'{property_name}'. Index is created in background and may not "
@@ -1024,7 +1033,7 @@ class Neo4jClient:
         IF NOT EXISTS option to silently ignore if the index already exists.
 
         Reference:
-        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-for-relationships
+        https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-a-single-property-range-index-for-relationships
 
         Parameters
         ----------
@@ -1181,11 +1190,10 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 
 
 # Follows example here:
-# https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
-# and from the docstring of neo4j.Session.read_transaction
+# https://neo4j.com/docs/api/python-driver/6.0/api.html#neo4j.unit_of_work
 @unit_of_work()
 def do_cypher_tx(
-        tx: Transaction,
+        tx: ManagedTransaction,
         query: str,
         **query_params
 ) -> List[List]:
@@ -1193,4 +1201,3 @@ def do_cypher_tx(
     # run-time
     result = tx.run(query, parameters=query_params)
     return [record.values() for record in result]
-
