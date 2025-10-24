@@ -210,6 +210,8 @@ def main(
 
     # Import the nodes
     if run_import:
+        # Documentation for neo4j-admin import:
+        # https://neo4j.com/docs/operations-manual/2025.09/import/#import-tool-full
         sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
@@ -225,7 +227,7 @@ def main(
         for edge_path in edge_paths:
             command += f"\\\n --relationships {edge_path}"
         # Specify the database name (if not the default "neo4j").
-        # See https://neo4j.com/docs/operations-manual/5/tools/neo4j-admin/neo4j-admin-import/#_parameters
+        # https://neo4j.com/docs/operations-manual/2025.09/import/#_parameters
         if database_name != "neo4j":
             command += f"\\\n  {database_name}"
 
