@@ -97,12 +97,15 @@ def _check_noinfinity(value: Union[float | str]):
     if isinstance(value, str):
         try:
             fval = float(value)
+        except ValueError:
+            # Not convertible to float
+            pass
+        else:
+            # Is convertible to float
             if fval == float("inf") or fval == float("-inf"):
                 raise InfinityValueError(
                     f"Float value '{value}' is infinity, which is not allowed in Neo4j."
                 )
-        except ValueError:
-            pass
 
 
 def data_validator(data_type: str, value: Any):
