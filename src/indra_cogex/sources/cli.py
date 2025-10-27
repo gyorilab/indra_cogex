@@ -56,7 +56,7 @@ def _iter_processors() -> Iterable[Type[Processor]]:
     "--force-import",
     is_flag=True,
     help="If true, forces the import even if the database already exists. This "
-         "sets the --force flag of neo4j-admin import.",
+         "sets the --overwrite-destination flag of ``neo4j-admin import``.",
 )
 @click.option(
     "--with-sudo",
