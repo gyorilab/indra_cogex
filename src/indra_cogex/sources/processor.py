@@ -203,6 +203,7 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Node serialization", unit_scale=True)
         )
 
+        seen_ids = set()
         with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
@@ -213,6 +214,14 @@ class Processor(ABC):
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
+                        node_id = node_row[0]  # The id:ID column must be unique
+                        if node_id in seen_ids:
+                            # Neo4j requires unique node IDs
+                            raise ValueError(
+                                f"Duplicate node ID '{node_id}' found when dumping "
+                                f"nodes for {processor_name}."
+                            )
+                        seen_ids.add(node_id)
                         node_sample_writer.writerow(node_row)
                         node_writer.writerow(node_row)
             # Write remaining nodes
