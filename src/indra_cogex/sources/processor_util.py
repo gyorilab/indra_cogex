@@ -4,6 +4,7 @@
 # for available data types.
 import csv
 import gzip
+from tqdm import tqdm
 from typing import Literal, Any, Union
 
 NEO4J_DATA_TYPES = (
@@ -280,17 +281,16 @@ def check_duplicated_nodes(nodes_tsv_gz_file) -> set[str]:
     Raises
     ------
     DuplicateNodeIDError
-        If duplicate node IDs are found in either file
-    MissingNodeIDError
-        If there is a mismatch between the two files
+        If duplicate node IDs are found in nodes_tsv_gz_file.
     """
     # Check for duplicate node IDs in the nodes_tsv_gz_file
     node_ids = set()
     with gzip.open(nodes_tsv_gz_file, "rt") as f:
+        tqdm.write(f"Checking {nodes_tsv_gz_file}")
         reader = csv.reader(f, delimiter="\t")
         header = next(reader)
         id_index = header.index("id:ID")
-        for row in reader:
+        for row in tqdm(reader, unit="nodes", leave=False):
             id_value = row[id_index]
             if id_value in node_ids:
                 raise DuplicateNodeIDError(
@@ -325,7 +325,8 @@ def check_missing_node_ids_in_edges(edges_tsv_gz_file, node_ids: set[str]):
         message = (
             "Edge ({start})-[{type}]->({end}) references missing node ID {missing_id}."
         )
-        for row in reader:
+        tqdm.write(f"Checking {edges_tsv_gz_file}")
+        for row in tqdm(reader, unit="edges", leave=False):
             type_value = row[type_index]
             start_id_value = row[start_id_index]
             end_id_value = row[end_id_index]
