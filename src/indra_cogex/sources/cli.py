@@ -12,6 +12,7 @@ from typing import Iterable, Optional, TextIO, Type
 
 import click
 from more_click import verbose_option
+from tqdm import tqdm
 
 from indra_cogex.sources.processor_util import (
     check_duplicated_nodes,
@@ -220,12 +221,20 @@ def main(
             nodes_paths_for_import.append(assembled_path)
 
     if check_ingestion_files:
+        click.secho("Checking ingestion files...", fg="green", bold=True)
+        # Check for duplicated node IDs across all node files
         node_ids = set()
-        for node_path in nodes_paths_for_import:
+        for node_path in tqdm(
+            nodes_paths_for_import, desc="Node duplication check", unit="node file"
+        ):
             checked_nodes = check_duplicated_nodes(nodes_tsv_gz_file=node_path)
             node_ids |= checked_nodes
 
-        for edge_path in edge_paths:
+        # Check for missing node IDs in edge files. Any node IDs in edges
+        # that are not in the collected node_ids will be reported.
+        for edge_path in tqdm(
+            edge_paths, desc="Missing node check", unit="edge file"
+        ):
             check_missing_node_ids_in_edges(
                 edges_tsv_gz_file=edge_path, node_ids=node_ids
             )
