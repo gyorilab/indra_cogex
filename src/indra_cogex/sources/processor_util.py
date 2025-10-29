@@ -82,6 +82,12 @@ class MissingNodeIDError(ValueError):
     """Raised when a non-existent node ID referenced in a relationship file."""
 
 
+class LabelNotAllowedError(ValueError):
+    """Raised when a node label is not allowed."""
+    # This is used raised when during node dumping, somehow a node with another
+    # label than the one intended to be dumped is encountered.
+
+
 def _check_no_newlines(value: str):
     if "\n" in value or "\r" in value:
         raise NewLineInStringError(

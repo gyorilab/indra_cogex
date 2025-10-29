@@ -211,7 +211,10 @@ def main(
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
         Processor._dump_nodes_to_path_static(
-            "assembled nodes", assembled_nodes, assembled_path
+            "assembled nodes",
+            assembled_nodes,
+            assembled_path,
+            allowed_labels=[node_type],
         )
 
     # The assembled paths are added to the list of nodes to import separately
@@ -293,6 +296,7 @@ def get_pickle_paths() -> dict[str, list[Path]]:
 def assemble_type(
     pickle_paths: list[Path],
     assembled_path: Path,
+    label: str,
     force_assemble: bool = False,
 ):
     """Assemble nodes of a given type from the given pickle paths
@@ -303,6 +307,8 @@ def assemble_type(
         A list of the input paths to the pickled nodes
     assembled_path :
         The path to the output file where the assembled nodes will be saved
+    label :
+        The node label the nodes should have
     force_assemble :
         If True, reassemble the nodes even if the output file already exists
     """
@@ -335,7 +341,7 @@ def assemble_type(
     print(f"Sorting {len(assembled_nodes)} assembled nodes")
     assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
     Processor._dump_nodes_to_path_static(
-        "assembled nodes", assembled_nodes, assembled_path
+        "assembled nodes", assembled_nodes, assembled_path, allowed_labels=[label]
     )
 
 
@@ -350,7 +356,9 @@ def manual_assembly(force_assemble: bool = False):
     to_assemble = get_pickle_paths()
     for node_type, paths in to_assemble.items():
         assembled_path = get_assembled_path(node_type)
-        assemble_type(paths, assembled_path, force_assemble=force_assemble)
+        assemble_type(
+            paths, assembled_path, force_assemble=force_assemble, label=node_type
+        )
 
 
 if __name__ == "__main__":
