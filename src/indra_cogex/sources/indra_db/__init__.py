@@ -374,41 +374,65 @@ class EvidenceProcessor(Processor):
                 "indra_evidence", yield_index, "PUBMED", pmid, "has_citation"
             )
 
-    def _dump_nodes(self) -> Path:
+    def _dump_nodes(self) -> tuple[dict[str, Path], dict[str, list[Node]]]:
         # This overrides the default implementation in Processor because
         # we want to process Evidence nodes in batches
         paths_by_type = {}
         nodes_by_type = defaultdict(list)
+
         # Process Evidence and Publication nodes differently
         evid_node_type = "Evidence"
         pmid_node_type = "Publication"
-        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(evid_node_type)
-        paths_by_type[evid_node_type] = nodes_path
+        (
+            evidence_nodes_path,
+            evidence_nodes_indra_path,
+            evidence_nodes_sample_path,
+        ) = self._get_node_paths(evid_node_type)
+        paths_by_type[evid_node_type] = evidence_nodes_path
+
+        (
+            publication_nodes_path,
+            publication_nodes_indra_path,
+            publication_sample_path,
+        ) = self._get_node_paths(pmid_node_type)
+        paths_by_type[pmid_node_type] = publication_nodes_path
+
         # From each batch get the nodes by type but only process Evidence nodes at the moment
-        for bidx, nodes in enumerate(self.get_nodes()):
+        for bidx, node_batch in enumerate(self.get_nodes()):
             logger.info(f"Processing batch {bidx}")
-            for node in nodes:
+            for node in node_batch:
                 nodes_by_type[node.labels[0]].append(node)
-            # We'll append all batches to a single tsv file
+
+            # We'll append all evidence node batches to a single tsv file
             write_mode = "wt"
             if bidx > 0:
-                sample_path = None
+                evidence_nodes_sample_path = None
                 write_mode = "at"
-            nodes = sorted(
+            evidence_nodes_batch = sorted(
                 nodes_by_type[evid_node_type], key=lambda x: (x.db_ns, x.db_id)
             )
-            self._dump_nodes_to_path(nodes, nodes_path, sample_path, write_mode)
-            # Remove Evidence nodes batch because we don't need to keep them in memory,
-            # keep the Publication nodes since we haven't processed them yet
+            self._dump_nodes_to_path(
+                evidence_nodes_batch,
+                evidence_nodes_path,
+                [evid_node_type],
+                evidence_nodes_sample_path,
+                write_mode,
+            )
+
+            # Remove the latest Evidence node batch to free up memory, but keep
+            # the Publication nodes since we haven't processed them yet.
             nodes_by_type[evid_node_type] = []
+
         # Now process the Publication nodes
-        nodes_path, nodes_indra_path, sample_path = self._get_node_paths(pmid_node_type)
-        paths_by_type[pmid_node_type] = nodes_path
-        with open(nodes_indra_path, "wb") as fh:
-            pickle.dump(nodes, fh)
-        nodes = sorted(nodes_by_type[pmid_node_type], key=lambda x: (x.db_ns, x.db_id))
-        nodes_by_type[pmid_node_type] = nodes
-        self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+        pubmed_nodes = sorted(
+            nodes_by_type[pmid_node_type], key=lambda x: (x.db_ns, x.db_id)
+        )
+        with open(publication_nodes_indra_path, "wb") as fh:
+            pickle.dump(pubmed_nodes, fh)
+        self._dump_nodes_to_path(
+            pubmed_nodes, publication_nodes_path, [pmid_node_type], publication_sample_path
+        )
+
         return paths_by_type, dict(nodes_by_type)
 
     @classmethod
