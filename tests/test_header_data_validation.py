@@ -4,13 +4,14 @@ from typing import Any
 
 from indra_cogex.sources import Processor
 from indra_cogex.representation import Node, Relation
-from indra_cogex.sources.processor import validate_headers
+from indra_cogex.sources.processor import validate_headers, validate_nodes
 from indra_cogex.sources.processor_util import (
     data_validator,
     DataTypeError,  # If the value does not validate against the Neo4j data type
     UnknownTypeError,  # If data_type is not recognized as a Neo4j data type
     NewLineInStringError,  # Raised when a string value contains a newline character
     InfinityValueError,  # Raised when a float value is +/-infinity
+    LabelNotAllowedError,  # Raised when a node label is not in the allowed set
 )
 
 
@@ -440,3 +441,21 @@ def test_array_data_value_validator_good():
             mp.dump()
         except Exception as e:
             assert False, f"Unexpected exception: {repr(e)}"
+
+
+def test_node_label_validator_bad():
+    try:
+        _ = list(
+            validate_nodes(
+                nodes=[
+                    Node(db_ns="TEST", db_id="1", labels=["InvalidLabel"], data={})
+                ],
+                header=["id:ID", ":LABEL"],
+                allowed_labels=["ValidLabel"],
+            )
+        )
+    except Exception as e:
+        assert isinstance(e, LabelNotAllowedError)
+        assert "InvalidLabel" in str(e)
+    else:
+        assert False, "Expected exception"
