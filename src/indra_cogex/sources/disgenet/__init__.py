@@ -69,7 +69,11 @@ class DisgenetProcessor(Processor):
         for hgnc_id in self.gene_df["hgnc_id"].unique():
             yield Node.standardized(db_ns="HGNC", db_id=hgnc_id, labels=["BioEntity"])
 
-        for dbsnp_id in self.variant_df["snpId"].unique():
+        dbsnp_id_set = set(self.variant_df["snpId"].unique()).union(
+            set(self.variant_gene_df["snpId"].unique())
+        )
+
+        for dbsnp_id in dbsnp_id_set:
             yield Node.standardized(
                 db_ns="DBSNP", db_id=dbsnp_id, name=dbsnp_id, labels=["BioEntity"]
             )
