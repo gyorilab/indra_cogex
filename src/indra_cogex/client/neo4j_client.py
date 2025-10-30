@@ -4,7 +4,18 @@ import inspect
 import logging
 from functools import lru_cache, wraps
 from itertools import count
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    Literal,
+)
 import json
 
 import neo4j.graph
@@ -1053,6 +1064,38 @@ class Neo4jClient:
             f"CREATE INDEX {index_name} FOR ()-[r:{rel_type}]-() ON (r.{property_name})"
         )
         self.create_tx(create_query)
+
+    def create_vector_node_index(
+        self,
+        index_name: str,
+        label: str,
+        property_name: str,
+        dim: int,
+        algorithm: Literal["cosine", "euclidean"] = "cosine",
+    ):
+        # todo: Since 2025.10 there is also a dedicated vector index type:
+        #  https://neo4j.com/docs/operations-manual/2025.10/import/#import-tool-header-format-properties
+        #  Scroll down to: "Special considerations for vector data types introduced in 2025.10"
+        if algorithm not in ["cosine", "euclidean"]:
+            raise ValueError(
+                "Only 'cosine' and 'euclidean' algorithms are supported."
+            )
+        logger.info(
+            f"Creating vector index '{index_name}' for label '{label}' on property "
+            f"'{property_name}' with '{algorithm}' similarity function. "
+            f"Index is created in background and may not be immediately available."
+        )
+        vector_index_query = f"""\
+        CREATE VECTOR INDEX {index_name} IF NOT EXISTS 
+        FOR (m:{label})
+        ON m.{property_name}
+        OPTIONS {{ 
+            indexConfig: {{
+                `vector.dimensions`: {dim},
+                `vector.similarity_function`: '{algorithm}'
+            }}
+        }}"""
+        self.create_tx(vector_index_query)
 
     def check_curie_exists(self, agent:  Union[str, Tuple[str, str]]) -> bool:
         """Check if an agent with the given id exists in the database.
