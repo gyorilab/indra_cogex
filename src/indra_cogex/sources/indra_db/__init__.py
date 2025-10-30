@@ -232,7 +232,7 @@ class EvidenceProcessor(Processor):
         if not self.stmt_fname.exists():
             raise FileNotFoundError(f"No such file: {self.stmt_fname}")
 
-    def get_nodes(self, num_rows: Optional[int] = None) -> Iterable[Node]:
+    def get_nodes(self, num_rows: Optional[int] = None) -> Iterable[list[Node]]:
         """Get INDRA Evidence and Publication nodes"""
         # First, we need to figure out which Statements were actually
         # selected in the DbProcessor and only include evidences for those.
@@ -436,7 +436,7 @@ class EvidenceProcessor(Processor):
         return paths_by_type, dict(nodes_by_type)
 
     @classmethod
-    def _get_node_paths(cls, node_type: str) -> Path:
+    def _get_node_paths(cls, node_type: str) -> tuple[Path, Optional[Path], Path]:
         if node_type == "Publication":
             return super()._get_node_paths(node_type)
         elif node_type == "Evidence":
