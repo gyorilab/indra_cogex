@@ -6,7 +6,7 @@ import logging
 import os
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, url_for as flask_url_for
 from flask_bootstrap import Bootstrap4
 from flask_session import Session
 from indralab_auth_tools.auth import auth, config_auth
@@ -33,14 +33,25 @@ from indra_cogex.apps.search import search_blueprint
 logger = logging.getLogger(__name__)
 
 
-app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
+ROOT_PATH = os.environ.get("DISCOVERY_ROOT_PATH")
 
-#AUTO-CREATE SESSION DIRECTORY (No manual bash commands needed!)
+
+def url_for(endpoint, **values):
+    """Custom url_for to handle ROOT_PATH if set."""
+    if ROOT_PATH:
+        with_values = flask_url_for(endpoint, **values)
+        return ROOT_PATH.rstrip("/") + with_values
+    return flask_url_for(endpoint, **values)
+
+app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
+app.jinja_env.globals['url_for'] = url_for
+
+# AUTO-CREATE SESSION DIRECTORY (No manual bash commands needed!)
 SESSION_DIR = '/tmp/flask_session'
 Path(SESSION_DIR).mkdir(parents=True, exist_ok=True)
 logger.info(f"Session directory created/verified at: {SESSION_DIR}")
 
-#SERVER-SIDE SESSION CONFIGURATION
+# SERVER-SIDE SESSION CONFIGURATION
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = SESSION_DIR
 app.config['SESSION_PERMANENT'] = False
