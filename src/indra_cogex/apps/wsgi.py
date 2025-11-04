@@ -80,6 +80,7 @@ app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(32)
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 app.config["EXPLAIN_TEMPLATE_LOADING"] = False
+app.config["APPLICATION_ROOT"] = ROOT_PATH.rstrip("/") if ROOT_PATH else "/"
 
 # INITIALIZE SERVER-SIDE SESSIONS (After SECRET_KEY is set)
 Session(app)
