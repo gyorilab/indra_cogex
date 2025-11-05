@@ -1,3 +1,5 @@
+import csv
+import gzip
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -12,6 +14,10 @@ from indra_cogex.sources.processor_util import (
     NewLineInStringError,  # Raised when a string value contains a newline character
     InfinityValueError,  # Raised when a float value is +/-infinity
     LabelNotAllowedError,  # Raised when a node label is not in the allowed set
+    DuplicateNodeIDError,  # Raised when duplicate node IDs are found
+    MissingNodeIDError,  # Raised when an edge file is missing an ID
+    check_duplicated_nodes,
+    check_missing_node_ids_in_edges,
 )
 
 
@@ -459,3 +465,110 @@ def test_node_label_validator_bad():
         assert "InvalidLabel" in str(e)
     else:
         assert False, "Expected exception"
+
+
+def test_node_label_validator_good():
+    try:
+        _ = list(
+            validate_nodes(
+                nodes=[
+                    Node(db_ns="TEST", db_id="1", labels=["ValidLabel"], data={})
+                ],
+                header=["id:ID", ":LABEL"],
+                allowed_labels=["ValidLabel"],
+            )
+        )
+    except Exception as e:
+        assert False, f"Unexpected exception: {repr(e)}"
+
+
+def test_duplicate_node_id_check_bad():
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "nodes.tsv.gz"
+
+        # Write a nodes file with duplicate IDs
+        with gzip.open(path, "wt") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(["id:ID", ":LABEL"])
+            writer.writerow(["ns:1", "LabelA"])
+            writer.writerow(["ns:1", "LabelB"])
+
+        try:
+            check_duplicated_nodes(nodes_tsv_gz_file=path)
+        except Exception as e:
+            assert isinstance(e, DuplicateNodeIDError)
+            assert "ns:1" in str(e)
+        else:
+            assert False, "Expected exception"
+
+
+def test_duplicate_node_id_check_good():
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "nodes.tsv.gz"
+
+        # Write a nodes file without duplicate IDs
+        with gzip.open(path, "wt") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(["id:ID", ":LABEL"])
+            writer.writerow(["ns:1", "LabelA"])
+            writer.writerow(["ns:2", "LabelB"])
+
+        try:
+            check_duplicated_nodes(nodes_tsv_gz_file=path)
+        except Exception as e:
+            assert False, f"Unexpected exception: {repr(e)}"
+
+
+def test_missing_node_id_bad():
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "edges.tsv.gz"
+
+        # Write an edges file
+        with gzip.open(path, "wt") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                [
+                    ":START_ID",
+                    ":END_ID",
+                    ":TYPE",
+                ]
+            )
+            writer.writerow(["ns:1", "ns:2", "RELATES_TO"])
+            writer.writerow(["ns:1", "ns:3", "RELATES_TO"])
+
+        try:
+            all_nodes = {"ns:1", "ns:2"}  # ns:3 is missing
+            check_missing_node_ids_in_edges(
+                edges_tsv_gz_file=path, node_ids=all_nodes
+            )
+        except Exception as e:
+            assert isinstance(e, MissingNodeIDError)
+            assert "ns:3" in str(e)
+        else:
+            assert False, "Expected exception"
+
+
+def test_missing_node_id_good():
+    with TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "edges.tsv.gz"
+
+        # Write an edges file
+        with gzip.open(path, "wt") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(
+                [
+                    ":START_ID",
+                    ":END_ID",
+                    ":TYPE",
+                ]
+            )
+            writer.writerow(["ns:1", "ns:2", "RELATES_TO"])
+            writer.writerow(["ns:1", "ns:3", "RELATES_TO"])
+
+        try:
+            all_nodes = {"ns:1", "ns:2", "ns:3"}
+            check_missing_node_ids_in_edges(
+                edges_tsv_gz_file=path, node_ids=all_nodes
+            )
+        except Exception as e:
+            assert False, f"Unexpected exception: {repr(e)}"
