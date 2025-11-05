@@ -1073,9 +1073,35 @@ class Neo4jClient:
         dim: int,
         algorithm: Literal["cosine", "euclidean"] = "cosine",
     ):
+        """Create a vector index on nodes.
+
+        Note: This assumes the data type of the property is already set to
+        'float[]' or 'int[]' (or equivalent) when the nodes were created.
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        label :
+            The label of the node.
+        property_name :
+            The property name to index.
+        dim :
+            The dimensionality of the vector embeddings.
+        algorithm :
+            The similarity algorithm to use. Either 'cosine' or 'euclidean'.
+            Default is 'cosine'.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported algorithm is provided.
+        """
         # todo: Since 2025.10 there is also a dedicated vector index type:
         #  https://neo4j.com/docs/operations-manual/2025.10/import/#import-tool-header-format-properties
         #  Scroll down to: "Special considerations for vector data types introduced in 2025.10"
+        #  Unfortunately, this data type requires Neo4j Enterprise Edition, so we have
+        #  to stick to using float[] as type for now.
         if algorithm not in ["cosine", "euclidean"]:
             raise ValueError(
                 "Only 'cosine' and 'euclidean' algorithms are supported."
@@ -1096,6 +1122,205 @@ class Neo4jClient:
             }}
         }}"""
         self.create_tx(vector_index_query)
+
+    def query_knn_evidence_text(
+        self, evidence_id: str, k: int = 5
+    ) -> dict[str, tuple[int, float, Node]]:
+        """Query the k nearest neighbor evidence based on text embeddings.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node to query against. This is the id property
+            of the Evidence node in the neo4j database returned by e.g.
+            'MATCH (m:Evidence {stmt_hash: 21850866597217719) RETURN m.id LIMIT 1'
+        k :
+            The number of nearest neighbors to return. Default is 5.
+
+        Returns
+        -------
+        :
+            A dictionary mapping evidence id to a tuple of (stmt_hash, score, Node).
+        """
+        query = """\
+        MATCH (m:Evidence {id: "$evidence_id"})
+        CALL db.index.vector.queryNodes('ev_embedding_index', $k, m.embedding)
+        YIELD node AS evidence, score
+        RETURN evidence.id, evidence.stmt_hash, evidence, score"""
+        res = self.query_tx(query, evidence_id=evidence_id, k=k)
+        nn_evidence = {}
+        for ev_id, stmt_hash, neo4j_node, score in res:
+            node = self.neo4j_to_node(neo4j_node)
+            nn_evidence[ev_id] = (stmt_hash, score, node)
+        return nn_evidence
+
+    def query_evidence_cosine_similarity(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+    ) -> Optional[float]:
+        """Query the cosine similarity between two evidence text embeddings
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+
+        Returns
+        -------
+        :
+            The cosine similarity between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m1:Evidence {id: $evidence_id1}), (m2:Evidence {id: $evidence_id2})
+        RETURN vector.similarity.cosine(m1.embedding, m2.embedding) AS similarity"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_euclidean_similarity(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+    ) -> Optional[float]:
+        """Query the Euclidean similarity between two evidence text embeddings
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+
+        Returns
+        -------
+        :
+            The Euclidean similarity between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m1:Evidence {id: $evidence_id1}), (m2:Evidence {id: $evidence_id2})
+        RETURN vector.similarity.euclidean(m1.embedding, m2.embedding) AS similarity"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_dimension(self, evidence_id: str) -> Optional[int]:
+        """Query the dimension of the evidence text embedding.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node.
+
+        Returns
+        -------
+        :
+            The dimension of the evidence embedding, or None if the evidence
+            node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m:Evidence {id: $evidence_id})
+        RETURN size(m.embedding)
+        """
+        res = self.query_tx(
+            query,
+            evidence_id=evidence_id,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_distance(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+        vector_distance_metric: Literal[
+            "EUCLIDEAN",
+            "EUCLIDEAN_SQUARED",
+            "MANHATTAN",
+            "COSINE",
+            "DOT",
+            "HAMMING",
+        ] = "EUCLIDEAN",
+    ) -> Optional[float]:
+        """Query the distance between two evidence text embeddings.
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+        vector_distance_metric :
+            The vector distance metric to use. Default is 'EUCLIDEAN'.
+
+        Returns
+        -------
+        :
+            The distance between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = f"""\
+        CYPHER 25
+        MATCH (m1:Evidence {{id: $evidence_id1}}), (m2:Evidence {{id: $evidence_id2}})
+        RETURN vector_distance(
+            vector(m1.embedding, 384, FLOAT32),
+            vector(m2.embedding, 384, FLOAT32),
+            {vector_distance_metric}
+        ) AS distance"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_norm(
+        self,
+        evidence_id: str,
+        vector_distance_metric: Literal["EUCLIDEAN", "MANHATTAN"] = "EUCLIDEAN",
+    ) -> Optional[float]:
+        """Query the norm of an evidence text embedding.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node.
+        vector_distance_metric :
+            The vector distance metric to use. Default is 'EUCLIDEAN'.
+
+        Returns
+        -------
+        :
+            The norm of the evidence embedding, or None if the evidence
+            node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m:Evidence {id: $evidence_id})
+        RETURN vector_norm(vector(m.embedding, 384, FLOAT32), """
+        query += f"{vector_distance_metric}) AS norm"
+        res = self.query_tx(
+            query,
+            evidence_id=evidence_id,
+            squeeze=True,
+        )
+        return res[0] if res else None
 
     def check_curie_exists(self, agent:  Union[str, Tuple[str, str]]) -> bool:
         """Check if an agent with the given id exists in the database.
