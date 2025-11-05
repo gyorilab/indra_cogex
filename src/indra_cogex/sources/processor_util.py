@@ -84,8 +84,8 @@ class MissingNodeIDError(ValueError):
 
 class LabelNotAllowedError(ValueError):
     """Raised when a node label is not allowed."""
-    # This is used raised when during node dumping, somehow a node with another
-    # label than the one intended to be dumped is encountered.
+    # This is raised when, during node dumping, a node with a label other than
+    # those intended to be dumped is encountered.
 
 
 def _check_no_newlines(value: str):
@@ -308,13 +308,14 @@ def check_duplicated_nodes(nodes_tsv_gz_file) -> set[str]:
 
 
 def check_missing_node_ids_in_edges(edges_tsv_gz_file, node_ids: set[str]):
-    """Validate that all node IDs in the edges file exist in the nodes file.
+    """Ensure every node ID referenced in the edges file exists in `node_ids`
+
     Parameters
     ----------
     edges_tsv_gz_file :
         Path to the gzipped TSV file containing edges.
     node_ids :
-        Set of valid node IDs from the nodes file that edges should reference.
+        Set of valid node IDs from the nodes files.
 
     Raises
     ------
