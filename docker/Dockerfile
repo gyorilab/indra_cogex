@@ -50,7 +50,7 @@ RUN mkdir -p /root/.config/indra && \
     pip install --upgrade pip && \
     # Install cython first for pyjnius
     pip install "cython<3" && \
-    pip install "pyjnius==1.1.4" && \
+    pip install "pyjnius==1.1.4" --no-build-isolation && \
     pip install --prefer-binary python-libsbml || true && \
     pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
     pip uninstall -y enum34 && \
