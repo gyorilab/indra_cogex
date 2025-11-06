@@ -21,6 +21,7 @@ def db_data():
 
     # Build the cache
     queried_cache = build_sqlite_cache(
+        # Limit is added to speed up tests. Remove to test the full cache.
         db_path=TEST_SQLITE_CACHE_PATH, force=True, limit=10, return_cache=True
     )
 
