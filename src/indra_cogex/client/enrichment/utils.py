@@ -422,6 +422,9 @@ def get_sqlite_gene_set_cache(
     for curie, name, gene_id in rows:
         if background_gene_ids and gene_id not in background_gene_ids:
             continue
+        # If the name is the same as the curie, set it to None
+        if name == curie:
+            name = None
         gene_sets.setdefault((curie, name), set()).add(gene_id)
     return gene_sets
 
@@ -1678,6 +1681,9 @@ def build_sqlite_cache(
         for (curie, name) in sorted_keys:
             values = data[(curie, name)]
             for value in sorted(values):
+                # Set name to curie if name is None or empty
+                if not name:
+                    name = curie
                 to_insert.append((cache_name, curie, name, value))
 
         # Insert data into the database
