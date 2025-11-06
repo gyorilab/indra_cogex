@@ -32,11 +32,13 @@ def db_data():
         TEST_SQLITE_CACHE_PATH.unlink()
 
 
+@pytest.mark.nonpublic
 def test_0_cache_built(db_data):
     # Require the fixture just so the cache is built before this test runs
     assert TEST_SQLITE_CACHE_PATH.exists()
 
 
+@pytest.mark.nonpublic
 def test_1_cache_contents(db_data):
     # Require the fixture just so the cache is built before this test runs
     import sqlite3
@@ -99,6 +101,7 @@ def _check_genes_with_confidence_cache(
             assert inner_val == sqlite_data[key][inner_key]
 
 
+@pytest.mark.nonpublic
 def test_go_cache(db_data):
     sqlite_go_data = gene_set_table_datasets["go"](
         use_sqlite_cache=True, sqlite_db_path=TEST_SQLITE_CACHE_PATH
@@ -106,6 +109,7 @@ def test_go_cache(db_data):
     _check_gene_set_cache_equality("go", sqlite_go_data, queried_cache=db_data)
 
 
+@pytest.mark.nonpublic
 def test_reactome_cache(db_data):
     sqlite_reactome_data = gene_set_table_datasets["reactome"](
         use_sqlite_cache=True, sqlite_db_path=TEST_SQLITE_CACHE_PATH
@@ -115,6 +119,7 @@ def test_reactome_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_wikipathways_cache(db_data):
     sqlite_wikipathways_data = gene_set_table_datasets["wikipathways"](
         use_sqlite_cache=True, sqlite_db_path=TEST_SQLITE_CACHE_PATH
@@ -124,6 +129,7 @@ def test_wikipathways_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_phenotype_gene_cache(db_data):
     sqlite_phenotype_gene_data = gene_set_table_datasets["phenotypes"](
         use_sqlite_cache=True, sqlite_db_path=TEST_SQLITE_CACHE_PATH
@@ -133,6 +139,7 @@ def test_phenotype_gene_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_entity_to_targets_cache(db_data):
     sqlite_entity_to_targets_data = genes_with_confidence_datasets[
         "entity_to_targets"
@@ -142,6 +149,7 @@ def test_entity_to_targets_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_entity_to_regulators_cache(db_data):
     sqlite_entity_to_regulators_data = genes_with_confidence_datasets[
         "entity_to_regulators"
@@ -153,6 +161,7 @@ def test_entity_to_regulators_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_positive_stmts_cache(db_data):
     sqlite_positive_stmts_data = genes_with_confidence_datasets[
         "positive_statements"
@@ -162,6 +171,7 @@ def test_positive_stmts_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_negative_stmts_cache(db_data):
     sqlite_negative_stmts_data = genes_with_confidence_datasets[
         "negative_statements"
@@ -171,6 +181,7 @@ def test_negative_stmts_cache(db_data):
     )
 
 
+@pytest.mark.nonpublic
 def test_kinase_phosphosites_cache(db_data):
     sqlite_kinase_phosphosites_data = genes_with_confidence_datasets[
         "kinase_phosphosites"
