@@ -1709,9 +1709,10 @@ def build_sqlite_cache(
             # Make the inner key 3-tuple a string (curie, name, site)
             flat_key_data = {}
             for (curie, name), values in data.items():
-                flat_key_data[(curie, name)] = {}
                 for (gene_curie, gene_name, site), (belief, ev_count) in values.items():
                     inner_key = f"{gene_curie}|{gene_name}|{site}"
+                    if (curie, name) not in flat_key_data:
+                        flat_key_data[(curie, name)] = {}
                     flat_key_data[(curie, name)][inner_key] = (belief, ev_count)
             data = flat_key_data
 
