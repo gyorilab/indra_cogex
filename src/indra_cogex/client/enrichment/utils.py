@@ -307,13 +307,14 @@ def collect_phosphosites_with_confidence(
                 )
                 phosphosites.add(phosphosite)
 
-        kinase_map[kinase_key] = {
-            phosphosite: (
-                max_beliefs[(kinase_curie, kinase_name, *phosphosite)],
-                max_ev_counts[(kinase_curie, kinase_name, *phosphosite)],
-            )
-            for phosphosite in phosphosites
-        }
+        if phosphosites:
+            kinase_map[kinase_key] = {
+                phosphosite: (
+                    max_beliefs[(kinase_curie, kinase_name, *phosphosite)],
+                    max_ev_counts[(kinase_curie, kinase_name, *phosphosite)],
+                )
+                for phosphosite in phosphosites
+            }
 
     res = dict(kinase_map)
 
