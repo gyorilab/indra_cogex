@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
 """Assembly of Node objects."""
-
+import pystow
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from indra_cogex.representation import Node
+
+
+ASSEMBLED_MODULE = pystow.module("indra", "cogex", "assembled")
 
 
 class NodeAssembler:
@@ -95,3 +99,8 @@ class Conflict:
 
     def __str__(self):
         return f"Conflict({self.key}, {self.val1}, {self.val2})"
+
+
+def get_assembled_path(node_type: str) -> Path:
+    nodes_path = ASSEMBLED_MODULE.join(name=f"nodes_{node_type}.tsv.gz")
+    return nodes_path

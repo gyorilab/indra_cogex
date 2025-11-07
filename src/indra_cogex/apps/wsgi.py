@@ -28,7 +28,6 @@ from indra_cogex.apps.gla.source_target_blueprint import source_target_blueprint
 from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.rest_api import api
 from indra_cogex.client.neo4j_client import Neo4jClient
-from indra_cogex.client.enrichment.utils import build_caches
 from indra_cogex.apps.search import search_blueprint
 
 logger = logging.getLogger(__name__)
@@ -76,5 +75,3 @@ Session(app)
 logger.info("Server-side sessions initialized")
 
 bootstrap = Bootstrap4(app)
-
-build_caches()

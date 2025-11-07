@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG INDRA_NEO4J_URL
 ARG INDRA_NEO4J_USER
@@ -10,9 +10,11 @@ ARG RGD_VERSION
 # mg_names.tsv and rgd_names.tsv, respectively. This is necessary to avoid running the
 # full cache build process for these resources (which can take hours).
 RUN mkdir -p /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/ && \
-    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/
+    mkdir -p /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/ && \
+    mkdir -p /root/.data/indra/cogex/assembled/
 COPY mgi_names.tsv /root/.data/pyobo/raw/mgi/${MGI_VERSION}/cache/names.tsv
 COPY rgd_names.tsv /root/.data/pyobo/raw/rgd/${RGD_VERSION}/cache/names.tsv
+COPY nodes_BioEntity.tsv.gz /root/.data/indra/cogex/assembled/nodes_BioEntity.tsv.gz
 
 # Setup copied and slightly modified from indra_docker Dockerfile
 ARG INDRA_BUILD_BRANCH
@@ -42,23 +44,20 @@ ENV LC_ALL en_US.UTF-8
 ENV BNGPATH $DIRPATH/BioNetGen-2.4.0
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 
-RUN git clone https://github.com/sorgerlab/indra.git && \
-    cd indra && \
-    git checkout $INDRA_BUILD_BRANCH && \
-    git branch && \
-    mkdir /root/.config && \
-    mkdir /root/.config/indra && \
+RUN mkdir -p /root/.config/indra && \
     echo "[indra]" > /root/.config/indra/config.ini && \
     # Install Python dependencies
     pip install --upgrade pip && \
     # Install cython first for pyjnius
     pip install "cython<3" && \
-    pip install "pyjnius==1.1.4" && \
+    pip install "pyjnius==1.1.4" --no-build-isolation && \
     pip install --prefer-binary python-libsbml || true && \
-    pip install -e .[all] && \
+    pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
+    # Build the sqlite ontology cache
+    python -c "from indra.ontology.bio.sqlite_ontology import build_sqlite_ontology; build_sqlite_ontology()" && \
     # Download Adeft models
     python -m adeft.download && \
     # Download protmapper resources
@@ -74,14 +73,14 @@ RUN git clone https://github.com/sorgerlab/indra.git && \
     pip install gunicorn
 
 # CoGEx specific setup
-RUN pip3 install git+https://github.com/bgyori/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
+RUN pip3 install git+https://github.com/gyorilab/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
 
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
 
 # Save agent name in cache for search
-RUN python -m indra_cogex.apps.search.utils --cache
+RUN python -m indra_cogex.apps.search.utils --force
 
-ENV GUNICORN_CONF /usr/local/lib/python3.8/dist-packages/indra_cogex/apps/gunicorn.conf.py
+ENV GUNICORN_CONF /usr/local/lib/python3.10/dist-packages/indra_cogex/apps/gunicorn.conf.py
 
 ENTRYPOINT gunicorn -w 2 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
