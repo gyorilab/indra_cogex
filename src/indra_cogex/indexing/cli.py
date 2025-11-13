@@ -57,8 +57,16 @@ def main(
     auth: Optional[Tuple[str, str]] = None,
 ):
     """Build indexes on the database."""
-    if not any([all_, index_nodes, index_bioentity_names,
-                index_evidence_nodes, index_indra_relations]):
+    if not any(
+        [
+            all_,
+            index_nodes,
+            index_bioentity_names,
+            index_evidence_nodes,
+            index_indra_relations,
+            index_evidence_embeddings,
+        ]
+    ):
         click.secho(
             "No indexing options provided. Use --all or at least one of the "
             "specific indexing options.",
