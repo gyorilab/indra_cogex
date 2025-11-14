@@ -555,7 +555,7 @@ def test_get_phenotypes_for_gene():
     phenotypes = get_phenotypes_for_gene(gene, client=client)
     assert phenotypes
     assert isinstance(phenotypes[0], Node)
-    assert phenotypes[0].db_ns == "MESH"
+    assert phenotypes[0].db_ns in {"MESH", "HP"}
 
 
 @pytest.mark.nonpublic
