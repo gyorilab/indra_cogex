@@ -3,8 +3,8 @@
 """Run the sources CLI."""
 
 import json
-import os
 import pickle
+import os
 from collections import defaultdict
 from pathlib import Path
 from textwrap import dedent
@@ -12,7 +12,12 @@ from typing import Iterable, Optional, TextIO, Type
 
 import click
 from more_click import verbose_option
+from tqdm import tqdm
 
+from indra_cogex.sources.processor_util import (
+    check_duplicated_nodes,
+    check_missing_node_ids_in_edges
+)
 from . import processor_resolver
 from .processor import Processor
 from ..assembly import NodeAssembler, get_assembled_path
@@ -29,7 +34,7 @@ def _iter_processors() -> Iterable[Type[Processor]]:
     help="If true, builds all missing resources.",
 )
 @click.option(
-    "--force_process",
+    "--force-process",
     is_flag=True,
     help="If true, rebuilds all resources",
 )
@@ -39,23 +44,23 @@ def _iter_processors() -> Iterable[Type[Processor]]:
     help="If true, assembles all (not yet assembled) nodes.",
 )
 @click.option(
-    "--force_assemble",
+    "--force-assemble",
     is_flag=True,
     help="If true, reassembles all nodes.",
 )
 @click.option(
-    "--run_import",
+    "--run-import",
     is_flag=True,
     help="If true, automatically loads the data through ``neo4j-admin import``",
 )
 @click.option(
-    "--force_import",
+    "--force-import",
     is_flag=True,
     help="If true, forces the import even if the database already exists. This "
-         "sets the --force flag of neo4j-admin import.",
+         "sets the --overwrite-destination flag of ``neo4j-admin import``.",
 )
 @click.option(
-    "--with_sudo",
+    "--with-sudo",
     is_flag=True,
     help="If true, sudo is prepended to the neo4j-admin import command",
 )
@@ -66,9 +71,29 @@ def _iter_processors() -> Iterable[Type[Processor]]:
     " and values are dictionaries matching the __init__ parameters for the processor",
 )
 @click.option(
-    "--skip_failed_processors",
+    "--skip-failed-processors",
     is_flag=True,
     help="If true, skips processors that are missing required input files without erroring.",
+)
+@click.option(
+    "--check-ingestion-files",
+    is_flag=True,
+    help="If true, checks the ingestion data files for duplicated entries in node files "
+         "and missing entries in edge files.",
+)
+@click.option(
+    "--ingestion-manifest",
+    type=click.Path(exists=False, path_type=Path),
+    help="Path to a manifest file that will listing all node and edge files "
+         "that where imported."
+)
+@click.option(
+    "--database-name",
+    type=str,
+    default="neo4j",
+    help="The name of the Neo4j database to import into (default: neo4j). NOTE: The "
+         "database must already exist in the Neo4j instance. It is *not* created at "
+         "import.",
 )
 @verbose_option
 def main(
@@ -81,6 +106,9 @@ def main(
     with_sudo: bool,
     config: Optional[TextIO],
     skip_failed_processors: bool,
+    check_ingestion_files: bool,
+    ingestion_manifest: Optional[Path],
+    database_name: str,
 ):
     """Generate and import Neo4j nodes and edges tables."""
     # Check which nodes labels need to be assembled (i.e. have multiple
@@ -190,7 +218,10 @@ def main(
         assembled_nodes = assembler.assemble_nodes()
         assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
         Processor._dump_nodes_to_path_static(
-            "assembled nodes", assembled_nodes, assembled_path
+            "assembled nodes",
+            assembled_nodes,
+            assembled_path,
+            allowed_labels=[node_type],
         )
 
     # The assembled paths are added to the list of nodes to import separately
@@ -199,22 +230,64 @@ def main(
         if assembled_path.exists():
             nodes_paths_for_import.append(assembled_path)
 
+    # Save the import paths
+    if ingestion_manifest:
+        if not ingestion_manifest.name.endswith(".json"):
+             ingestion_manifest = ingestion_manifest.with_suffix(".json")
+        click.secho(
+            f"Saving nodes paths for import to {ingestion_manifest}", fg="green", bold=True
+        )
+        with open(ingestion_manifest, "w") as fh:
+            _import_paths = {
+                "node_paths": nodes_paths_for_import,
+                "edge_paths": edge_paths,
+            }
+            json.dump(obj=_import_paths, fp=fh)
+
+    if check_ingestion_files:
+        click.secho("Checking ingestion files...", fg="green", bold=True)
+        # Check for duplicated node IDs across all node files
+        node_ids = set()
+        for node_path in tqdm(
+            nodes_paths_for_import, desc="Node duplication check", unit="node file"
+        ):
+            checked_nodes = check_duplicated_nodes(nodes_tsv_gz_file=node_path)
+            node_ids |= checked_nodes
+
+        # Check for missing node IDs in edge files. Any node IDs in edges
+        # that are not in the collected node_ids will be reported.
+        for edge_path in tqdm(
+            edge_paths, desc="Missing node check", unit="edge file"
+        ):
+            check_missing_node_ids_in_edges(
+                edges_tsv_gz_file=edge_path, node_ids=node_ids
+            )
+        click.secho(
+            "Ingestion file check completed without errors.", fg="green", bold=True
+        )
+
     # Import the nodes
     if run_import:
+        # Documentation for neo4j-admin import:
+        # https://neo4j.com/docs/operations-manual/2025.09/import/#import-tool-full
         sudo_prefix = "" if not with_sudo else "sudo"
         command = dedent(
             f"""\
-        {sudo_prefix} neo4j-admin import {'--force' if force_import else ''} \\
-          --database=indra \\
+        {sudo_prefix} neo4j-admin database import full {'--overwrite-destination' if force_import else ''} \\
           --delimiter='TAB' \\
           --skip-duplicate-nodes=true \\
-          --skip-bad-relationships=true
+          --skip-bad-relationships=true \\
+          --strict
         """
         ).rstrip()
         for node_path in nodes_paths_for_import:
             command += f"\\\n --nodes {node_path}"
         for edge_path in edge_paths:
             command += f"\\\n --relationships {edge_path}"
+        # Specify the database name (if not the default "neo4j").
+        # https://neo4j.com/docs/operations-manual/2025.09/import/#_parameters
+        if database_name != "neo4j":
+            command += f"\\\n  {database_name}"
 
         click.secho("Running shell command:")
         click.secho(command, fg="blue")
@@ -247,6 +320,7 @@ def get_pickle_paths() -> dict[str, list[Path]]:
 def assemble_type(
     pickle_paths: list[Path],
     assembled_path: Path,
+    label: str,
     force_assemble: bool = False,
 ):
     """Assemble nodes of a given type from the given pickle paths
@@ -257,6 +331,8 @@ def assemble_type(
         A list of the input paths to the pickled nodes
     assembled_path :
         The path to the output file where the assembled nodes will be saved
+    label :
+        The node label the nodes should have
     force_assemble :
         If True, reassemble the nodes even if the output file already exists
     """
@@ -289,7 +365,7 @@ def assemble_type(
     print(f"Sorting {len(assembled_nodes)} assembled nodes")
     assembled_nodes = sorted(assembled_nodes, key=lambda x: (x.db_ns, x.db_id))
     Processor._dump_nodes_to_path_static(
-        "assembled nodes", assembled_nodes, assembled_path
+        "assembled nodes", assembled_nodes, assembled_path, allowed_labels=[label]
     )
 
 
@@ -304,7 +380,9 @@ def manual_assembly(force_assemble: bool = False):
     to_assemble = get_pickle_paths()
     for node_type, paths in to_assemble.items():
         assembled_path = get_assembled_path(node_type)
-        assemble_type(paths, assembled_path, force_assemble=force_assemble)
+        assemble_type(
+            paths, assembled_path, force_assemble=force_assemble, label=node_type
+        )
 
 
 if __name__ == "__main__":

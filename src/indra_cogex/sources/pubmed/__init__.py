@@ -128,9 +128,13 @@ class PubmedProcessor(Processor):
 class PublicationProcessor(PubmedProcessor):
     importable = True
     name = "publication"
-    node_types = [PUBLICATION_NODE_TYPE]
+    node_types = [PUBLICATION_NODE_TYPE, "BioEntity"]
 
     def _get_nodes(self) -> Iterable[Node]:
+        yield from self._get_pubmed_nodes()
+        yield from self._get_mesh_nodes()
+
+    def _get_pubmed_nodes(self) -> Iterable[Node]:
         logger.info("Loading PMID year info from %s" % self.pmid_year_types_path)
         with gzip.open(self.pmid_year_types_path, "rt") as fh:
             pmid_years_pubtypes = {
@@ -173,12 +177,27 @@ class PublicationProcessor(PubmedProcessor):
                     data=data,
                 )
 
+    def _get_mesh_nodes(self):
+        mesh_ids = set()
+        with gzip.open(self.mesh_pmid_path, "rt") as fh:
+            reader = csv.reader(fh)
+            next(reader)  # skip header
+            for mesh_id, major_topic, pmid in reader:
+                mesh_ids.add(mesh_id)
+        for mesh_id in sorted(mesh_ids):
+            yield Node(
+                "MESH",
+                mesh_id,
+                labels=["BioEntity"],
+            )
+
     def _get_relations(self) -> Iterable[List[Relation]]:
         with gzip.open(self.mesh_pmid_path, "rt") as fh:
             reader = csv.reader(fh)
             next(reader)  # skip header
             # Given each line is lightweight and that total is ~350M trying
-            # with larger batch size here. Total time us typically 15-20 hours.
+            # with larger batch size here. Total time us typically 15-20 hours
+            # if run from scratch.
             batch_size = 10_000_000
             for batch in tqdm(
                 batch_iter(reader, batch_size=batch_size, return_func=list)
@@ -203,9 +222,13 @@ class PublicationProcessor(PubmedProcessor):
 class JournalProcessor(PubmedProcessor):
     importable = True
     name = "journal"
-    node_types = [JOURNAL_NODE_TYPE]
+    node_types = [JOURNAL_NODE_TYPE, PUBLICATION_NODE_TYPE]
 
     def _get_nodes(self) -> Iterable[Node]:
+        yield from self._get_journal_nodes()
+        yield from self._get_pubmed_nodes()
+
+    def _get_journal_nodes(self) -> Iterable[Node]:
         # Load the journal info
         logger.info("Loading journal info from %s" % self.journal_info_path)
         with gzip.open(self.journal_info_path, "rt") as fh:
@@ -240,6 +263,21 @@ class JournalProcessor(PubmedProcessor):
                     labels=[JOURNAL_NODE_TYPE],
                     data=data,
                 )
+
+    def _get_pubmed_nodes(self) -> Iterable[Node]:
+        logger.info("Loading PMIDs from %s" % self.pmid_nlm_path)
+        with gzip.open(self.pmid_nlm_path, "rt") as fh:
+            reader = csv.reader(fh)
+            next(reader)  # skip header
+            pmids = set()
+            for pmid, journal_nlm_id in reader:
+                pmids.add(pmid)
+        for pmid in sorted(pmids):
+            yield Node(
+                "PUBMED",
+                pmid,
+                labels=[PUBLICATION_NODE_TYPE],
+            )
 
     def _get_relations(self) -> Iterable[List[Relation]]:
         # Yield batches of relations
@@ -431,10 +469,6 @@ def process_mesh_xml_to_csv(
             for (
                     pmid, year, mesh_annotations, journal_info, publication_types
             ) in extract_info_from_medline_xml(xml_path.as_posix()):
-                # Skip if year could not be found
-                if not year:
-                    continue
-
                 # Write one row per mesh annotation
                 for annot in mesh_annotations:
                     writer_mesh.writerow(

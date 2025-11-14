@@ -35,6 +35,11 @@ import click
     help="Index the INDRA relations on the stmt_hash property.",
 )
 @click.option(
+    "--index-evidence-embeddings",
+    is_flag=True,
+    help="Create a vector index on the embedding property of Evidence nodes.",
+)
+@click.option(
     "--exist-ok",
     is_flag=True,
     help="If set, skip already set indices silently, otherwise an exception "
@@ -46,17 +51,26 @@ def main(
     index_bioentity_names: bool = False,
     index_evidence_nodes: bool = False,
     index_indra_relations: bool = False,
+    index_evidence_embeddings: bool = False,
     exist_ok: bool = False,
     url: Optional[str] = None,
     auth: Optional[Tuple[str, str]] = None,
 ):
     """Build indexes on the database."""
-    if not any([all_, index_nodes, index_bioentity_names,
-                index_evidence_nodes, index_indra_relations]):
+    if not any(
+        [
+            all_,
+            index_nodes,
+            index_bioentity_names,
+            index_evidence_nodes,
+            index_indra_relations,
+            index_evidence_embeddings,
+        ]
+    ):
         click.secho(
             "No indexing options provided. Use --all or at least one of the "
             "specific indexing options.",
-            fg="red"
+            fg="red",
         )
         return
 
@@ -82,8 +96,17 @@ def main(
     if all_ or index_indra_relations:
         from . import index_indra_rel_on_stmt_hash
 
-        click.secho("Indexing INDRA relations on the stmt_hash property.", fg="green")
+        click.secho(
+            "Indexing INDRA relations on the stmt_hash property.", fg="green"
+        )
         index_indra_rel_on_stmt_hash(client)
+    if all_ or index_evidence_embeddings:
+        from . import create_vector_index_evidence_nodes
+
+        click.secho(
+            "Creating vector index on Evidence node embeddings.", fg="green"
+        )
+        create_vector_index_evidence_nodes(client)
     click.secho("Started all requested indexing.", fg="green")
 
 

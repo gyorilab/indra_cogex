@@ -5,7 +5,7 @@ SUDO=false  # Set to true to run as sudo
 if [[ $SUDO == "true" ]]
 then
    NEO4J_PREFIX="sudo"
-   COGEX_SUDO_ARG="--with_sudo"
+   COGEX_SUDO_ARG="--with-sudo"
 else
    NEO4J_PREFIX=""
    COGEX_SUDO_ARG=""
@@ -37,7 +37,7 @@ cat $NEO4J_CONFIG/neo4j.conf | grep "dbms\.default_database"
 
 
 # The import can take significant time (4+ hours) and memory.
-python -m indra_cogex.sources --process --assemble --run_import $COGEX_SUDO_ARG
+python -m indra_cogex.sources --process --assemble --run-import $COGEX_SUDO_ARG
 
 $NEO4J_PREFIX neo4j start
 

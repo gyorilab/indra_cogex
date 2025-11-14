@@ -37,6 +37,7 @@ from indra_cogex.sources.processor_util import (
     UnknownTypeError,
     NewLineInStringError,
     InfinityValueError,
+    LabelNotAllowedError,
 )
 
 __all__ = [
@@ -144,15 +145,25 @@ class Processor(ABC):
             nodes = sorted(nodes_by_type[node_type], key=lambda x: (x.db_ns, x.db_id))
             with open(nodes_indra_path, "wb") as fh:
                 pickle.dump(nodes, fh)
-            self._dump_nodes_to_path(nodes, nodes_path, sample_path)
+            self._dump_nodes_to_path(
+                nodes, nodes_path, allowed_labels=[node_type], sample_path=sample_path
+            )
             paths_by_type[node_type] = nodes_path
         return paths_by_type, dict(nodes_by_type)
 
-    def _dump_nodes_to_path(self, nodes, nodes_path, sample_path=None, write_mode="wt"):
+    def _dump_nodes_to_path(
+        self,
+        nodes,
+        nodes_path,
+        allowed_labels: list[str],
+        sample_path=None,
+        write_mode="wt",
+    ):
         return self._dump_nodes_to_path_static(
             self.name,
             nodes,
             nodes_path,
+            allowed_labels=allowed_labels,
             sample_path=sample_path,
             write_mode=write_mode,
         )
@@ -162,6 +173,7 @@ class Processor(ABC):
         processor_name,
         nodes,
         nodes_path,
+        allowed_labels: list[str],
         sample_path=None,
         write_mode="wt"
     ):
@@ -183,7 +195,9 @@ class Processor(ABC):
 
         # Validate the nodes
         try:
-            nodes = list(validate_nodes(nodes, metadata))
+            nodes = list(
+                validate_nodes(nodes, metadata, allowed_labels=allowed_labels)
+            )
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad node data type in node data values for {processor_name}")
             raise e
@@ -192,6 +206,9 @@ class Processor(ABC):
             raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in node data values for {processor_name}")
+            raise e
+        except LabelNotAllowedError as e:
+            logger.error(f"Invalid label detected in nodes for {processor_name}")
             raise e
 
         node_rows = (
@@ -203,6 +220,7 @@ class Processor(ABC):
             for node in tqdm(nodes, desc="Node serialization", unit_scale=True)
         )
 
+        seen_ids = set()
         with gzip.open(nodes_path, mode=write_mode) as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
@@ -213,6 +231,14 @@ class Processor(ABC):
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
+                        node_id = node_row[0]  # The id:ID column must be unique
+                        if node_id in seen_ids:
+                            # Neo4j requires unique node IDs
+                            raise ValueError(
+                                f"Duplicate node ID '{node_id}' found when dumping "
+                                f"nodes for {processor_name}."
+                            )
+                        seen_ids.add(node_id)
                         node_sample_writer.writerow(node_row)
                         node_writer.writerow(node_row)
             # Write remaining nodes
@@ -244,6 +270,12 @@ class Processor(ABC):
             rels = validate_relations(rels, metadata)
         except (UnknownTypeError, DataTypeError) as e:
             logger.error(f"Bad edge data type in edge data values for {self.name}")
+            raise e
+        except InfinityValueError as e:
+            logger.error(f"Infinity value detected in edge data values for {self.name}")
+            raise e
+        except NewLineInStringError as e:
+            logger.error(f"Newline in string detected in edge data values for {self.name}")
             raise e
         rels = sorted(
             rels, key=lambda r: (r.source_ns, r.source_id, r.target_ns, r.target_id)
@@ -312,6 +344,7 @@ def assert_valid_node(
 def validate_nodes(
     nodes: Iterable[Node],
     header: Iterable[str],
+    allowed_labels: list[str],
     check_all_data: bool = True,
 ) -> Iterable[Node]:
     """Validate the nodes before yielding them.
@@ -322,6 +355,8 @@ def validate_nodes(
         The nodes to validate.
     header :
         The header of the output Neo4j ingest file.
+    allowed_labels :
+        The allowed label for the nodes.
     check_all_data :
         If True, check all data keys in the nodes. If False, stop checking
         when all data keys have been checked.
@@ -337,11 +372,23 @@ def validate_nodes(
         If a data type is not recognized.
     DataTypeError
         If a data type does not match the value set in the header.
+    InfinityValueError
+        If an infinity value is detected in the data.
+    NewLineInStringError
+        If a newline character is detected in the data.
+    LabelNotAllowedError
+        If a node has a label that is not in the allowed labels.
     """
     checked_headers = {key: False for key in header}
     for idx, node in enumerate(nodes):
         check_data = not all(checked_headers.values()) or check_all_data
         try:
+            for label in node.labels:
+                if label not in allowed_labels:
+                    raise LabelNotAllowedError(
+                        f"Label '{label}' not allowed for node {node}. "
+                        f"Allowed labels: {allowed_labels}"
+                    )
             checked_fields = assert_valid_node(
                 node.db_ns, node.db_id, node.data, check_data
             )
@@ -366,6 +413,10 @@ def validate_nodes(
         except NewLineInStringError as e:
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Newline in string detected")
+            raise e
+        except LabelNotAllowedError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("Invalid label detected")
             raise e
         except Exception as e:
             logger.info(f"{idx}: {node} - {e}")
@@ -400,6 +451,10 @@ def validate_relations(
         If a data type is not recognized.
     DataTypeError
         If a data type does not match the value set in the header.
+    InfinityValueError
+        If an infinity value is detected in the data.
+    NewLineInStringError
+        If a newline character is detected in a string value.
     """
     checked_headers = {key: False for key in header}
     for idx, rel in enumerate(relations):
