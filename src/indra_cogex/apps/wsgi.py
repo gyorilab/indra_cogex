@@ -56,6 +56,9 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = SESSION_DIR
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
+if ROOT_PATH:
+    app.config["APPLICATION_ROOT"] = ROOT_PATH.rstrip("/")
+    app.config['SESSION_COOKIE_PATH'] = "/"
 
 # Register blueprints (already there)
 app.register_blueprint(auth)
@@ -80,7 +83,6 @@ app.config["WTF_CSRF_ENABLED"] = False
 app.config["SECRET_KEY"] = os.urandom(32)
 app.config["SWAGGER_UI_DOC_EXPANSION"] = "list"
 app.config["EXPLAIN_TEMPLATE_LOADING"] = False
-app.config["APPLICATION_ROOT"] = ROOT_PATH.rstrip("/") if ROOT_PATH else ""
 
 # INITIALIZE SERVER-SIDE SESSIONS (After SECRET_KEY is set)
 Session(app)
