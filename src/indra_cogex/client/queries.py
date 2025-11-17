@@ -6,7 +6,7 @@ import math
 from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
-
+import math
 import networkx as nx
 from flask import session, request
 
@@ -3306,86 +3306,8 @@ def is_cell_line_sensitive_to_drug(
     )
 
 
-def group_statements_by_node_pair(statements: List) -> Dict[Tuple[str, str], List]:
-    """Group INDRA statements by their source–target node pairs.
-
-    Used for local edge scaling in Subnetwork Explorer.
-
-    Parameters
-    ----------
-    statements : list
-        List of INDRA Statements.
-
-    Returns
-    -------
-    dict
-        Mapping of (source, target) tuples → list of statements.
-    """
-    node_pair_statements = defaultdict(list)
-    for stmt in statements:
-        agents = [a for a in stmt.agent_list() if a]
-        if len(agents) >= 2:
-            if isinstance(stmt, Complex):
-                # Undirected for Complex
-                pair_key = tuple(sorted([agents[0].name, agents[1].name]))
-            else:
-                # Directional for others
-                pair_key = (agents[0].name, agents[1].name)
-            node_pair_statements[pair_key].append(stmt)
-    return node_pair_statements
-
-
-def calculate_local_widths_and_opacities(statements_for_pair):
-    """Calculate edge widths using order-of-magnitude bins."""
-    import math
-    evidence_counts = {}
-    for stmt in statements_for_pair:
-        ev_count = len(stmt.evidence) if hasattr(stmt, 'evidence') else 1
-        evidence_counts[id(stmt)] = ev_count
-
-    results = {}
-    for stmt_id, ev_count in evidence_counts.items():
-        # Compute order of magnitude
-        if ev_count <= 0:
-            ev_order = 0
-        else:
-            ev_order = int(math.log10(ev_count))
-
-        # Map order of magnitude to width bins
-        if ev_order <= 0:        # 1–9
-            width = 2
-        elif ev_order == 1:      # 10–99
-            width = 4
-        elif ev_order == 2:      # 100–999
-            width = 7
-        elif ev_order == 3:      # 1k–9k
-            width = 10
-        else:                    # 10k+
-            width = 12
-
-        results[stmt_id] = {'width': width}
-
-    return results
-
-
 def build_nodes_from_graph(graph, statements, central_node):
-    """Build node list for vis.js visualization from networkx graph.
-
-    Parameters
-    ----------
-    graph : networkx.MultiDiGraph
-        The assembled network graph.
-    statements : list
-        INDRA statements used to build the graph.
-    central_node : str or None
-        Node with the highest degree (for highlighting).
-
-    Returns
-    -------
-    list
-        List of node dictionaries for vis.js.
-    """
-    # Build node db_refs mapping
+    """Build node list for vis.js visualization from networkx graph (with logging)."""
     entity_db_refs = {}
     for stmt in statements:
         for agent in stmt.agent_list():
@@ -3393,16 +3315,15 @@ def build_nodes_from_graph(graph, statements, central_node):
                 entity_db_refs[agent.name] = agent.db_refs
 
     nodes = []
+
     for node_id in graph.nodes():
         db_refs = entity_db_refs.get(node_id, {})
         node_type, color, shape = _get_node_styling(db_refs)
-
-        # Highlight the most connected node
         size = 45 if node_id == central_node else 35
         font_size = 26 if node_id == central_node else 22
         border_width = 3 if node_id == central_node else 2
 
-        nodes.append({
+        node_obj = {
             'id': str(node_id),
             'label': str(node_id),
             'title': f"{node_id} ({node_type})",
@@ -3422,7 +3343,9 @@ def build_nodes_from_graph(graph, statements, central_node):
             'hgnc': db_refs.get('HGNC', ''),
             'type': node_type.lower(),
             'uniprot': db_refs.get('UP', '')
-        })
+        }
+        nodes.append(node_obj)
+
     return nodes
 
 
@@ -3446,17 +3369,28 @@ def _get_node_styling(db_refs):
         return "Other", "#607D8B", "ellipse"
 
 
-def build_edges_from_graph(graph, statements, input_node_names, include_db_evidence):
-    """Build edge list for vis.js from networkx graph."""
-    # Determine if we should use local scaling (subnetwork mode)
-    if input_node_names:
-        node_pair_statements = group_statements_by_node_pair(statements)
-        all_styling = {}
-        for pair, stmts in node_pair_statements.items():
-            styling = calculate_local_widths_and_opacities(stmts)
-            all_styling.update(styling)
-    else:
-        all_styling = {}
+def build_edges_from_graph(graph, statements, input_node_names, include_db_evidence, evidence_counts):
+    """Build edge list for vis.js visualization from networkx graph."""
+    import math
+
+    # Group statements by edge key
+    statements_by_edge = defaultdict(list)
+
+    for stmt in statements:
+        agents = [a for a in stmt.agent_list() if a]
+        if len(agents) < 2:
+            continue
+
+        stmt_type = stmt.__class__.__name__
+
+        if stmt_type == 'Complex':
+            if len(agents) == 2:
+                edge_key = tuple(sorted([agents[0].name, agents[1].name])) + ('Complex',)
+                statements_by_edge[edge_key].append(stmt)
+        else:
+            # Directional statements
+            edge_key = (agents[0].name, agents[1].name, stmt_type)
+            statements_by_edge[edge_key].append(stmt)
 
     edges = []
     edge_count = 0
@@ -3465,50 +3399,99 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
     for source, target, key, data in graph.edges(data=True, keys=True):
         stmt_type = data.get('stmt_type', 'Interaction')
 
-        # Unique edge key
+        # Construct edge key
         if stmt_type == 'Complex':
-            edge_key = tuple(sorted([source, target]))
+            edge_key = tuple(sorted([source, target])) + ('Complex',)
         else:
             edge_key = (source, target, stmt_type)
+
+        # Skip duplicate edges
         if edge_key in seen_keys:
             continue
         seen_keys.add(edge_key)
 
-        edge_stmt = _find_edge_statement(statements, source, target, stmt_type)
+        # Get matching statements
+        matching_stmts = statements_by_edge.get(edge_key, [])
 
-        # Evidence count
-        evidence_count = len(edge_stmt.evidence) if edge_stmt and hasattr(edge_stmt, 'evidence') else 1
+        if not matching_stmts:
+            continue
 
-        # Width from evidence order-of-magnitude bins
-        if all_styling and edge_stmt and id(edge_stmt) in all_styling:
-            width = all_styling[id(edge_stmt)]['width']
+        # Use first statement for display metadata
+        edge_stmt = matching_stmts[0]
+
+        # Sum evidence counts from Neo4j metadata
+        if evidence_counts:
+            total_evidence = sum(
+                evidence_counts.get(s.get_hash(), 0)
+                for s in matching_stmts
+            )
+        else:
+            logger.warning(f"No evidence counts available for edge {source}-{target}")
+            total_evidence = sum(
+                len(s.evidence) if hasattr(s, 'evidence') else 1
+                for s in matching_stmts
+            )
+
+        # Calculate width based on aggregated evidence using order-of-magnitude bins
+        if input_node_names and total_evidence > 0:
+            ev_order = int(math.log10(total_evidence))
+            if ev_order <= 0:  # 1–9
+                width = 2
+            elif ev_order == 1:  # 10–99
+                width = 4
+            elif ev_order == 2:  # 100–999
+                width = 7
+            elif ev_order == 3:  # 1k–9k
+                width = 10
+            else:  # 10k+
+                width = 12
         else:
             width = 4.0
 
-        # Opacity from belief score
-        belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
+        # Calculate edge opacity based on belief
+        belief = getattr(edge_stmt, 'belief', 0.5)
         edge_opacity = 0.4 + (belief * 0.6)
 
+        # Get color and styling
         base_color, dashes, arrows = _get_edge_styling(stmt_type)
         color = f'rgba({base_color[0]}, {base_color[1]}, {base_color[2]}, {edge_opacity})'
 
-        actual_stmt_type = edge_stmt.__class__.__name__ if edge_stmt else stmt_type
+        # Prepare detailed statement information for dialog
+        statement_details = []
+        for stmt in matching_stmts:
+            stmt_hash = stmt.get_hash()
+            stmt_evid_count = evidence_counts.get(stmt_hash, 0) if evidence_counts else len(stmt.evidence)
+            statement_details.append({
+                'statement': str(stmt),
+                'evidence_count': stmt_evid_count,
+                'belief': getattr(stmt, 'belief', 0.5)
+            })
+
+        # Prepare edge details
+        actual_stmt_type = edge_stmt.__class__.__name__
         edge_details = {
             'statement_type': actual_stmt_type,
             'belief': belief,
-            'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
+            'indra_statement': str(edge_stmt),
             'interaction': actual_stmt_type.lower(),
             'polarity': _get_polarity(actual_stmt_type),
             'support_type': 'database' if include_db_evidence else 'literature',
             'type': actual_stmt_type,
-            'evidence_count': evidence_count
+            'evidence_count': total_evidence,
+            'statement_count': len(matching_stmts),
+            'aggregated_statements': statement_details
         }
+
+        # Create hover tooltip
+        title_parts = [actual_stmt_type]
+        title_parts.append(f"{total_evidence} evidence(s)")
+        title_parts.append(f"from {len(matching_stmts)} statement(s)")
 
         edges.append({
             'id': f"e{edge_count}",
             'from': str(source),
             'to': str(target),
-            'title': f"{actual_stmt_type}<br>{evidence_count} evidence(s)",
+            'title': "<br>".join(title_parts),
             'color': {'color': color, 'highlight': color, 'hover': color},
             'dashes': dashes,
             'arrows': arrows,
@@ -3516,26 +3499,11 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             'details': edge_details,
             'label': ''
         })
+
         edge_count += 1
 
     return edges
 
-
-def _find_edge_statement(statements, source, target, stmt_type):
-    """Find the INDRA statement corresponding to an edge."""
-    for s in statements:
-        if s.__class__.__name__ != stmt_type:
-            continue
-        agent_names = {a.name for a in s.agent_list() if a}
-        # For Complex: both nodes must be members of the complex
-        if stmt_type == 'Complex':
-            if source in agent_names and target in agent_names:
-                return s
-        # For directional statements: match source→target order
-        elif len(s.agent_list()) >= 2 and s.agent_list()[0] and s.agent_list()[1]:
-            if s.agent_list()[0].name == source and s.agent_list()[1].name == target:
-                return s
-    return None
 
 
 def _get_edge_styling(stmt_type):
@@ -3567,7 +3535,11 @@ def _get_polarity(stmt_type):
 
 
 @autoclient()
-def get_network(include_db_evidence: bool = True, *, client: Neo4jClient) -> Dict:
+def get_network(
+    include_db_evidence: bool = True,
+    *,
+    client: Neo4jClient,
+) -> Dict:
     """Generate network visualization data from INDRA statements.
 
     Parameters
@@ -3584,19 +3556,20 @@ def get_network(include_db_evidence: bool = True, *, client: Neo4jClient) -> Dic
     """
     try:
         # Get session data
-        statement_hashes = session.get('statement_hashes')
-        input_node_names = session.get('subnetwork_input_nodes')
+        statement_hashes = session.get("statement_hashes")
+        input_node_names = session.get("subnetwork_input_nodes")
 
         if not statement_hashes:
             return {"nodes": [], "edges": [], "error": "No statement hashes found in session"}
 
         # Retrieve statements
-        statements = get_stmts_for_stmt_hashes(
+        statements, evidence_counts = get_stmts_for_stmt_hashes(
             statement_hashes,
             include_db_evidence=include_db_evidence,
             client=client,
-            return_evidence_counts=False
+            return_evidence_counts=True,
         )
+
         if not statements:
             return {"nodes": [], "edges": []}
 
@@ -3605,33 +3578,40 @@ def get_network(include_db_evidence: bool = True, *, client: Neo4jClient) -> Dic
             input_node_names_set = set(input_node_names)
             statements = [
                 stmt for stmt in statements
-                if not isinstance(stmt, Complex) or
-                   {agent.name for agent in stmt.agent_list() if agent}.issubset(input_node_names_set)
+                if not isinstance(stmt, Complex)
+                   or {agent.name for agent in stmt.agent_list() if agent}.issubset(input_node_names_set)
             ]
-        if not statements:
-            return {"nodes": [], "edges": [], "error": "No network data available"}
+            logger.info(f"Subnetwork filtering applied: {len(statements)} statements retained")
 
         # Build network graph
         assembler = IndraNetAssembler(statements)
-        graph = assembler.make_model(method='df', graph_type='multi_graph')
-        if not graph.nodes():
+        graph = assembler.make_model(method="df", graph_type="multi_graph")
+
+        if graph.number_of_nodes() == 0:
             return {"nodes": [], "edges": []}
 
         # Find most connected node for central highlighting
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
-        # Build Nodes and Edges Using Helper Functions
+        # Build visualization components
         nodes = build_nodes_from_graph(graph, statements, central_node)
-        edges = build_edges_from_graph(graph, statements, input_node_names, include_db_evidence)
+        edges = build_edges_from_graph(
+            graph,
+            statements,
+            input_node_names,
+            include_db_evidence,
+            evidence_counts
+        )
 
         return {
             'nodes': nodes,
             'edges': edges
         }
 
+
     except Exception as e:
-        logger.error(f"Error in get_network: {str(e)}")
+        logger.error(f"Error generating network visualization: {str(e)}", exc_info=True)
         return {"nodes": [], "edges": [], "error": str(e)}
 
 
