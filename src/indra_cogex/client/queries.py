@@ -3466,6 +3466,8 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
                 'evidence_count': stmt_evid_count,
                 'belief': getattr(stmt, 'belief', 0.5)
             })
+        # Sort by evidence count descending
+        statement_details.sort(key=lambda x: x['evidence_count'], reverse=True)
 
         # Prepare edge details
         actual_stmt_type = edge_stmt.__class__.__name__

@@ -173,7 +173,7 @@ function initializeNetwork(prefix, identifier) {
 
     console.log("Final payload:", payload);
 
-    // ✅ CHANGED: Use fetchWithRetry instead of fetch
+    // Use fetchWithRetry instead of fetch
     fetchWithRetry(fetchUrl, {
         method: 'POST',
         headers: {
@@ -493,10 +493,17 @@ function initializeNetwork(prefix, identifier) {
 
                     <dt>evidence count</dt>
                     <dd>${details.evidence_count || 'Unknown'}</dd>
+                ;
 
-                    <dt>INDRA statement</dt>
-                    <dd>${details.indra_statement || 'Unknown'}</dd>
+                // Only show single INDRA statement if NOT aggregating multiple statements
+                if (!details.aggregated_statements || details.aggregated_statements.length <= 1) {
+                    dialogContent += `
+                        <dt>INDRA statement</dt>
+                        <dd>${details.indra_statement || 'Unknown'}</dd>
+                   `;
+                }
 
+                dialogContent +=
                     <dt>interaction</dt>
                     <dd>${details.interaction || 'Unknown'}</dd>
 
@@ -513,7 +520,7 @@ function initializeNetwork(prefix, identifier) {
             // Show aggregated statements if available
             if (details.aggregated_statements && details.aggregated_statements.length > 1) {
                 dialogContent += `
-                    <dt>Aggregated Statements (${details.aggregated_statements.length})</dt>
+                    <dt>Aggregated INDRA Statements (${details.aggregated_statements.length})</dt>
                     <dd>
                         <ul style="margin: 0; padding-left: 20px; max-height: 300px; overflow-y: auto;">
                             ${details.aggregated_statements.map(stmt => `
