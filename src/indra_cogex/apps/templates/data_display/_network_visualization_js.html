@@ -493,17 +493,10 @@ function initializeNetwork(prefix, identifier) {
 
                     <dt>evidence count</dt>
                     <dd>${details.evidence_count || 'Unknown'}</dd>
-                ;
 
-                // Only show single INDRA statement if NOT aggregating multiple statements
-                if (!details.aggregated_statements || details.aggregated_statements.length <= 1) {
-                    dialogContent += `
-                        <dt>INDRA statement</dt>
-                        <dd>${details.indra_statement || 'Unknown'}</dd>
-                   `;
-                }
+                    <dt>INDRA statement</dt>
+                    <dd>${details.indra_statement || 'Unknown'}</dd>
 
-                dialogContent +=
                     <dt>interaction</dt>
                     <dd>${details.interaction || 'Unknown'}</dd>
 
