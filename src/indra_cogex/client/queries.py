@@ -2,10 +2,11 @@ import json
 import logging
 import pickle
 import time
+import math
 from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
-
+import math
 import networkx as nx
 from flask import session, request
 
@@ -3305,6 +3306,236 @@ def is_cell_line_sensitive_to_drug(
     )
 
 
+def build_nodes_from_graph(graph, statements, central_node):
+    """Build node list for vis.js visualization from networkx graph (with logging)."""
+    entity_db_refs = {}
+    for stmt in statements:
+        for agent in stmt.agent_list():
+            if agent and hasattr(agent, 'db_refs'):
+                entity_db_refs[agent.name] = agent.db_refs
+
+    nodes = []
+
+    for node_id in graph.nodes():
+        db_refs = entity_db_refs.get(node_id, {})
+        node_type, color, shape = _get_node_styling(db_refs)
+        size = 45 if node_id == central_node else 35
+        font_size = 26 if node_id == central_node else 22
+        border_width = 3 if node_id == central_node else 2
+
+        node_obj = {
+            'id': str(node_id),
+            'label': str(node_id),
+            'title': f"{node_id} ({node_type})",
+            'color': {'background': color, 'border': '#37474F'},
+            'shape': shape,
+            'size': size,
+            'font': {
+                'size': font_size,
+                'color': '#000000',
+                'face': 'arial',
+                'strokeWidth': 0,
+                'vadjust': -40
+            },
+            'borderWidth': border_width,
+            'details': db_refs,
+            'egid': db_refs.get('EGID', ''),
+            'hgnc': db_refs.get('HGNC', ''),
+            'type': node_type.lower(),
+            'uniprot': db_refs.get('UP', '')
+        }
+        nodes.append(node_obj)
+
+    return nodes
+
+
+def _get_node_styling(db_refs):
+    """Determine node type, color, and shape based on database references."""
+    if 'HGNC' in db_refs or 'FPLX' in db_refs:
+        node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
+        return node_type, "#4CAF50", "box"
+    elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
+        node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
+        return node_type, "#FF9800", "diamond"
+    elif 'GO' in db_refs:
+        return "GO", "#2196F3", "hexagon"
+    elif 'MESH' in db_refs:
+        return "MESH", "#9C27B0", "triangle"
+    elif 'UP' in db_refs:
+        return "UP", "#4CAF50", "box"
+    elif db_refs:
+        return "Other", "#009688", "ellipse"
+    else:
+        return "Other", "#607D8B", "ellipse"
+
+
+def build_edges_from_graph(graph, statements, input_node_names, include_db_evidence, evidence_counts):
+    """Build edge list for vis.js visualization from networkx graph."""
+    import math
+
+    # Group statements by edge key
+    statements_by_edge = defaultdict(list)
+
+    for stmt in statements:
+        agents = [a for a in stmt.agent_list() if a]
+        if len(agents) < 2:
+            continue
+
+        stmt_type = stmt.__class__.__name__
+
+        if stmt_type == 'Complex':
+            if len(agents) == 2:
+                edge_key = tuple(sorted([agents[0].name, agents[1].name])) + ('Complex',)
+                statements_by_edge[edge_key].append(stmt)
+        else:
+            # Directional statements
+            edge_key = (agents[0].name, agents[1].name, stmt_type)
+            statements_by_edge[edge_key].append(stmt)
+
+    edges = []
+    edge_count = 0
+    seen_keys = set()
+
+    for source, target, key, data in graph.edges(data=True, keys=True):
+        stmt_type = data.get('stmt_type', 'Interaction')
+
+        # Construct edge key
+        if stmt_type == 'Complex':
+            edge_key = tuple(sorted([source, target])) + ('Complex',)
+        else:
+            edge_key = (source, target, stmt_type)
+
+        # Skip duplicate edges
+        if edge_key in seen_keys:
+            continue
+        seen_keys.add(edge_key)
+
+        # Get matching statements
+        matching_stmts = statements_by_edge.get(edge_key, [])
+
+        if not matching_stmts:
+            continue
+
+        # Use first statement for display metadata
+        edge_stmt = matching_stmts[0]
+
+        # Sum evidence counts from Neo4j metadata
+        if evidence_counts:
+            total_evidence = sum(
+                evidence_counts.get(s.get_hash(), 0)
+                for s in matching_stmts
+            )
+        else:
+            logger.warning(f"No evidence counts available for edge {source}-{target}")
+            total_evidence = sum(
+                len(s.evidence) if hasattr(s, 'evidence') else 1
+                for s in matching_stmts
+            )
+
+        # Calculate width based on aggregated evidence using order-of-magnitude bins
+        if input_node_names and total_evidence > 0:
+            ev_order = int(math.log10(total_evidence))
+            if ev_order <= 0:  # 1–9
+                width = 2
+            elif ev_order == 1:  # 10–99
+                width = 4
+            elif ev_order == 2:  # 100–999
+                width = 7
+            elif ev_order == 3:  # 1k–9k
+                width = 10
+            else:  # 10k+
+                width = 12
+        else:
+            width = 4.0
+
+        # Calculate edge opacity based on belief
+        belief = getattr(edge_stmt, 'belief', 0.5)
+        edge_opacity = 0.4 + (belief * 0.6)
+
+        # Get color and styling
+        base_color, dashes, arrows = _get_edge_styling(stmt_type)
+        color = f'rgba({base_color[0]}, {base_color[1]}, {base_color[2]}, {edge_opacity})'
+
+        # Prepare detailed statement information for dialog
+        statement_details = []
+        for stmt in matching_stmts:
+            stmt_hash = stmt.get_hash()
+            stmt_evid_count = evidence_counts.get(stmt_hash, 0) if evidence_counts else len(stmt.evidence)
+            statement_details.append({
+                'statement': str(stmt),
+                'evidence_count': stmt_evid_count,
+                'belief': getattr(stmt, 'belief', 0.5)
+            })
+        # Sort by evidence count descending
+        statement_details.sort(key=lambda x: x['evidence_count'], reverse=True)
+
+        # Prepare edge details
+        actual_stmt_type = edge_stmt.__class__.__name__
+        edge_details = {
+            'statement_type': actual_stmt_type,
+            'belief': belief,
+            'indra_statement': str(edge_stmt),
+            'interaction': actual_stmt_type.lower(),
+            'polarity': _get_polarity(actual_stmt_type),
+            'support_type': 'database' if include_db_evidence else 'literature',
+            'type': actual_stmt_type,
+            'evidence_count': total_evidence,
+            'statement_count': len(matching_stmts),
+            'aggregated_statements': statement_details
+        }
+
+        # Create hover tooltip
+        title_parts = [actual_stmt_type]
+        title_parts.append(f"{total_evidence} evidence(s)")
+        title_parts.append(f"from {len(matching_stmts)} statement(s)")
+
+        edges.append({
+            'id': f"e{edge_count}",
+            'from': str(source),
+            'to': str(target),
+            'title': "<br>".join(title_parts),
+            'color': {'color': color, 'highlight': color, 'hover': color},
+            'dashes': dashes,
+            'arrows': arrows,
+            'width': width,
+            'details': edge_details,
+            'label': ''
+        })
+
+        edge_count += 1
+
+    return edges
+
+
+
+def _get_edge_styling(stmt_type):
+    """Return RGB base color, dash pattern, and arrow spec for statement type."""
+    if 'Activation' in stmt_type:
+        return (0, 204, 0), False, {"to": {"enabled": True, "scaleFactor": 0.5}}
+    elif 'Inhibition' in stmt_type:
+        return (255, 0, 0), False, {"to": {"enabled": True, "scaleFactor": 0.5}}
+    elif 'Phosphorylation' in stmt_type:
+        return (0, 0, 0), False, {"to": {"enabled": True, "scaleFactor": 0.5}}
+    elif 'Complex' in stmt_type:
+        return (0, 0, 255), False, {'to': {'enabled': False}, 'from': {'enabled': False}}
+    elif 'IncreaseAmount' in stmt_type:
+        return (0, 204, 0), [5, 5], {"to": {"enabled": True, "scaleFactor": 0.5}}
+    elif 'DecreaseAmount' in stmt_type:
+        return (255, 0, 0), [5, 5], {"to": {"enabled": True, "scaleFactor": 0.5}}
+    else:
+        return (153, 153, 153), False, {"to": {"enabled": True, "scaleFactor": 0.5}}
+
+
+def _get_polarity(stmt_type):
+    """Return edge polarity (positive/negative/none)."""
+    if 'Activation' in stmt_type or 'IncreaseAmount' in stmt_type:
+        return 'positive'
+    elif 'Inhibition' in stmt_type or 'DecreaseAmount' in stmt_type:
+        return 'negative'
+    else:
+        return 'none'
+
+
 @autoclient()
 def get_network(
     include_db_evidence: bool = True,
@@ -3327,18 +3558,18 @@ def get_network(
     """
     try:
         # Get session data
-        statement_hashes = session.get('statement_hashes')
-        input_node_names = session.get('subnetwork_input_nodes')
+        statement_hashes = session.get("statement_hashes")
+        input_node_names = session.get("subnetwork_input_nodes")
 
         if not statement_hashes:
             return {"nodes": [], "edges": [], "error": "No statement hashes found in session"}
 
         # Retrieve statements
-        statements = get_stmts_for_stmt_hashes(
+        statements, evidence_counts = get_stmts_for_stmt_hashes(
             statement_hashes,
             include_db_evidence=include_db_evidence,
             client=client,
-            return_evidence_counts=False
+            return_evidence_counts=True,
         )
 
         if not statements:
@@ -3349,193 +3580,40 @@ def get_network(
             input_node_names_set = set(input_node_names)
             statements = [
                 stmt for stmt in statements
-                if not isinstance(stmt, Complex) or
-                   {agent.name for agent in stmt.agent_list() if agent}.issubset(input_node_names_set)
+                if not isinstance(stmt, Complex)
+                   or {agent.name for agent in stmt.agent_list() if agent}.issubset(input_node_names_set)
             ]
-
-        if not statements:
-            return {"nodes": [], "edges": [], "error": "No network data available"}
+            logger.info(f"Subnetwork filtering applied: {len(statements)} statements retained")
 
         # Build network graph
         assembler = IndraNetAssembler(statements)
-        graph = assembler.make_model(method='df', graph_type='multi_graph')
+        graph = assembler.make_model(method="df", graph_type="multi_graph")
 
-        if not graph.nodes():
+        if graph.number_of_nodes() == 0:
             return {"nodes": [], "edges": []}
 
         # Find most connected node for central highlighting
         node_degrees = dict(graph.degree())
         central_node = max(node_degrees.items(), key=lambda x: x[1])[0] if node_degrees else None
 
-        # Build node db_refs mapping
-        entity_db_refs = {}
-        for stmt in statements:
-            for agent in stmt.agent_list():
-                if agent and hasattr(agent, 'db_refs'):
-                    entity_db_refs[agent.name] = agent.db_refs
-
-        # Build nodes
-        nodes = []
-        for node_id in graph.nodes():
-            db_refs = entity_db_refs.get(node_id, {})
-
-            # Determine node type and styling
-            node_type = "Other"
-            color = "#607D8B"
-            shape = "ellipse"
-
-            if 'HGNC' in db_refs or 'FPLX' in db_refs:
-                node_type = "HGNC" if 'HGNC' in db_refs else "FPLX"
-                color = "#4CAF50"
-                shape = "box"
-            elif 'CHEBI' in db_refs or 'PUBCHEM' in db_refs:
-                node_type = "CHEBI" if 'CHEBI' in db_refs else "PUBCHEM"
-                color = "#FF9800"
-                shape = "diamond"
-            elif 'GO' in db_refs:
-                node_type = "GO"
-                color = "#2196F3"
-                shape = "hexagon"
-            elif 'MESH' in db_refs:
-                node_type = "MESH"
-                color = "#9C27B0"
-                shape = "triangle"
-            elif 'UP' in db_refs:
-                node_type = "UP"
-                color = "#4CAF50"
-                shape = "box"
-            elif db_refs:
-                color = "#009688"
-
-            # Highlight central node
-            size = 45 if node_id == central_node else 35
-            font_size = 26 if node_id == central_node else 22
-            border_width = 3 if node_id == central_node else 2
-
-            nodes.append({
-                'id': str(node_id),
-                'label': str(node_id),
-                'title': f"{node_id} ({node_type})",
-                'color': {'background': color, 'border': '#37474F'},
-                'shape': shape,
-                'size': size,
-                'font': {
-                    'size': font_size,
-                    'color': '#000000',
-                    'face': 'arial',
-                    'strokeWidth': 0,
-                    'vadjust': -40
-                },
-                'borderWidth': border_width,
-                'details': db_refs,
-                'egid': db_refs.get('EGID', ''),
-                'hgnc': db_refs.get('HGNC', ''),
-                'type': node_type.lower(),
-                'uniprot': db_refs.get('UP', '')
-            })
-
-        # Build edges
-        edges = []
-        edge_count = 0
-        seen_keys = set()
-
-        for source, target, key, data in graph.edges(data=True, keys=True):
-            stmt_type = data.get('stmt_type', 'Interaction')
-
-            # Create unique edge key
-            if stmt_type == 'Complex':
-                edge_key = tuple(sorted([source, target]))
-            else:
-                edge_key = (source, target, stmt_type)
-
-            if edge_key in seen_keys:
-                continue
-            seen_keys.add(edge_key)
-
-            # Find the corresponding INDRA statement
-            edge_stmt = None
-            for s in statements:
-                if s.__class__.__name__ != stmt_type:
-                    continue
-
-                agent_names = {agent.name for agent in s.agent_list() if agent}
-
-                # For Complex: both nodes must be members of the complex
-                if stmt_type == 'Complex':
-                    if source in agent_names and target in agent_names:
-                        edge_stmt = s
-                        break
-                # For directional statements: match source→target order
-                else:
-                    if (len(s.agent_list()) >= 2 and
-                        s.agent_list()[0] and s.agent_list()[1] and
-                        s.agent_list()[0].name == source and
-                        s.agent_list()[1].name == target):
-                        edge_stmt = s
-                        break
-
-            belief = getattr(edge_stmt, 'belief', 0.5) if edge_stmt else data.get('belief', 0.5)
-
-            # Determine edge styling based on statement type
-            color = "#999999"
-            dashes = False
-            arrows = {"to": {"enabled": True, "scaleFactor": 0.5}}
-            width = 4
-
-            if 'Activation' in stmt_type:
-                color = '#00CC00'
-            elif 'Inhibition' in stmt_type:
-                color = '#FF0000'
-            elif 'Phosphorylation' in stmt_type:
-                color = '#000000'
-            elif 'Complex' in stmt_type:
-                color = '#0000FF'
-                arrows = {'to': {'enabled': False}, 'from': {'enabled': False}}
-            elif 'IncreaseAmount' in stmt_type:
-                color = '#00CC00'
-                dashes = [5, 5]
-            elif 'DecreaseAmount' in stmt_type:
-                color = '#FF0000'
-                dashes = [5, 5]
-
-            actual_stmt_type = edge_stmt.__class__.__name__ if edge_stmt else stmt_type
-
-            # Build edge details for dialog box
-            edge_details = {
-                'statement_type': actual_stmt_type,
-                'belief': belief,
-                'indra_statement': str(edge_stmt) if edge_stmt else 'Unknown',
-                'interaction': actual_stmt_type.lower(),
-                'polarity': (
-                    'positive' if 'Activation' in actual_stmt_type or 'IncreaseAmount' in actual_stmt_type else
-                    'negative' if 'Inhibition' in actual_stmt_type or 'DecreaseAmount' in actual_stmt_type else
-                    'none'
-                ),
-                'support_type': 'database' if include_db_evidence else 'literature',
-                'type': actual_stmt_type
-            }
-
-            edges.append({
-                'id': f"e{edge_count}",
-                'from': str(source),
-                'to': str(target),
-                'title': actual_stmt_type,
-                'color': {'color': color, 'highlight': color, 'hover': color},
-                'dashes': dashes,
-                'arrows': arrows,
-                'width': width,
-                'details': edge_details,
-                'label': ''
-            })
-            edge_count += 1
+        # Build visualization components
+        nodes = build_nodes_from_graph(graph, statements, central_node)
+        edges = build_edges_from_graph(
+            graph,
+            statements,
+            input_node_names,
+            include_db_evidence,
+            evidence_counts
+        )
 
         return {
             'nodes': nodes,
             'edges': edges
         }
 
+
     except Exception as e:
-        logger.error(f"Error in get_network: {str(e)}")
+        logger.error(f"Error generating network visualization: {str(e)}", exc_info=True)
         return {"nodes": [], "edges": [], "error": str(e)}
 
 

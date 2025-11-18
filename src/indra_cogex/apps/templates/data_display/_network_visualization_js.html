@@ -173,7 +173,7 @@ function initializeNetwork(prefix, identifier) {
 
     console.log("Final payload:", payload);
 
-    // ✅ CHANGED: Use fetchWithRetry instead of fetch
+    // Use fetchWithRetry instead of fetch
     fetchWithRetry(fetchUrl, {
         method: 'POST',
         headers: {
@@ -491,6 +491,9 @@ function initializeNetwork(prefix, identifier) {
                     <dt>belief</dt>
                     <dd>${beliefScore}</dd>
 
+                    <dt>evidence count</dt>
+                    <dd>${details.evidence_count || 'Unknown'}</dd>
+
                     <dt>INDRA statement</dt>
                     <dd>${details.indra_statement || 'Unknown'}</dd>
 
@@ -507,6 +510,25 @@ function initializeNetwork(prefix, identifier) {
                     <dd>${details.type || 'Unknown'}</dd>
                 `;
             }
+            // Show aggregated statements if available
+            if (details.aggregated_statements && details.aggregated_statements.length > 1) {
+                dialogContent += `
+                    <dt>Aggregated INDRA Statements (${details.aggregated_statements.length})</dt>
+                    <dd>
+                        <ul style="margin: 0; padding-left: 20px; max-height: 300px; overflow-y: auto;">
+                            ${details.aggregated_statements.map(stmt => `
+                                <li style="margin-bottom: 8px;">
+                                    <strong>${stmt.statement}</strong><br>
+                                    <span style="font-size: 0.9em; color: #666;">
+                                        Evidence: ${stmt.evidence_count} | Belief: ${stmt.belief.toFixed(2)}
+                                    </span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </dd>
+                `;
+            }
+
 
             dialogContent += `</dl>`;
             detailsDialog.innerHTML = dialogContent;
