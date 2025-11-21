@@ -226,7 +226,8 @@ def load_sigs(
     ----------
     correction_method :
         The correction method to use. Options are:
-        'bonferroni', 'benjamini-hochberg', 'benjamini-yekutieli'.
+        'bonferroni', 'benjamini-hochberg', 'benjamini-yekutieli'. Default is
+        'benjamini-yekutieli'.
     recalculate :
         Whether to recalculate the significant pairs.
 
