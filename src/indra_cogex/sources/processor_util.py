@@ -2,6 +2,9 @@
 # and
 # https://neo4j.com/docs/api/python-driver/current/api.html#data-types
 # for available data types.
+import csv
+import gzip
+from tqdm import tqdm
 from typing import Literal, Any, Union
 
 NEO4J_DATA_TYPES = (
@@ -71,6 +74,20 @@ class InfinityValueError(ValueError):
     """Raised when a float value is infinity."""
 
 
+class DuplicateNodeIDError(ValueError):
+    """Raised when a duplicate node ID is found in a node file."""
+
+
+class MissingNodeIDError(ValueError):
+    """Raised when a non-existent node ID referenced in a relationship file."""
+
+
+class LabelNotAllowedError(ValueError):
+    """Raised when a node label is not allowed."""
+    # This is raised when, during node dumping, a node with a label other than
+    # those intended to be dumped is encountered.
+
+
 def _check_no_newlines(value: str):
     if "\n" in value or "\r" in value:
         raise NewLineInStringError(
@@ -86,12 +103,15 @@ def _check_noinfinity(value: Union[float | str]):
     if isinstance(value, str):
         try:
             fval = float(value)
+        except ValueError:
+            # Not convertible to float
+            pass
+        else:
+            # Is convertible to float
             if fval == float("inf") or fval == float("-inf"):
                 raise InfinityValueError(
                     f"Float value '{value}' is infinity, which is not allowed in Neo4j."
                 )
-        except ValueError:
-            pass
 
 
 def data_validator(data_type: str, value: Any):
@@ -249,3 +269,89 @@ def data_validator(data_type: str, value: Any):
         raise UnknownTypeError(
             f"{data_type} is not recognized as a Neo4j data type."
         )
+
+
+def check_duplicated_nodes(nodes_tsv_gz_file) -> set[str]:
+    """Check for duplicated node IDs in the nodes files.
+
+    Parameters
+    ----------
+    nodes_tsv_gz_file : str | PathLike
+        Path to the gzipped TSV file containing nodes.
+
+    Returns
+    -------
+    :
+        The set of node IDs found in both files.
+
+    Raises
+    ------
+    DuplicateNodeIDError
+        If duplicate node IDs are found in nodes_tsv_gz_file.
+    """
+    # Check for duplicate node IDs in the nodes_tsv_gz_file
+    node_ids = set()
+    with gzip.open(nodes_tsv_gz_file, "rt") as f:
+        tqdm.write(f"Checking {nodes_tsv_gz_file}")
+        reader = csv.reader(f, delimiter="\t")
+        header = next(reader)
+        id_index = header.index("id:ID")
+        for row in tqdm(reader, unit="nodes", leave=False):
+            id_value = row[id_index]
+            if id_value in node_ids:
+                raise DuplicateNodeIDError(
+                    f"Duplicate node ID found in {nodes_tsv_gz_file}: {id_value}"
+                )
+            node_ids.add(id_value)
+
+    return node_ids
+
+
+def check_missing_node_ids_in_edges(edges_tsv_gz_file, node_ids: set[str]):
+    """Ensure every node ID referenced in the edges file exists in `node_ids`
+
+    Parameters
+    ----------
+    edges_tsv_gz_file :
+        Path to the gzipped TSV file containing edges.
+    node_ids :
+        Set of valid node IDs from the nodes files.
+
+    Raises
+    ------
+    MissingNodeIDError
+        If a node ID in the edges file does not exist in the nodes file.
+    """
+    # Check for missing node IDs in the edges_tsv_gz_file
+    with gzip.open(edges_tsv_gz_file, "rt") as f:
+        reader = csv.reader(f, delimiter="\t")
+        header = next(reader)
+        start_id_index = header.index(":START_ID")
+        end_id_index = header.index(":END_ID")
+        type_index = header.index(":TYPE")
+        message = (
+            "Edge ({start})-[{type}]->({end}) references missing node ID {missing_id}."
+        )
+        tqdm.write(f"Checking {edges_tsv_gz_file}")
+        for row in tqdm(reader, unit="edges", leave=False):
+            type_value = row[type_index]
+            start_id_value = row[start_id_index]
+            end_id_value = row[end_id_index]
+            if start_id_value not in node_ids:
+                raise MissingNodeIDError(
+                    message.format(
+                        start=start_id_value,
+                        type=type_value,
+                        end=end_id_value,
+                        missing_id=start_id_value,
+                    )
+                )
+            if end_id_value not in node_ids:
+                raise MissingNodeIDError(
+                    message.format(
+                        start=start_id_value,
+                        type=type_value,
+                        end=end_id_value,
+                        missing_id=end_id_value,
+                    )
+                )

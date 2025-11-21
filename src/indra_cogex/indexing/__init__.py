@@ -87,3 +87,20 @@ def index_indra_rel_on_stmt_hash(client: Neo4jClient):
     client.create_single_property_relationship_index(
         index_name="indra_rel_hash", rel_type="indra_rel", property_name="stmt_hash"
     )
+
+
+def create_vector_index_evidence_nodes(client: Neo4jClient):
+    """Create a vector index on the embedding property of Evidence nodes
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient instance to the graph database to be indexed
+    """
+    client.create_vector_node_index(
+        index_name="ev_embedding_index",
+        label="Evidence",
+        property_name="embedding",
+        algorithm="cosine",
+        dim=384,
+    )

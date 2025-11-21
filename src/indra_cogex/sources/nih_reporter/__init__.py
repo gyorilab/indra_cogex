@@ -150,7 +150,7 @@ class NihReporterProcessor(Processor):
             df = _read_first_df(publink_file)
             # We're only interested in the PMIDs so iterate over unique values
             for pmid in df["PMID"].unique():
-                if pmid in yielded_pubs:
+                if pmid not in yielded_pubs:
                     yield Node(
                         db_ns="PUBMED",
                         db_id=str(pmid),

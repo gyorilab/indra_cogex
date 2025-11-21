@@ -4,7 +4,18 @@ import inspect
 import logging
 from functools import lru_cache, wraps
 from itertools import count
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    Literal,
+)
 import json
 
 import neo4j.graph
@@ -12,7 +23,7 @@ from indra.config import get_config
 from indra.databases import identifiers
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent
-from neo4j import GraphDatabase, Transaction, unit_of_work
+from neo4j import GraphDatabase, ManagedTransaction, unit_of_work
 
 from indra_cogex.representation import Node, Relation, norm_id, \
     triple_query, triple_parameter_query
@@ -70,6 +81,8 @@ class Neo4jClient:
             auth=auth,
             max_connection_lifetime=3 * 60,
         )
+        self.driver.verify_connectivity()
+        logger.info("Connected to neo4j graph at %s", url)
 
     def __del__(self):
         # Safely shut down the driver as a Neo4jClient object is garbage collected
@@ -115,7 +128,7 @@ class Neo4jClient:
     def create_tx(
         self,
         query: str,
-        query_params: Optional[Mapping[str, Any]] = None,
+        query_params: Optional[dict[str, Any]] = None,
     ):
         """Run a transaction which writes to the neo4j instance.
 
@@ -127,7 +140,7 @@ class Neo4jClient:
             Parameters associated with the query.
         """
         with self.driver.session() as session:
-            return session.write_transaction(
+            return session.execute_write(
                 do_cypher_tx, query, query_params=query_params
             )
 
@@ -164,17 +177,17 @@ class Neo4jClient:
             objects (typically neo4j nodes or relations).
         """
         # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/4.4/api.html#session-construction
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#sessions-transactions
         # and
-        # https://neo4j.com/docs/api/python-driver/4.4/api.html#explicit-transactions
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#transaction
         # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
+        # https://neo4j.com/docs/api/python-driver/6.0/api.html#managed-transactions-transaction-functions
         with self.driver.session() as session:
             # do_cypher_tx is ultimately called as
             # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
             # where *args and **kwargs are passed through unchanged, meaning
             # do_cypher_tx can expect query and **query_params
-            values = session.read_transaction(
+            values = session.execute_read(
                 do_cypher_tx, query, **query_params
             )
 
@@ -989,7 +1002,7 @@ class Neo4jClient:
         """Create a single property node index.
 
         Reference:
-        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-only-if-it-does-not-already-exist
+        https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-a-single-property-range-index-for-nodes
 
         Parameters
         ----------
@@ -1003,6 +1016,13 @@ class Neo4jClient:
             If True, ignore the indexes that already exist. If False,
             raise error if index already exists. Default: False.
         """
+        # Todo:
+        #  Checkout property constraints:
+        #  https://neo4j.com/docs/cypher-manual/25/constraints/managing-constraints/#create-property-type-constraints
+        #  And the new index types since Neo4j 5.x:
+        #  https://neo4j.com/docs/upgrade-migration-guide/current/version-5/migration/planning/#_choosing_a_replacement_index
+        #  Consider using the TEXT index (requires property type constraint):
+        #  https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-text-index
         logger.info(
             f"Creating index '{index_name}' for label '{label}' on property "
             f"'{property_name}'. Index is created in background and may not "
@@ -1024,7 +1044,7 @@ class Neo4jClient:
         IF NOT EXISTS option to silently ignore if the index already exists.
 
         Reference:
-        https://neo4j.com/docs/cypher-manual/4.4/indexes-for-search-performance/#administration-indexes-create-a-single-property-b-tree-index-for-relationships
+        https://neo4j.com/docs/cypher-manual/25/indexes/search-performance-indexes/managing-indexes/#create-a-single-property-range-index-for-relationships
 
         Parameters
         ----------
@@ -1044,6 +1064,263 @@ class Neo4jClient:
             f"CREATE INDEX {index_name} FOR ()-[r:{rel_type}]-() ON (r.{property_name})"
         )
         self.create_tx(create_query)
+
+    def create_vector_node_index(
+        self,
+        index_name: str,
+        label: str,
+        property_name: str,
+        dim: int,
+        algorithm: Literal["cosine", "euclidean"] = "cosine",
+    ):
+        """Create a vector index on nodes.
+
+        Note: This assumes the data type of the property is already set to
+        'float[]' or 'int[]' (or equivalent) when the nodes were created.
+
+        Parameters
+        ----------
+        index_name :
+            The name of the index.
+        label :
+            The label of the node.
+        property_name :
+            The property name to index.
+        dim :
+            The dimensionality of the vector embeddings.
+        algorithm :
+            The similarity algorithm to use. Either 'cosine' or 'euclidean'.
+            Default is 'cosine'.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported algorithm is provided.
+        """
+        # todo: Since 2025.10 there is also a dedicated vector index type:
+        #  https://neo4j.com/docs/operations-manual/2025.10/import/#import-tool-header-format-properties
+        #  Scroll down to: "Special considerations for vector data types introduced in 2025.10"
+        #  Unfortunately, this data type requires Neo4j Enterprise Edition, so we have
+        #  to stick to using float[] as type for now.
+        if algorithm not in ["cosine", "euclidean"]:
+            raise ValueError(
+                "Only 'cosine' and 'euclidean' algorithms are supported."
+            )
+        logger.info(
+            f"Creating vector index '{index_name}' for label '{label}' on property "
+            f"'{property_name}' with '{algorithm}' similarity function. "
+            f"Index is created in background and may not be immediately available."
+        )
+        vector_index_query = f"""\
+        CREATE VECTOR INDEX {index_name} IF NOT EXISTS 
+        FOR (m:{label})
+        ON m.{property_name}
+        OPTIONS {{ 
+            indexConfig: {{
+                `vector.dimensions`: {dim},
+                `vector.similarity_function`: '{algorithm}'
+            }}
+        }}"""
+        self.create_tx(vector_index_query)
+
+    def query_knn_evidence_text(
+        self, evidence_id: str, k: int = 5
+    ) -> dict[str, tuple[int, float, Node]]:
+        """Query the k nearest neighbor evidence based on text embeddings.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node to query against. This is the id property
+            of the Evidence node in the neo4j database returned by e.g.
+            'MATCH (m:Evidence {stmt_hash: 21850866597217719) RETURN m.id LIMIT 1'
+        k :
+            The number of nearest neighbors to return. Default is 5.
+
+        Returns
+        -------
+        :
+            A dictionary mapping evidence id to a tuple of (stmt_hash, score, Node).
+        """
+        query = """\
+        MATCH (m:Evidence {id: "$evidence_id"})
+        CALL db.index.vector.queryNodes('ev_embedding_index', $k, m.embedding)
+        YIELD node AS evidence, score
+        RETURN evidence.id, evidence.stmt_hash, evidence, score"""
+        res = self.query_tx(query, evidence_id=evidence_id, k=k)
+        nn_evidence = {}
+        for ev_id, stmt_hash, neo4j_node, score in res:
+            node = self.neo4j_to_node(neo4j_node)
+            nn_evidence[ev_id] = (stmt_hash, score, node)
+        return nn_evidence
+
+    def query_evidence_cosine_similarity(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+    ) -> Optional[float]:
+        """Query the cosine similarity between two evidence text embeddings
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+
+        Returns
+        -------
+        :
+            The cosine similarity between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m1:Evidence {id: $evidence_id1}), (m2:Evidence {id: $evidence_id2})
+        RETURN vector.similarity.cosine(m1.embedding, m2.embedding) AS similarity"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_euclidean_similarity(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+    ) -> Optional[float]:
+        """Query the Euclidean similarity between two evidence text embeddings
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+
+        Returns
+        -------
+        :
+            The Euclidean similarity between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m1:Evidence {id: $evidence_id1}), (m2:Evidence {id: $evidence_id2})
+        RETURN vector.similarity.euclidean(m1.embedding, m2.embedding) AS similarity"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_dimension(self, evidence_id: str) -> Optional[int]:
+        """Query the dimension of the evidence text embedding.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node.
+
+        Returns
+        -------
+        :
+            The dimension of the evidence embedding, or None if the evidence
+            node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m:Evidence {id: $evidence_id})
+        RETURN size(m.embedding)
+        """
+        res = self.query_tx(
+            query,
+            evidence_id=evidence_id,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_distance(
+        self,
+        evidence_id1: str,
+        evidence_id2: str,
+        vector_distance_metric: Literal[
+            "EUCLIDEAN",
+            "EUCLIDEAN_SQUARED",
+            "MANHATTAN",
+            "COSINE",
+            "DOT",
+            "HAMMING",
+        ] = "EUCLIDEAN",
+    ) -> Optional[float]:
+        """Query the distance between two evidence text embeddings.
+
+        Parameters
+        ----------
+        evidence_id1 :
+            The id of the first evidence node.
+        evidence_id2 :
+            The id of the second evidence node.
+        vector_distance_metric :
+            The vector distance metric to use. Default is 'EUCLIDEAN'.
+
+        Returns
+        -------
+        :
+            The distance between the two evidence embeddings, or None
+            if either evidence node does not exist.
+        """
+        query = f"""\
+        CYPHER 25
+        MATCH (m1:Evidence {{id: $evidence_id1}}), (m2:Evidence {{id: $evidence_id2}})
+        RETURN vector_distance(
+            vector(m1.embedding, 384, FLOAT32),
+            vector(m2.embedding, 384, FLOAT32),
+            {vector_distance_metric}
+        ) AS distance"""
+        res = self.query_tx(
+            query,
+            evidence_id1=evidence_id1,
+            evidence_id2=evidence_id2,
+            squeeze=True,
+        )
+        return res[0] if res else None
+
+    def query_evidence_embedding_norm(
+        self,
+        evidence_id: str,
+        vector_distance_metric: Literal["EUCLIDEAN", "MANHATTAN"] = "EUCLIDEAN",
+    ) -> Optional[float]:
+        """Query the norm of an evidence text embedding.
+
+        Parameters
+        ----------
+        evidence_id :
+            The id of the evidence node.
+        vector_distance_metric :
+            The vector distance metric to use. Default is 'EUCLIDEAN'.
+
+        Returns
+        -------
+        :
+            The norm of the evidence embedding, or None if the evidence
+            node does not exist.
+        """
+        query = """\
+        CYPHER 25
+        MATCH (m:Evidence {id: $evidence_id})
+        RETURN vector_norm(vector(m.embedding, 384, FLOAT32), """
+        query += f"{vector_distance_metric}) AS norm"
+        res = self.query_tx(
+            query,
+            evidence_id=evidence_id,
+            squeeze=True,
+        )
+        return res[0] if res else None
 
     def check_curie_exists(self, agent:  Union[str, Tuple[str, str]]) -> bool:
         """Check if an agent with the given id exists in the database.
@@ -1181,11 +1458,10 @@ def autoclient(*, cache: bool = False, maxsize: Optional[int] = 128):
 
 
 # Follows example here:
-# https://neo4j.com/docs/python-manual/4.4/session-api/#python-driver-simple-transaction-fn
-# and from the docstring of neo4j.Session.read_transaction
+# https://neo4j.com/docs/api/python-driver/6.0/api.html#neo4j.unit_of_work
 @unit_of_work()
 def do_cypher_tx(
-        tx: Transaction,
+        tx: ManagedTransaction,
         query: str,
         **query_params
 ) -> List[List]:
@@ -1193,4 +1469,3 @@ def do_cypher_tx(
     # run-time
     result = tx.run(query, parameters=query_params)
     return [record.values() for record in result]
-
