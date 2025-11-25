@@ -1,0 +1,103 @@
+version: v0.0.1
+
+tool:
+  name: INDRA
+  repo_url: https://github.com/gyorilab/indra_db
+  package_url: https://pypi.org/project/indra
+  tool_homepage: https://www.indra.bio/
+  documentation_url: https://indra.readthedocs.io/en/latest/installation.html
+  tool_type: Library
+
+llm:
+  usesLlm: true
+  modelsSupported:
+    - openai
+  modelsRequired:
+    - openai
+  bringOwnKey: false
+
+input:
+  - name: omics/molecular unstructured 1
+    dataCategory: omics-molecular
+    dataClass: unstructured-text
+    dataType: Publications
+    format:
+      - txt
+    dataStandard:
+      - unknown
+    proprietary: false
+    source:
+  - name: omics/molecular structured 1
+    dataCategory: omics-molecular
+    dataClass: structured
+    dataType: Multiple structured databases (not raw data)
+    format:
+      - various
+    dataStandard:
+      - BioPAX
+      - PSI-ML
+      - BEL
+      - various non-standard formats
+    proprietary: false
+    source:
+  - name: omics/molecular tabular 1
+    dataCategory: omics-molecular
+    dataClass: tabular
+    dataType: proteomics
+    format:
+      - csv
+    dataStandard:
+      - unknown
+    proprietary: false
+    source:
+
+output:
+  - name: Knowledge Graph 1
+    dataCategory: knowledge graph
+    dataClass: graph-or-network
+    dataType: unknown
+    format:
+      - json
+    dataStandard:
+      - unknown
+    proprietary: false
+    source:
+  - name: Interpretation results 1
+    dataCategory: interpretation results
+    dataClass: tabular
+    dataType: enrichment, evidence from knowledge graph
+    format:
+      - csv
+    dataStandard:
+      - unknown
+    proprietary: false
+    source:
+
+collaborations: []
+
+domains:
+  - omics data interpretation
+
+credit:
+  - name: NEU ASKEM Team
+    role: Developer
+    org: Northeastern University
+    url: https://gyorilab.github.io/
+
+maturity:
+  beginning_maturity: 1
+  current_maturity: 6
+
+license:
+  license_type: BSD-2-Clause
+  link: https://github.com/gyorilab/indra_cogex/blob/main/LICENSE
+
+target_users:
+  primary_user:
+    user_type: researcher
+    technical_literacy_level:
+      - intermediate
+    biomedical_literacy_level:
+      - intermediate
+
+media: []
