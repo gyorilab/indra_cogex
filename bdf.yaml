@@ -2,9 +2,9 @@ version: v0.0.1
 
 tool:
   name: INDRA
-  repo_url: https://github.com/gyorilab/indra_db
+  repo_url: https://github.com/gyorilab/indra_cogex
   package_url: https://pypi.org/project/indra
-  tool_homepage: https://www.indra.bio/
+  tool_homepage: https://discovery.indra.bio
   documentation_url: https://indra.readthedocs.io/en/latest/installation.html
   tool_type: Library
 
