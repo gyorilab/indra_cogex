@@ -62,5 +62,5 @@ sh import.sh
 ```
 
 ## Funding
-The development of this project is funded under the DARPA Young Faculty Award
-(ARO grant W911NF2010255).
+The development of this project is funded under the DARPA ASKEM/ARPA-H BDF programs (HR00112220036) and previously the DARPA Young Faculty Award
+(W911NF2010255).
