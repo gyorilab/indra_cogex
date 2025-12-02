@@ -67,6 +67,8 @@
                     <option selected value="none">none</option>
                     <option value="db_src_count_asc">database source count (ascending)</option>
                     <option value="db_src_count_desc">database source count (descending)</option>
+                    <option value="reader_src_count_asc">reader source count (ascending)</option>
+                    <option value="reader_src_count_desc">reader source count (descending)</option>
                 </select>
             </div>
             Databases - <source-display></source-display> - Readers
@@ -111,7 +113,7 @@
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in stmts"
+                        v-for="st_obj in shown_stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -167,6 +169,33 @@
                     let currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
                     window.location.href = currentUrl.toString();
+                }
+            },
+            computed: {
+                shown_stmts() {
+                    if (this.sorting_method === 'none') {
+                        return this.stmts;
+                    }
+                    let sourcesList = [];
+                    if (this.sorting_method === 'db_src_count_asc' || this.sorting_method === 'db_src_count_desc') {
+                        sourcesList = this.$sources && this.$sources.databases ? this.$sources.databases : [];
+                    } else if (this.sorting_method === 'reader_src_count_asc' || this.sorting_method === 'reader_src_count_desc') {
+                        sourcesList = this.$sources && this.$sources.reading ? this.$sources.reading : [];
+                    } else {
+                        // If an unknown sorting method is selected, return unsorted statements
+                        return this.stmts;
+                    }
+                    const sorted = [...this.stmts].sort((a, b) => {
+                        const countA = Object.keys(a.sources).filter(src => sourcesList.includes(src)).reduce((sum, src) => sum + a.sources[src], 0);
+                        const countB = Object.keys(b.sources).filter(src => sourcesList.includes(src)).reduce((sum, src) => sum + b.sources[src], 0);
+                        if (this.sorting_method === 'db_src_count_asc' || this.sorting_method === 'reader_src_count_asc') {
+                            return countA - countB;
+                        } else if (this.sorting_method === 'db_src_count_desc' || this.sorting_method === 'reader_src_count_desc') {
+                            return countB - countA;
+                        }
+                        return 0;
+                    });
+                    return sorted;
                 }
             }
         });
