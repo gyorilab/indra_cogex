@@ -61,6 +61,14 @@
             <h4 class="my-0 font-weight-normal">
                 {% if title %}{{ title }}{% else %}INDRA Knowledge Graph Statements{% endif %}
             </h4>
+            <div class="form-group">
+                <label for="sort-select">Sorting</label>
+                <select class="form-control" id="sort-select" v-model="sorting_method">
+                    <option selected value="none">none</option>
+                    <option value="db_src_count_asc">database source count (ascending)</option>
+                    <option value="db_src_count_desc">database source count (descending)</option>
+                </select>
+            </div>
             Databases - <source-display></source-display> - Readers
         </div>
         {% if stmts|length == 0 %}
@@ -151,7 +159,8 @@
                     {% endfor %}
                 ],
                 include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
-                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }},
+                sorting_method: 'none'
             },
             methods: {
                 updateIncludeDbEvidence() {
