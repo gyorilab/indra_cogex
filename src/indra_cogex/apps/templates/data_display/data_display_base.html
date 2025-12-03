@@ -61,19 +61,27 @@
             <h4 class="my-0 font-weight-normal">
                 {% if title %}{{ title }}{% else %}INDRA Knowledge Graph Statements{% endif %}
             </h4>
-            <div class="form-group">
-                <label for="sort-select">Sorting</label>
-                <select class="form-control" id="sort-select" v-model="sorting_method">
-                    <option selected value="none">none</option>
-                    <option value="db_src_count">database source count</option>
-                    <option value="reader_src_count">reader source count</option>
-                    <option value="evidence_count">Total evidence count</option>
-                </select>
-            </div>
-            <div class="custom-control custom-switch">
-                <input type="checkbox" class="custom-control-input" id="reverseSwitch" v-model="reverse_sorting">
-                <label class="custom-control-label" for="reverseSwitch">Ascending order</label>
-            </div>
+            <form class="form-inline my-1" @submit.prevent>
+                <div class="form-group mr-3">
+                    <label class="mr-2" for="sort-select">Sorting</label>
+                    <select class="form-control"
+                            id="sort-select"
+                            v-model="sorting_method">
+                        <option selected value="none">none</option>
+                        <option value="db_src_count">database source count</option>
+                        <option value="reader_src_count">reader source count</option>
+                        <option value="evidence_count">Total evidence count</option>
+                    </select>
+                </div>
+                <div class="custom-control custom-switch">
+                    <input type="checkbox"
+                           class="custom-control-input"
+                           id="reverseSwitch"
+                           v-model="reverse_sorting">
+                    <label class="custom-control-label" for="reverseSwitch">Ascending
+                        order</label>
+                </div>
+            </form>
             Databases - <source-display></source-display> - Readers
         </div>
         {% if stmts|length == 0 %}
