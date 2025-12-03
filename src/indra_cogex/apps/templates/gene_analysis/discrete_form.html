@@ -1,8 +1,88 @@
 {% extends "base_form.html" %}
+{% import "bootstrap4/form.html" as wtf %}
 
 {% block title %}Discrete Gene Set Analysis{% endblock %}
 
 {% block header %}Gene Set Analysis{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        /* Enhanced toggle switch styling for INDRA path-based analysis */
+        .custom-switch-lg .custom-control-label {
+            padding-left: 3rem;
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: pointer;
+        }
+
+        .custom-switch-lg .custom-control-label::before {
+            left: -3rem;
+            width: 3.5rem;
+            height: 1.75rem;
+            border-radius: 1.75rem;
+            background-color: #dee2e6;
+            border: 1px solid #adb5bd;
+        }
+
+        .custom-switch-lg .custom-control-label::after {
+            left: calc(-3rem + 2px);
+            width: calc(1.75rem - 4px);
+            height: calc(1.75rem - 4px);
+            border-radius: 50%;
+            background-color: #fff;
+            transition: transform 0.15s ease-in-out;
+        }
+
+        .custom-switch-lg .custom-control-input:checked ~ .custom-control-label::before {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .custom-switch-lg .custom-control-input:checked ~ .custom-control-label::after {
+            transform: translateX(1.75rem);
+        }
+
+        /* Highlight wrapper for the toggle */
+        .toggle-highlight-wrapper {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+    </style>
+{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="display-4">{% block header %}{% endblock %}</h1>
+        <p class="lead">
+            {% block lead %}{% endblock %}
+        </p>
+        <form method="POST" id="main-form">
+            {{ form.hidden_tag() }}
+
+            {# Render all fields except indra_path_analysis #}
+            {% for field in form %}
+                {% if field.name != 'indra_path_analysis' and field.name != 'csrf_token' %}
+                    {{ wtf.render_field(field) }}
+                {% endif %}
+            {% endfor %}
+
+            {# Manually render INDRA path analysis as toggle switch #}
+            <div class="toggle-highlight-wrapper">
+                <div class="custom-control custom-switch custom-switch-lg">
+                    {{ form.indra_path_analysis(class="custom-control-input") }}
+                    {{ form.indra_path_analysis.label(class="custom-control-label") }}
+                </div>
+            </div>
+
+            {# Render submit button #}
+            {{ wtf.render_field(form.submit) }}
+        </form>
+    </div>
+{% endblock %}
 
 {% block scripts %}
     {{ super() }}
