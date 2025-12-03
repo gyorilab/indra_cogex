@@ -9,6 +9,22 @@
             href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
     />
+    <style>
+        .info-icon {
+            cursor: help;
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-left: 4px;
+        }
+        .info-icon:hover {
+            color: #495057;
+        }
+        .ranking-explanation {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+    </style>
 {% endblock %}
 
 {% block scripts %}
@@ -17,7 +33,7 @@
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
         const datatablesConf = {
-            "order": [[2, "asc"]],
+            "order": [[3, "asc"]],  // Sort by p-value (column 3 after adding Overlap column)
             pageLength: 10,
             layout: {
                 // Full documentation of layout:
@@ -57,25 +73,78 @@
             $("#indra-table-upstream-kinase").DataTable(datatablesConf);
             $("#indra-table-upstream-tf").DataTable(datatablesConf);
             {% endif %}
+
+            // Initialize Bootstrap popovers
+            $('[data-toggle="popover"]').popover({
+                html: true,
+                trigger: 'hover',
+                placement: 'top'
+            });
         });
     </script>
 {% endblock %}
 
 {% macro render_table(df, table_id) -%}
+    <p class="ranking-explanation">
+        <i class="fas fa-info-circle"></i>
+        Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
+        The "Overlap" column shows how many of your input genes contribute to each result.
+    </p>
     <table class="table table-hover table-striped table-ora" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
-            <th scope="col">CURIE</th>
+            <th scope="col">CURIE
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term."></i>
+            </th>
             <th scope="col">Name</th>
-            <th scope="col"><i>p</i>-value</th>
-            <th scope="col"><i>q</i>-value</th>
+            <th scope="col">Overlap
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>Overlap</strong> shows how many of your input genes are annotated to this term. Click the badge to see the list of contributing genes."></i>
+            </th>
+            <th scope="col"><i>p</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+            </th>
+            <th scope="col"><i>q</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). It accounts for testing many terms simultaneously. Smaller values indicate more significant results after correction."></i>
+            </th>
         </tr>
         </thead>
         <tbody>
-        {% for curie, name, p, mlp, q, mlq in df.values %}
+        {% for curie, name, p, overlap_count, overlap_genes, mlp, q, mlq in df.values %}
             <tr>
                 <td><a href="https://bioregistry.io/{{ curie }}" target="_blank">{{ curie }}</a></td>
                 <td>{{ name }}</td>
+                <td>
+                    <span class="badge badge-primary" style="cursor: pointer;"
+                          data-toggle="collapse"
+                          data-target="#genes-{{ table_id }}-{{ loop.index }}"
+                          title="Click to see contributing genes">
+                        {{ overlap_count }}/{{ genes|length }}
+                    </span>
+                    <div class="collapse mt-1" id="genes-{{ table_id }}-{{ loop.index }}">
+                        <small>
+                            {% for gene_id in overlap_genes %}
+                                <a href="https://bioregistry.io/hgnc:{{ gene_id }}" target="_blank" class="badge badge-info mr-1 mb-1">
+                                    HGNC:{{ gene_id }}
+                                    {% if genes.get(gene_id) %}
+                                        ({{ genes[gene_id] }})
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </small>
+                    </div>
+                </td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
             </tr>
@@ -88,18 +157,49 @@
    {% set is_downstream = "downstream" in table_id %}
    {% set is_kinase = "kinase" in table_id %}
    {% set is_tf = "tf" in table_id %}
+   <p class="ranking-explanation">
+        <i class="fas fa-info-circle"></i>
+        Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
+        The "Overlap" column shows how many of your input genes contribute to each result.
+    </p>
    <table class="table table-hover table-striped table-ora" id="indra-{{ table_id }}" style="width: 100%;">
        <thead>
        <tr>
-           <th scope="col">CURIE</th>
+           <th scope="col">CURIE
+               <i class="fas fa-info-circle info-icon"
+                  data-toggle="popover"
+                  data-placement="top"
+                  data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term."></i>
+           </th>
            <th scope="col">Name</th>
-           <th scope="col"><i>p</i>-value</th>
-           <th scope="col"><i>q</i>-value</th>
-           <th scope="col">Statements</th>
+           <th scope="col">Overlap
+               <i class="fas fa-info-circle info-icon"
+                  data-toggle="popover"
+                  data-placement="top"
+                  data-content="<strong>Overlap</strong> shows how many of your input genes are connected to this regulator via INDRA statements. Click the badge to see the list of contributing genes."></i>
+           </th>
+           <th scope="col"><i>p</i>-value
+               <i class="fas fa-info-circle info-icon"
+                  data-toggle="popover"
+                  data-placement="top"
+                  data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+           </th>
+           <th scope="col"><i>q</i>-value
+               <i class="fas fa-info-circle info-icon"
+                  data-toggle="popover"
+                  data-placement="top"
+                  data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). Smaller values indicate more significant results after correction."></i>
+           </th>
+           <th scope="col">Statements
+               <i class="fas fa-info-circle info-icon"
+                  data-toggle="popover"
+                  data-placement="top"
+                  data-content="<strong>Statements</strong> are INDRA causal relationships connecting your input genes to this regulator. Click 'View Statements' to see the detailed evidence."></i>
+           </th>
        </tr>
        </thead>
        <tbody>
-       {% for curie, name, p, mlp, q, mlq, statements in df.values %}
+       {% for curie, name, p, overlap_count, overlap_genes, mlp, q, mlq, statements in df.values %}
            {% set gene_list = [] %}
            {% for gene_id in genes.keys() %}
                {% do gene_list.append("HGNC:" + gene_id) %}
@@ -109,6 +209,26 @@
                data-regulator-name="{{ name | e }}">
                <td><a href="https://bioregistry.io/{{ curie }}" target="_blank">{{ curie }}</a></td>
                <td>{{ name }}</td>
+               <td>
+                   <span class="badge badge-primary" style="cursor: pointer;"
+                         data-toggle="collapse"
+                         data-target="#genes-indra-{{ table_id }}-{{ loop.index }}"
+                         title="Click to see contributing genes">
+                       {{ overlap_count }}/{{ genes|length }}
+                   </span>
+                   <div class="collapse mt-1" id="genes-indra-{{ table_id }}-{{ loop.index }}">
+                       <small>
+                           {% for gene_id in overlap_genes %}
+                               <a href="https://bioregistry.io/hgnc:{{ gene_id }}" target="_blank" class="badge badge-info mr-1 mb-1">
+                                   HGNC:{{ gene_id }}
+                                   {% if genes.get(gene_id) %}
+                                       ({{ genes[gene_id] }})
+                                   {% endif %}
+                               </a>
+                           {% endfor %}
+                       </small>
+                   </div>
+               </td>
                <td>{{ "{:.2e}".format(p) }}</td>
                <td>{{ "{:.2e}".format(q) }}</td>
                <td>
@@ -197,7 +317,12 @@
                             HPO
                         </a>
                     </li>
-                    {% if indra_downstream_results is not none %}
+                </ul>
+
+                {% if indra_downstream_results is not none %}
+                    <hr style="margin-top: 1rem; margin-bottom: 1rem;">
+                    <h5 style="margin-bottom: 0.5rem; color: #212529;">INDRA Path-Based Analyses:</h5>
+                    <ul class="nav nav-pills" id="indraTab" role="tablist">
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="downstream-tab" data-toggle="tab" href="#downstream" role="tab"
                                aria-controls="downstream" aria-selected="false">
@@ -222,8 +347,8 @@
                                 INDRA Upstream TFs
                             </a>
                         </li>
-                    {% endif %}
-                </ul>
+                    </ul>
+                {% endif %}
 
                 <!-- Tab panes -->
                 <div class="tab-content" style="margin-top:1em;">
