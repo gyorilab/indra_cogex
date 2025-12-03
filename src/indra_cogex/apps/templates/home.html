@@ -87,7 +87,11 @@
 
     <div class="row" id="home-decks">
         {# TODO: see https://getbootstrap.com/docs/4.4/components/card/#grid-cards #}
-        <h3 class="text-center w-100" style="margin-top: 0.5em; margin-bottom: 1em;">Apps and Services using INDRA CoGEx</h3>
+        <h3 class="text-center w-100" style="margin-top: 0.5em; margin-bottom: 1.5em;">Apps and Services using INDRA CoGEx</h3>
+
+        <!-- Analysis Apps Section -->
+        <h4 class="mt-4 mb-2" style="text-align: left;">Analyze Gene and Metabolite Data</h4>
+        <p class="text-muted mb-4" style="text-align: left;">Use your own gene, metabolite, or phosphosite lists to run enrichment and pathway analyses and identify key pathways, regulators, and targets suggested by INDRA CoGEx.</p>
 
     <!-- First row with three cards -->
         <div class="card-deck mb-4" style="margin-bottom: 1em !important;">
@@ -185,7 +189,8 @@
 
 
         <!-- Directed Exploration Section with consistent spacing -->
-        <h3 class="text-center">Directed Exploration</h3>
+        <h4 class="mt-4 mb-2" style="text-align: left;">Directed Exploration</h4>
+        <p class="text-muted mb-4" style="text-align: left;">Search across genes, pathways, diseases, and publications to explore how entities are connected by assembled INDRA statements in the CoGEx graph.</p>
         <div class="card-deck" style="margin-bottom: 1em;">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px" src="{{ url_for('static', filename='search/images/role_button3.png') }}">
@@ -244,7 +249,8 @@
         </div>
 
         <!-- Proteocentric Exploration Section with consistent spacing -->
-        <h3 class="text-center">Proteocentric Exploration</h3>
+        <h4 class="mt-4 mb-2" style="text-align: left;">Proteocentric Exploration</h4>
+        <p class="text-muted mb-4" style="text-align: left;">Investigate specific protein families such as transcription factors, kinases, phosphatases, deubiquitinases and others, to discover potential regulatory and interaction partners not captured in standard databases.</p>
         <div class="card-deck" style="margin-bottom: 0.8em;">
             <div class="card">
                 <img class="card-img-top" style="max-height: 100px"
