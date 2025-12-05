@@ -50,6 +50,18 @@
             flex: 76%;
             max-width: 76%;
         }
+        {% for category, data in source_colors %}
+        {% for source, font_color in data['sources'].items() %}
+        .source-{{ source }} a {
+            color: {{ data['color'] }};
+        }
+        {% if source == 'bel_lc' %}
+        .source-bel a {
+            color: {{ data['color'] }};
+        }
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
     </style>
 {% endblock %}
 
@@ -82,7 +94,42 @@
                         order</label>
                 </div>
             </form>
-            Databases - <source-display></source-display> - Readers
+            <hr>
+            <p>
+                Available sources in INDRA:
+            </p>
+            <p>
+                Database sources:
+                {% for source_name in sources_dict['databases'] %}
+                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                <span class="badge badge-source label source-{{ source_name }}">
+                    {% if source_info and mapped_source in source_info %}
+                    <a href="{{ source_info[mapped_source]['link'] }}"
+                    title="{{ source_info[mapped_source]['name']}}"
+                    target="_blank">{{ source_name }}
+                    </a>
+                    {% else %}
+                    <span title="">{{ source_name }}</span>
+                    {% endif %}
+                </span>
+                {% endfor %}
+                <br>
+                Reader sources:
+                {% for source_name in sources_dict['reading'] %}
+                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                <span class="badge badge-source label source-{{ source_name }}">
+                    {% if source_info and source_name in source_info %}
+                    <a href="{{ source_info[mapped_source]['link'] }}"
+                    title="{{ source_info[mapped_source]['name']}}"
+                    target="_blank">{{ source_name }}
+                </a>
+                    {% else %}
+                    {{ source_name }} <span class="text-danger">no link</span>
+                    {% endif %}
+                </span>
+                {% endfor %}
+            </p>
+<!--            Databases - <source-display></source-display> - Readers-->
         </div>
         {% if stmts|length == 0 %}
             <div class="card-body">
