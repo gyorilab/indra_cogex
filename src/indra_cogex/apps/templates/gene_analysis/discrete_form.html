@@ -9,29 +9,55 @@
     {{ super() }}
     <style>
         /* Enhanced toggle switch styling for INDRA path-based analysis */
+        .custom-switch-lg {
+            padding-left: 0;
+            display: flex;
+            align-items: center;
+            min-height: 1.75rem;
+        }
+
+        .custom-switch-lg .custom-control-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
         .custom-switch-lg .custom-control-label {
-            padding-left: 3rem;
+            position: relative;
+            margin-bottom: 0;
+            padding-left: 4.5rem;
             font-weight: 600;
             font-size: 1.05rem;
             cursor: pointer;
+            line-height: 1.75rem;
         }
 
         .custom-switch-lg .custom-control-label::before {
-            left: -3rem;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: block;
             width: 3.5rem;
             height: 1.75rem;
-            border-radius: 1.75rem;
+            pointer-events: all;
+            content: "";
             background-color: #dee2e6;
             border: 1px solid #adb5bd;
+            border-radius: 1.75rem;
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
         }
 
         .custom-switch-lg .custom-control-label::after {
-            left: calc(-3rem + 2px);
-            width: calc(1.75rem - 4px);
-            height: calc(1.75rem - 4px);
-            border-radius: 50%;
+            position: absolute;
+            top: 0.125rem;
+            left: 0.125rem;
+            display: block;
+            width: 1.5rem;
+            height: 1.5rem;
+            content: "";
             background-color: #fff;
-            transition: transform 0.15s ease-in-out;
+            border-radius: 50%;
+            transition: transform 0.15s ease-in-out, background-color 0.15s ease-in-out;
         }
 
         .custom-switch-lg .custom-control-input:checked ~ .custom-control-label::before {
@@ -54,42 +80,48 @@
     </style>
 {% endblock %}
 
-{% block container %}
-    <div class="card card-body bg-light">
-        <h1 class="display-4">{% block header %}{% endblock %}</h1>
-        <p class="lead">
-            {% block lead %}{% endblock %}
-        </p>
-        <form method="POST" id="main-form">
-            {{ form.hidden_tag() }}
-
-            {# Render all fields except indra_path_analysis #}
-            {% for field in form %}
-                {% if field.name != 'indra_path_analysis' and field.name != 'csrf_token' %}
-                    {{ wtf.render_field(field) }}
-                {% endif %}
-            {% endfor %}
-
-            {# Manually render INDRA path analysis as toggle switch #}
-            <div class="toggle-highlight-wrapper">
-                <div class="custom-control custom-switch custom-switch-lg">
-                    {{ form.indra_path_analysis(class="custom-control-input") }}
-                    {{ form.indra_path_analysis.label(class="custom-control-label") }}
-                </div>
-            </div>
-
-            {# Render submit button #}
-            {{ wtf.render_field(form.submit) }}
-        </form>
-    </div>
-{% endblock %}
-
 {% block scripts %}
     {{ super() }}
     <script>
         function exampleGenes() {
             document.getElementById('{{ form.genes.name }}').value = "{{ example_hgnc_ids }}";
         }
+
+        // Convert INDRA path analysis checkbox to toggle switch
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('indra_path_analysis');
+            if (checkbox) {
+                const formGroup = checkbox.closest('.form-group');
+                if (formGroup) {
+                    const label = formGroup.querySelector('label[for="indra_path_analysis"]');
+                    if (label && !formGroup.querySelector('.custom-switch-lg')) {
+                        // Create wrapper div
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'toggle-highlight-wrapper';
+
+                        // Create custom-control structure
+                        const customControl = document.createElement('div');
+                        customControl.className = 'custom-control custom-switch custom-switch-lg';
+
+                        // Move checkbox and add custom-control-input class
+                        checkbox.classList.add('custom-control-input');
+                        customControl.appendChild(checkbox);
+
+                        // Update label structure
+                        label.classList.add('custom-control-label');
+                        label.setAttribute('for', checkbox.id);
+                        customControl.appendChild(label);
+
+                        // Wrap in highlight box
+                        wrapper.appendChild(customControl);
+
+                        // Replace form group content
+                        formGroup.innerHTML = '';
+                        formGroup.appendChild(wrapper);
+                    }
+                }
+            }
+        });
     </script>
 {% endblock %}
 
@@ -110,6 +142,6 @@
     <br>
     <br>
     The corresponding REST API endpoint for this analysis is
-    <code>/api/discrete_analysis</code>. You can find it on the <a href="{{ config.get('APPLICATION_ROOT', '') }}/apidocs">API
+    <code>/api/discrete_analysis</code>. You can find it on the <a href="/apidocs">API
     Docs</a> under the section 'Analysis Queries'.
 {% endblock %}
