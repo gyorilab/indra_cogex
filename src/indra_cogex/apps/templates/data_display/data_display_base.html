@@ -232,8 +232,11 @@
             },
             computed: {
                 shown_stmts() {
-                    // If no sorting selected, preserve original order
+                    // If no sorting selected, preserve original order (or reverse if switch is on)
                     if (this.sorting_method === 'none') {
+                        if (this.reverse_sorting) {
+                            return [...this.stmts].reverse();
+                        }
                         return this.stmts;
                     }
 
@@ -248,10 +251,10 @@
                         stmtsCopy.sort((a, b) => {
                             const ca = (a.total_evidence || 0);
                             const cb = (b.total_evidence || 0);
-                            if (ca !== cb) return ca - cb;
+                            if (ca !== cb) return ca - cb;  // Ascending by default
                             return (originalIndexMap[a.hash] || 0) - (originalIndexMap[b.hash] || 0);
                         });
-                        // Now the switch means ascending when true; default (false) -> descending
+                        // Switch ON (checked) means ascending (do not reverse); default OFF (unchecked) -> reverse to descending
                         if (!this.reverse_sorting) stmtsCopy.reverse();
                         return stmtsCopy;
                     }
@@ -261,8 +264,8 @@
                     if (this.sorting_method === 'db_src_count') {
                         sourcesList = this.$sources && this.$sources.databases ? this.$sources.databases : [];
                     } else if (this.sorting_method === 'reader_src_count') {
-                        // NOTE: use the correct key 'readers' (was previously mistyped as 'reading')
-                        sourcesList = this.$sources && this.$sources.readers ? this.$sources.readers : [];
+                        // Use the actual key 'reading' from the sources dict
+                        sourcesList = this.$sources && this.$sources.reading ? this.$sources.reading : [];
                     } else {
                         // Unknown sorting method -> return unsorted
                         return this.stmts;
@@ -280,11 +283,11 @@
                     stmtsCopy.sort((a, b) => {
                         const ca = countFor(a);
                         const cb = countFor(b);
-                        if (ca !== cb) return ca - cb;
+                        if (ca !== cb) return ca - cb;  // Ascending by default
                         return (originalIndexMap[a.hash] || 0) - (originalIndexMap[b.hash] || 0);
                     });
 
-                    // Switch ON means ascending (do not reverse); default OFF -> reverse to descending
+                    // Switch ON (checked) means ascending (do not reverse); default OFF (unchecked) -> reverse to descending
                     if (!this.reverse_sorting) stmtsCopy.reverse();
 
                     return stmtsCopy;
