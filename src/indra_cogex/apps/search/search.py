@@ -153,10 +153,7 @@ def search():
         return render_statements(
             stmts=statements,
             evidence_counts=evidence_count,
-            source_counts_dict=source_counts,
-            reverse_source_mappings=reverse_source_mappings,
-            source_info=SOURCE_INFO,
-            source_colors=DEFAULT_SOURCE_COLORS,
+            source_counts_dict=source_counts
         )
 
     # Render the form page

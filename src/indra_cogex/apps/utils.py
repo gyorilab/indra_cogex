@@ -18,9 +18,17 @@ from typing import (
 )
 
 from flask import render_template, request, session
-from indra.assemblers.html.assembler import _format_evidence_text, _format_stmt_text
+from indra.assemblers.html.assembler import (
+    _format_evidence_text,
+    _format_stmt_text,
+    DEFAULT_SOURCE_COLORS,
+)
+from indra.sources import SOURCE_INFO
 from indra.statements import Statement
-from indra.util.statement_presentation import _get_available_ev_source_counts
+from indra.util.statement_presentation import (
+    _get_available_ev_source_counts,
+    reverse_source_mappings,
+)
 from indra_cogex.apps.constants import VUE_SRC_JS, VUE_SRC_CSS, sources_dict
 from indra_cogex.apps.curation_cache.curation_cache import Curations
 from indra_cogex.apps.proxies import curation_cache
@@ -169,6 +177,9 @@ def render_statements(
         sources_dict=sources_dict,
         include_db_evidence=include_db_evidence,
         is_proteocentric=is_proteocentric,
+        reverse_source_mappings=reverse_source_mappings,
+        source_info=SOURCE_INFO,
+        source_colors=DEFAULT_SOURCE_COLORS,
         **kwargs,
     )
     logger.info("Template rendered successfully")
