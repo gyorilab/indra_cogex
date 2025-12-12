@@ -50,6 +50,18 @@
             flex: 76%;
             max-width: 76%;
         }
+        {% for category, data in source_colors %}
+        {% for source, font_color in data['sources'].items() %}
+        .source-{{ source }} a {
+            color: {{ data['color'] }};
+        }
+        {% if source == 'bel_lc' %}
+        .source-bel a {
+            color: {{ data['color'] }};
+        }
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
     </style>
 {% endblock %}
 
@@ -61,7 +73,63 @@
             <h4 class="my-0 font-weight-normal">
                 {% if title %}{{ title }}{% else %}INDRA Knowledge Graph Statements{% endif %}
             </h4>
-            Databases - <source-display></source-display> - Readers
+            <form class="form-inline my-1" @submit.prevent>
+                <div class="form-group mr-3">
+                    <label class="mr-2" for="sort-select">Sorting</label>
+                    <select class="form-control"
+                            id="sort-select"
+                            v-model="sorting_method">
+                        <option selected value="none">Default</option>
+                        <option value="db_src_count">Database source count</option>
+                        <option value="reader_src_count">Reader source count</option>
+                        <option value="evidence_count">Total evidence count</option>
+                    </select>
+                </div>
+                <div class="custom-control custom-switch">
+                    <input type="checkbox"
+                           class="custom-control-input"
+                           id="reverseSwitch"
+                           v-model="reverse_sorting">
+                    <label class="custom-control-label" for="reverseSwitch">Ascending
+                        order</label>
+                </div>
+            </form>
+            <hr>
+            <p>
+                Available sources in INDRA:
+            </p>
+            <p>
+                Database sources:
+                {% for source_name in sources_dict['databases'] %}
+                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                <span class="badge badge-source label source-{{ source_name }}">
+                    {% if source_info and mapped_source in source_info %}
+                    <a href="{{ source_info[mapped_source]['link'] }}"
+                    title="{{ source_info[mapped_source]['name']}}"
+                    target="_blank">{{ source_name }}
+                    </a>
+                    {% else %}
+                    <span title="">{{ source_name }}</span>
+                    {% endif %}
+                </span>
+                {% endfor %}
+                <br>
+                Reader sources:
+                {% for source_name in sources_dict['reading'] %}
+                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                <span class="badge badge-source label source-{{ source_name }}">
+                    {% if source_info and source_name in source_info %}
+                    <a href="{{ source_info[mapped_source]['link'] }}"
+                    title="{{ source_info[mapped_source]['name']}}"
+                    target="_blank">{{ source_name }}
+                </a>
+                    {% else %}
+                    {{ source_name }} <span class="text-danger">no link</span>
+                    {% endif %}
+                </span>
+                {% endfor %}
+            </p>
+<!--            Databases - <source-display></source-display> - Readers-->
         </div>
         {% if stmts|length == 0 %}
             <div class="card-body">
@@ -103,7 +171,7 @@
             <div class="list-group list-group-flush">
                 <statement
                         class="list-group-item"
-                        v-for="st_obj in stmts"
+                        v-for="st_obj in shown_stmts"
                         :key="st_obj.hash"
                         :evidence="st_obj.ev_array"
                         :english="st_obj.english"
@@ -151,13 +219,78 @@
                     {% endfor %}
                 ],
                 include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
-                is_proteocentric: {{ is_proteocentric|default(false)|tojson }}
+                is_proteocentric: {{ is_proteocentric|default(false)|tojson }},
+                sorting_method: 'none',
+                reverse_sorting: false
             },
             methods: {
                 updateIncludeDbEvidence() {
                     let currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
                     window.location.href = currentUrl.toString();
+                }
+            },
+            computed: {
+                shown_stmts() {
+                    // If no sorting selected, preserve original order (or reverse if switch is on)
+                    if (this.sorting_method === 'none') {
+                        if (this.reverse_sorting) {
+                            return [...this.stmts].reverse();
+                        }
+                        return this.stmts;
+                    }
+
+                    // Copy statements to avoid mutating original array
+                    const stmtsCopy = [...this.stmts];
+
+                    // Build a map of original indices to ensure stable sorting (tie-breaker)
+                    const originalIndexMap = this.stmts.reduce((m, s, i) => { m[s.hash] = i; return m; }, {});
+
+                    // Evidence count sorting
+                    if (this.sorting_method === 'evidence_count') {
+                        stmtsCopy.sort((a, b) => {
+                            const ca = (a.total_evidence || 0);
+                            const cb = (b.total_evidence || 0);
+                            if (ca !== cb) return ca - cb;  // Ascending by default
+                            return (originalIndexMap[a.hash] || 0) - (originalIndexMap[b.hash] || 0);
+                        });
+                        // Switch ON (checked) means ascending (do not reverse); default OFF (unchecked) -> reverse to descending
+                        if (!this.reverse_sorting) stmtsCopy.reverse();
+                        return stmtsCopy;
+                    }
+
+                    // Determine which source list to use: databases or readers
+                    let sourcesList = [];
+                    if (this.sorting_method === 'db_src_count') {
+                        sourcesList = this.$sources && this.$sources.databases ? this.$sources.databases : [];
+                    } else if (this.sorting_method === 'reader_src_count') {
+                        // Use the actual key 'reading' from the sources dict
+                        sourcesList = this.$sources && this.$sources.reading ? this.$sources.reading : [];
+                    } else {
+                        // Unknown sorting method -> return unsorted
+                        return this.stmts;
+                    }
+
+                    // Helper to compute the sum of counts for sources that are in the chosen sourcesList
+                    const countFor = (st) => {
+                        if (!st || !st.sources) return 0;
+                        return Object.keys(st.sources)
+                            .filter(src => sourcesList.includes(src))
+                            .reduce((sum, src) => sum + (st.sources[src] || 0), 0);
+                    };
+
+                    // Sort by the computed counts (stable: tie-breaker uses original index)
+                    stmtsCopy.sort((a, b) => {
+                        const ca = countFor(a);
+                        const cb = countFor(b);
+                        if (ca !== cb) return ca - cb;  // Ascending by default
+                        return (originalIndexMap[a.hash] || 0) - (originalIndexMap[b.hash] || 0);
+                    });
+
+                    // Switch ON (checked) means ascending (do not reverse); default OFF (unchecked) -> reverse to descending
+                    if (!this.reverse_sorting) stmtsCopy.reverse();
+
+                    return stmtsCopy;
                 }
             }
         });

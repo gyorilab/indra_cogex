@@ -17,8 +17,11 @@ from flask import Blueprint, Response, abort, jsonify, render_template, request
 from flask_jwt_extended import jwt_required
 
 from indra.assemblers.english import EnglishAssembler
+from indra.assemblers.html.assembler import DEFAULT_SOURCE_COLORS
+from indra.sources import SOURCE_INFO
 from indra.sources.indra_db_rest import IndraDBRestAPIError
 from indra.statements import Statement, stmts_from_json
+from indra.util.statement_presentation import reverse_source_mappings
 from indralab_auth_tools.auth import resolve_auth
 
 from indra_cogex.apps.proxies import client, curation_cache
@@ -382,6 +385,9 @@ def statement_display():
             vue_src_js=VUE_SRC_JS,
             vue_src_css=VUE_SRC_CSS,
             sources_dict=dict(available_sources_dict),
+            reverse_source_mappings=reverse_source_mappings,
+            source_info=SOURCE_INFO,
+            source_colors=DEFAULT_SOURCE_COLORS,
         )
     except Exception as err:
         logger.exception(err)

@@ -5,12 +5,15 @@ import logging
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
+from indra.assemblers.html.assembler import DEFAULT_SOURCE_COLORS
+from indra.sources import SOURCE_INFO
 from indra.statements import get_all_descendants, Statement, Phosphorylation, IncreaseAmount, DecreaseAmount
 from indra.statements.validate import assert_valid_id, BioregistryValidator
 from wtforms import StringField, SubmitField
 from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
+from indra.util.statement_presentation import reverse_source_mappings
 from indra_cogex.apps.utils import render_statements, resolve_email
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
