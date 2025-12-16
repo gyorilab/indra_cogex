@@ -4,7 +4,7 @@ Progressive metadata enrichment for query results at four disclosure levels
 to optimize token efficiency: MINIMAL (~4k), STANDARD (~8k), DETAILED (~15k), EXPLORATORY (~30k).
 """
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 import logging
 
 from indra_cogex.client.pagination import paginate_response, estimate_tokens
