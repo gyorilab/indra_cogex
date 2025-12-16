@@ -26,6 +26,9 @@ from .queries_web import (
     subnetwork_ns
 )
 
+# Import MCP server
+from .mcp_server import mcp
+
 
 api = Api(
     title="INDRA CoGEx Query API",
@@ -58,4 +61,4 @@ api.add_namespace(analysis_ns)
 api.add_namespace(subnetwork_ns)
 api.add_namespace(bioentity_ns)
 
-__all__ = ["api"]
+__all__ = ["api", "mcp"]
