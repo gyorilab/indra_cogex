@@ -535,7 +535,7 @@ async def ground_entity(
 ) -> Dict[str, Any]:
     """Ground natural language term to CURIEs using GILDA.
 
-    Wraps ground_biomedical_term from client.queries and adds:
+    Wraps gilda_ground from apps.search.search and adds:
     - Parameter semantics filtering (param_name → namespace filter)
     - MCP-friendly output format
 
@@ -557,10 +557,15 @@ async def ground_entity(
         namespaces_allowed fields
     """
     try:
-        from indra_cogex.client.queries import ground_biomedical_term
+        from indra_cogex.apps.search.search import gilda_ground
 
         # Reuse existing grounding function (handles gilda lib + HTTP fallback)
-        raw_results = ground_biomedical_term(term, organism=organism, limit=limit)
+        # Enable CURIE normalization for MCP to ensure consistent lowercase namespaces
+        raw_results = gilda_ground(term, organism=organism, limit=limit, normalize_curies=True)
+
+        # Handle error dict from gilda_ground
+        if isinstance(raw_results, dict) and "error" in raw_results:
+            return {"error": raw_results["error"], "query": term}
 
         # Get namespace filter if param_name provided
         allowed_namespaces = None

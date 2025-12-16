@@ -117,8 +117,6 @@ __all__ = [
     "get_node_counter",
     "get_edge_counter",
     "get_schema_graph",
-    # MCP Query Functions
-    "ground_biomedical_term",
 ]
 
 
@@ -3619,67 +3617,6 @@ def get_network(
         return {"nodes": [], "edges": [], "error": str(e)}
 
 
-
-
-def ground_biomedical_term(
-    term: str,
-    organism: Optional[str] = None,
-    limit: int = 5
-) -> List[Dict[str, Any]]:
-    """Ground natural language term to CURIEs via GILDA.
-
-    Parameters
-    ----------
-    term : str
-        Natural language term (e.g., "ALS", "diabetes", "p53")
-    organism : Optional[str]
-        Filter by organism (e.g., "human", "mouse", "9606")
-    limit : int, default=5
-        Maximum number of matches to return
-
-    Returns
-    -------
-    :
-        Grounding results with CURIEs, scores, and metadata. Returns empty list
-        if HTTP request times out (10 second timeout).
-    """
-    import bioregistry
-
-    # Use library if available, fallback to HTTP
-    try:
-        from gilda.api import ground
-        results = ground(term, context=organism)
-        json_results = [r.to_json() for r in results[:limit]]
-    except ImportError:
-        import requests
-        try:
-            response = requests.post(
-                'http://grounding.indra.bio/ground',
-                json={'text': term, 'organism': organism},
-                timeout=10  # 10 second timeout
-            )
-            response.raise_for_status()
-            json_results = response.json()[:limit]
-        except requests.Timeout:
-            logger.warning(f"GILDA grounding timeout for term: {term}")
-            return []
-
-    # Normalize CURIEs via bioregistry
-    for result in json_results:
-        term_info = result.get("term", {})
-        namespace = term_info.get("db", "")
-        identifier = term_info.get("id", "")
-
-        if namespace and identifier:
-            curie = f"{namespace}:{identifier}"
-            normalized = bioregistry.normalize_curie(curie)
-
-            if normalized and ":" in normalized:
-                norm_ns, norm_id = normalized.split(":", 1)
-                term_info["db"] = norm_ns
-                term_info["id"] = norm_id
-
-    return json_results
 
 
 if __name__ == "__main__":
