@@ -200,13 +200,15 @@ def check_and_convert(text):
 
 
 def gilda_ground(agent_text):
+    """Ground natural language term to CURIEs via GILDA.
+
+    Delegates to ground_biomedical_term which provides timeout handling
+    and bioregistry CURIE normalization.
+    """
     try:
-        from gilda.api import ground
-        return [r.to_json() for r in ground(agent_text)]
-    except ImportError:
-        import requests
-        res = requests.post('http://grounding.indra.bio/ground', json={'text': agent_text})
-        return res.json()
+        from indra_cogex.client.queries import ground_biomedical_term
+        # Use high limit to preserve existing behavior (return all results)
+        return ground_biomedical_term(agent_text, organism=None, limit=100)
     except Exception as e:
         return {"error": f"Grounding failed: {str(e)}"}
 
