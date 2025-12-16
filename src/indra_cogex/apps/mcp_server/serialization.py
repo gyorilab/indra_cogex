@@ -1,7 +1,7 @@
 """Result serialization for MCP gateway responses."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

@@ -330,6 +330,4 @@ __all__ = [
     "invalidate_cache",
     "clear_registry_cache",
     "get_registry_status",
-    "_get_registry",
-    "_build_edge_map",
 ]

@@ -18,7 +18,7 @@ import json
 import logging
 import time
 from datetime import datetime, UTC
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import neo4j.graph
 from neo4j import exceptions as neo4j_exceptions
