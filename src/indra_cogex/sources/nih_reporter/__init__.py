@@ -89,8 +89,8 @@ class NihReporterProcessor(Processor):
 
         # Download the data files if they are not present
         if download or force_download:
-            from datetime import datetime
-            last_year = datetime.utcnow().year - 1
+            from datetime import datetime, UTC
+            last_year = datetime.now(UTC).year - 1
             logger.info(
                 "Downloading NIH RePORTER data files %s force redownload..."
                 % ("with" if force_download else "without")
