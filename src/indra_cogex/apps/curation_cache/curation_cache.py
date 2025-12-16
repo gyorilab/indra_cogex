@@ -9,7 +9,7 @@ The curation cache should handle:
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import DefaultDict, Dict, List, Optional, Set, Union
 
 import dateutil.parser
@@ -49,7 +49,7 @@ class CurationCache:
             self._process_curation(curation) for curation in get_curations()
         ]
         self.curations_df = self._get_curation_df(self.curation_list)
-        self.last_update = datetime.utcnow()
+        self.last_update = datetime.now(UTC)
 
     @staticmethod
     def _get_curation_df(curations) -> pd.DataFrame:
@@ -141,7 +141,7 @@ class CurationCache:
             raise ValueError("Must provide a pa_hash if source_hash is provided")
 
         # Update the curation cache if it is too old or if asked
-        if refresh or self.last_update + self.update_interval < datetime.utcnow():
+        if refresh or self.last_update + self.update_interval < datetime.now(UTC):
             self.refresh_curations()
 
         temp_df = self.curations_df
@@ -183,7 +183,7 @@ class CurationCache:
         # Set last update to older than the update interval to force an
         # update on the next call
         self.last_update = (
-            datetime.utcnow() - self.update_interval - timedelta(seconds=1)
+            datetime.now(UTC) - self.update_interval - timedelta(seconds=1)
         )
 
         return dbid

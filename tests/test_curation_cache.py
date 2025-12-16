@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, UTC
 
 import pandas as pd
 
@@ -9,7 +9,7 @@ from indra_cogex.apps.curation_cache import CurationCache, Curations
 class MockCurationCache(CurationCache):
     def __init__(self, curations: Curations):
         super().__init__()
-        self.last_update = datetime.utcnow()
+        self.last_update = datetime.now(UTC)
         self.curation_list.extend(
             sorted(
                 (self._process_curation(curation) for curation in curations),
