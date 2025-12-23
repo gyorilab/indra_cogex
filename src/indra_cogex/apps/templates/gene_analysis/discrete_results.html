@@ -317,12 +317,8 @@
                             HPO
                         </a>
                     </li>
-                </ul>
 
-                {% if indra_downstream_results is not none %}
-                    <hr style="margin-top: 1rem; margin-bottom: 1rem;">
-                    <h5 style="margin-bottom: 0.5rem; color: #212529;">INDRA Path-Based Analyses:</h5>
-                    <ul class="nav nav-pills" id="indraTab" role="tablist">
+                    {% if indra_downstream_results is not none %}
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="downstream-tab" data-toggle="tab" href="#downstream" role="tab"
                                aria-controls="downstream" aria-selected="false">
@@ -347,8 +343,8 @@
                                 INDRA Upstream TFs
                             </a>
                         </li>
-                    </ul>
-                {% endif %}
+                    {% endif %}
+                </ul>
 
                 <!-- Tab panes -->
                 <div class="tab-content" style="margin-top:1em;">
