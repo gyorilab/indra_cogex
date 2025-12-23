@@ -4,21 +4,25 @@
 
 {% block styles %}
     {{ super() }}
+
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
     <link
             href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
     />
+
     <style>
         .info-icon {
-            cursor: help;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
             color: #6c757d;
-            font-size: 0.85em;
-            margin-left: 4px;
+            cursor: help;
+            vertical-align: middle;
         }
-        .info-icon:hover {
-            color: #495057;
-        }
+        .info-icon:hover { color: #495057; }
+        .info-icon svg { display: block; }
+
         .ranking-explanation {
             font-size: 0.9em;
             color: #6c757d;
@@ -29,6 +33,7 @@
 
 {% block scripts %}
     {{ super() }}
+
     <!-- DataTables, see: https://datatables.net/examples/styling/bootstrap4.html-->
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
@@ -84,39 +89,56 @@
     </script>
 {% endblock %}
 
+{% set info_svg %}
+<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+  <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+  <circle cx="8" cy="5" r="1" fill="currentColor"></circle>
+  <path d="M8 7.2v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+</svg>
+{% endset %}
+
 {% macro render_table(df, table_id) -%}
     <p class="ranking-explanation">
-        <i class="fas fa-info-circle"></i>
+        <span style="margin-right:6px; vertical-align:-2px;">{{ info_svg|safe }}</span>
         Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
         The "Overlap" column shows how many of your input genes contribute to each result.
     </p>
+
     <table class="table table-hover table-striped table-ora" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
             <th scope="col">CURIE
-                <i class="fas fa-info-circle info-icon"
-                   data-toggle="popover"
-                   data-placement="top"
-                   data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term."></i>
+                <span class="info-icon"
+                      data-toggle="popover"
+                      data-placement="top"
+                      data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term.">
+                    {{ info_svg|safe }}
+                </span>
             </th>
             <th scope="col">Name</th>
             <th scope="col">Overlap
-                <i class="fas fa-info-circle info-icon"
-                   data-toggle="popover"
-                   data-placement="top"
-                   data-content="<strong>Overlap</strong> shows how many of your input genes are annotated to this term. Click the badge to see the list of contributing genes."></i>
+                <span class="info-icon"
+                      data-toggle="popover"
+                      data-placement="top"
+                      data-content="<strong>Overlap</strong> shows how many of your input genes are annotated to this term. Click the badge to see the list of contributing genes.">
+                    {{ info_svg|safe }}
+                </span>
             </th>
             <th scope="col"><i>p</i>-value
-                <i class="fas fa-info-circle info-icon"
-                   data-toggle="popover"
-                   data-placement="top"
-                   data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+                <span class="info-icon"
+                      data-toggle="popover"
+                      data-placement="top"
+                      data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top.">
+                    {{ info_svg|safe }}
+                </span>
             </th>
             <th scope="col"><i>q</i>-value
-                <i class="fas fa-info-circle info-icon"
-                   data-toggle="popover"
-                   data-placement="top"
-                   data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). It accounts for testing many terms simultaneously. Smaller values indicate more significant results after correction."></i>
+                <span class="info-icon"
+                      data-toggle="popover"
+                      data-placement="top"
+                      data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). It accounts for testing many terms simultaneously. Smaller values indicate more significant results after correction.">
+                    {{ info_svg|safe }}
+                </span>
             </th>
         </tr>
         </thead>
@@ -157,44 +179,56 @@
    {% set is_downstream = "downstream" in table_id %}
    {% set is_kinase = "kinase" in table_id %}
    {% set is_tf = "tf" in table_id %}
+
    <p class="ranking-explanation">
-        <i class="fas fa-info-circle"></i>
+        <span style="margin-right:6px; vertical-align:-2px;">{{ info_svg|safe }}</span>
         Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
         The "Overlap" column shows how many of your input genes contribute to each result.
     </p>
+
    <table class="table table-hover table-striped table-ora" id="indra-{{ table_id }}" style="width: 100%;">
        <thead>
        <tr>
            <th scope="col">CURIE
-               <i class="fas fa-info-circle info-icon"
-                  data-toggle="popover"
-                  data-placement="top"
-                  data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term."></i>
+               <span class="info-icon"
+                     data-toggle="popover"
+                     data-placement="top"
+                     data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, MeSH, HPO, etc.) for this term.">
+                   {{ info_svg|safe }}
+               </span>
            </th>
            <th scope="col">Name</th>
            <th scope="col">Overlap
-               <i class="fas fa-info-circle info-icon"
-                  data-toggle="popover"
-                  data-placement="top"
-                  data-content="<strong>Overlap</strong> shows how many of your input genes are connected to this regulator via INDRA statements. Click the badge to see the list of contributing genes."></i>
+               <span class="info-icon"
+                     data-toggle="popover"
+                     data-placement="top"
+                     data-content="<strong>Overlap</strong> shows how many of your input genes are connected to this regulator via INDRA statements. Click the badge to see the list of contributing genes.">
+                   {{ info_svg|safe }}
+               </span>
            </th>
            <th scope="col"><i>p</i>-value
-               <i class="fas fa-info-circle info-icon"
-                  data-toggle="popover"
-                  data-placement="top"
-                  data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+               <span class="info-icon"
+                     data-toggle="popover"
+                     data-placement="top"
+                     data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top.">
+                   {{ info_svg|safe }}
+               </span>
            </th>
            <th scope="col"><i>q</i>-value
-               <i class="fas fa-info-circle info-icon"
-                  data-toggle="popover"
-                  data-placement="top"
-                  data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). Smaller values indicate more significant results after correction."></i>
+               <span class="info-icon"
+                     data-toggle="popover"
+                     data-placement="top"
+                     data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). Smaller values indicate more significant results after correction.">
+                   {{ info_svg|safe }}
+               </span>
            </th>
            <th scope="col">Statements
-               <i class="fas fa-info-circle info-icon"
-                  data-toggle="popover"
-                  data-placement="top"
-                  data-content="<strong>Statements</strong> are INDRA causal relationships connecting your input genes to this regulator. Click 'View Statements' to see the detailed evidence."></i>
+               <span class="info-icon"
+                     data-toggle="popover"
+                     data-placement="top"
+                     data-content="<strong>Statements</strong> are INDRA causal relationships connecting your input genes to this regulator. Click 'View Statements' to see the detailed evidence.">
+                   {{ info_svg|safe }}
+               </span>
            </th>
        </tr>
        </thead>
@@ -402,6 +436,7 @@
                         </p>
                         {{ render_table(phenotype_results, "table-hpo") }}
                     </div>
+
                     {% if indra_downstream_results is not none %}
                         <div class="tab-pane" id="downstream" role="tabpanel" aria-labelledby="downstream-tab">
                             <p>
