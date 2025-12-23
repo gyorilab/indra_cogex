@@ -6,7 +6,6 @@ import math
 from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
-import math
 import networkx as nx
 from flask import session, request
 
@@ -3371,8 +3370,6 @@ def _get_node_styling(db_refs):
 
 def build_edges_from_graph(graph, statements, input_node_names, include_db_evidence, evidence_counts):
     """Build edge list for vis.js visualization from networkx graph."""
-    import math
-
     # Group statements by edge key
     statements_by_edge = defaultdict(list)
 
@@ -3412,7 +3409,6 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
 
         # Get matching statements
         matching_stmts = statements_by_edge.get(edge_key, [])
-
         if not matching_stmts:
             continue
 
@@ -3421,40 +3417,15 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
 
         # Sum evidence counts from Neo4j metadata
         if evidence_counts:
-            total_evidence = sum(
-                evidence_counts.get(s.get_hash(), 0)
-                for s in matching_stmts
-            )
+            total_evidence = sum(evidence_counts.get(s.get_hash(), 0) for s in matching_stmts)
         else:
             logger.warning(f"No evidence counts available for edge {source}-{target}")
-            total_evidence = sum(
-                len(s.evidence) if hasattr(s, 'evidence') else 1
-                for s in matching_stmts
-            )
+            total_evidence = sum(len(s.evidence) if hasattr(s, 'evidence') else 1 for s in matching_stmts)
 
-        # Calculate width based on aggregated evidence using order-of-magnitude bins
-        if input_node_names and total_evidence > 0:
-            ev_order = int(math.log10(total_evidence))
-            if ev_order <= 0:  # 1–9
-                width = 2
-            elif ev_order == 1:  # 10–99
-                width = 4
-            elif ev_order == 2:  # 100–999
-                width = 7
-            elif ev_order == 3:  # 1k–9k
-                width = 10
-            else:  # 10k+
-                width = 12
-        else:
-            width = 4.0
-
-        # Calculate edge opacity based on belief
         belief = getattr(edge_stmt, 'belief', 0.5)
-        edge_opacity = 0.4 + (belief * 0.6)
 
         # Get color and styling
         base_color, dashes, arrows = _get_edge_styling(stmt_type)
-        color = f'rgba({base_color[0]}, {base_color[1]}, {base_color[2]}, {edge_opacity})'
 
         # Prepare detailed statement information for dialog
         statement_details = []
@@ -3474,6 +3445,7 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
         edge_details = {
             'statement_type': actual_stmt_type,
             'belief': belief,
+            'base_color': base_color,
             'indra_statement': str(edge_stmt),
             'interaction': actual_stmt_type.lower(),
             'polarity': _get_polarity(actual_stmt_type),
@@ -3485,10 +3457,16 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
         }
 
         # Create hover tooltip
-        title_parts = [actual_stmt_type]
-        title_parts.append(f"{total_evidence} evidence(s)")
-        title_parts.append(f"from {len(matching_stmts)} statement(s)")
+        title_parts = [
+            actual_stmt_type,
+            f"{total_evidence} evidence(s)",
+            f"from {len(matching_stmts)} statement(s)"
+        ]
 
+        # These only apply to cases where there are no input nodes like for
+        # publication queries
+        width = 4.0 if not input_node_names else 2.0
+        color = f'rgba({base_color[0]},{base_color[1]},{base_color[2]},1)'
         edges.append({
             'id': f"e{edge_count}",
             'from': str(source),
@@ -3501,10 +3479,33 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             'details': edge_details,
             'label': ''
         })
-
         edge_count += 1
 
+    # Width and opacity adjustment for subnetwork mode
+    if input_node_names:
+        edges_by_pair = defaultdict(list)
+        for e in edges:
+            edges_by_pair[tuple(sorted([e['from'], e['to']]))].append(e)
+
+        for pair_edges in edges_by_pair.values():
+            primary = max(pair_edges, key=lambda e: e['details']['evidence_count'])
+            for e in pair_edges:
+                is_primary = e is primary
+                e['details']['is_primary'] = is_primary
+                width = 2*math.log10(e['details']['evidence_count'] + 1) + 1
+                e['width'] = width
+                # We highlight the "primary" edge in each group using max opacity
+                # and set all the other edges to a lower opacity to make them less
+                # prominent
+                edge_opacity = 1 if is_primary else 0.2
+                color = (f'rgba({e["details"]["base_color"][0]},'
+                         f'{e["details"]["base_color"][1]},'
+                         f'{e["details"]["base_color"][2]},'
+                         f'{edge_opacity})')
+                e['color'] = {'color': color, 'highlight': color, 'hover': color}
+
     return edges
+
 
 
 
