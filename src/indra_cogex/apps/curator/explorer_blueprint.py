@@ -81,6 +81,10 @@ def gene_ontology():
     """A home page for GO exploration."""
     form = GeneOntologyForm()
     if form.validate_on_submit():
+        # Clear old session data
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
+
         include_db_evidence = form.include_db_evidence.data
         return redirect(url_for(f".{explore_go.__name__}",
                                 term=form.term.data,
@@ -656,6 +660,10 @@ def paper():
     """Get all statements for the given paper."""
     form = PaperForm()
     if form.validate_on_submit():
+        # Clear old session data
+        session.pop('statement_hashes', None)
+        session.pop('subnetwork_input_nodes', None)
+
         result = form.get_term()
         if result is None:
             return render_template("curation/paper_form.html", form=form)
