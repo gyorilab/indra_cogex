@@ -495,7 +495,7 @@ function initializeNetwork(prefix, identifier) {
                     <dd>${details.evidence_count || 'Unknown'}</dd>
                 `;
 
-                // Show aggregated statements immediately after evidence count (if multiple)
+                // Show aggregated statements if available
                 if (details.aggregated_statements && details.aggregated_statements.length > 1) {
                     dialogContent += `
                         <dt>Aggregated INDRA Statements (${details.aggregated_statements.length})</dt>
