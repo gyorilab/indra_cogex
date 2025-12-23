@@ -3466,13 +3466,16 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             f"from {len(matching_stmts)} statement(s)"
         ]
 
+        # These only apply to cases where there are no input nodes like for
+        # publication queries
         width = 4.0 if not input_node_names else 2.0
-
+        color = f'rgba({base_color[0]},{base_color[1]},{base_color[2]},1)'
         edges.append({
             'id': f"e{edge_count}",
             'from': str(source),
             'to': str(target),
             'title': "<br>".join(title_parts),
+            'color': {'color': color, 'highlight': color, 'hover': color},
             'dashes': dashes,
             'arrows': arrows,
             'width': width,
@@ -3492,11 +3495,12 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             for e in pair_edges:
                 is_primary = e is primary
                 e['details']['is_primary'] = is_primary
-                e['width'] = 6.0 if is_primary else 2.0
+                width = 2*math.log10(e['details']['evidence_count'] + 1) + 1
+                e['width'] = width
                 # We highlight the "primary" edge in each group using max opacity
                 # and set all the other edges to a lower opacity to make them less
                 # prominent
-                edge_opacity = 1 if is_primary else 0.3
+                edge_opacity = 1 if is_primary else 0.2
                 color = (f'rgba({e["details"]["base_color"][0]},'
                          f'{e["details"]["base_color"][1]},'
                          f'{e["details"]["base_color"][2]},'
