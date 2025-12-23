@@ -6,7 +6,6 @@ import math
 from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
-import math
 import networkx as nx
 from flask import session, request
 
@@ -3371,8 +3370,6 @@ def _get_node_styling(db_refs):
 
 def build_edges_from_graph(graph, statements, input_node_names, include_db_evidence, evidence_counts):
     """Build edge list for vis.js visualization from networkx graph."""
-    from collections import defaultdict
-
     # Group statements by edge key
     statements_by_edge = defaultdict(list)
 
