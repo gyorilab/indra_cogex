@@ -3425,13 +3425,10 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             logger.warning(f"No evidence counts available for edge {source}-{target}")
             total_evidence = sum(len(s.evidence) if hasattr(s, 'evidence') else 1 for s in matching_stmts)
 
-        # Calculate edge opacity based on belief
         belief = getattr(edge_stmt, 'belief', 0.5)
-        edge_opacity = 0.4 + (belief * 0.6)
 
         # Get color and styling
         base_color, dashes, arrows = _get_edge_styling(stmt_type)
-        color = f'rgba({base_color[0]}, {base_color[1]}, {base_color[2]}, {edge_opacity})'
 
         # Prepare detailed statement information for dialog
         statement_details = []
@@ -3451,6 +3448,7 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
         edge_details = {
             'statement_type': actual_stmt_type,
             'belief': belief,
+            'base_color': base_color,
             'indra_statement': str(edge_stmt),
             'interaction': actual_stmt_type.lower(),
             'polarity': _get_polarity(actual_stmt_type),
@@ -3474,8 +3472,7 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
             'id': f"e{edge_count}",
             'from': str(source),
             'to': str(target),
-            'title': "<br>".join(title_parts),     # ← added hover tooltip
-            'color': {'color': color, 'highlight': color, 'hover': color},
+            'title': "<br>".join(title_parts),
             'dashes': dashes,
             'arrows': arrows,
             'width': width,
@@ -3484,7 +3481,7 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
         })
         edge_count += 1
 
-    # Width adjustment for subnetwork mode
+    # Width and opacity adjustment for subnetwork mode
     if input_node_names:
         edges_by_pair = defaultdict(list)
         for e in edges:
@@ -3496,6 +3493,15 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
                 is_primary = e is primary
                 e['details']['is_primary'] = is_primary
                 e['width'] = 6.0 if is_primary else 2.0
+                # We highlight the "primary" edge in each group using max opacity
+                # and set all the other edges to a lower opacity to make them less
+                # prominent
+                edge_opacity = 1 if is_primary else 0.3
+                color = (f'rgba({e["details"]["base_color"][0]},'
+                         f'{e["details"]["base_color"][1]},'
+                         f'{e["details"]["base_color"][2]},'
+                         f'{edge_opacity})')
+                e['color'] = {'color': color, 'highlight': color, 'hover': color}
 
     return edges
 
