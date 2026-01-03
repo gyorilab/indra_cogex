@@ -72,6 +72,7 @@ class DbProcessor(Processor):
         elif isinstance(dir_path, str):
             dir_path = Path(dir_path)
         self.stmts_fname = dir_path / unique_stmts_fname.name
+        self.processed_stmts_fname = dir_path / processed_stmts_fname.name
         self.source_counts_fname = dir_path / source_counts_fname.name
         self.belief_scores_fname = dir_path / belief_scores_pkl_fname.name
 
@@ -112,7 +113,7 @@ class DbProcessor(Processor):
             belief_scores = pickle.load(f)
         logger.info("Loading stmt hash - retraction boolean mapping")
         has_retracted_pmid = {}
-        with gzip.open(self.stmts_fname, "rt") as fh:
+        with gzip.open(self.processed_stmts_fname, "rt") as fh:
             reader = csv.reader(fh, delimiter="\t")
             for sh_str, stmt_json_str in tqdm(
                     reader, desc="Reading statements", unit_scale=True
