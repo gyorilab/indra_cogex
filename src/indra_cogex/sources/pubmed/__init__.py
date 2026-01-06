@@ -21,7 +21,6 @@ from hashlib import md5
 from itertools import chain
 from typing import Tuple, Mapping, Iterable, List, Set
 
-import textwrap
 from pathlib import Path
 
 import requests
@@ -373,24 +372,22 @@ def extract_info_from_medline_xml(
     tree = etree.parse(xml_path)
 
     for article in tree.findall("PubmedArticle"):
-        medline_citation = article.find("MedlineCitation")
-        years = list(
-            medline_citation.findall("Article/Journal/JournalIssue/PubDate/Year")
-        ) + list(article.findall("PubmedData/History/PubMedPubDate/Year"))
-        min_year = min((int(year.text) for year in years), default=None)
-        pmid = medline_citation.find("PMID").text
-        if min_year is None:
+        meta_data = pubmed_client.get_metadata_from_pubmed_article(article)
+        year = meta_data["publication_date"].get("year")
+        if year is None:
             logger.warning(f"Could not find year for PMID {pmid}")
 
-        mesh_annotations = pubmed_client._get_annotations(medline_citation)
+        medline_citation = article.find("MedlineCitation")
+        pmid = medline_citation.find("PMID").text
+
         journal_info = pubmed_client.get_issn_info(
             medline_citation, get_issns_from_nlm="missing"
         )
         pub_tags = pubmed_client.get_publication_types(article)
         yield (
             pmid,
-            min_year,
-            mesh_annotations["mesh_annotations"],
+            year,
+            meta_data["mesh_annotations"],
             journal_info,
             pub_tags
         )
