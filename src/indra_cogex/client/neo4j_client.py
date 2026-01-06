@@ -176,21 +176,7 @@ class Neo4jClient:
             A list of results where each result is a list of one or more
             objects (typically neo4j nodes or relations).
         """
-        # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#sessions-transactions
-        # and
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#transaction
-        # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#managed-transactions-transaction-functions
-        with self.driver.session() as session:
-            # do_cypher_tx is ultimately called as
-            # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
-            # where *args and **kwargs are passed through unchanged, meaning
-            # do_cypher_tx can expect query and **query_params
-            values = session.execute_read(
-                do_cypher_tx, query, **query_params
-            )
-
+        _, values = self.query_tx_with_keys(query, **query_params)
         if squeeze:
             values = [value[0] for value in values]
         return values
