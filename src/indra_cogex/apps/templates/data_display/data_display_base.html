@@ -103,9 +103,17 @@
                 </div>
             </form>
             <hr>
-            <p>
-                Available sources in INDRA:
+            <p class="mb-1">
+                All sources in INDRA:
             </p>
+
+            <p class="mb-1">
+              <span class="text-muted" style="font-size: 8pt; user-select:none;">
+                <a href="#" @click.prevent="setAllSources(true)">check all</a> /
+                <a href="#" @click.prevent="setAllSources(false)">clear all</a>
+              </span>
+            </p>
+
             <p>
                 Database sources:
                 {% for source_name in sources_dict['databases'] %}
@@ -129,7 +137,7 @@
                 </span>
                 {% endfor %}
 
-                <span class="mx-2">|</span><span class="text-muted">unavailable:</span>
+                <span class="mx-2">|</span><span class="text-muted">unavailable in result:</span>
 
                 {% for source_name in sources_dict['databases'] %}
                     {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
@@ -174,7 +182,7 @@
                     </span>
                     {% endfor %}
 
-              <span class="mx-2">|</span><span class="text-muted">unavailable:</span>
+              <span class="mx-2">|</span><span class="text-muted">unavailable in result:</span>
 
               {% for source_name in sources_dict['reading'] %}
                 {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
@@ -302,7 +310,7 @@
               const dbs = (this.$sources && this.$sources.databases) ? this.$sources.databases : [];
               const rds = (this.$sources && this.$sources.reading) ? this.$sources.reading : [];
               for (const s of dbs) this.$set(this.selected_sources, s, !!this.sources_present[s]);
-              for (const s of rds) this.$set(this.selected_sources, s, true);
+              for (const s of rds) this.$set(this.selected_sources, s, !!this.sources_present[s]);
             },
             methods: {
                 updateIncludeDbEvidence() {
@@ -327,7 +335,17 @@
 
                     const stSources = st && st.sources ? Object.keys(st.sources) : [];
                     return stSources.some(s => this.selected_sources[s]);
-                }
+                },
+                setAllSources(flag) {
+                    const dbs = (this.$sources && this.$sources.databases) ? this.$sources.databases : [];
+                    const rds = (this.$sources && this.$sources.reading) ? this.$sources.reading : [];
+                    const all = dbs.concat(rds);
+                    for (const s of all) {
+                      if (this.sourceExists(s)) {
+                        this.$set(this.selected_sources, s, flag);
+                      }
+                    }
+                },
             },
             computed: {
                 shown_stmts() {
