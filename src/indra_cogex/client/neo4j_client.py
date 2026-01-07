@@ -176,24 +176,35 @@ class Neo4jClient:
             A list of results where each result is a list of one or more
             objects (typically neo4j nodes or relations).
         """
-        # For documentation on the session and transaction classes see
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#sessions-transactions
-        # and
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#transaction
-        # Documentation on transaction functions are here:
-        # https://neo4j.com/docs/api/python-driver/6.0/api.html#managed-transactions-transaction-functions
-        with self.driver.session() as session:
-            # do_cypher_tx is ultimately called as
-            # `transaction_function(tx, *args, **kwargs)` in the neo4j code,
-            # where *args and **kwargs are passed through unchanged, meaning
-            # do_cypher_tx can expect query and **query_params
-            values = session.execute_read(
-                do_cypher_tx, query, **query_params
-            )
-
+        _, values = self.query_tx_with_keys(query, **query_params)
         if squeeze:
             values = [value[0] for value in values]
         return values
+
+    def query_tx_with_keys(
+        self, query: str, **query_params
+    ) -> Tuple[List[str], List[List[Any]]]:
+        """Run a read-only query and return column names plus results.
+
+        Parameters
+        ----------
+        query :
+            The query string to be executed.
+        query_params :
+            kwargs to pass to query
+
+        Returns
+        -------
+        :
+            Tuple of (column_names, rows) where:
+            - column_names: List of column names from RETURN clause
+            - rows: List of result rows (each row is a list of values)
+        """
+        with self.driver.session() as session:
+            keys, values = session.execute_read(
+                do_cypher_tx_with_keys, query, **query_params
+            )
+        return keys, values
 
     def query_nodes(self, query: str, **query_params) -> List[Node]:
         """Run a read-only query for nodes.
@@ -1346,6 +1357,45 @@ class Neo4jClient:
         result = self.query_tx(query, squeeze=True, agent=agent)
         return result[0] if result else False
 
+    def batch_get_entity_names(self, entity_ids: List[str]) -> Dict[str, str]:
+        """Batch-resolve entity IDs to human-readable names from Neo4j.
+
+        Uses a parameterized query to efficiently fetch names for multiple
+        entities in a single database round-trip. Leverages the existing
+        name index on BioEntity nodes for fast lookups.
+
+        Parameters
+        ----------
+        entity_ids :
+            List of normalized CURIEs (e.g., ["hgnc:6407", "mesh:d000690"]).
+            Entity IDs should be in lowercase namespace format as stored
+            in the graph (namespace:id).
+
+        Returns
+        -------
+        :
+            Dictionary mapping entity_id -> name for all entities that were
+            found in the database. Entities without names or that don't exist
+            will be omitted from the result.
+        """
+        if not entity_ids:
+            return {}
+
+        query = """
+            MATCH (n:BioEntity)
+            WHERE n.id IN $ids
+            RETURN n.id AS id, n.name AS name
+        """
+        results = self.query_tx(query, ids=list(entity_ids))
+
+        # Build lookup dict, filtering out None names
+        id_to_name = {}
+        for row in results:
+            if row and len(row) >= 2 and row[1]:
+                id_to_name[row[0]] = row[1]
+
+        return id_to_name
+
 
 def process_identifier(identifier: str) -> Tuple[str, str]:
     """Process a neo4j-internal identifier string into an INDRA namespace and ID.
@@ -1469,3 +1519,14 @@ def do_cypher_tx(
     # run-time
     result = tx.run(query, parameters=query_params)
     return [record.values() for record in result]
+
+
+def do_cypher_tx_with_keys(
+        tx: ManagedTransaction,
+        query: str,
+        **query_params
+) -> Tuple[List[str], List[List]]:
+    """Variant of do_cypher_tx that also returns column keys."""
+    result = tx.run(query, parameters=query_params)
+    keys = list(result.keys())
+    return keys, [record.values() for record in result]

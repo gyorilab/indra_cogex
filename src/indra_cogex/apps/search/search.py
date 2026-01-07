@@ -1,7 +1,8 @@
 import json
-from typing import List, Optional, Mapping, Tuple, Dict
 import logging
+from typing import Dict, List, Mapping, Optional, Tuple, Union
 
+import bioregistry
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_jwt_extended import jwt_required
 from flask_wtf import FlaskForm
@@ -202,16 +203,85 @@ def check_and_convert(text):
     return text, False
 
 
-def gilda_ground(agent_text):
+def gilda_ground(
+    agent_text: str,
+    context: Optional[str] = None,
+    organisms: Optional[List[str]] = None,
+    namespaces: Optional[List[str]] = None,
+    limit: Optional[int] = None,
+    normalize_curies: bool = False
+) -> Union[List[Dict], Dict]:
+    """Ground natural language term to CURIEs via GILDA.
+
+    Parameters
+    ----------
+    agent_text :
+        Natural language term to ground (e.g., "ALS", "diabetes", "p53")
+    context :
+        Additional text for disambiguating the entity
+    organisms :
+        Taxonomy identifiers to prioritize matches (e.g., ["9606"] for human)
+    namespaces :
+        Restrict matches to specific namespaces (e.g., ["HGNC", "CHEBI"])
+    limit :
+        Maximum results to return (None = all results)
+    normalize_curies :
+        If True, normalize CURIEs to lowercase via bioregistry.
+        Default False preserves original GILDA output (e.g., "HGNC" not "hgnc").
+
+    Returns
+    -------
+    :
+        List of grounding results with CURIEs, scores, and metadata.
+        Returns {"error": "..."} dict on failure.
+    """
     try:
-        from gilda.api import ground
-        return [r.to_json() for r in ground(agent_text)]
-    except ImportError:
-        import requests
-        res = requests.post('http://grounding.indra.bio/ground', json={'text': agent_text})
-        return res.json()
-    except Exception as e:
-        return {"error": f"Grounding failed: {str(e)}"}
+        # Use library if available, fallback to HTTP
+        try:
+            from gilda.api import ground
+            results = ground(
+                agent_text,
+                context=context,
+                organisms=organisms,
+                namespaces=namespaces
+            )
+            json_results = [r.to_json() for r in results]
+        except ImportError:
+            import requests
+            try:
+                response = requests.post(
+                    'http://grounding.indra.bio/ground',
+                    json={
+                        'text': agent_text,
+                        'context': context,
+                        'organisms': organisms,
+                        'namespaces': namespaces
+                    },
+                    timeout=10
+                )
+                response.raise_for_status()
+                json_results = response.json()
+            except requests.Timeout:
+                logger.warning("GILDA grounding timeout for term: %s", agent_text)
+                return []
+
+        # Optionally normalize CURIEs via bioregistry
+        if normalize_curies:
+            for result in json_results:
+                term_info = result.get("term", {})
+                namespace = term_info.get("db")
+                identifier = term_info.get("id")
+                normalized = norm_id(namespace, identifier)
+                norm_ns, norm_identifier = normalized.split(":", 1)
+                term_info["db"] = norm_ns
+                term_info["id"] = norm_identifier
+
+        if limit is not None:
+            json_results = json_results[:limit]
+
+        return json_results
+    except Exception as err:
+        return {"error": f"Grounding failed: {err}"}
 
 
 @autoclient()
