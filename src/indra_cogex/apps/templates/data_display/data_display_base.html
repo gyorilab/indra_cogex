@@ -104,7 +104,7 @@
             </form>
             <hr>
             <p class="mb-1">
-                All sources in INDRA:
+                Available sources in INDRA:
             </p>
 
             <p class="mb-1">
@@ -117,33 +117,13 @@
             <p>
                 Database sources:
                 {% for source_name in sources_dict['databases'] %}
-                    {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                    <span class="badge badge-source label source-{{ source_name }}"
-                      v-if="sourceExists('{{ source_name }}')"
-                      @click="toggleSource('{{ source_name }}')">
+                  {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                  <span class="badge badge-source label source-{{ source_name }}"
+                        :class="{ 'source-unavailable': !sourceExists('{{ source_name }}') }"
+                        @click="toggleSource('{{ source_name }}')">
 
-                    <i :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
-
-                    {% if source_info and mapped_source in source_info %}
-                    <a href="{{ source_info[mapped_source]['link'] }}"
-                       title="{{ source_info[mapped_source]['name']}}"
-                       target="_blank"
-                       @click.stop>
-                      {{ source_name }}
-                    </a>
-                    {% else %}
-                    <span title="">{{ source_name }}</span>
-                    {% endif %}
-                </span>
-                {% endfor %}
-
-                <span class="mx-2">|</span><span class="text-muted">unavailable in result:</span>
-
-                {% for source_name in sources_dict['databases'] %}
-                    {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                  <span class="badge badge-source label source-{{ source_name }} source-unavailable"
-                        v-if="!sourceExists('{{ source_name }}')">
-
+                    <i v-if="sourceExists('{{ source_name }}')"
+                       :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
 
                     {% if source_info and mapped_source in source_info %}
                       <a href="{{ source_info[mapped_source]['link'] }}"
@@ -161,45 +141,26 @@
             <br>
 
                 Reader sources:
-                  {% for source_name in sources_dict['reading'] %}
-                    {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                    <span class="badge badge-source label source-{{ source_name }}"
-                          v-if="sourceExists('{{ source_name }}')"
-                          @click="toggleSource('{{ source_name }}')">
+                {% for source_name in sources_dict['reading'] %}
+                  {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                  <span class="badge badge-source label source-{{ source_name }}"
+                        :class="{ 'source-unavailable': !sourceExists('{{ source_name }}') }"
+                        @click="toggleSource('{{ source_name }}')">
 
-                  <i :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
+                    <i v-if="sourceExists('{{ source_name }}')"
+                       :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
 
-                      {% if source_info and mapped_source in source_info %}
-                        <a href="{{ source_info[mapped_source]['link'] }}"
-                           title="{{ source_info[mapped_source]['name']}}"
-                           target="_blank"
-                           @click.stop>
-                          {{ source_name }}
-                        </a>
-                      {% else %}
-                        <span title="">{{ source_name }}</span>
-                      {% endif %}
-                    </span>
-                    {% endfor %}
-
-              <span class="mx-2">|</span><span class="text-muted">unavailable in result:</span>
-
-              {% for source_name in sources_dict['reading'] %}
-                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                <span class="badge badge-source label source-{{ source_name }} source-unavailable"
-                      v-if="!sourceExists('{{ source_name }}')">
-
-                  {% if source_info and mapped_source in source_info %}
-                    <a href="{{ source_info[mapped_source]['link'] }}"
-                       title="{{ source_info[mapped_source]['name']}}"
-                       target="_blank"
-                       @click.stop>
-                      {{ source_name }}
-                    </a>
-                  {% else %}
-                    <span title="">{{ source_name }}</span>
-                  {% endif %}
-                </span>
+                    {% if source_info and mapped_source in source_info %}
+                      <a href="{{ source_info[mapped_source]['link'] }}"
+                         title="{{ source_info[mapped_source]['name']}}"
+                         target="_blank"
+                         @click.stop>
+                        {{ source_name }}
+                      </a>
+                    {% else %}
+                      <span title="">{{ source_name }}</span>
+                    {% endif %}
+                  </span>
                 {% endfor %}
             </p>
 <!--            Databases - <source-display></source-display> - Readers-->
