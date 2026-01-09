@@ -30,11 +30,19 @@
         }
 
         .badge-source {
-            font-size: 8pt;
+            font-size: 9pt;
             margin: 0;
             padding-left: 5px;
             cursor: pointer;
         }
+        .source-unselected {
+          opacity: 0.35;
+        }
+        .source-unavailable {
+          opacity: 0.25;
+          cursor: default;
+        }
+        .badge-source { user-select: none; }
 
         .nvm {
             padding-left: 0;
@@ -95,38 +103,64 @@
                 </div>
             </form>
             <hr>
-            <p>
+            <p class="mb-1">
                 Available sources in INDRA:
             </p>
+
+            <p class="mb-1">
+              <span class="text-muted" style="font-size: 8pt; user-select:none;">
+                <a href="#" @click.prevent="setAllSources(true)">check all</a> /
+                <a href="#" @click.prevent="setAllSources(false)">clear all</a>
+              </span>
+            </p>
+
             <p>
                 Database sources:
                 {% for source_name in sources_dict['databases'] %}
-                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                <span class="badge badge-source label source-{{ source_name }}">
+                  {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                  <span class="badge badge-source label source-{{ source_name }}"
+                        :class="{ 'source-unavailable': !sourceExists('{{ source_name }}') }"
+                        @click="toggleSource('{{ source_name }}')">
+
+                    <i v-if="sourceExists('{{ source_name }}')"
+                       :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
+
                     {% if source_info and mapped_source in source_info %}
-                    <a href="{{ source_info[mapped_source]['link'] }}"
-                    title="{{ source_info[mapped_source]['name']}}"
-                    target="_blank">{{ source_name }}
-                    </a>
+                      <a href="{{ source_info[mapped_source]['link'] }}"
+                         title="{{ source_info[mapped_source]['name']}}"
+                         target="_blank"
+                         @click.stop>
+                        {{ source_name }}
+                      </a>
                     {% else %}
-                    <span title="">{{ source_name }}</span>
+                      <span title="">{{ source_name }}</span>
                     {% endif %}
-                </span>
+                  </span>
                 {% endfor %}
-                <br>
+
+            <br>
+
                 Reader sources:
                 {% for source_name in sources_dict['reading'] %}
-                {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
-                <span class="badge badge-source label source-{{ source_name }}">
-                    {% if source_info and source_name in source_info %}
-                    <a href="{{ source_info[mapped_source]['link'] }}"
-                    title="{{ source_info[mapped_source]['name']}}"
-                    target="_blank">{{ source_name }}
-                </a>
+                  {% set mapped_source = reverse_source_mappings.get(source_name, source_name) %}
+                  <span class="badge badge-source label source-{{ source_name }}"
+                        :class="{ 'source-unavailable': !sourceExists('{{ source_name }}') }"
+                        @click="toggleSource('{{ source_name }}')">
+
+                    <i v-if="sourceExists('{{ source_name }}')"
+                       :class="isSourceSelected('{{ source_name }}') ? 'far fa-check-square mr-1' : 'far fa-square mr-1'"></i>
+
+                    {% if source_info and mapped_source in source_info %}
+                      <a href="{{ source_info[mapped_source]['link'] }}"
+                         title="{{ source_info[mapped_source]['name']}}"
+                         target="_blank"
+                         @click.stop>
+                        {{ source_name }}
+                      </a>
                     {% else %}
-                    {{ source_name }} <span class="text-danger">no link</span>
+                      <span title="">{{ source_name }}</span>
                     {% endif %}
-                </span>
+                  </span>
                 {% endfor %}
             </p>
 <!--            Databases - <source-display></source-display> - Readers-->
@@ -221,27 +255,74 @@
                 include_db_evidence: {{ include_db_evidence|default(true)|tojson }},
                 is_proteocentric: {{ is_proteocentric|default(false)|tojson }},
                 sorting_method: 'none',
-                reverse_sorting: false
+                reverse_sorting: false,
+                selected_sources: {},
+                sources_present: {}
+            },
+            created() {
+
+                for (const st of this.stmts) {
+                if (st && st.sources) {
+                  for (const s of Object.keys(st.sources)) {
+                    if (!this.sources_present[s]) this.$set(this.sources_present, s, true);
+                  }
+                }
+              }
+              const dbs = (this.$sources && this.$sources.databases) ? this.$sources.databases : [];
+              const rds = (this.$sources && this.$sources.reading) ? this.$sources.reading : [];
+              for (const s of dbs) this.$set(this.selected_sources, s, !!this.sources_present[s]);
+              for (const s of rds) this.$set(this.selected_sources, s, !!this.sources_present[s]);
             },
             methods: {
                 updateIncludeDbEvidence() {
                     let currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.set('include_db_evidence', this.include_db_evidence.toString());
                     window.location.href = currentUrl.toString();
-                }
+                },
+                sourceExists(src) {
+                    return !!this.sources_present[src];
+                },
+                isSourceSelected(src) {
+                    return !!this.selected_sources[src];
+                },
+                toggleSource(src) {
+                    if (!this.sourceExists(src)) return;
+                    this.$set(this.selected_sources, src, !this.selected_sources[src]);
+                },
+
+                stmtPassesSourceFilter(st) {
+                    const selected = Object.keys(this.selected_sources).filter(s => this.selected_sources[s]);
+                    if (selected.length === 0) return false;
+
+                    const stSources = st && st.sources ? Object.keys(st.sources) : [];
+                    return stSources.some(s => this.selected_sources[s]);
+                },
+                setAllSources(flag) {
+                    const dbs = (this.$sources && this.$sources.databases) ? this.$sources.databases : [];
+                    const rds = (this.$sources && this.$sources.reading) ? this.$sources.reading : [];
+                    const all = dbs.concat(rds);
+                    for (const s of all) {
+                      if (this.sourceExists(s)) {
+                        this.$set(this.selected_sources, s, flag);
+                      }
+                    }
+                },
             },
             computed: {
                 shown_stmts() {
+
+                    const base = this.stmts.filter(this.stmtPassesSourceFilter);
+
                     // If no sorting selected, preserve original order (or reverse if switch is on)
                     if (this.sorting_method === 'none') {
                         if (this.reverse_sorting) {
-                            return [...this.stmts].reverse();
+                            return [...base].reverse();
                         }
-                        return this.stmts;
+                        return base;
                     }
 
                     // Copy statements to avoid mutating original array
-                    const stmtsCopy = [...this.stmts];
+                    const stmtsCopy = [...base];
 
                     // Build a map of original indices to ensure stable sorting (tie-breaker)
                     const originalIndexMap = this.stmts.reduce((m, s, i) => { m[s.hash] = i; return m; }, {});
