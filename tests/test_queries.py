@@ -256,6 +256,13 @@ def test_get_pmids_for_mesh():
     assert pmids[0].db_ns == "PUBMED"
     assert ("PUBMED", "14915949") in {p.grounding() for p in pmids}
 
+@pytest.mark.nonpublic
+def test_get_pmids_for_stmt_hash():
+    stmt_hash = -21655886415682961
+    client = _get_client()
+    pmids = get_pmids_for_stmt_hash(stmt_hash, client=client)
+    assert pmids
+    assert '14743216' in pmids
 
 @pytest.mark.nonpublic
 def test_get_mesh_ids_for_pmid():
