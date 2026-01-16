@@ -800,6 +800,33 @@ def get_pmids_for_mesh(
 
     return client.query_nodes(query, **query_param)
 
+@autoclient()
+def get_pmids_for_hash(stmt_hash: int, client: Neo4jClient):
+
+    """Return the PubMed IDs for the given statement hash.
+
+    Parameters
+    ----------
+    stmt_hash:
+        The statement hash to query.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        The PubMed IDs for the given MESH term
+    """
+    query = "MATCH (e:Evidence {stmt_hash: $hash}) RETURN e.evidence"
+    results = client.query_tx(query, hash=stmt_hash)
+
+    pmids = []
+    for result in results:
+        evidence_json = json.loads(result[0])
+        if "pmid" in evidence_json:
+            pmids.append(evidence_json["pmid"])
+    return pmids
+
 
 @autoclient()
 def get_mesh_ids_for_pmid(
