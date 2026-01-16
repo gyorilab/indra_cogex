@@ -41,6 +41,7 @@ __all__ = [
     "get_ontology_parent_terms",
     "isa_or_partof",
     "get_pmids_for_mesh",
+    "get_pmids_for_stmt_hash",
     "get_mesh_ids_for_pmid",
     "get_mesh_ids_for_pmids",
     "get_mesh_annotated_evidence",
@@ -801,7 +802,7 @@ def get_pmids_for_mesh(
     return client.query_nodes(query, **query_param)
 
 @autoclient()
-def get_pmids_for_hash(stmt_hash: int, client: Neo4jClient):
+def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
 
     """Return the PubMed IDs for the given statement hash.
 
