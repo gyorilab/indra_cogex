@@ -9,6 +9,22 @@
             href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
     />
+    <style>
+        .info-icon {
+            cursor: help;
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-left: 4px;
+        }
+        .info-icon:hover {
+            color: #495057;
+        }
+        .ranking-explanation {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+    </style>
 {% endblock %}
 
 {% block scripts %}
@@ -17,14 +33,9 @@
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.js"></script>
     <script>
         const datatablesConf = {
-            "order": [[2, "asc"]],
+            "order": [[4, "asc"]],  // Sort by p-value (column 4)
             pageLength: 10,
             layout: {
-                // Full documentation of layout:
-                // https://datatables.net/reference/option/layout
-                // The placement of paging needs to be specified or it won't
-                // show up at all
-                // See: https://datatables.net/reference/feature/pageLength
                 bottomStart: {
                     pageLength: {
                         menu: [10, 25, 50, 75, 100],
@@ -33,7 +44,6 @@
                 topStart: {
                     buttons: [
                         {
-                            // CSV export, see: https://datatables.net/reference/button/csv#Examples
                             extend: 'csv',
                             text: 'Download full table as CSV',
                             exportOptions: {
@@ -48,21 +58,63 @@
         };
         $(document).ready(function () {
             $("#table-continuous").DataTable(datatablesConf);
+
+            // Initialize Bootstrap popovers
+            $('[data-toggle="popover"]').popover({
+                html: true,
+                trigger: 'hover',
+                placement: 'top'
+            });
         });
     </script>
 {% endblock %}
 
 {% macro render_table(results, table_id) -%}
+    <p class="ranking-explanation">
+        <i class="fas fa-info-circle"></i>
+        Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
+        GSEA tests if genes in each term are enriched at the top or bottom of your ranked gene list.
+    </p>
     <table class="table table-hover table-striped" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
-            <th scope="col">CURIE</th>
+            <th scope="col">CURIE
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, HPO, MeSH, etc.) for this term."></i>
+            </th>
             <th scope="col">Name</th>
-            <th scope="col">ES</th>
-            <th scope="col">NES</th>
-            <th scope="col"><i>p</i>-value</th>
-            <th scope="col"><i>q</i>-value</th>
-            <th scope="col">Statements</th>
+            <th scope="col">ES
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>ES</strong> (Enrichment Score) measures the degree to which genes in this term are overrepresented at the top or bottom of your ranked gene list. Positive ES = enriched at top, negative ES = enriched at bottom."></i>
+            </th>
+            <th scope="col">NES
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>NES</strong> (Normalized Enrichment Score) is the ES normalized by gene set size. It allows comparison across terms of different sizes. Higher absolute NES = stronger enrichment."></i>
+            </th>
+            <th scope="col"><i>p</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>p-value</strong> measures statistical significance from GSEA permutation testing. Smaller values (e.g., 1e-10) mean it's very unlikely this enrichment happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+            </th>
+            <th scope="col"><i>q</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). It accounts for testing many terms simultaneously. Smaller values indicate more significant results after correction."></i>
+            </th>
+            <th scope="col">Statements
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>Statements</strong> are INDRA causal relationships connecting your input genes to this regulator. Click 'View Statements' to see the detailed evidence."></i>
+            </th>
         </tr>
         </thead>
         <tbody>
