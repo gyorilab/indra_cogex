@@ -449,6 +449,107 @@ def indra_upstream_ora(
     )
 
 
+def indra_intermediate_ora(
+    client: Neo4jClient,
+    upstream_gene_ids: Iterable[str],
+    downstream_gene_ids: Iterable[str],
+    background_gene_ids: Optional[Collection[str]] = None,
+    *,
+    minimum_evidence_count: Optional[int] = 1,
+    minimum_belief: Optional[float] = 0.0,
+    **kwargs,
+) -> pd.DataFrame:
+    """
+    Calculate a p-value for each entity in the INDRA database
+    based on 
+    1. the set of genes that it regulates and how
+    they compare to the query downstream gene set, and 
+    2. the set of genes that it is regulated by and how
+    they compare to the query upstream gene set.
+
+    Parameters
+    ----------
+    client :
+        Neo4jClient
+    upstream_gene_ids :
+        List of HGNC gene identifiers that we want to perform downstream analysis on
+    downstream_gene_ids :
+        List of HGNC gene identifiers that we want to perform upstream analysis on
+    background_gene_ids :
+        List of HGNC gene identifiers for the background gene set. If not
+        given, all genes with HGNC IDs are used as the background.
+    minimum_evidence_count :
+        Minimum number of evidences to consider a causal relationship
+    minimum_belief :
+        Minimum belief to consider a causal relationship
+    **kwargs :
+        Additional keyword arguments to pass to _do_ora
+
+    Returns
+    -------
+    :
+        DataFrame with columns:
+        curie, name, p, q, mlp, mlq
+    """
+    count = (
+        count_human_genes(client=client)
+        if not background_gene_ids
+        else len(background_gene_ids)
+    )
+    bg_genes = frozenset(background_gene_ids) if background_gene_ids else None
+
+    # downstream analysis for our upstream gene list
+    down_analysis = _do_ora(
+        get_entity_to_regulators(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+            background_gene_ids=bg_genes
+        ),
+        query=upstream_gene_ids,
+        count=count,
+        **kwargs,
+    )
+
+    # or directly calling indra_downstream_ora
+    # down_analysis = indra_downstream_ora(
+    #     client=client,
+    #     gene_ids=upstream_gene_ids,
+    #     background_gene_ids=background_gene_ids,
+    #     minimum_evidence_count=minimum_evidence_count,
+    #     minimum_belief=minimum_belief,
+    #     **kwargs,
+    # )
+
+    # upstream analysis for our downstream gene list
+    up_analysis = _do_ora(
+        get_entity_to_targets(
+            client=client,
+            minimum_evidence_count=minimum_evidence_count,
+            minimum_belief=minimum_belief,
+            background_gene_ids=bg_genes
+        ),
+        query=downstream_gene_ids,
+        count=count,
+        **kwargs,
+    )
+    # or directly calling indra_upstream_ora
+    # up_analysis = indra_upstream_ora(
+    #     client=client,
+    #     gene_ids=downstream_gene_ids,
+    #     background_gene_ids=background_gene_ids,
+    #     minimum_evidence_count=minimum_evidence_count,
+    #     minimum_belief=minimum_belief,
+    #     **kwargs,
+    # )
+    
+    return down_analysis.merge(
+        up_analysis,
+        on=["curie", "name"],
+        suffixes=("_down", "_up")
+    )
+
+
 @autoclient(cache=True)
 def count_phosphosites(*, client: Neo4jClient) -> int:
     """Count the number of unique phosphosites in the Neo4j database.
