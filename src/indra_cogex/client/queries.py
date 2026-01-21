@@ -818,14 +818,12 @@ def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
     :
         The PubMed IDs for the given MESH term
     """
-    query = "MATCH (e:Evidence {stmt_hash: $hash}) RETURN e.evidence"
-    results = client.query_tx(query, hash=stmt_hash)
-
-    pmids = []
-    for result in results:
-        evidence_json = json.loads(result[0])
-        if "pmid" in evidence_json:
-            pmids.append(evidence_json["pmid"])
+    query = """
+        MATCH (e:Evidence {stmt_hash: $hash})-[:has_citation]-(p:Publication)
+        WHERE p.id STARTS WITH 'pubmed:'
+        RETURN DISTINCT toInteger(last(split(p.id, ':'))) AS pmid
+        """
+    pmids = [row[0] for row in client.query_tx(query, hash=stmt_hash)]
     return pmids
 
 
