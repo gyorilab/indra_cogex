@@ -821,7 +821,7 @@ def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
     query = """
         MATCH (e:Evidence {stmt_hash: $hash})-[:has_citation]-(p:Publication)
         WHERE p.id STARTS WITH 'pubmed:'
-        RETURN DISTINCT toInteger(last(split(p.id, ':'))) AS pmid
+        RETURN DISTINCT last(split(p.id, ':')) AS pmid
         """
     pmids = [row[0] for row in client.query_tx(query, hash=stmt_hash)]
     return pmids
