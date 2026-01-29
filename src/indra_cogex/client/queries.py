@@ -41,6 +41,7 @@ __all__ = [
     "get_ontology_parent_terms",
     "isa_or_partof",
     "get_pmids_for_mesh",
+    "get_pmids_for_stmt_hash",
     "get_mesh_ids_for_pmid",
     "get_mesh_ids_for_pmids",
     "get_mesh_annotated_evidence",
@@ -799,6 +800,31 @@ def get_pmids_for_mesh(
         query_param["mesh_term"] = norm_mesh
 
     return client.query_nodes(query, **query_param)
+
+@autoclient()
+def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
+
+    """Return the PubMed IDs for the given statement hash.
+
+    Parameters
+    ----------
+    stmt_hash:
+        The statement hash to query.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        The PubMed IDs for the given MESH term
+    """
+    query = """
+        MATCH (e:Evidence {stmt_hash: $hash})-[:has_citation]-(p:Publication)
+        WHERE p.id STARTS WITH 'pubmed:'
+        RETURN DISTINCT last(split(p.id, ':')) AS pmid
+        """
+    pmids = [row[0] for row in client.query_tx(query, hash=stmt_hash)]
+    return pmids
 
 
 @autoclient()
