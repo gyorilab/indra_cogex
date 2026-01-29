@@ -9,7 +9,7 @@ import pystow
 import pandas as pd
 
 from indra.ontology.bio import bio_ontology
-from trialsynth.clinical_trials_dot_gov import config, process
+from trialsynth.ctgov import config, process
 
 __all__ = [
     "ensure_clinical_trials_df",
