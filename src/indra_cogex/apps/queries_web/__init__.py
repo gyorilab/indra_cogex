@@ -571,9 +571,14 @@ for module, func_name in module_functions:
             f"it to FUNCTION_CATEGORIES."
         )
 
-    short_doc, fixed_doc = get_docstring(
-        func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
-    )
+    try:
+        short_doc, fixed_doc = get_docstring(
+            func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
+        )
+    except ValueError as e:
+        raise ValueError(
+            f"Error processing docstring for function '{func_name}': {e}"
+        ) from e
 
     param_names = list(func_sig.parameters.keys())
     param_names.remove("client")
