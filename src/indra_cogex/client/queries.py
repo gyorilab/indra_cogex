@@ -802,7 +802,7 @@ def get_pmids_for_mesh(
     return client.query_nodes(query, **query_param)
 
 @autoclient()
-def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
+def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient) -> List[str]:
 
     """Return the PubMed IDs for the given statement hash.
 
