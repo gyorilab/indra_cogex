@@ -181,6 +181,7 @@ FUNCTION_CATEGORIES = {
         'namespace': literature_metadata_ns,
         'functions': [
             "get_pmids_for_mesh",
+            "get_pmids_for_stmt_hash",
             "get_mesh_ids_for_pmid",
             "get_mesh_ids_for_pmids",
             "get_publisher_for_journal",
