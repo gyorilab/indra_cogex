@@ -801,9 +801,9 @@ def get_pmids_for_mesh(
 
     return client.query_nodes(query, **query_param)
 
-@autoclient()
-def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
 
+@autoclient()
+def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient) -> List[str]:
     """Return the PubMed IDs for the given statement hash.
 
     Parameters
@@ -816,7 +816,7 @@ def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient):
     Returns
     -------
     :
-        The PubMed IDs for the given MESH term
+        The PubMed IDs for the given statement hash.
     """
     query = """
         MATCH (e:Evidence {stmt_hash: $hash})-[:has_citation]-(p:Publication)
@@ -2701,7 +2701,7 @@ def get_projects_for_patent(
     )
 
 
-#interpro
+# interpro
 @autoclient()
 def get_domains_for_gene(
     gene: Tuple[str, str], *, client: Neo4jClient
@@ -2783,7 +2783,7 @@ def gene_has_domain(
     )
 
 
-#gwas
+# gwas
 @autoclient()
 def get_phenotypes_for_variant_gwas(
     variant: Tuple[str, str], *, client: Neo4jClient
@@ -3533,8 +3533,6 @@ def build_edges_from_graph(graph, statements, input_node_names, include_db_evide
     return edges
 
 
-
-
 def _get_edge_styling(stmt_type):
     """Return RGB base color, dash pattern, and arrow spec for statement type."""
     if 'Activation' in stmt_type:
@@ -3642,7 +3640,6 @@ def get_network(
     except Exception as e:
         logger.error(f"Error generating network visualization: {str(e)}", exc_info=True)
         return {"nodes": [], "edges": [], "error": str(e)}
-
 
 
 if __name__ == "__main__":

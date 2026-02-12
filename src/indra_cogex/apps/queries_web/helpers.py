@@ -132,7 +132,7 @@ def get_web_return_annotation(sig: Signature) -> Type:
     # Get the return annotation
     return_annotation = sig.return_annotation
     if return_annotation is sig.empty:
-        raise ValueError("Forgot to type annotate function")
+        raise ValueError("Forgot to type annotate function return value")
 
     # Translate the return annotation:
     # Iterable[Node] -> List[Dict[str, Any]]
@@ -233,7 +233,7 @@ def get_docstring(
         )
     sig = signature(fun)
     if sig.return_annotation is sig.empty:
-        raise ValueError("Forgot to type annotate function")
+        raise ValueError(f"Forgot to type annotate function return value of {fun.__name__}")
 
     full_docstr = """{title}
 {extra_description}

@@ -181,6 +181,7 @@ FUNCTION_CATEGORIES = {
         'namespace': literature_metadata_ns,
         'functions': [
             "get_pmids_for_mesh",
+            "get_pmids_for_stmt_hash",
             "get_mesh_ids_for_pmid",
             "get_mesh_ids_for_pmids",
             "get_publisher_for_journal",
@@ -546,6 +547,24 @@ module_functions = (
 # Maps function names to the actual functions
 func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
 
+# Validate that all functions in func_mapping are registered in FUNCTION_CATEGORIES.
+# This catches the common mistake of adding a function to module_functions but forgetting
+# to add it to FUNCTION_CATEGORIES, which would cause a runtime error later.
+_registered_functions = set()
+for _category, _info in FUNCTION_CATEGORIES.items():
+    _registered_functions.update(_info['functions'])
+
+_unregistered_functions = set(func_mapping.keys()) - _registered_functions
+if _unregistered_functions:
+    logger.warning(
+        f"The following functions are in func_mapping but not registered in "
+        f"FUNCTION_CATEGORIES: {sorted(_unregistered_functions)}. "
+        f"Add them to FUNCTION_CATEGORIES to expose them via the API."
+    )
+
+# Clean up temporary variables
+del _registered_functions, _unregistered_functions
+
 # Create resource for each query function
 for module, func_name in module_functions:
     if not isfunction(getattr(module, func_name)) or func_name == "get_schema_graph":
@@ -570,9 +589,14 @@ for module, func_name in module_functions:
             f"it to FUNCTION_CATEGORIES."
         )
 
-    short_doc, fixed_doc = get_docstring(
-        func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
-    )
+    try:
+        short_doc, fixed_doc = get_docstring(
+            func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
+        )
+    except ValueError as e:
+        raise ValueError(
+            f"Error processing docstring for function '{func_name}': {e}"
+        ) from e
 
     param_names = list(func_sig.parameters.keys())
     param_names.remove("client")
