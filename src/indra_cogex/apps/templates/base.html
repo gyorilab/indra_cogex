@@ -81,18 +81,6 @@
         {# todo: set nav links programmatically #}
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" href="{{ url_for("gla.discretize_analysis") }}">Discrete GSEA</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for("gla.signed_analysis_route") }}">Signed GSEA</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for("gla.continuous_analysis_route") }}">Continuous GSEA</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for("mla.discrete_analysis_route") }}">Discrete MSEA</a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link" href="{{ config.get('APPLICATION_ROOT', '') }}/chat">Extended Chat</a>
             </li>
             <li class="nav-item">
@@ -106,6 +94,9 @@
                 {% set apidocs_url = config.get('APPLICATION_ROOT', '') + '/apidocs' %}
                 {% set apidocs_url = apidocs_url.replace('//', '/') %}
                 <a class="nav-link" href="{{ apidocs_url }}">API Docs</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mcp">MCP</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#about">About</a>
