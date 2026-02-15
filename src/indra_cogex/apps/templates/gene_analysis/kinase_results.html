@@ -9,6 +9,22 @@
             href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
     />
+    <style>
+        .info-icon {
+            cursor: help;
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-left: 4px;
+        }
+        .info-icon:hover {
+            color: #495057;
+        }
+        .ranking-explanation {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+    </style>
 {% endblock %}
 
 {% block scripts %}
@@ -42,19 +58,51 @@
         };
         $(document).ready(function () {
             $("#table-kinase").DataTable(datatablesConf);
+
+            // Initialize Bootstrap popovers
+            $('[data-toggle="popover"]').popover({
+                html: true,
+                trigger: 'hover',
+                placement: 'top'
+            });
         });
     </script>
 {% endblock %}
 
 {% macro render_kinase_table(df, table_id, phosphosites, minimum_evidence, minimum_belief) -%}
+    <p class="ranking-explanation">
+        <i class="fas fa-info-circle"></i>
+        Results are ranked by statistical significance (p-value). Smaller p-values indicate more significant enrichment.
+        Kinases with lower p-values are more likely to be involved in regulating the phosphorylation patterns in your dataset.
+    </p>
     <table class="table table-hover table-striped table-ora" id="{{ table_id }}" style="width: 100%;">
         <thead>
         <tr>
-            <th scope="col">CURIE</th>
+            <th scope="col">CURIE
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>CURIE</strong> (Compact URI) is a standardized identifier. Clicking the link opens the relevant database page (HGNC, HPO, MeSH, etc.) for this kinase."></i>
+            </th>
             <th scope="col">Name</th>
-            <th scope="col"><i>p</i>-value</th>
-            <th scope="col"><i>q</i>-value</th>
-            <th scope="col">Statements</th>
+            <th scope="col"><i>p</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>p-value</strong> measures how statistically significant the enrichment is using Fisher's exact test. Smaller values (e.g., 1e-10) mean it's very unlikely this happened by random chance. The most significant results (smallest p-values) appear at the top."></i>
+            </th>
+            <th scope="col"><i>q</i>-value
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>q-value</strong> is the p-value after multiple testing correction (FDR). It accounts for testing many kinases simultaneously. Smaller values indicate more significant results after correction."></i>
+            </th>
+            <th scope="col">Statements
+                <i class="fas fa-info-circle info-icon"
+                   data-toggle="popover"
+                   data-placement="top"
+                   data-content="<strong>Statements</strong> are INDRA phosphorylation relationships connecting this kinase to your input phosphosites. Click 'View Statements' to see the detailed evidence."></i>
+            </th>
         </tr>
         </thead>
         <tbody>

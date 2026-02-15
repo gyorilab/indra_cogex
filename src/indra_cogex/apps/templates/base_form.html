@@ -11,24 +11,66 @@
 {% endblock %}
 {% block scripts %}
 {{ super() }}
+<style>
+    /* Dotted border spinner for loading indicator */
+    .dotted-spinner {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border: 3px dashed #6c757d;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        display: inline-block;
+        color: #6c757d;
+        font-size: 0.95rem;
+        vertical-align: middle;
+        margin-left: 0.25rem;
+    }
+</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-      let submitButton = document.getElementById('submit-btn');
-      let child = document.createElement("span")
-      child.classList.add("spinner-border", "spinner-border-sm", "ml-2", "d-none")
-      child.setAttribute("aria-hidden", "true")
-      child.setAttribute("role", "status")
-      child.id = "form-spinner"
-      submitButton.parentElement.appendChild(child)
+        const form = document.getElementById('main-form');
+        const submitButton = document.getElementById('submit-btn');
 
-      const form = document.getElementById('main-form');
-      var spinner;
+        if (!form || !submitButton) {
+            return;
+        }
 
-      form.addEventListener('submit', function(event) {
-           submitButton.disabled = true;
-           spinner = document.getElementById('form-spinner');
-           spinner.classList.remove("d-none")
-      });
+        // Create loading indicator elements
+        const loadingContainer = document.createElement('span');
+        loadingContainer.id = 'loading-indicator';
+        loadingContainer.classList.add('d-none');
+
+        const spinner = document.createElement('span');
+        spinner.className = 'dotted-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        spinner.setAttribute('role', 'status');
+
+        const loadingText = document.createElement('span');
+        loadingText.className = 'loading-text';
+        loadingText.textContent = 'Processing your analysis...';
+
+        loadingContainer.appendChild(spinner);
+        loadingContainer.appendChild(loadingText);
+
+        // Insert after submit button
+        submitButton.parentElement.appendChild(loadingContainer);
+
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            loadingContainer.classList.remove('d-none');
+        });
     });
 </script>
 {% endblock %}
