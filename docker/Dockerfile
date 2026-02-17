@@ -87,6 +87,6 @@ RUN python -m indra_cogex.client.enrichment.utils --force
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --force
 
-ENV GUNICORN_CONF /usr/local/lib/python3.10/dist-packages/indra_cogex/apps/gunicorn.conf.py
+ENV GUNICORN_CONF /sw/venv/lib/python3.12/site-packages/indra_cogex/apps/gunicorn.conf.py
 
 ENTRYPOINT gunicorn -w 2 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
