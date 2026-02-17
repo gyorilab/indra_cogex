@@ -39,7 +39,7 @@
     function handle_success(type, resp_data) {
         if (type === "login") {
             const btn = document.querySelector("#loginout-button");
-            btn.innerHTML = 'Logout';
+            btn.innerHTML = '<i class="fa fa-sign-out"></i> Logout';
             btn.onclick = () => {
                 return trigger_logout()
             };
@@ -48,7 +48,7 @@
             trigger_login()
         } else { // logout
             const btn = document.querySelector("#loginout-button");
-            btn.innerHTML = 'Login';
+            btn.innerHTML = '<i class="fa fa-sign-in"></i> Login';
             btn.onclick = () => {
                 return trigger_login()
             };
@@ -81,7 +81,10 @@
         {# todo: set nav links programmatically #}
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" href="{{ config.get('APPLICATION_ROOT', '') }}/chat">Extended Chat</a>
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="{{ config.get('APPLICATION_ROOT', '') }}/chat"><i class="fa fa-comments"></i> Extended Chat</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="/mcp"><i class="fa fa-plug"></i> MCP</a>
             </li>
             <li class="nav-item">
                 {#
@@ -93,13 +96,13 @@
                 #}
                 {% set apidocs_url = config.get('APPLICATION_ROOT', '') + '/apidocs' %}
                 {% set apidocs_url = apidocs_url.replace('//', '/') %}
-                <a class="nav-link" href="{{ apidocs_url }}">API Docs</a>
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="{{ apidocs_url }}"><i class="fa fa-code"></i> API Docs</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/mcp">MCP</a>
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="https://github.com/gyorilab/indra_cogex"><i class="fa fa-book"></i> Source Code</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#about">About</a>
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="#about"><i class="fa fa-info-circle"></i> About</a>
             </li>
         </ul>
     </div>
@@ -108,9 +111,9 @@
                 onclick="return {% if user_email %}trigger_logout(){% else %}trigger_login(){% endif %};"
                 id="loginout-button">
             {% if user_email %}
-                Logout
+                <i class="fa fa-sign-out"></i> Logout
             {% else %}
-                Login
+                <i class="fa fa-sign-in"></i> Login
             {% endif %}
         </button>
     </div>
