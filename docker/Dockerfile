@@ -52,7 +52,7 @@ RUN mkdir -p /root/.config/indra && \
     pip install "cython<3" && \
     pip install "pyjnius==1.1.4" --no-build-isolation && \
     pip install --prefer-binary python-libsbml || true && \
-    pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
+    pip install "indra[all] @ git+https://github.com/gyorilab/indra.git" && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
@@ -73,7 +73,7 @@ RUN mkdir -p /root/.config/indra && \
     pip install gunicorn
 
 # CoGEx specific setup
-RUN pip3 install git+https://github.com/gyorilab/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
+RUN pip install "indra_cogex[web,gunicorn,gsea] @ git+https://github.com/gyorilab/indra_cogex.git"
 
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
