@@ -963,6 +963,7 @@ def get_evidences_for_embedding(
     *,
     client: Neo4jClient,
     k: int = 10,
+    remove_medscan: bool = True,
 ) -> Dict[int, List[Tuple[Evidence, float]]]:
     """Return top-k evidences by cosine similarity to the given embedding.
 
@@ -974,6 +975,8 @@ def get_evidences_for_embedding(
         The number of top similar evidences to return.
     client :
         The Neo4j client.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
 
     Returns
     -------
@@ -991,7 +994,10 @@ def get_evidences_for_embedding(
     )
     ev_dict: Dict[int, List[Tuple[Evidence, float]]] = defaultdict(list)
     for stmt_hash, ev_json_str, score in result:
-        ev = Evidence._from_json(json.loads(ev_json_str))
+        ev_json = json.loads(ev_json_str)
+        if remove_medscan and ev_json["source_api"] == "medscan":
+            continue
+        ev = Evidence._from_json(ev_json)
         ev_dict[stmt_hash].append((ev.to_json(), score))
     return dict(ev_dict)
 
