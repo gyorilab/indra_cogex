@@ -46,6 +46,7 @@ __all__ = [
     "get_mesh_ids_for_pmids",
     "get_mesh_annotated_evidence",
     "get_evidences_for_mesh",
+    "get_evidences_for_embedding",
     "get_evidences_for_stmt_hash",
     "get_evidences_for_stmt_hashes",
     "get_stmts_for_paper",
@@ -954,6 +955,51 @@ def get_evidences_for_mesh(
 
     result = client.query_tx(query, **query_params)
     return _get_ev_dict_from_hash_ev_query(result, remove_medscan=remove_medscan)
+
+
+@autoclient()
+def get_evidences_for_embedding(
+    query_embedding: List[float],
+    *,
+    client: Neo4jClient,
+    k: int = 10,
+    remove_medscan: bool = True,
+) -> Dict[int, List[Tuple[Evidence, float]]]:
+    """Return top-k evidences by cosine similarity to the given embedding.
+
+    Parameters
+    ----------
+    query_embedding :
+        A 384-dimensional float vector to query against the evidence embedding index.
+    k :
+        The number of top similar evidences to return.
+    client :
+        The Neo4j client.
+    remove_medscan :
+        If True, remove the MedScan evidence from the results.
+
+    Returns
+    -------
+    :
+        A mapping from stmt_hash to a list of (Evidence, cosine_similarity_score)
+        tuples, sorted by score descending within each group.
+    """
+    query = """\
+        CALL db.index.vector.queryNodes('ev_embedding_index', $top_k, $query_embedding)
+        YIELD node AS evidence, score
+        RETURN evidence.stmt_hash, evidence.evidence, score
+    """
+    result = client.query_tx(
+        query, top_k=k, query_embedding=query_embedding
+    )
+    ev_dict: Dict[int, List[Tuple[Evidence, float]]] = defaultdict(list)
+    for stmt_hash, ev_json_str, score in result:
+        ev_json = json.loads(ev_json_str)
+        if remove_medscan and ev_json["source_api"] == "medscan":
+            continue
+        ev = Evidence._from_json(ev_json)
+        ev_dict[stmt_hash].append((ev.to_json(), score))
+    return dict(ev_dict)
 
 
 @autoclient()

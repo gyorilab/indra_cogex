@@ -29,6 +29,7 @@ from indra_cogex.analysis import (
     source_targets_explanation
 )
 from indra_cogex.apps.search import search
+from .constants import EXAMPLE_QUERY_EMBEDDING
 from .helpers import ParseError, get_docstring, parse_json, process_result
 
 logger = logging.getLogger(__name__)
@@ -198,6 +199,7 @@ FUNCTION_CATEGORIES = {
             "get_evidences_for_mesh",
             "get_evidences_for_stmt_hash",
             "get_evidences_for_stmt_hashes",
+            "get_evidences_for_embedding",
             "get_stmts_for_paper",
             "get_stmts_for_pmids",
             "get_stmts_for_mesh",
@@ -509,6 +511,10 @@ examples_dict = {
     "indication": fields.List(fields.String, example=["mesh", "D002318"]),
     # For EC
     "enzyme": fields.List(fields.String, example=["ec-code", "3.4.21.105"]),
+    # For embedding-based evidence retrieval (all-MiniLM-L6-v2, 384-dim)
+    # Example: "BRAF phosphorylates MAP2K1"
+    "query_embedding": fields.List(fields.Float, example=EXAMPLE_QUERY_EMBEDDING),
+    "k": fields.Integer(example=10),
 }
 
 # Parameters to always skip in the examples and in the documentation
