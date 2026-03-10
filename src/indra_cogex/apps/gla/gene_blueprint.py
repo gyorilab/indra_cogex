@@ -72,7 +72,7 @@ class DiscreteForm(FlaskForm):
     background_genes = TextAreaField(
         "Background Genes (Optional)",
         description='Enter background genes. If not provided, all human genes will be used. ',
-        render_kw={"rows": 2, "cols": 50}
+        render_kw={"rows": 6, "cols": 50}
     )
     indra_path_analysis = indra_path_analysis_field
     minimum_evidence = minimum_evidence_field
