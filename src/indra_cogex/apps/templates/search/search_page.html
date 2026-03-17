@@ -185,6 +185,99 @@
             display: block; /* Show tooltip when hovering over "Agent" text */
         }
 
+        .search-hero {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 14px;
+            padding: 16px 18px 14px;
+            border-radius: 16px;
+            background:
+                radial-gradient(circle at top right, rgba(12, 123, 220, 0.18), transparent 30%),
+                linear-gradient(135deg, #f8fbff 0%, #eef4fb 100%);
+            border: 1px solid rgba(12, 123, 220, 0.12);
+        }
+
+        .search-hero::after {
+            content: "";
+            position: absolute;
+            inset: auto -80px -120px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(12, 123, 220, 0.08);
+            filter: blur(10px);
+        }
+
+        .search-hero .display-4 {
+            margin-bottom: 4px;
+            font-size: 2.2rem;
+        }
+
+        .search-hero-copy {
+            max-width: 760px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .search-hero-lead {
+            margin-bottom: 8px;
+            color: #2d3d50;
+            font-size: 0.98rem;
+        }
+
+        .search-hero-note {
+            margin-bottom: 0;
+            color: #526273;
+            font-size: 13px;
+        }
+
+        .search-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 10px 0 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .search-stat-card {
+            padding: 12px 13px 11px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(12, 123, 220, 0.10);
+            box-shadow: 0 10px 28px rgba(25, 53, 89, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-stat-label {
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #5b6b7c;
+        }
+
+        .search-stat-value {
+            font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+            line-height: 1;
+            font-weight: 700;
+            color: #123a63;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .search-stat-caption {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #607286;
+        }
+
+        @media (max-width: 991px) {
+            .search-stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
     </style>
 
     {{ super() }}
@@ -193,10 +286,36 @@
 {% block container %}
 
 <div class="card card-body bg-light">
-    <h1 class="display-4">Statement Search</h1>
-    <p class="lead">This page allows you to search into {{ search_summary.statement_count_display }} statements assembled over {{ search_summary.entity_count_display }} entities
-        (genes, proteins, small molecules, biological processes, etc.) with a total of {{ search_summary.evidence_count_display }} pieces of supporting evidence from literature and databases. <br>
-        Refine your search by specifying agents, relationship types, and roles.</p>
+    <div class="search-hero">
+        <div class="search-hero-copy">
+            <h1 class="display-4">Statement Search</h1>
+            <p class="lead search-hero-lead">
+                Search across assembled mechanistic knowledge covering genes, proteins, small molecules, biological processes, and related biomedical entities.
+            </p>
+        </div>
+
+        <div class="search-stats-grid" id="search-stats-grid">
+            <div class="search-stat-card">
+                <div class="search-stat-label">Statements</div>
+                <div class="search-stat-value js-count-up" data-display="{{ search_summary.statement_count_display }}">{{ search_summary.statement_count_display }}</div>
+                <div class="search-stat-caption">Unique INDRA statements currently indexed.</div>
+            </div>
+            <div class="search-stat-card">
+                <div class="search-stat-label">Entities</div>
+                <div class="search-stat-value js-count-up" data-display="{{ search_summary.entity_count_display }}">{{ search_summary.entity_count_display }}</div>
+                <div class="search-stat-caption">Grounded bioentities participating in statement relations.</div>
+            </div>
+            <div class="search-stat-card">
+                <div class="search-stat-label">Evidence</div>
+                <div class="search-stat-value js-count-up" data-display="{{ search_summary.evidence_count_display }}">{{ search_summary.evidence_count_display }}</div>
+                <div class="search-stat-caption">Supporting evidence from literature and databases.</div>
+            </div>
+        </div>
+
+        <p class="search-hero-note">
+            Refine your search by specifying agents, relationship types, and roles.
+        </p>
+    </div>
 
     <form method="POST" id="agent-form">
         <div class="form-group">
@@ -387,6 +506,66 @@
 <script src="https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/bbbootstrap/libraries@main/choices.min.js"></script>
 <script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
+<script>
+    function animateSearchSummaryCounts() {
+        const counters = document.querySelectorAll('.js-count-up');
+        if (!counters.length) {
+            return;
+        }
+
+        const parseDisplay = (display) => {
+            const match = display.trim().match(/^([0-9]+(?:\.[0-9]+)?)\s*(.*)$/);
+            if (!match) {
+                return null;
+            }
+            return {
+                value: Number(match[1]),
+                decimals: match[1].includes('.') ? 1 : 0,
+                suffix: match[2],
+            };
+        };
+
+        const startAnimation = () => {
+            counters.forEach((counter, index) => {
+                const display = counter.dataset.display || counter.textContent;
+                const parsed = parseDisplay(display);
+                if (!parsed) {
+                    counter.textContent = display;
+                    return;
+                }
+
+                const duration = 1100 + index * 180;
+                const start = performance.now();
+
+                const step = (timestamp) => {
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = parsed.value * eased;
+                    const formatted = current.toFixed(parsed.decimals).replace(/\.0$/, '');
+                    counter.textContent = parsed.suffix ? `${formatted} ${parsed.suffix}` : formatted;
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        counter.textContent = display;
+                    }
+                };
+
+                requestAnimationFrame(step);
+            });
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+                startAnimation();
+                observer.disconnect();
+            }
+        }, { threshold: 0.35 });
+
+        observer.observe(document.getElementById('search-stats-grid'));
+    }
+
+    window.addEventListener('DOMContentLoaded', animateSearchSummaryCounts);
+</script>
 {% if agent_not_found %}
     <script>
         alert(" '{{ error_agent }}' not found in the database. Please try a different agent.");
