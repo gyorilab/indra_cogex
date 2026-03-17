@@ -27,7 +27,6 @@ from indra_cogex.apps.gla.metabolite_blueprint import metabolite_blueprint
 from indra_cogex.apps.gla.source_target_blueprint import source_target_blueprint
 from indra_cogex.apps.home import home_blueprint
 from indra_cogex.apps.rest_api import api
-from indra_cogex.apps.search.search import get_search_summary
 from indra_cogex.client.neo4j_client import Neo4jClient
 from indra_cogex.apps.search import search_blueprint
 
@@ -75,12 +74,6 @@ api.init_app(app)
 
 app.extensions[INDRA_COGEX_EXTENSION] = Neo4jClient()
 app.extensions[STATEMENT_CURATION_CACHE] = CurationCache()
-
-with app.app_context():
-    try:
-        get_search_summary()
-    except Exception:
-        logger.exception("Failed to pre-load search summary")
 
 config_auth(app)
 
