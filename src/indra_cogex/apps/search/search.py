@@ -66,18 +66,12 @@ def get_search_summary() -> Dict[str, Union[int, str]]:
 
     """
     query = """
-    CALL {
-      MATCH ()-[r:indra_rel]->()
-      RETURN count(DISTINCT r.stmt_hash) AS statement_count
-    }
-    CALL {
-      MATCH (e:Evidence)
-      RETURN count(e) AS evidence_count
-    }
-    CALL {
-      MATCH (b:BioEntity)-[:indra_rel]-()
-      RETURN count(DISTINCT b) AS entity_count
-    }
+    MATCH ()-[r:indra_rel]->()
+    WITH count(r) AS statement_count
+    MATCH (e:Evidence)
+    WITH statement_count, count(e) AS evidence_count
+    MATCH (b:BioEntity)
+    WITH statement_count, evidence_count, count(b) AS entity_count
     RETURN statement_count, evidence_count, entity_count
     """
     statement_count, evidence_count, entity_count = client.query_tx(query)[0]
