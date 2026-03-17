@@ -49,14 +49,14 @@ class SearchForm(FlaskForm):
 
 
 def _format_summary_display(n: int) -> str:
+    def _format_scaled(value: float, suffix: str) -> str:
+        formatted = f"{value:.1f}".rstrip("0").rstrip(".")
+        return f"{formatted} {suffix}"
+
     if n >= 1_000_000:
-        lead = round(n / 1_000_000, 1) if n < 10_000_000 else round(n / 1_000_000)
-        lead_str = str(lead) if isinstance(lead, int) else f"{lead:g}"
-        return f"{lead_str} million"
+        return _format_scaled(n / 1_000_000, "million")
     if n >= 1_000:
-        lead = round(n / 1_000, 1) if n < 10_000 else round(n / 1_000)
-        lead_str = str(lead) if isinstance(lead, int) else f"{lead:g}"
-        return f"{lead_str} thousand"
+        return f"{round(n / 1_000)} thousand"
     return str(n)
 
 
