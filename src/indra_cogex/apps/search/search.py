@@ -1,5 +1,6 @@
 import json
 import logging
+from functools import lru_cache
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 import bioregistry
@@ -15,6 +16,7 @@ from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
 from indra.util.statement_presentation import reverse_source_mappings
+from indra_cogex.apps.proxies import client
 from indra_cogex.apps.utils import render_statements, resolve_email
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
@@ -46,12 +48,56 @@ class SearchForm(FlaskForm):
     submit = SubmitField("Search")
 
 
+def _format_summary_display(n: int) -> str:
+    if n >= 1_000_000:
+        lead = round(n / 1_000_000, 1) if n < 10_000_000 else round(n / 1_000_000)
+        lead_str = str(lead) if isinstance(lead, int) else f"{lead:g}"
+        return f"{lead_str} million"
+    if n >= 1_000:
+        lead = round(n / 1_000, 1) if n < 10_000 else round(n / 1_000)
+        lead_str = str(lead) if isinstance(lead, int) else f"{lead:g}"
+        return f"{lead_str} thousand"
+    return str(n)
+
+
+@lru_cache(maxsize=1)
+def get_search_summary() -> Dict[str, Union[int, str]]:
+    """
+
+    """
+    query = """
+    CALL {
+      MATCH ()-[r:indra_rel]->()
+      RETURN count(DISTINCT r.stmt_hash) AS statement_count
+    }
+    CALL {
+      MATCH (e:Evidence)
+      RETURN count(e) AS evidence_count
+    }
+    CALL {
+      MATCH (b:BioEntity)-[:indra_rel]-()
+      RETURN count(DISTINCT b) AS entity_count
+    }
+    RETURN statement_count, evidence_count, entity_count
+    """
+    statement_count, evidence_count, entity_count = client.query_tx(query)[0]
+    return {
+        "statement_count": statement_count,
+        "statement_count_display": _format_summary_display(statement_count),
+        "evidence_count": evidence_count,
+        "evidence_count_display": _format_summary_display(evidence_count),
+        "entity_count": entity_count,
+        "entity_count_display": _format_summary_display(entity_count),
+    }
+
+
 @search_blueprint.route("/", methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def search():
     stmt_types = {c.__name__ for c in get_all_descendants(Statement)}
     stmt_types -= {"Influence", "Event", "Unresolved"}
     stmt_types_json = json.dumps(sorted(list(stmt_types)))
+    search_summary = get_search_summary()
 
     form = SearchForm()
 
@@ -76,6 +122,7 @@ def search():
                     "search/search_page.html",
                     form=form,
                     stmt_types_json=stmt_types_json,
+                    search_summary=search_summary,
                     agent_not_found=True,
                     error_agent=error_agent
                 )
@@ -162,6 +209,7 @@ def search():
         "search/search_page.html",
         form=form,
         stmt_types_json=stmt_types_json,
+        search_summary=search_summary,
     )
 
 
