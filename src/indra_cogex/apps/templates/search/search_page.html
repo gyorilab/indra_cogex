@@ -540,71 +540,33 @@
 <script src="{{ url_for('static', filename='search/js/search.js') }}"></script>
 <script>
     function animateSearchSummaryCounts() {
-        const counters = document.querySelectorAll('.js-count-up');
-        if (!counters.length) {
-            return;
-        }
+        document.querySelectorAll('.js-count-up').forEach((counter, index) => {
+            const targetText = counter.dataset.display || counter.textContent.trim();
+            const target = Number(targetText);
 
-        counters.forEach((counter) => {
-            const width = Math.ceil(counter.getBoundingClientRect().width);
-            counter.style.width = `${width}px`;
-        });
-
-        const parseDisplay = (display) => {
-            const match = display.trim().match(/^([0-9]+(?:\.[0-9]+)?)\s*(.*)$/);
-            if (!match) {
-                return null;
+            if (Number.isNaN(target)) {
+                return;
             }
-            return {
-                value: Number(match[1]),
-                decimals: match[1].includes('.') ? 1 : 0,
-                suffix: match[2],
-            };
-        };
 
-        const startAnimation = () => {
-            counters.forEach((counter, index) => {
-                const display = counter.dataset.display || counter.textContent;
-                const parsed = parseDisplay(display);
-                if (!parsed) {
-                    counter.textContent = display;
-                    return;
+            const decimals = targetText.includes('.') ? 1 : 0;
+            const duration = 900 + index * 150;
+            const start = performance.now();
+
+            counter.style.width = `${Math.ceil(counter.getBoundingClientRect().width)}px`;
+            counter.textContent = decimals ? '0.0' : '0';
+
+            const tick = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - (1 - progress) * (1 - progress);
+                counter.textContent = (target * eased).toFixed(decimals).replace(/\.0$/, '');
+
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
                 }
+            };
 
-                const duration = 1100 + index * 180;
-                const start = performance.now();
-
-                const step = (timestamp) => {
-                    const progress = Math.min((timestamp - start) / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const current = parsed.value * eased;
-                    const formatted = current.toFixed(parsed.decimals).replace(/\.0$/, '');
-                    counter.textContent = parsed.suffix ? `${formatted} ${parsed.suffix}` : formatted;
-                    if (progress < 1) {
-                        requestAnimationFrame(step);
-                    } else {
-                        counter.textContent = display;
-                    }
-                };
-
-                requestAnimationFrame(step);
-            });
-        };
-
-        const summary = document.querySelector('.search-summary');
-        if (!summary) {
-            startAnimation();
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            if (entries.some((entry) => entry.isIntersecting)) {
-                startAnimation();
-                observer.disconnect();
-            }
-        }, { threshold: 0.3 });
-
-        observer.observe(summary);
+            requestAnimationFrame(tick);
+        });
     }
 
     window.addEventListener('DOMContentLoaded', animateSearchSummaryCounts);
