@@ -207,7 +207,7 @@
             display: block; /* Show tooltip when hovering over "Agent" text */
         }
 
-        .search-hero {
+        .search-summary {
             position: relative;
             overflow: hidden;
             margin-bottom: 14px;
@@ -219,7 +219,7 @@
             border: 1px solid rgba(12, 123, 220, 0.12);
         }
 
-        .search-hero::after {
+        .search-summary::after {
             content: "";
             position: absolute;
             inset: auto -80px -120px auto;
@@ -230,34 +230,28 @@
             filter: blur(10px);
         }
 
-        .search-hero .display-4 {
+        .search-summary .display-4 {
             margin-bottom: 4px;
             font-size: 2.2rem;
         }
 
-        .search-hero-copy {
-            width: 100%;
-            max-width: none;
+        .search-summary-text {
             position: relative;
             z-index: 1;
         }
 
-        .search-hero-lead {
+        .search-summary-lead {
             margin-bottom: 8px;
             color: #2d3d50;
             font-size: 0.98rem;
         }
 
-        .search-inline-stat {
+        .summary-count {
             display: inline-block;
-            width: auto;
             white-space: nowrap;
-            font: inherit;
-            color: inherit;
-            text-align: left;
         }
 
-        .search-hero-note {
+        .search-summary-note {
             margin-bottom: 0;
             color: #526273;
             font-size: 13px;
@@ -337,19 +331,19 @@
 {% block container %}
 
 <div class="card card-body bg-light">
-    <div class="search-hero">
-        <div class="search-hero-copy">
+    <div class="search-summary">
+        <div class="search-summary-text">
             <h1 class="display-4">Statement Search</h1>
             {% set statement_parts = search_summary.statement_count_display.rsplit(' ', 1) %}
             {% set entity_parts = search_summary.entity_count_display.rsplit(' ', 1) %}
             {% set evidence_parts = search_summary.evidence_count_display.rsplit(' ', 1) %}
-            <p class="lead search-hero-lead">
-                This page allows you to search into <span class="search-inline-stat js-count-up" data-display="{{ statement_parts[0] }}">{{ statement_parts[0] }}</span>{% if statement_parts|length > 1 %} {{ statement_parts[1] }}{% endif %} statements assembled over <span class="search-inline-stat js-count-up" data-display="{{ entity_parts[0] }}">{{ entity_parts[0] }}</span>{% if entity_parts|length > 1 %} {{ entity_parts[1] }}{% endif %} entities
-                (genes, proteins, small molecules, biological processes, etc.) with a total of <span class="search-inline-stat js-count-up" data-display="{{ evidence_parts[0] }}">{{ evidence_parts[0] }}</span>{% if evidence_parts|length > 1 %} {{ evidence_parts[1] }}{% endif %} pieces of supporting evidence from literature and databases.
+            <p class="lead search-summary-lead">
+                This page allows you to search into <span class="summary-count js-count-up" data-display="{{ statement_parts[0] }}">{{ statement_parts[0] }}</span>{% if statement_parts|length > 1 %} {{ statement_parts[1] }}{% endif %} statements assembled over <span class="summary-count js-count-up" data-display="{{ entity_parts[0] }}">{{ entity_parts[0] }}</span>{% if entity_parts|length > 1 %} {{ entity_parts[1] }}{% endif %} entities
+                (genes, proteins, small molecules, biological processes, etc.) with a total of <span class="summary-count js-count-up" data-display="{{ evidence_parts[0] }}">{{ evidence_parts[0] }}</span>{% if evidence_parts|length > 1 %} {{ evidence_parts[1] }}{% endif %} pieces of supporting evidence from literature and databases.
             </p>
         </div>
 
-        <p class="search-hero-note">
+        <p class="search-summary-note">
             Refine your search by specifying agents, relationship types, and roles.
         </p>
     </div>
@@ -597,8 +591,8 @@
             });
         };
 
-        const hero = document.querySelector('.search-hero');
-        if (!hero) {
+        const summary = document.querySelector('.search-summary');
+        if (!summary) {
             startAnimation();
             return;
         }
@@ -610,7 +604,7 @@
             }
         }, { threshold: 0.3 });
 
-        observer.observe(hero);
+        observer.observe(summary);
     }
 
     window.addEventListener('DOMContentLoaded', animateSearchSummaryCounts);
