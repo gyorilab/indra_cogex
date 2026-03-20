@@ -47,9 +47,6 @@ class SearchForm(FlaskForm):
     submit = SubmitField("Search")
 
 
-
-
-
 @autoclient(cache=True, maxsize=1)
 def get_search_summary(*, client: Neo4jClient) -> Dict[str, Union[int, str]]:
     """
