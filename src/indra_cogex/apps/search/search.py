@@ -16,7 +16,6 @@ from wtforms.fields.simple import BooleanField
 from wtforms.validators import DataRequired
 
 from indra.util.statement_presentation import reverse_source_mappings
-from indra_cogex.apps.proxies import client
 from indra_cogex.apps.utils import render_statements, resolve_email
 from indra_cogex.client import Neo4jClient, autoclient
 from indra_cogex.client.queries import *
@@ -60,8 +59,8 @@ def _format_summary_display(n: int) -> str:
     return str(n)
 
 
-@lru_cache(maxsize=1)
-def get_search_summary() -> Dict[str, Union[int, str]]:
+@autoclient(cache=True, maxsize=1)
+def get_search_summary(*, client: Neo4jClient) -> Dict[str, Union[int, str]]:
     """
 
     """
