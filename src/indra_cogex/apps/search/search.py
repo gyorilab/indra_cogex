@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import lru_cache
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 import bioregistry
