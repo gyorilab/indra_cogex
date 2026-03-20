@@ -47,23 +47,26 @@ class SearchForm(FlaskForm):
     submit = SubmitField("Search")
 
 
-def _format_summary_display(n: int) -> str:
-    def _format_scaled(value: float, suffix: str) -> str:
-        formatted = f"{value:.1f}".rstrip("0").rstrip(".")
-        return f"{formatted} {suffix}"
 
-    if n >= 1_000_000:
-        return _format_scaled(n / 1_000_000, "million")
-    if n >= 1_000:
-        return f"{round(n / 1_000)} thousand"
-    return str(n)
 
 
 @autoclient(cache=True, maxsize=1)
 def get_search_summary(*, client: Neo4jClient) -> Dict[str, Union[int, str]]:
     """
-
+    Get the summary statistics on the cogex search page
     """
+
+    def format_summary_display(n: int) -> str:
+        def _format_scaled(value: float, suffix: str) -> str:
+            formatted = f"{value:.1f}".rstrip("0").rstrip(".")
+            return f"{formatted} {suffix}"
+
+        if n >= 1_000_000:
+            return _format_scaled(n / 1_000_000, "million")
+        if n >= 1_000:
+            return f"{round(n / 1_000)} thousand"
+        return str(n)
+
     query = """
     MATCH ()-[r:indra_rel]->()
     WITH count(r) AS statement_count
@@ -76,11 +79,11 @@ def get_search_summary(*, client: Neo4jClient) -> Dict[str, Union[int, str]]:
     statement_count, evidence_count, entity_count = client.query_tx(query)[0]
     return {
         "statement_count": statement_count,
-        "statement_count_display": _format_summary_display(statement_count),
+        "statement_count_display": format_summary_display(statement_count),
         "evidence_count": evidence_count,
-        "evidence_count_display": _format_summary_display(evidence_count),
+        "evidence_count_display": format_summary_display(evidence_count),
         "entity_count": entity_count,
-        "entity_count_display": _format_summary_display(entity_count),
+        "entity_count_display": format_summary_display(entity_count),
     }
 
 
