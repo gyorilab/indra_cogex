@@ -47,7 +47,7 @@ class SearchForm(FlaskForm):
 
 
 @autoclient(cache=True, maxsize=1)
-def get_search_summary(*, client: Neo4jClient) -> Dict[str, Union[int, str]]:
+def get_search_summary(*, client: Neo4jClient):
     """
     Get the summary statistics on the cogex search page
     """
