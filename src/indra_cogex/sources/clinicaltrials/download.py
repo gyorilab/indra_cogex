@@ -336,7 +336,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
 # Clinical trial result loaders (GPT-extracted publication results)
 # ---------------------------------------------------------------------------
 
-JSON_DIR = pystow.module("indra", "cogex", "clinical_trial_results", "grounded").base
+JSON_DIR = pystow.join("trialsynth", "results", "grounded")
 
 
 def _load_jsons(json_dir: Path = JSON_DIR) -> List[Tuple[int, str, dict]]:
