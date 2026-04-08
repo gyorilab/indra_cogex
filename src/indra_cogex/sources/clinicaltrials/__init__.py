@@ -14,12 +14,12 @@ from indra_cogex.sources.clinicaltrials.download import (
     ensure_clinical_trials_df,
     process_trialsynth_edges,
     process_trialsynth_bioentity_nodes,
-    process_trialsynth_trial_nodes
+    process_trialsynth_trial_nodes,
+    load_all,
 )
 
 
 logger = logging.getLogger(__name__)
-
 
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
@@ -136,3 +136,207 @@ class ClinicaltrialsProcessor(Processor):
 def or_na(x):
     """Return None if x is NaN, otherwise return x"""
     return None if pd.isna(x) else x
+
+
+class ClinicalTrialResultProcessor(Processor):
+    """Processor for clinical trial result nodes extracted from publications.
+
+    Reads GPT-extracted grounded JSONs and emits 7 node types and 9 relation
+    types covering trial arms, metrics, adverse events, criteria, outcomes,
+    statistical comparisons, and genetic markers.
+    """
+
+    name = "clinical_trial_results"
+    node_types = [
+        "TrialResult",
+        "TrialArm",
+        "TrialMetric",
+        "TrialAdverseEvent",
+        "TrialCriterion",
+        "TrialOutcome",
+        "TrialStatisticalComparison",
+    ]
+
+    def __init__(self):
+        data = load_all()
+        self.result_nodes_df     = data["result_nodes"]
+        self.arms_df             = data["arms"]
+        self.metrics_df          = data["metrics"]
+        self.adverse_events_df   = data["adverse_events"]
+        self.criteria_df         = data["criteria"]
+        self.outcomes_df         = data["outcomes"]
+        self.stat_comparisons_df = data["stat_comparisons"]
+        self.genetic_edges_df    = data["genetic_edges"]
+        self.publication_edges_df = data["publication_edges"]
+
+    def get_nodes(self):
+        for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
+                                total=len(self.result_nodes_df),
+                                desc="TrialResult nodes"):
+            yield Node(
+                db_ns="trial.result", db_id=str(row["result_id"]),
+                labels=["TrialResult"],
+                data={
+                    "study_info": row["study_info"],
+                    "trial_ids": row["trial_ids"],
+                    "phase": row["phase"],
+                    "locations": row["locations"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.arms_df.iterrows(),
+                                total=len(self.arms_df),
+                                desc="TrialArm nodes"):
+            yield Node(
+                db_ns="trial.arm", db_id=str(row["arm_id"]),
+                labels=["TrialArm"],
+                data={
+                    "arm_name": row["arm_name"],
+                    "n": "" if row["n"] is None else str(row["n"]),
+                    "dosage": row["dosage"],
+                    "source_sentence": row["source_sentence"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.metrics_df.iterrows(),
+                                total=len(self.metrics_df),
+                                desc="TrialMetric nodes"):
+            yield Node(
+                db_ns="trial.metric", db_id=str(row["metric_id"]),
+                labels=["TrialMetric"],
+                data={
+                    "name": row["name"],
+                    "value_numeric": "" if row["value_numeric"] is None else str(row["value_numeric"]),
+                    "unit": row["unit"],
+                    "value_text": row["value_text"],
+                    "source_sentence": row["source_sentence"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.adverse_events_df.iterrows(),
+                                total=len(self.adverse_events_df),
+                                desc="TrialAdverseEvent nodes"):
+            yield Node(
+                db_ns="trial.adverseevent", db_id=str(row["adverseevent_id"]),
+                labels=["TrialAdverseEvent"],
+                data={
+                    "event_name": row["event_name"],
+                    "incidence_numeric": "" if row["incidence_numeric"] is None else str(row["incidence_numeric"]),
+                    "unit": row["unit"],
+                    "value_text": row["value_text"],
+                    "source_sentence": row["source_sentence"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.criteria_df.iterrows(),
+                                total=len(self.criteria_df),
+                                desc="TrialCriterion nodes"):
+            yield Node(
+                db_ns="trial.criterion", db_id=str(row["criterion_id"]),
+                labels=["TrialCriterion"],
+                data={
+                    "text": row["text"],
+                    "criterion_type": row["criterion_type"],
+                    "evidence_text": row["evidence_text"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.outcomes_df.iterrows(),
+                                total=len(self.outcomes_df),
+                                desc="TrialOutcome nodes"):
+            yield Node(
+                db_ns="trial.outcome", db_id=str(row["outcome_id"]),
+                labels=["TrialOutcome"],
+                data={
+                    "text": row["text"],
+                    "evidence_text": row["evidence_text"],
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.stat_comparisons_df.iterrows(),
+                                total=len(self.stat_comparisons_df),
+                                desc="TrialStatisticalComparison nodes"):
+            yield Node(
+                db_ns="trial.statcomparison", db_id=str(row["statcomparison_id"]),
+                labels=["TrialStatisticalComparison"],
+                data={"comparison_name": row["comparison_name"]},
+            )
+
+    def get_relations(self):
+        for _, row in tqdm.tqdm(self.publication_edges_df.iterrows(),
+                                total=len(self.publication_edges_df),
+                                desc="Publication->TrialResult"):
+            yield Relation(
+                source_ns="PUBMED", source_id=row["pmid"],
+                target_ns="trial.result", target_id=str(row["result_id"]),
+                rel_type="has_trial_result",
+            )
+
+        for _, row in tqdm.tqdm(self.arms_df.iterrows(),
+                                total=len(self.arms_df),
+                                desc="TrialResult->TrialArm"):
+            yield Relation(
+                source_ns="trial.result", source_id=str(row["result_id"]),
+                target_ns="trial.arm", target_id=str(row["arm_id"]),
+                rel_type="has_arm",
+            )
+
+        for _, row in tqdm.tqdm(self.metrics_df.iterrows(),
+                                total=len(self.metrics_df),
+                                desc="TrialArm/TrialComparison->TrialMetric"):
+            parent_ns = "trial.arm" if row["parent_ns"] == "arm" else "trial.statcomparison"
+            yield Relation(
+                source_ns=parent_ns, source_id=str(row["parent_id"]),
+                target_ns="trial.metric", target_id=str(row["metric_id"]),
+                rel_type="has_metric",
+            )
+
+        for _, row in tqdm.tqdm(self.adverse_events_df.iterrows(),
+                                total=len(self.adverse_events_df),
+                                desc="TrialArm->TrialAdverseEvent"):
+            yield Relation(
+                source_ns="trial.arm", source_id=str(row["arm_id"]),
+                target_ns="trial.adverseevent", target_id=str(row["adverseevent_id"]),
+                rel_type="has_adverse_event",
+            )
+
+        for _, row in tqdm.tqdm(self.criteria_df.iterrows(),
+                                total=len(self.criteria_df),
+                                desc="TrialResult->TrialCriterion"):
+            rel_type = (
+                "has_inclusion_criterion"
+                if row["criterion_type"] == "inclusion"
+                else "has_exclusion_criterion"
+            )
+            yield Relation(
+                source_ns="trial.result", source_id=str(row["result_id"]),
+                target_ns="trial.criterion", target_id=str(row["criterion_id"]),
+                rel_type=rel_type,
+            )
+
+        for _, row in tqdm.tqdm(self.outcomes_df.iterrows(),
+                                total=len(self.outcomes_df),
+                                desc="TrialResult->TrialOutcome"):
+            yield Relation(
+                source_ns="trial.result", source_id=str(row["result_id"]),
+                target_ns="trial.outcome", target_id=str(row["outcome_id"]),
+                rel_type="has_outcome",
+            )
+
+        for _, row in tqdm.tqdm(self.stat_comparisons_df.iterrows(),
+                                total=len(self.stat_comparisons_df),
+                                desc="TrialResult->TrialStatisticalComparison"):
+            yield Relation(
+                source_ns="trial.result", source_id=str(row["result_id"]),
+                target_ns="trial.statcomparison", target_id=str(row["statcomparison_id"]),
+                rel_type="has_statistical_comparison",
+            )
+
+        for _, row in tqdm.tqdm(self.genetic_edges_df.iterrows(),
+                                total=len(self.genetic_edges_df),
+                                desc="TrialResult->Gene"):
+            yield Relation(
+                source_ns="trial.result", source_id=str(row["result_id"]),
+                target_ns="HGNC", target_id=row["hgnc_id"],
+                rel_type="has_genetic_criterion",
+            )

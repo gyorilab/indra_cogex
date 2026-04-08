@@ -1,9 +1,11 @@
 """
 Download and parse the ClinicalTrials.gov data using Trialsynth.
 """
+import json
 import logging
 import os
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import pystow
 import pandas as pd
@@ -16,6 +18,7 @@ __all__ = [
     "process_trialsynth_edges",
     "process_trialsynth_bioentity_nodes",
     "process_trialsynth_trial_nodes",
+    "load_all",
 ]
 
 CLINICAL_TRIALS_MODULE = pystow.module(
@@ -327,3 +330,192 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     ).str.strip()
 
     return trials_nodes_df
+
+
+# ---------------------------------------------------------------------------
+# Clinical trial result loaders (GPT-extracted publication results)
+# ---------------------------------------------------------------------------
+
+JSON_DIR = pystow.module("indra", "cogex", "clinical_trial_results", "grounded").base
+
+
+def _load_jsons(json_dir: Path = JSON_DIR) -> List[Tuple[int, str, dict]]:
+    """Load all grounded JSON files, returning (result_id, pmid, data) tuples.
+
+    Parameters
+    ----------
+    json_dir :
+        Path to directory containing grounded JSON files.
+
+    Returns
+    -------
+    :
+        List of (result_id, pmid, data) tuples, one per JSON file.
+    """
+    records = []
+    for result_id, path in enumerate(sorted(json_dir.glob("*.json")), start=1):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            pmid = str(data.get("pmid", path.stem))
+            records.append((result_id, pmid, data))
+        except Exception as e:
+            logger.warning(f"Failed to load {path.name}: {e}")
+    logger.info(f"Loaded {len(records)} JSON files from {json_dir}")
+    return records
+
+
+def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
+    """Load all grounded JSONs in a single pass and return all DataFrames.
+
+    Parameters
+    ----------
+    json_dir :
+        Path to the directory containing grounded JSON files.
+
+    Returns
+    -------
+    :
+        Dictionary with keys: result_nodes, arms, metrics, adverse_events,
+        criteria, outcomes, stat_comparisons, genetic_edges, publication_edges.
+    """
+    result_nodes = []
+    arms = []
+    metrics = []
+    adverse_events = []
+    criteria = []
+    outcomes = []
+    stat_comparisons = []
+    genetic_edges = []
+    publication_edges = []
+
+    arm_id = 1
+    metric_id = 1
+    ae_id = 1
+    criterion_id = 1
+    outcome_id = 1
+    stat_id = 1
+
+    for result_id, pmid, data in _load_jsons(json_dir):
+        result_nodes.append({
+            "result_id": result_id,
+            "study_info": data.get("study_info", ""),
+            "trial_ids": ";".join(data.get("trial_ids", [])),
+            "phase": data.get("phase") or "",
+            "locations": ";".join(data.get("locations", [])),
+        })
+        publication_edges.append({"pmid": pmid, "result_id": result_id})
+
+        for arm in data.get("arms", []):
+            arms.append({
+                "result_id": result_id,
+                "arm_id": arm_id,
+                "arm_name": arm.get("arm_name", ""),
+                "n": arm.get("n"),
+                "dosage": arm.get("dosage") or "",
+                "source_sentence": arm.get("source_sentence", ""),
+            })
+            for m in arm.get("metrics", []):
+                metrics.append({
+                    "parent_ns": "arm",
+                    "parent_id": arm_id,
+                    "metric_id": metric_id,
+                    "name": m.get("name", ""),
+                    "value_numeric": m.get("value_numeric"),
+                    "unit": m.get("unit", ""),
+                    "value_text": m.get("value_text", ""),
+                    "source_sentence": m.get("source_sentence", ""),
+                })
+                metric_id += 1
+            for ae in arm.get("adverse_events", []):
+                adverse_events.append({
+                    "arm_id": arm_id,
+                    "adverseevent_id": ae_id,
+                    "event_name": ae.get("event_name", ""),
+                    "incidence_numeric": ae.get("incidence_numeric"),
+                    "unit": ae.get("unit", ""),
+                    "value_text": ae.get("value_text", ""),
+                    "source_sentence": ae.get("source_sentence", ""),
+                })
+                ae_id += 1
+            arm_id += 1
+
+        for item in data.get("inclusion_criteria", []):
+            criteria.append({
+                "result_id": result_id,
+                "criterion_id": criterion_id,
+                "text": item.get("text", ""),
+                "criterion_type": "inclusion",
+                "evidence_text": item.get("evidence_text", ""),
+            })
+            criterion_id += 1
+
+        for item in data.get("exclusion_criteria", []):
+            criteria.append({
+                "result_id": result_id,
+                "criterion_id": criterion_id,
+                "text": item.get("text", ""),
+                "criterion_type": "exclusion",
+                "evidence_text": item.get("evidence_text", ""),
+            })
+            criterion_id += 1
+
+        for item in data.get("results", []):
+            outcomes.append({
+                "result_id": result_id,
+                "outcome_id": outcome_id,
+                "text": item.get("text", ""),
+                "evidence_text": item.get("evidence_text", ""),
+            })
+            outcome_id += 1
+
+        for comp in data.get("statistical_comparisons", []):
+            stat_comparisons.append({
+                "result_id": result_id,
+                "statcomparison_id": stat_id,
+                "comparison_name": comp.get("comparison_name", ""),
+            })
+            for m in comp.get("metrics", []):
+                metrics.append({
+                    "parent_ns": "statcomparison",
+                    "parent_id": stat_id,
+                    "metric_id": metric_id,
+                    "name": m.get("name", ""),
+                    "value_numeric": m.get("value_numeric"),
+                    "unit": m.get("unit", ""),
+                    "value_text": m.get("value_text", ""),
+                    "source_sentence": m.get("source_sentence", ""),
+                })
+                metric_id += 1
+            stat_id += 1
+
+        grounded = data.get("genetic", {}).get("grounded_inclusion", [])
+        for entry in grounded:
+            for grounding in entry.get("groundings", []):
+                info = grounding.get("info", {})
+                if info.get("db") == "HGNC" and info.get("id"):
+                    genetic_edges.append({
+                        "result_id": result_id,
+                        "hgnc_id": info["id"],
+                        "symbol": info.get("entry_name", grounding.get("symbol", "")),
+                        "variant": entry.get("variant"),
+                    })
+
+    logger.info(f"Extracted {len(arms)} TrialArm nodes")
+    logger.info(f"Extracted {len(metrics)} TrialMetric nodes")
+    logger.info(f"Extracted {len(adverse_events)} TrialAdverseEvent nodes")
+    logger.info(f"Extracted {len(criteria)} TrialCriterion nodes")
+    logger.info(f"Extracted {len(outcomes)} TrialOutcome nodes")
+    logger.info(f"Extracted {len(stat_comparisons)} TrialStatisticalComparison nodes")
+    logger.info(f"Extracted {len(genetic_edges)} has_genetic_criterion edges")
+
+    return {
+        "result_nodes": pd.DataFrame(result_nodes),
+        "arms": pd.DataFrame(arms),
+        "metrics": pd.DataFrame(metrics),
+        "adverse_events": pd.DataFrame(adverse_events),
+        "criteria": pd.DataFrame(criteria),
+        "outcomes": pd.DataFrame(outcomes),
+        "stat_comparisons": pd.DataFrame(stat_comparisons),
+        "genetic_edges": pd.DataFrame(genetic_edges),
+        "publication_edges": pd.DataFrame(publication_edges),
+    }
