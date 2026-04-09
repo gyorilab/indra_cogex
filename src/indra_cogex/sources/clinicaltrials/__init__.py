@@ -21,6 +21,7 @@ from indra_cogex.sources.clinicaltrials.download import (
 
 logger = logging.getLogger(__name__)
 
+
 class ClinicaltrialsProcessor(Processor):
     name = "clinicaltrials"
     node_types = ["BioEntity", "ClinicalTrial"]
@@ -159,14 +160,14 @@ class ClinicalTrialResultProcessor(Processor):
 
     def __init__(self):
         data = load_all()
-        self.result_nodes_df     = data["result_nodes"]
-        self.arms_df             = data["arms"]
-        self.metrics_df          = data["metrics"]
-        self.adverse_events_df   = data["adverse_events"]
-        self.criteria_df         = data["criteria"]
-        self.outcomes_df         = data["outcomes"]
+        self.result_nodes_df = data["result_nodes"]
+        self.arms_df = data["arms"]
+        self.metrics_df = data["metrics"]
+        self.adverse_events_df = data["adverse_events"]
+        self.criteria_df = data["criteria"]
+        self.outcomes_df = data["outcomes"]
         self.stat_comparisons_df = data["stat_comparisons"]
-        self.genetic_edges_df    = data["genetic_edges"]
+        self.genetic_edges_df = data["genetic_edges"]
         self.publication_edges_df = data["publication_edges"]
 
     def get_nodes(self):

@@ -332,10 +332,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     return trials_nodes_df
 
 
-# ---------------------------------------------------------------------------
-# Clinical trial result loaders (GPT-extracted publication results)
-# ---------------------------------------------------------------------------
-
+#: Path to the directory containing GPT-extracted grounded JSON files.
 JSON_DIR = pystow.join("trialsynth", "results", "grounded")
 
 
@@ -359,8 +356,8 @@ def _load_jsons(json_dir: Path = JSON_DIR) -> List[Tuple[int, str, dict]]:
             pmid = str(data.get("pmid", path.stem))
             records.append((result_id, pmid, data))
         except Exception as e:
-            logger.warning(f"Failed to load {path.name}: {e}")
-    logger.info(f"Loaded {len(records)} JSON files from {json_dir}")
+            logger.warning("Failed to load %s: %s", path.name, e)
+    logger.info("Loaded %d JSON files from %s", len(records), json_dir)
     return records
 
 
@@ -500,13 +497,13 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
                         "variant": entry.get("variant"),
                     })
 
-    logger.info(f"Extracted {len(arms)} TrialArm nodes")
-    logger.info(f"Extracted {len(metrics)} TrialMetric nodes")
-    logger.info(f"Extracted {len(adverse_events)} TrialAdverseEvent nodes")
-    logger.info(f"Extracted {len(criteria)} TrialCriterion nodes")
-    logger.info(f"Extracted {len(outcomes)} TrialOutcome nodes")
-    logger.info(f"Extracted {len(stat_comparisons)} TrialStatisticalComparison nodes")
-    logger.info(f"Extracted {len(genetic_edges)} has_genetic_criterion edges")
+    logger.info("Extracted %d TrialArm nodes", len(arms))
+    logger.info("Extracted %d TrialMetric nodes", len(metrics))
+    logger.info("Extracted %d TrialAdverseEvent nodes", len(adverse_events))
+    logger.info("Extracted %d TrialCriterion nodes", len(criteria))
+    logger.info("Extracted %d TrialOutcome nodes", len(outcomes))
+    logger.info("Extracted %d TrialStatisticalComparison nodes", len(stat_comparisons))
+    logger.info("Extracted %d has_genetic_criterion edges", len(genetic_edges))
 
     return {
         "result_nodes": pd.DataFrame(result_nodes),
