@@ -55,7 +55,9 @@ __all__ = [
     "enzyme_activity_ns",
     "cell_line_properties_ns",
     "analysis_ns",
-    "subnetwork_ns"
+    "subnetwork_ns",
+    "trial_results_ns",
+    "schema_ns",
 ]
 
 # Define category descriptions
@@ -83,7 +85,9 @@ CATEGORY_DESCRIPTIONS = {
     'cell_line_properties': "Explore cell line characteristics including mutations, copy number alterations, "
                             "and drug sensitivity",
     'subnetwork': "Explore biological subnetwork relationships and pathways",
-    'analysis': "Perform statistical and biological data analysis"
+    'analysis': "Perform statistical and biological data analysis",
+    'trial_results': "Query clinical trial result data extracted from publications",
+    'schema': "Query graph schema and node/edge statistics",
 }
 
 # Define all namespaces
@@ -115,6 +119,8 @@ cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCR
                                     path="/api")
 analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
+trial_results_ns = Namespace("Trial Results Queries", CATEGORY_DESCRIPTIONS['trial_results'], path="/api")
+schema_ns = Namespace("Schema Queries", CATEGORY_DESCRIPTIONS['schema'], path="/api")
 
 
 def get_example_data():
@@ -338,7 +344,31 @@ FUNCTION_CATEGORIES = {
             "indra_subnetwork_go",
             "indra_mediated_subnetwork"
         ]
-    }
+    },
+    'trial_results': {
+        'namespace': trial_results_ns,
+        'functions': [
+            "get_trial_result_for_pmid",
+            "get_trial_results_for_gene",
+            "get_arms_for_trial_result",
+            "get_metrics_for_arm",
+            "get_metrics_for_statistical_comparison",
+            "get_adverse_events_for_trial",
+            "get_criteria_for_trial_result",
+            "get_outcomes_for_trial_result",
+            "get_statistical_comparisons_for_trial_result",
+            "get_genes_for_trial_result",
+            "get_full_trial_result",
+        ]
+    },
+    'schema': {
+        'namespace': schema_ns,
+        'functions': [
+            "get_node_counter",
+            "get_edge_counter",
+            "get_schema_graph",
+        ]
+    },
 }
 
 examples_dict = {
@@ -519,6 +549,11 @@ examples_dict = {
     # Example: "BRAF phosphorylates MAP2K1"
     "query_embedding": fields.List(fields.Float, example=EXAMPLE_QUERY_EMBEDDING),
     "k": fields.Integer(example=10),
+    # Trial results
+    "pmid": fields.String(example="15897530"),
+    "trial_result": fields.List(fields.String, example=["trialresult", "1"]),
+    "stat_comparison": fields.List(fields.String, example=["statcomparison", "1"]),
+    "arm": fields.List(fields.String, example=["arm", "1"]),
 }
 
 # Parameters to always skip in the examples and in the documentation

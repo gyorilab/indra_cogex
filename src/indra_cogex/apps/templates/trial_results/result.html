@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Trial Result - PMID {{ pmid }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    * { box-sizing: border-box; }
+    .trial-container { max-width: 1600px; margin: 50px auto; padding: 1rem; }
+
+    .study-header { background: #fff; border: 1px solid #dee2e6; padding: 1rem; margin-bottom: 1rem; }
+    .study-header h2 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
+
+    .fields-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    .field { background: #fff; border: 1px solid #dee2e6; display: flex; flex-direction: column; }
+    .field-header { padding: 0.6rem 1rem; border-bottom: 1px solid #dee2e6; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; color: #555; }
+    .field-content { padding: 1rem; max-height: 700px; overflow-y: auto; flex-grow: 1; }
+    .extraction { padding: 0.625rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.875rem; border-left: 3px solid currentColor; background: #fafafa; }
+
+    .field-arms .field-header { background: #e7f1f8; color: #1a5a8a; }
+    .field-results .field-header { background: #e8f5e9; color: #2e6b33; }
+    .field-safety .field-header { background: #fce8e8; color: #8a3a3a; }
+    .field-genetic .field-header { background: #fff8e6; color: #8a6d1a; }
+    .field-inclusion .field-header { background: #e8f4f0; color: #2a6b5a; }
+    .field-exclusion .field-header { background: #f3e8f4; color: #6b2a6b; }
+
+    .arm-result-card { border: 1px solid #eee; background: #fff; margin-bottom: 1rem; border-left: 3px solid #2e6b33; }
+    .arm-safety-card { border: 1px solid #eee; background: #fff; margin-bottom: 1rem; border-left: 3px solid #8a3a3a; }
+    .arm-card-header { background: #fafafa; padding: 5px 10px; font-weight: bold; font-size: 0.75rem; border-bottom: 1px solid #eee; color: #333; }
+    .arm-card-content { padding: 8px 10px; }
+
+    .grounding-badge { display: inline-block; padding: 2px 8px; background: #ff4d4f; color: white !important; border-radius: 4px; font-family: monospace; font-size: 0.75rem; font-weight: bold; text-decoration: none; margin-left: 6px; }
+
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    .data-table td { padding: 3px 0; border: none; font-size: 0.8rem; }
+    .empty-state { color: #999; font-style: italic; font-size: 0.8rem; padding: 10px; text-align: center; }
+
+    .evidence-wrap { display: inline-block; margin-left: 6px; }
+    .evidence-icon { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #1a5a8a; color: white; font-size: 10px; line-height: 14px; text-align: center; cursor: help; font-weight: bold; }
+
+    .floating-evidence-tooltip {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        max-width: 420px;
+        min-width: 280px;
+        background: #1f2937;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 6px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+        font-size: 0.76rem;
+        line-height: 1.45;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+{% set result = data.result %}
+
+<div class="trial-container">
+
+    {# --- Header --- #}
+    <div class="study-header">
+        <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}/" target="_blank" style="float:right; font-size:0.8rem; color:#1a5a8a;">View PubMed</a>
+        <a href="{{ url_for('trial_results.search') }}" style="float:right; font-size:0.8rem; color:#555; margin-right:1rem;">← Back</a>
+        <h2>{{ result.data.get("study_info", "Trial Result") }}</h2>
+        <div style="font-size:0.8rem; color:#666;">
+            PMID: {{ pmid }}
+            {% if result.data.get("trial_ids") %} | Registry: {{ result.data.get("trial_ids") }}{% endif %}
+            {% if result.data.get("phase") %} | Phase: {{ result.data.get("phase") }}{% endif %}
+            {% if result.data.get("locations") %} | {{ result.data.get("locations") }}{% endif %}
+        </div>
+    </div>
+
+    {# --- 6-panel grid --- #}
+    <div class="fields-grid">
+
+        {# 1. Study Arms #}
+        <div class="field field-arms">
+            <div class="field-header">Study Arms</div>
+            <div class="field-content">
+                {% if arms_data %}
+                    {% for entry in arms_data %}
+                        {% set arm = entry.arm %}
+                        {% set ev = arm.data.get("source_sentence", "") %}
+                        <div class="extraction">
+                            <strong>{{ arm.data.get("arm_name", "Unknown Arm") }}</strong>
+                            <small>(n={{ arm.data.get("n", "N/A") }})</small>
+                            {% if ev %}
+                            <span class="evidence-wrap">
+                                <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                            </span>
+                            {% endif %}
+                            <br>
+                            <div style="font-size:0.8rem; margin-top:5px; color:#555;">
+                                {{ arm.data.get("dosage") or "No dosage specified" }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No arms extracted.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 2. Safety & Adverse Events #}
+        <div class="field field-safety">
+            <div class="field-header">Safety &amp; Adverse Events</div>
+            <div class="field-content">
+                {% if arms_data %}
+                    {% for entry in arms_data %}
+                        <div class="arm-safety-card">
+                            <div class="arm-card-header">{{ entry.arm.data.get("arm_name", "Arm") }}</div>
+                            {% if entry.adverse_events %}
+                            <div class="arm-card-content">
+                                <table class="data-table">
+                                    {% for ae in entry.adverse_events %}
+                                    {% set ev = ae.data.get("source_sentence", "") %}
+                                    <tr>
+                                        <td>
+                                            {{ ae.data.get("event_name", "") }}
+                                            {% if ev %}
+                                            <span class="evidence-wrap">
+                                                <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align:right; font-weight:600;">{{ ae.data.get("value_text", "") }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">No safety data.</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No adverse events extracted.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 3. Findings #}
+        <div class="field field-results">
+            <div class="field-header">Findings</div>
+            <div class="field-content">
+                <div style="margin:0 0 10px 0; font-weight:bold; font-size:0.75rem; color:#2e6b33; text-transform:uppercase;">Arm Metrics</div>
+                {% if arms_data %}
+                    {% for entry in arms_data %}
+                        <div class="arm-result-card">
+                            <div class="arm-card-header">{{ entry.arm.data.get("arm_name", "Arm") }}</div>
+                            {% if entry.metrics %}
+                            <div class="arm-card-content">
+                                <table class="data-table">
+                                    {% for m in entry.metrics %}
+                                    {% set ev = m.data.get("source_sentence", "") %}
+                                    <tr>
+                                        <td>
+                                            {{ m.data.get("name", "") }}
+                                            {% if ev %}
+                                            <span class="evidence-wrap">
+                                                <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align:right; font-weight:600;">{{ m.data.get("value_text", "") }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="empty-state">No metrics extracted.</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if comparisons_data %}
+                <div style="margin:15px 0 10px 0; font-weight:bold; font-size:0.75rem; color:#2e6b33; text-transform:uppercase;">Statistical Comparisons</div>
+                    {% for entry in comparisons_data %}
+                    <div class="arm-result-card">
+                        <div class="arm-card-header">{{ entry.comparison.data.get("comparison_name", "Comparison") }}</div>
+                        {% if entry.metrics %}
+                        <div class="arm-card-content">
+                            <table class="data-table">
+                                {% for m in entry.metrics %}
+                                {% set ev = m.data.get("source_sentence", "") %}
+                                <tr>
+                                    <td>
+                                        {{ m.data.get("name", "") }}
+                                        {% if ev %}
+                                        <span class="evidence-wrap">
+                                            <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align:right; font-weight:600;">{{ m.data.get("value_text", "") }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">No metrics extracted.</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if data.outcomes %}
+                <div style="margin:15px 0 10px 0; font-weight:bold; font-size:0.75rem; color:#2e6b33; text-transform:uppercase;">Outcomes</div>
+                    {% for o in data.outcomes %}
+                    {% set ev = o.data.get("evidence_text", "") %}
+                    <div class="extraction">
+                        {{ o.data.get("text", "") }}
+                        {% if ev %}
+                        <span class="evidence-wrap">
+                            <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if not arms_data and not comparisons_data and not data.outcomes %}
+                    <div class="empty-state">No findings extracted.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 4. Genetic Markers #}
+        <div class="field field-genetic">
+            <div class="field-header">Genetic Markers</div>
+            <div class="field-content">
+                {% if data.genes %}
+                    {% for g in data.genes %}
+                    {% set gid = g.db_ns ~ ":" ~ g.db_id %}
+                    <div class="extraction">
+                        <a href="https://bioregistry.io/{{ gid }}" target="_blank" class="grounding-badge">{{ gid }}</a>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No biomarkers identified.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 5. Inclusion Criteria #}
+        <div class="field field-inclusion">
+            <div class="field-header">Inclusion Criteria</div>
+            <div class="field-content">
+                {% if inclusion %}
+                    {% for c in inclusion %}
+                    {% set ev = c.data.get("evidence_text", "") %}
+                    <div class="extraction">
+                        {{ c.data.get("text", "") }}
+                        {% if ev %}
+                        <span class="evidence-wrap">
+                            <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No inclusion criteria identified.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 6. Exclusion Criteria #}
+        <div class="field field-exclusion">
+            <div class="field-header">Exclusion Criteria</div>
+            <div class="field-content">
+                {% if exclusion %}
+                    {% for c in exclusion %}
+                    {% set ev = c.data.get("evidence_text", "") %}
+                    <div class="extraction">
+                        {{ c.data.get("text", "") }}
+                        {% if ev %}
+                        <span class="evidence-wrap">
+                            <span class="evidence-icon" data-evidence="{{ ev }}">i</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">No exclusion criteria identified.</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="floating-evidence-tooltip" class="floating-evidence-tooltip"></div>
+{% endblock main %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    const tooltip = document.getElementById('floating-evidence-tooltip');
+    const margin = 12;
+
+    function positionTooltip(evt) {
+        const rect = tooltip.getBoundingClientRect();
+        let x = evt.clientX + 14;
+        let y = evt.clientY + 14;
+        if (x + rect.width + margin > window.innerWidth) { x = window.innerWidth - rect.width - margin; }
+        if (y + rect.height + margin > window.innerHeight) { y = window.innerHeight - rect.height - margin; }
+        tooltip.style.left = Math.max(margin, x) + 'px';
+        tooltip.style.top = Math.max(margin, y) + 'px';
+    }
+
+    document.addEventListener('mouseover', function(evt) {
+        const icon = evt.target.closest('.evidence-icon');
+        if (!icon) return;
+        tooltip.textContent = icon.getAttribute('data-evidence') || '';
+        tooltip.style.display = 'block';
+        positionTooltip(evt);
+    });
+
+    document.addEventListener('mousemove', function(evt) {
+        if (tooltip.style.display === 'block') { positionTooltip(evt); }
+    });
+
+    document.addEventListener('mouseout', function(evt) {
+        if (evt.target.closest('.evidence-icon')) { tooltip.style.display = 'none'; }
+    });
+</script>
+{% endblock %}

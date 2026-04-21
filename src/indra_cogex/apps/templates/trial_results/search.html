@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Trial Results Browser{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .search-page { max-width: 1600px; margin: 60px auto; padding: 0 2rem; }
+
+    .search-hero { text-align: center; margin-bottom: 2.5rem; }
+    .search-hero h1 { font-size: 1.8rem; font-weight: 700; color: #1a2f4a; margin-bottom: 0.5rem; }
+    .search-hero p { font-size: 0.95rem; color: #666; max-width: 520px; margin: 0 auto; }
+
+    .search-card { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 1.75rem 2rem; max-width: 680px; margin: 0 auto 2.5rem auto; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+.search-input-wrap { display: flex; gap: 8px; align-items: center; }
+    .search-input-wrap input[type="text"] { flex: 1; padding: 9px 14px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.9rem; outline: none; transition: border-color 0.15s; }
+    .search-input-wrap input[type="text"]:focus { border-color: #1a5a8a; box-shadow: 0 0 0 2px rgba(26,90,138,0.12); }
+    .search-btn { padding: 9px 22px; background: #1a5a8a; color: #fff; border: none; border-radius: 4px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+    .search-btn:hover { background: #154d78; }
+
+    .search-guide-toggle { font-size: 0.78rem; color: #1a5a8a; cursor: pointer; user-select: none; display: inline-flex; align-items: center; }
+    .search-guide-toggle:hover { text-decoration: underline; }
+    .search-guide { display: none; margin-top: 10px; background: #f8fbff; border: 1px solid #c2d9ed; border-radius: 4px; padding: 10px 14px; text-align: left; }
+    .search-guide.open { display: block; }
+    .guide-table { border-collapse: collapse; font-size: 0.82rem; }
+    .guide-table tr + tr td { padding-top: 6px; }
+    .guide-type { color: #555; font-weight: 600; padding-right: 12px; white-space: nowrap; }
+    .guide-arrow { color: #aaa; padding-right: 12px; }
+    .guide-example { font-family: monospace; color: #1a5a8a; }
+
+    .alert-search { background: #fff8e6; border: 1px solid #ffe099; color: #7a5c00; border-radius: 4px; padding: 0.6rem 1rem; font-size: 0.85rem; margin-top: 1rem; }
+
+    .results-panel { border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .results-panel-header { padding: 0.65rem 1.2rem; background: #e7f1f8; border-bottom: 1px solid #dee2e6; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #1a5a8a; letter-spacing: 0.03em; }
+    .results-panel table { width: 100%; border-collapse: collapse; }
+    .results-panel th { padding: 9px 14px; font-size: 0.78rem; font-weight: 600; color: #777; background: #fafafa; border-bottom: 1px solid #eee; text-transform: uppercase; letter-spacing: 0.02em; }
+    .results-panel td { padding: 10px 14px; font-size: 0.875rem; border-bottom: 1px solid #f3f3f3; color: #333; }
+    .results-panel tr:last-child td { border-bottom: none; }
+    .results-panel tr:hover td { background: #f8f9fa; }
+    .view-link { display: inline-block; padding: 3px 12px; background: #1a5a8a; color: #fff !important; border-radius: 3px; font-size: 0.78rem; font-weight: 600; text-decoration: none; }
+    .view-link:hover { background: #154d78; }
+    .empty-results { padding: 2rem; text-align: center; color: #999; font-style: italic; font-size: 0.875rem; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="search-page">
+
+    <div class="search-hero">
+        <h1>Clinical Trial Results Browser</h1>
+        <p>Search extracted clinical trial result data by PubMed ID or gene identifier.</p>
+    </div>
+
+    <div class="search-card">
+        <form method="POST">
+            <input type="hidden" name="search_type" value="pmid">
+            <div class="search-input-wrap">
+                <input type="text" name="query"
+                       placeholder="Enter PubMed ID or gene symbol"
+                       value="{{ gene_query or '' }}">
+                <button type="submit" class="search-btn">Search</button>
+            </div>
+
+            <div style="margin-top: 8px; text-align: center;">
+                <span class="search-guide-toggle" id="guideToggle">
+                    Query Guide
+                    <span id="guideArrow" style="margin-left:4px;">▾</span>
+                </span>
+                <div class="search-guide" id="searchGuide">
+                    <table class="guide-table">
+                        <tr>
+                            <td class="guide-type">PubMed ID</td>
+                            <td class="guide-arrow">→</td>
+                            <td class="guide-example">15897530</td>
+                        </tr>
+                        <tr>
+                            <td class="guide-type">Gene symbol</td>
+                            <td class="guide-arrow">→</td>
+                            <td class="guide-example">BRCA1, EGFR, TP53</td>
+                        </tr>
+                        <tr>
+                            <td class="guide-type">HGNC ID</td>
+                            <td class="guide-arrow">→</td>
+                            <td class="guide-example">hgnc:1100</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="alert-search" style="margin-top:10px;">{{ error }}</div>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if gene_results is defined %}
+    <div class="results-panel">
+        <div class="results-panel-header">Trial Results - {{ gene_query }}</div>
+        {% if gene_results %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Study Info</th>
+                    <th>Phase</th>
+                    <th>Locations</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in gene_results %}
+                <tr>
+                    <td>{{ r.data.get("study_info", "") }}</td>
+                    <td>{{ r.data.get("phase", "") }}</td>
+                    <td>{{ r.data.get("locations", "") }}</td>
+                    <td>
+                        {% set pmid = r.data.get("id", "").split(":")[-1] %}
+                        <a href="{{ url_for('trial_results.result', pmid=pmid) }}" class="view-link">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-results">No trial results found for <strong>{{ gene_query }}</strong>.</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock main %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.getElementById('guideToggle').addEventListener('click', function() {
+        const guide = document.getElementById('searchGuide');
+        const arrow = document.getElementById('guideArrow');
+        guide.classList.toggle('open');
+        arrow.textContent = guide.classList.contains('open') ? '▴' : '▾';
+    });
+
+
+</script>
+{% endblock %}
