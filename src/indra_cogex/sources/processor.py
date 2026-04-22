@@ -37,6 +37,7 @@ from indra_cogex.sources.processor_util import (
     UnknownTypeError,
     NewLineInStringError,
     InfinityValueError,
+    NaNValueError,
     LabelNotAllowedError,
 )
 
@@ -205,6 +206,9 @@ class Processor(ABC):
         except InfinityValueError as e:
             logger.error(f"Infinity value detected in node data values for {processor_name}")
             raise e
+        except NaNValueError as e:
+            logger.error(f"NaN detected in node data values for {processor_name}")
+            raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in node data values for {processor_name}")
             raise e
@@ -274,6 +278,9 @@ class Processor(ABC):
             raise e
         except InfinityValueError as e:
             logger.error(f"Infinity value detected in edge data values for {self.name}")
+            raise e
+        except NaNValueError as e:
+            logger.error(f"NaN detected in edge data values for {self.name}")
             raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in edge data values for {self.name}")
@@ -375,6 +382,8 @@ def validate_nodes(
         If a data type does not match the value set in the header.
     InfinityValueError
         If an infinity value is detected in the data.
+    NaNValueError
+        If a NaN value is detected in the data.
     NewLineInStringError
         If a newline character is detected in the data.
     LabelNotAllowedError
@@ -410,6 +419,10 @@ def validate_nodes(
         except InfinityValueError as e:
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Infinity value detected")
+            raise e
+        except NaNValueError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("NaN detected")
             raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {node} - {e}")
@@ -454,6 +467,8 @@ def validate_relations(
         If a data type does not match the value set in the header.
     InfinityValueError
         If an infinity value is detected in the data.
+    NaNValueError
+        If a NaN value is detected in the data.
     NewLineInStringError
         If a newline character is detected in a string value.
     """
@@ -482,6 +497,10 @@ def validate_relations(
         except InfinityValueError as e:
             logger.error(f"{idx}: {rel} - {e}")
             logger.error("Infinity value detected")
+            raise e
+        except NaNValueError as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("NaN detected")
             raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {rel} - {e}")

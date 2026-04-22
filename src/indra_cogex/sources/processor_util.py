@@ -74,6 +74,10 @@ class InfinityValueError(ValueError):
     """Raised when a float value is infinity."""
 
 
+class NaNValueError(ValueError):
+    """Raised when a value is interpreted as NaN."""
+
+
 class DuplicateNodeIDError(ValueError):
     """Raised when a duplicate node ID is found in a node file."""
 
@@ -111,6 +115,26 @@ def _check_noinfinity(value: Union[float | str]):
             if fval == float("inf") or fval == float("-inf"):
                 raise InfinityValueError(
                     f"Float value '{value}' is infinity, which is not allowed in Neo4j."
+                )
+
+
+def _check_notnan(value: Union[str, float]):
+    if isinstance(value, float) and value != value:
+        raise NaNValueError(
+            f"Float value '{value}' is NaN, which is not allowed in Neo4j."
+        )
+    if isinstance(value, str):
+        try:
+            fval = float(value)
+        except ValueError:
+            # Not convertible to float (this is properly checked elsewhere, so
+            # no need to raise an Error here)
+            pass
+        else:
+            # Is convertible to float
+            if fval != fval:
+                raise NaNValueError(
+                    f"Float value '{value}' is NaN, which is not allowed in Neo4j."
                 )
 
 
@@ -190,6 +214,7 @@ def data_validator(data_type: str, value: Any):
                     f"but got value of type {type(val)} instead."
                 )
             _check_noinfinity(val)
+            _check_notnan(val)
     elif data_type == "boolean":
         for val in value_list:
             if not isinstance(val, str) or val not in ("true", "false"):
@@ -220,6 +245,7 @@ def data_validator(data_type: str, value: Any):
         for val in value_list:
             # Catch string representations of numbers
             if isinstance(val, (int, float)):
+                _check_notnan(val)
                 try:
                     val = str(val)
                 except ValueError as e:
@@ -236,6 +262,7 @@ def data_validator(data_type: str, value: Any):
                     f"int or float, but got value of type {type(val)} instead."
                 )
             _check_no_newlines(val)
+            _check_notnan(val)
     elif data_type == "point":
         raise NotImplementedError(
             "Neo4j point data type validation is not implemented"
