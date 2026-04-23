@@ -193,7 +193,7 @@ class ClinicalTrialResultProcessor(Processor):
                 labels=["TrialArm"],
                 data={
                     "arm_name": row["arm_name"],
-                    "n": "" if row["n"] is None else str(row["n"]),
+                    "n": "" if pd.isna(row["n"]) else str(row["n"]),
                     "dosage": row["dosage"],
                     "source_sentence": row["source_sentence"],
                 },
@@ -207,7 +207,7 @@ class ClinicalTrialResultProcessor(Processor):
                 labels=["TrialMetric"],
                 data={
                     "name": row["name"],
-                    "value_numeric": "" if row["value_numeric"] is None else str(row["value_numeric"]),
+                    "value_numeric": "" if pd.isna(row["value_numeric"]) else str(row["value_numeric"]),
                     "unit": row["unit"],
                     "value_text": row["value_text"],
                     "source_sentence": row["source_sentence"],
@@ -222,7 +222,7 @@ class ClinicalTrialResultProcessor(Processor):
                 labels=["TrialAdverseEvent"],
                 data={
                     "event_name": row["event_name"],
-                    "incidence_numeric": "" if row["incidence_numeric"] is None else str(row["incidence_numeric"]),
+                    "incidence_numeric": "" if pd.isna(row["incidence_numeric"]) else str(row["incidence_numeric"]),
                     "unit": row["unit"],
                     "value_text": row["value_text"],
                     "source_sentence": row["source_sentence"],
