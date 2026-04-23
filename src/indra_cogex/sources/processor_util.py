@@ -318,7 +318,7 @@ def check_duplicated_nodes(nodes_tsv_gz_file) -> set[str]:
     """
     # Check for duplicate node IDs in the nodes_tsv_gz_file
     node_ids = set()
-    with gzip.open(nodes_tsv_gz_file, "rt") as f:
+    with gzip.open(nodes_tsv_gz_file, "rt", newline="") as f:
         tqdm.write(f"Checking {nodes_tsv_gz_file}")
         reader = csv.reader(f, delimiter="\t")
         header = next(reader)
@@ -350,7 +350,7 @@ def check_missing_node_ids_in_edges(edges_tsv_gz_file, node_ids: set[str]):
         If a node ID in the edges file does not exist in the nodes file.
     """
     # Check for missing node IDs in the edges_tsv_gz_file
-    with gzip.open(edges_tsv_gz_file, "rt") as f:
+    with gzip.open(edges_tsv_gz_file, "rt", newline="") as f:
         reader = csv.reader(f, delimiter="\t")
         header = next(reader)
         start_id_index = header.index(":START_ID")

@@ -515,7 +515,7 @@ def test_duplicate_node_id_check_bad():
         path = Path(temp_dir) / "nodes.tsv.gz"
 
         # Write a nodes file with duplicate IDs
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(["id:ID", ":LABEL"])
             writer.writerow(["ns:1", "LabelA"])
@@ -535,7 +535,7 @@ def test_duplicate_node_id_check_good():
         path = Path(temp_dir) / "nodes.tsv.gz"
 
         # Write a nodes file without duplicate IDs
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(["id:ID", ":LABEL"])
             writer.writerow(["ns:1", "LabelA"])
@@ -552,7 +552,7 @@ def test_missing_node_id_bad():
         path = Path(temp_dir) / "edges.tsv.gz"
 
         # Write an edges file
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(
                 [
@@ -581,7 +581,7 @@ def test_missing_node_id_good():
         path = Path(temp_dir) / "edges.tsv.gz"
 
         # Write an edges file
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(
                 [
