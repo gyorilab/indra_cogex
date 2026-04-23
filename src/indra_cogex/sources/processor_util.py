@@ -4,6 +4,7 @@
 # for available data types.
 import csv
 import gzip
+import math
 from tqdm import tqdm
 from typing import Literal, Any, Union
 
@@ -119,7 +120,7 @@ def _check_noinfinity(value: Union[float | str]):
 
 
 def _check_notnan(value: Union[str, float]):
-    if isinstance(value, float) and value != value:
+    if isinstance(value, float) and math.isnan(value):
         raise NaNValueError(
             f"Float value '{value}' is NaN, which is not allowed in Neo4j."
         )
@@ -132,7 +133,7 @@ def _check_notnan(value: Union[str, float]):
             pass
         else:
             # Is convertible to float
-            if fval != fval:
+            if math.isnan(fval):
                 raise NaNValueError(
                     f"Float value '{value}' is NaN, which is not allowed in Neo4j."
                 )
@@ -213,6 +214,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type float, "
                     f"but got value of type {type(val)} instead."
                 )
+            # val is now guaranteed to be a float
             _check_noinfinity(val)
             _check_notnan(val)
     elif data_type == "boolean":
@@ -245,7 +247,6 @@ def data_validator(data_type: str, value: Any):
         for val in value_list:
             # Catch string representations of numbers
             if isinstance(val, (int, float)):
-                _check_notnan(val)
                 try:
                     val = str(val)
                 except ValueError as e:
@@ -261,6 +262,7 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type str, "
                     f"int or float, but got value of type {type(val)} instead."
                 )
+            # val is now guaranteed to be a str
             _check_no_newlines(val)
             _check_notnan(val)
     elif data_type == "point":
