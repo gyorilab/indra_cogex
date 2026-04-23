@@ -67,12 +67,15 @@
 
     {# --- Header --- #}
     <div class="study-header">
-        <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}/" target="_blank" style="float:right; font-size:0.8rem; color:#1a5a8a;">View PubMed</a>
         <a href="{{ url_for('trial_results.search') }}" style="float:right; font-size:0.8rem; color:#555; margin-right:1rem;">← Back</a>
         <h2>{{ result.data.get("study_info", "Trial Result") }}</h2>
         <div style="font-size:0.8rem; color:#666;">
-            PMID: {{ pmid }}
-            {% if result.data.get("trial_ids") %} | Registry: {{ result.data.get("trial_ids") }}{% endif %}
+            PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}/" target="_blank" style="color:#1a5a8a;">{{ pmid }}</a>
+            {% if result.data.get("trial_ids") %} | Registry ID:
+                {% for nct in result.data.get("trial_ids").split(";") %}
+                    <a href="https://clinicaltrials.gov/study/{{ nct.strip() }}" target="_blank" style="color:#1a5a8a;">{{ nct.strip() }}</a>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            {% endif %}
             {% if result.data.get("phase") %} | Phase: {{ result.data.get("phase") }}{% endif %}
             {% if result.data.get("locations") %} | {{ result.data.get("locations") }}{% endif %}
         </div>

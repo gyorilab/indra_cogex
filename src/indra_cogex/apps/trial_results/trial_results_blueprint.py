@@ -3,13 +3,13 @@
 import gilda
 import flask
 from flask import render_template, request, redirect, url_for
+from indra.ontology.bio import bio_ontology
 
 from indra_cogex.apps.proxies import client
 from indra_cogex.client.queries import (
     get_full_trial_result,
     get_metrics_for_arm,
     get_metrics_for_statistical_comparison,
-    get_trial_results_for_gene,
 )
 
 __all__ = ["trial_results_blueprint"]
@@ -51,10 +51,24 @@ def search():
                 ns = "hgnc"
                 gid = matches[0].term.id
                 query = f"hgnc:{gid}"
-            gene_results = get_trial_results_for_gene((ns, gid), client=client)
+            gene_name = bio_ontology.get_name("HGNC", gid)
+            gene_label = f"{gene_name} ({query})" if gene_name else query
+            rows = client.query_tx(
+                "MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)"
+                "-[:has_genetic_criterion]->(g:Gene {id: $gene_id}) "
+                "RETURN r, p.id AS pub_id",
+                gene_id=f"{ns.lower()}:{gid}",
+            )
+            gene_results = [
+                {
+                    "result": client.neo4j_to_node(row[0]),
+                    "pmid": row[1].split(":")[-1],
+                }
+                for row in (rows or [])
+            ]
             return render_template(
                 "trial_results/search.html",
-                gene_query=query,
+                gene_query=gene_label,
                 gene_results=gene_results,
             )
     return render_template("trial_results/search.html")

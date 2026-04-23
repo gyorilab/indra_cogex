@@ -108,14 +108,13 @@
                 </tr>
             </thead>
             <tbody>
-                {% for r in gene_results %}
+                {% for item in gene_results %}
                 <tr>
-                    <td>{{ r.data.get("study_info", "") }}</td>
-                    <td>{{ r.data.get("phase", "") }}</td>
-                    <td>{{ r.data.get("locations", "") }}</td>
+                    <td>{{ item.result.data.get("study_info", "") }}</td>
+                    <td>{{ item.result.data.get("phase", "") }}</td>
+                    <td>{{ item.result.data.get("locations", "") }}</td>
                     <td>
-                        {% set pmid = r.data.get("id", "").split(":")[-1] %}
-                        <a href="{{ url_for('trial_results.result', pmid=pmid) }}" class="view-link">View</a>
+                        <a href="{{ url_for('trial_results.result', pmid=item.pmid) }}" class="view-link">View</a>
                     </td>
                 </tr>
                 {% endfor %}
