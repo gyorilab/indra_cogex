@@ -333,7 +333,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
 
 
 #: Path to the directory containing GPT-extracted grounded JSON files.
-JSON_DIR = pystow.join("trialsynth", "results", "grounded")
+JSON_DIR = pystow.join("indra", "cogex", "clinical_trial_results", "grounded")
 
 
 def _load_jsons(json_dir: Path = JSON_DIR) -> List[Tuple[int, str, dict]]:
