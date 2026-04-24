@@ -226,13 +226,13 @@ class Processor(ABC):
         )
 
         seen_ids = set()
-        with gzip.open(nodes_path, mode=write_mode) as node_file:
+        with gzip.open(nodes_path, mode=write_mode, encoding="utf-8") as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
             if write_mode == "wt":
                 node_writer.writerow(header)
             if sample_path:
-                with sample_path.open("w") as node_sample_file:
+                with sample_path.open("w", encoding="utf-8") as node_sample_file:
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
@@ -299,7 +299,7 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(self.edges_path, mode=write_mode) as edge_file:
+        with gzip.open(self.edges_path, mode=write_mode, encoding="utf-8") as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
 
             # Only add header when writing to a new file
