@@ -669,7 +669,7 @@ def get_genes_for_trial_result(
     """
     result_id = f"{trial_result[0].lower()}:{trial_result[1]}"
     return client.query_nodes(
-        "MATCH (r:TrialResult {id: $result_id})-[:has_genetic_criterion]->(g:Gene) RETURN DISTINCT g",
+        "MATCH (r:TrialResult {id: $result_id})-[:has_genetic_criterion]->(g:BioEntity) RETURN DISTINCT g",
         result_id=result_id,
     )
 
@@ -694,7 +694,7 @@ def get_trial_results_for_gene(
     """
     gene_id = f"{gene[0].lower()}:{gene[1]}"
     return client.query_nodes(
-        "MATCH (r:TrialResult)-[:has_genetic_criterion]->(g:Gene {id: $gene_id}) RETURN r",
+        "MATCH (r:TrialResult)-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id}) RETURN r",
         gene_id=gene_id,
     )
 
