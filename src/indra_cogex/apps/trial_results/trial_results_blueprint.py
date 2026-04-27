@@ -55,7 +55,7 @@ def search():
             gene_label = f"{gene_name} ({query})" if gene_name else query
             rows = client.query_tx(
                 "MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)"
-                "-[:has_genetic_criterion]->(g:Gene {id: $gene_id}) "
+                "-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id}) "
                 "RETURN r, p.id AS pub_id",
                 gene_id=f"{ns.lower()}:{gid}",
             )
