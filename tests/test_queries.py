@@ -1131,6 +1131,9 @@ def test_get_arms_for_trial_result():
     assert arms[0].db_ns == "TRIAL.ARM"
     # Every arm must have a non-empty arm_name
     assert all(a.data.get("arm_name") for a in arms)
+    # Arms with sample size must have a positive integer n
+    arms_with_n = [a for a in arms if a.data.get("n") is not None]
+    assert all(isinstance(a.data["n"], (int, float)) and a.data["n"] > 0 for a in arms_with_n)
 
 
 @pytest.mark.nonpublic
@@ -1142,6 +1145,9 @@ def test_get_metrics_for_arm():
     assert metrics[0].db_ns == "TRIAL.METRIC"
     # Every metric must have a non-empty name
     assert all(m.data.get("name") for m in metrics)
+    # Metrics with numeric values must be floats
+    metrics_with_value = [m for m in metrics if m.data.get("value_numeric") is not None]
+    assert all(isinstance(m.data["value_numeric"], float) for m in metrics_with_value)
 
 
 @pytest.mark.nonpublic
@@ -1153,6 +1159,9 @@ def test_get_adverse_events_for_trial():
     assert aes[0].db_ns == "TRIAL.ADVERSEEVENT"
     # Every adverse event must have a non-empty event_name
     assert all(ae.data.get("event_name") for ae in aes)
+    # AEs with incidence must be floats
+    aes_with_incidence = [ae for ae in aes if ae.data.get("incidence_numeric") is not None]
+    assert all(isinstance(ae.data["incidence_numeric"], float) for ae in aes_with_incidence)
 
 
 @pytest.mark.nonpublic
