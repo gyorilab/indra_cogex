@@ -104,6 +104,8 @@
                     <th>Study Info</th>
                     <th>Phase</th>
                     <th>Locations</th>
+                    <th>PubMed</th>
+                    <th>ClinicalTrials</th>
                     <th></th>
                 </tr>
             </thead>
@@ -111,8 +113,20 @@
                 {% for item in gene_results %}
                 <tr>
                     <td>{{ item.result.data.get("study_info", "") }}</td>
-                    <td>{{ item.result.data.get("phase", "") }}</td>
+                    <td>{{ item.ct_phase if item.ct_phase is not none else "" }}</td>
                     <td>{{ item.result.data.get("locations", "") }}</td>
+                    <td>
+                        <a href="https://bioregistry.io/pubmed:{{ item.pmid }}" target="_blank" style="color:#1a5a8a;">{{ item.pmid }}</a>
+                    </td>
+                    <td>
+                        {% set trial_ids = item.result.data.get("trial_ids", "") %}
+                        {% if trial_ids %}
+                            {% for nct in trial_ids.split(";") %}
+                                {% set nct = nct.strip() %}
+                                {% if nct %}<a href="https://bioregistry.io/clinicaltrials:{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}{% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </td>
                     <td>
                         <a href="{{ url_for('trial_results.result', pmid=item.pmid) }}" class="view-link">View</a>
                     </td>

@@ -245,7 +245,7 @@
                     {% for g in data.genes %}
                     {% set gid = g.db_ns ~ ":" ~ g.db_id %}
                     <div class="extraction">
-                        <a href="https://bioregistry.io/{{ gid }}" target="_blank" class="grounding-badge">{{ gid }}</a>
+                        {% if g.data.get("name") %}{{ g.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ gid }}" target="_blank" class="grounding-badge">{{ gid }}</a>
                     </div>
                     {% endfor %}
                 {% else %}

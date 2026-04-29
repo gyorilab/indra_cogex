@@ -56,13 +56,15 @@ def search():
             rows = client.query_tx(
                 "MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)"
                 "-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id}) "
-                "RETURN r, p.id AS pub_id",
+                "OPTIONAL MATCH (ct:ClinicalTrial) WHERE any(tid IN split(r.trial_ids, ';') WHERE ct.id = 'clinicaltrials:' + trim(tid)) "
+                "RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase",
                 gene_id=f"{ns.lower()}:{gid}",
             )
             gene_results = [
                 {
                     "result": client.neo4j_to_node(row[0]),
                     "pmid": row[1].split(":")[-1],
+                    "ct_phase": row[2],
                 }
                 for row in (rows or [])
             ]
