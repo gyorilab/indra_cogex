@@ -81,10 +81,14 @@
         {# todo: set nav links programmatically #}
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="{{ config.get('APPLICATION_ROOT', '') }}/chat"><i class="fa fa-comments"></i> Extended Chat</a>
+                {% set chat_url = config.get('APPLICATION_ROOT', '') + '/chat' %}
+                {% set chat_url = chat_url.replace('//', '/') %}
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="{{ chat_url }}"><i class="fa fa-comments"></i> Extended Chat</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="/mcp"><i class="fa fa-plug"></i> MCP</a>
+                {% set mcp_url = config.get('APPLICATION_ROOT', '') + '/mcp' %}
+                {% set mcp_url = mcp_url.replace('//', '/') %}
+                <a class="nav-link btn btn-sm btn-outline-secondary mx-1" href="{{ mcp_url }}"><i class="fa fa-plug"></i> MCP</a>
             </li>
             <li class="nav-item">
                 {#
