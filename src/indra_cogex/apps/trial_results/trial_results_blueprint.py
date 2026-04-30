@@ -19,6 +19,7 @@ _processed_papers = None
 
 
 def _get_processed_count() -> int:
+    """Return the number of TrialResult nodes in the graph, cached after first query."""
     global _processed_papers
     if _processed_papers is None:
         rows = client.query_tx("MATCH (r:TrialResult) RETURN count(r) AS n")
