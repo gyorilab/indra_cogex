@@ -54,10 +54,14 @@ def search():
             gene_name = bio_ontology.get_name("HGNC", gid)
             gene_label = f"{gene_name} ({query})" if gene_name else query
             rows = client.query_tx(
-                "MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)"
-                "-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id}) "
-                "OPTIONAL MATCH (ct:ClinicalTrial) WHERE any(tid IN split(r.trial_ids, ';') WHERE ct.id = 'clinicaltrials:' + trim(tid)) "
-                "RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase",
+                """\
+                MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
+                      -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
+                OPTIONAL MATCH (ct:ClinicalTrial)
+                WHERE any(tid IN split(r.trial_ids, ';')
+                      WHERE ct.id = 'clinicaltrials:' + trim(tid))
+                RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase
+                """,
                 gene_id=f"{ns.lower()}:{gid}",
             )
             gene_results = [

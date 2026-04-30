@@ -396,9 +396,9 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
         result_nodes.append({
             "result_id": result_id,
             "study_info": data.get("study_info", ""),
-            "trial_ids": ";".join(data.get("trial_ids", [])),
+            "trial_ids:string[]": ";".join(data.get("trial_ids", [])),
             "phase": data.get("phase") or "",
-            "locations": ";".join(data.get("locations", [])),
+            "locations:string[]": ";".join(data.get("locations", [])),
         })
         publication_edges.append({"pmid": pmid, "result_id": result_id})
 
