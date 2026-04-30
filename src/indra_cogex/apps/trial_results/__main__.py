@@ -7,7 +7,7 @@ application to be run as a standalone module, skipping the typical startup
 activities associated with running the full INDRA-CoGEx application.
 In this mode, most pages, including the INRA-CoGEx landing page, will not be
 available, but it's still possible to navigate directly to the trial results
-landing page docs at /trial-results/.
+landing page at /trial-results/.
 """
 
 from .cli import cli
