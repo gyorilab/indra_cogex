@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+        const gildaGroundUrl = window.gildaGroundUrl || '/search/gilda_ground';
         const agentNameInput = document.getElementById('agent-name');
         const agentDisplay = document.getElementById('agent-display');
         const agentSelect = document.getElementById('agent-select');
@@ -58,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             try {
-                const response = await fetch('/search/gilda_ground', {
+                const response = await fetch(gildaGroundUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: entityText }),
