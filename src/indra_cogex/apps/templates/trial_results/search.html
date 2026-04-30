@@ -50,6 +50,18 @@
     <div class="search-hero">
         <h1>Clinical Trial Results Browser</h1>
         <p>Search extracted clinical trial result data by PubMed ID or gene identifier.</p>
+        {% set pct = ((processed / total) * 100) | round(1) %}
+        <div style="max-width: 300px; margin: 1.8rem auto 0 auto;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; margin-bottom: 5px;">
+                <span>{{ "{:,}".format(processed) }} of {{ "{:,}".format(total) }} oncology papers processed</span>
+                <span>{{ pct }}%</span>
+            </div>
+            <div class="progress" style="height: 5px;">
+                <div class="progress-bar bg-info" role="progressbar"
+                     style="width: {{ pct }}%;" aria-valuenow="{{ pct }}"
+                     aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
     </div>
 
     <div class="search-card">

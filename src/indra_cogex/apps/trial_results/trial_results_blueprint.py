@@ -14,6 +14,18 @@ from indra_cogex.client.queries import (
 
 __all__ = ["trial_results_blueprint"]
 
+_TOTAL_PAPERS = 13712
+_processed_papers = None
+
+
+def _get_processed_count() -> int:
+    global _processed_papers
+    if _processed_papers is None:
+        rows = client.query_tx("MATCH (r:TrialResult) RETURN count(r) AS n")
+        _processed_papers = rows[0][0] if rows else 0
+    return _processed_papers
+
+
 trial_results_blueprint = flask.Blueprint(
     "trial_results", __name__, url_prefix="/trial-results"
 )
@@ -76,8 +88,14 @@ def search():
                 "trial_results/search.html",
                 gene_query=gene_label,
                 gene_results=gene_results,
+                processed=_get_processed_count(),
+                total=_TOTAL_PAPERS,
             )
-    return render_template("trial_results/search.html")
+    return render_template(
+        "trial_results/search.html",
+        processed=_get_processed_count(),
+        total=_TOTAL_PAPERS,
+    )
 
 
 @trial_results_blueprint.route("/result/<pmid>")
