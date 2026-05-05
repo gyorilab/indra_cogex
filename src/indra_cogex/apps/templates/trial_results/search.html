@@ -49,7 +49,7 @@
 
     <div class="search-hero">
         <h1>Clinical Trial Results Browser</h1>
-        <p>Search extracted clinical trial result data by PubMed ID or gene identifier.</p>
+        <p>Search extracted clinical trial result data by PubMed ID, gene, drug, or disease.</p>
         {% set pct = ((processed / total) * 100) | round(1) %}
         <div style="max-width: 300px; margin: 1.8rem auto 0 auto;">
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; margin-bottom: 5px;">
@@ -69,7 +69,7 @@
             <input type="hidden" name="search_type" value="pmid">
             <div class="search-input-wrap">
                 <input type="text" name="query"
-                       placeholder="Enter PubMed ID or gene symbol"
+                       placeholder="Enter PubMed ID, gene, drug, or disease"
                        value="{{ gene_query or '' }}">
                 <button type="submit" class="search-btn">Search</button>
             </div>
@@ -95,6 +95,16 @@
                             <td class="guide-type">HGNC ID</td>
                             <td class="guide-arrow">→</td>
                             <td class="guide-example">hgnc:1100</td>
+                        </tr>
+                        <tr>
+                            <td class="guide-type">Drug name</td>
+                            <td class="guide-arrow">→</td>
+                            <td class="guide-example">trastuzumab, docetaxel</td>
+                        </tr>
+                        <tr>
+                            <td class="guide-type">Disease name</td>
+                            <td class="guide-arrow">→</td>
+                            <td class="guide-example">breast cancer, prostate cancer</td>
                         </tr>
                     </table>
                 </div>

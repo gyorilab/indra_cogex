@@ -40,6 +40,8 @@ __all__ = [
     "get_metrics_for_statistical_comparison",
     "get_genes_for_trial_result",
     "get_trial_results_for_gene",
+    "get_trial_results_for_drug",
+    "get_trial_results_for_disease",
     "get_full_trial_result",
     "get_pathways_for_gene",
     "get_shared_pathways_for_genes",
@@ -696,6 +698,58 @@ def get_trial_results_for_gene(
     return client.query_nodes(
         "MATCH (r:TrialResult)-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id}) RETURN r",
         gene_id=gene_id,
+    )
+
+
+@autoclient()
+def get_trial_results_for_drug(
+    drug: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return all trial results for trials that tested the given drug.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    drug :
+        The drug to query as a (namespace, identifier) tuple.
+
+    Returns
+    -------
+    :
+        The trial result nodes for trials involving the given drug.
+    """
+    drug_id = f"{drug[0].lower()}:{drug[1]}"
+    return client.query_nodes(
+        "MATCH (d:BioEntity {id: $drug_id})-[:tested_in]->(ct:ClinicalTrial)"
+        "<-[:has_trial_source]-(r:TrialResult) RETURN DISTINCT r",
+        drug_id=drug_id,
+    )
+
+
+@autoclient()
+def get_trial_results_for_disease(
+    disease: Tuple[str, str], *, client: Neo4jClient
+) -> Iterable[Node]:
+    """Return all trial results for trials studying the given disease.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    disease :
+        The disease to query as a (namespace, identifier) tuple.
+
+    Returns
+    -------
+    :
+        The trial result nodes for trials involving the given disease.
+    """
+    disease_id = f"{disease[0].lower()}:{disease[1]}"
+    return client.query_nodes(
+        "MATCH (d:BioEntity {id: $disease_id})-[:has_trial]->(ct:ClinicalTrial)"
+        "<-[:has_trial_source]-(r:TrialResult) RETURN DISTINCT r",
+        disease_id=disease_id,
     )
 
 

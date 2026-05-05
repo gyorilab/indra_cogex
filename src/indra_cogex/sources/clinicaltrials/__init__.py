@@ -180,9 +180,9 @@ class ClinicalTrialResultProcessor(Processor):
                 labels=["TrialResult"],
                 data={
                     "study_info": row["study_info"],
-                    "trial_ids": row["trial_ids:string[]"],
+                    "trial_ids:string[]": row["trial_ids:string[]"],
                     "phase": row["phase"],
-                    "locations": row["locations:string[]"],
+                    "locations:string[]": row["locations:string[]"],
                 },
             )
 
@@ -351,3 +351,18 @@ class ClinicalTrialResultProcessor(Processor):
                 target_ns=row["db"], target_id=row["id"],
                 rel_type="adverse_event_grounded_as",
             )
+
+        for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
+                                total=len(self.result_nodes_df),
+                                desc="TrialResult->ClinicalTrial"):
+            trial_ids_raw = row.get("trial_ids:string[]", "")
+            if pd.isna(trial_ids_raw) or not trial_ids_raw:
+                continue
+            for nct_id in str(trial_ids_raw).split(";"):
+                nct_id = nct_id.strip()
+                if nct_id and nct_id.upper().startswith("NCT"):
+                    yield Relation(
+                        source_ns="trial.result", source_id=str(row["result_id"]),
+                        target_ns="clinicaltrials", target_id=nct_id,
+                        rel_type="has_trial_source",
+                    )

@@ -350,6 +350,8 @@ FUNCTION_CATEGORIES = {
         'functions': [
             "get_trial_result_for_pmid",
             "get_trial_results_for_gene",
+            "get_trial_results_for_drug",
+            "get_trial_results_for_disease",
             "get_arms_for_trial_result",
             "get_metrics_for_arm",
             "get_metrics_for_statistical_comparison",

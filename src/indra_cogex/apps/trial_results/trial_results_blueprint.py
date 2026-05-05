@@ -14,6 +14,8 @@ from indra_cogex.client.queries import (
     get_diseases_for_trial,
 )
 
+_ENTITY_NAMESPACES = ["CHEBI", "MESH", "DOID", "EFO"]
+
 __all__ = ["trial_results_blueprint"]
 
 _TOTAL_PAPERS = 13712
@@ -34,67 +36,115 @@ trial_results_blueprint = flask.Blueprint(
 )
 
 
+def _gene_search(ns: str, gid: str, label: str):
+    """Run a trial result search via a gene (HGNC)."""
+    rows = client.query_tx(
+        """\
+        MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
+              -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
+        OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
+        RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase, collect(ct.id) AS ct_ids
+        """,
+        gene_id=f"{ns.lower()}:{gid}",
+    )
+    results = [
+        {
+            "result": client.neo4j_to_node(row[0]),
+            "pmid": row[1].split(":")[-1],
+            "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
+            "ct_ids": [cid.split(":")[-1] for cid in (row[3] or [])],
+        }
+        for row in (rows or [])
+    ]
+    return results, label
+
+
+def _run_entity_search(entity_id: str, label: str):
+    """Run a trial result search via a BioEntity, trying both tested_in and has_trial."""
+    rows = client.query_tx(
+        """\
+        MATCH (e:BioEntity {id: $entity_id})-[:tested_in|has_trial]->(ct:ClinicalTrial)
+              <-[:has_trial_source]-(r:TrialResult)<-[:has_trial_result]-(p:Publication)
+        RETURN DISTINCT r, p.id AS pub_id, ct.phase AS ct_phase, ct.id AS ct_id
+        """,
+        entity_id=entity_id,
+    )
+    results = [
+        {
+            "result": client.neo4j_to_node(row[0]),
+            "pmid": row[1].split(":")[-1],
+            "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
+            "ct_ids": [row[3].split(":")[-1]] if row[3] else [],
+        }
+        for row in (rows or [])
+    ]
+    return results, label
+
+
 @trial_results_blueprint.route("/", methods=["GET", "POST"])
 def search():
-    """Search for trial results by PMID or gene."""
+    """Search for trial results by PMID, gene, drug, or disease."""
     if request.method == "POST":
-        search_type = request.form.get("search_type", "pmid")
         query = request.form.get("query", "").strip()
         if not query:
             return render_template(
                 "trial_results/search.html",
                 error="Please enter a search term.",
+                processed=_get_processed_count(),
+                total=_TOTAL_PAPERS,
             )
-        if search_type == "pmid" and not query.isdigit():
-            search_type = "gene"
-        if search_type == "gene" and query.isdigit():
-            search_type = "pmid"
-        if search_type == "pmid":
+
+        if query.isdigit():
             return redirect(url_for("trial_results.result", pmid=query))
+
+        ns, _, gid = query.partition(":")
+
+        if gid:
+            ns_upper = ns.upper()
+            if ns_upper == "HGNC":
+                name = bio_ontology.get_name("HGNC", gid)
+                label = f"{name} ({query})" if name else query
+                search_results, search_label = _gene_search(ns, gid, label)
+            else:
+                name = bio_ontology.get_name(ns_upper, gid)
+                label = f"{name} ({query})" if name else query
+                search_results, search_label = _run_entity_search(
+                    f"{ns.lower()}:{gid}", label
+                )
         else:
-            ns, _, gid = query.partition(":")
-            if not gid:
-                matches = gilda.ground(query, namespaces=["HGNC"])
-                if not matches:
+            hgnc_matches = gilda.ground(query, namespaces=["HGNC"])
+            if hgnc_matches:
+                gid = hgnc_matches[0].term.id
+                name = bio_ontology.get_name("HGNC", gid)
+                label = f"{name} (hgnc:{gid})" if name else f"hgnc:{gid}"
+                search_results, search_label = _gene_search("hgnc", gid, label)
+            else:
+                entity_matches = gilda.ground(query, namespaces=_ENTITY_NAMESPACES)
+                if entity_matches:
+                    m = entity_matches[0].term
+                    label = f"{m.entry_name} ({m.db.lower()}:{m.id})"
+                    search_results, search_label = _run_entity_search(
+                        f"{m.db.lower()}:{m.id}", label
+                    )
+                else:
                     return render_template(
                         "trial_results/search.html",
                         error=(
-                            f"Could not resolve gene '{query}'. "
-                            "Try a symbol (e.g. BRCA1) or HGNC ID (e.g. hgnc:1100)."
+                            f"Could not resolve '{query}'. Try a gene symbol "
+                            "(e.g. BRCA1), drug name (e.g. trastuzumab), "
+                            "or disease (e.g. breast cancer)."
                         ),
                         processed=_get_processed_count(),
                         total=_TOTAL_PAPERS,
                     )
-                ns = "hgnc"
-                gid = matches[0].term.id
-                query = f"hgnc:{gid}"
-            gene_name = bio_ontology.get_name(ns.upper(), gid)
-            gene_label = f"{gene_name} ({query})" if gene_name else query
-            rows = client.query_tx(
-                """\
-                MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
-                      -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
-                OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
-                RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase, collect(ct.id) AS ct_ids
-                """,
-                gene_id=f"{ns.lower()}:{gid}",
-            )
-            gene_results = [
-                {
-                    "result": client.neo4j_to_node(row[0]),
-                    "pmid": row[1].split(":")[-1],
-                    "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
-                    "ct_ids": [cid.split(":")[-1] for cid in (row[3] or [])],
-                }
-                for row in (rows or [])
-            ]
-            return render_template(
-                "trial_results/search.html",
-                gene_query=gene_label,
-                gene_results=gene_results,
-                processed=_get_processed_count(),
-                total=_TOTAL_PAPERS,
-            )
+
+        return render_template(
+            "trial_results/search.html",
+            gene_query=search_label,
+            gene_results=search_results,
+            processed=_get_processed_count(),
+            total=_TOTAL_PAPERS,
+        )
     error_pmid = request.args.get("error")
     return render_template(
         "trial_results/search.html",
