@@ -551,9 +551,9 @@ examples_dict = {
     "k": fields.Integer(example=10),
     # Trial results
     "pmid": fields.String(example="15897530"),
-    "trial_result": fields.List(fields.String, example=["trialresult", "1"]),
-    "stat_comparison": fields.List(fields.String, example=["statcomparison", "1"]),
-    "arm": fields.List(fields.String, example=["arm", "1"]),
+    "trial_result": fields.List(fields.String, example=["trial.result", "1"]),
+    "stat_comparison": fields.List(fields.String, example=["trial.statcomparison", "1"]),
+    "arm": fields.List(fields.String, example=["trial.arm", "1"]),
 }
 
 # Parameters to always skip in the examples and in the documentation
