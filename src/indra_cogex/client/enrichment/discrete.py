@@ -169,8 +169,11 @@ def _do_ora(
             universe_size=count,
         )
         _, pvalue = fisher_exact(table, alternative="greater")
-        rows.append((curie, name, pvalue))
-    df = pd.DataFrame(rows, columns=["curie", "name", "p"]).sort_values(
+        # Calculate overlap genes and count
+        overlap_genes = list(query_set.intersection(target_set))
+        overlap_count = len(overlap_genes)
+        rows.append((curie, name, pvalue, overlap_count, overlap_genes))
+    df = pd.DataFrame(rows, columns=["curie", "name", "p", "overlap_count", "overlap_genes"]).sort_values(
         "p", ascending=True
     )
     df["mlp"] = -np.log10(df["p"])
