@@ -77,7 +77,7 @@
                 {% endfor %}
             {% endif %}
             {% if result.data.get("phase") %} | Phase: {{ result.data.get("phase") }}{% endif %}
-            {% if result.data.get("locations") %} | {{ result.data.get("locations") }}{% endif %}
+            {% if result.data.get("locations") %} | {{ result.data.get("locations") | join(", ") if result.data.get("locations") is iterable and result.data.get("locations") is not string else result.data.get("locations").replace(";", ", ") }}{% endif %}
         </div>
     </div>
 
