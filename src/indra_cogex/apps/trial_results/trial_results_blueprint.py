@@ -71,8 +71,7 @@ def search():
                 MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
                       -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
                 OPTIONAL MATCH (ct:ClinicalTrial)
-                WHERE any(tid IN split(r.trial_ids, ';')
-                      WHERE ct.id = 'clinicaltrials:' + trim(tid))
+                WHERE any(tid IN r.trial_ids WHERE ct.id = 'clinicaltrials:' + trim(tid))
                 RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase
                 """,
                 gene_id=f"{ns.lower()}:{gid}",

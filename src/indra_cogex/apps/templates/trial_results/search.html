@@ -126,18 +126,14 @@
                 <tr>
                     <td>{{ item.result.data.get("study_info", "") }}</td>
                     <td>{{ item.ct_phase if (item.ct_phase is not none and item.ct_phase != -1) else "" }}</td>
-                    <td>{{ item.result.data.get("locations", "").replace(";", ", ") }}</td>
+                    <td>{% set locs = item.result.data.get("locations", []) %}{{ locs | join(", ") }}</td>
                     <td>
                         <a href="https://bioregistry.io/pubmed:{{ item.pmid }}" target="_blank" style="color:#1a5a8a;">{{ item.pmid }}</a>
                     </td>
                     <td>
-                        {% set trial_ids = item.result.data.get("trial_ids", "") %}
-                        {% if trial_ids %}
-                            {% for nct in trial_ids.split(";") %}
-                                {% set nct = nct.strip() %}
-                                {% if nct %}<a href="https://bioregistry.io/clinicaltrials:{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}{% endif %}
-                            {% endfor %}
-                        {% endif %}
+                        {% for nct in item.result.data.get("trial_ids", []) %}
+                            <a href="https://clinicaltrials.gov/study/{{ nct.strip() }}" target="_blank" style="color:#1a5a8a;">{{ nct.strip() }}</a>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
                     </td>
                     <td>
                         <a href="{{ url_for('trial_results.result', pmid=item.pmid) }}" class="view-link">View</a>
