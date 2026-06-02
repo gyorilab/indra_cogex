@@ -168,6 +168,7 @@ class ClinicalTrialResultProcessor(Processor):
         self.outcomes_df = data["outcomes"]
         self.stat_comparisons_df = data["stat_comparisons"]
         self.genetic_edges_df = data["genetic_edges"]
+        self.ae_bioentity_edges_df = data["ae_bioentity_edges"]
         self.publication_edges_df = data["publication_edges"]
 
     def get_nodes(self):
@@ -179,9 +180,9 @@ class ClinicalTrialResultProcessor(Processor):
                 labels=["TrialResult"],
                 data={
                     "study_info": row["study_info"],
-                    "trial_ids": row["trial_ids"],
+                    "trial_ids": row["trial_ids:string[]"],
                     "phase": row["phase"],
-                    "locations": row["locations"],
+                    "locations": row["locations:string[]"],
                 },
             )
 
@@ -340,4 +341,13 @@ class ClinicalTrialResultProcessor(Processor):
                 source_ns="trial.result", source_id=str(row["result_id"]),
                 target_ns="HGNC", target_id=row["hgnc_id"],
                 rel_type="has_genetic_criterion",
+            )
+
+        for _, row in tqdm.tqdm(self.ae_bioentity_edges_df.iterrows(),
+                                total=len(self.ae_bioentity_edges_df),
+                                desc="TrialAdverseEvent->BioEntity"):
+            yield Relation(
+                source_ns="trial.adverseevent", source_id=str(row["adverseevent_id"]),
+                target_ns=row["db"], target_id=row["id"],
+                rel_type="adverse_event_grounded_as",
             )

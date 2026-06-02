@@ -373,7 +373,8 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
     -------
     :
         Dictionary with keys: result_nodes, arms, metrics, adverse_events,
-        criteria, outcomes, stat_comparisons, genetic_edges, publication_edges.
+        criteria, outcomes, stat_comparisons, genetic_edges, ae_bioentity_edges,
+        publication_edges.
     """
     result_nodes = []
     arms = []
@@ -383,6 +384,7 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
     outcomes = []
     stat_comparisons = []
     genetic_edges = []
+    ae_bioentity_edges = []
     publication_edges = []
 
     arm_id = 1
@@ -433,6 +435,13 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
                     "value_text": ae.get("value_text", ""),
                     "source_sentence": ae.get("source_sentence", ""),
                 })
+                grounding = ae.get("grounding") or {}
+                if grounding.get("db") and grounding.get("id"):
+                    ae_bioentity_edges.append({
+                        "adverseevent_id": ae_id,
+                        "db": grounding["db"],
+                        "id": grounding["id"],
+                    })
                 ae_id += 1
             arm_id += 1
 
@@ -504,6 +513,24 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
     logger.info("Extracted %d TrialOutcome nodes", len(outcomes))
     logger.info("Extracted %d TrialStatisticalComparison nodes", len(stat_comparisons))
     logger.info("Extracted %d has_genetic_criterion edges", len(genetic_edges))
+    logger.info("Extracted %d adverse_event_grounded_as edges", len(ae_bioentity_edges))
+
+    genetic_edges_df = pd.DataFrame(genetic_edges)
+    if not genetic_edges_df.empty:
+        genetic_edges_df = genetic_edges_df.drop_duplicates(subset=["result_id", "hgnc_id"])
+        logger.info(
+            "%d unique has_genetic_criterion edges after deduplication",
+            len(genetic_edges_df),
+        )
+    ae_bioentity_edges_df = pd.DataFrame(ae_bioentity_edges)
+    if not ae_bioentity_edges_df.empty:
+        ae_bioentity_edges_df = ae_bioentity_edges_df.drop_duplicates(
+            subset=["adverseevent_id", "db", "id"]
+        )
+        logger.info(
+            "%d unique adverse_event_grounded_as edges after deduplication",
+            len(ae_bioentity_edges_df),
+        )
 
     return {
         "result_nodes": pd.DataFrame(result_nodes),
@@ -513,6 +540,7 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
         "criteria": pd.DataFrame(criteria),
         "outcomes": pd.DataFrame(outcomes),
         "stat_comparisons": pd.DataFrame(stat_comparisons),
-        "genetic_edges": pd.DataFrame(genetic_edges),
+        "genetic_edges": genetic_edges_df,
+        "ae_bioentity_edges": ae_bioentity_edges_df,
         "publication_edges": pd.DataFrame(publication_edges),
     }

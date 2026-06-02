@@ -327,6 +327,11 @@ def assert_valid_node(
         if data and data.get("evidence:string"):
             ev = Evidence._from_json(json.loads(data["evidence:string"]))
             assert_valid_evidence(ev)
+    elif db_ns in {
+        "trial.result", "trial.arm", "trial.metric", "trial.adverseevent",
+        "trial.criterion", "trial.outcome", "trial.statcomparison",
+    }:
+        pass
     else:
         assert_valid_db_refs({db_ns: db_id})
 
