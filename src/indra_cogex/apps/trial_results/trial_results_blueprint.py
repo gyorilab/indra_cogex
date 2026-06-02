@@ -70,9 +70,8 @@ def search():
                 """\
                 MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
                       -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
-                OPTIONAL MATCH (ct:ClinicalTrial)
-                WHERE any(tid IN r.trial_ids WHERE ct.id = 'clinicaltrials:' + trim(tid))
-                RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase
+                OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
+                RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase, collect(ct.id) AS ct_ids
                 """,
                 gene_id=f"{ns.lower()}:{gid}",
             )
@@ -80,7 +79,8 @@ def search():
                 {
                     "result": client.neo4j_to_node(row[0]),
                     "pmid": row[1].split(":")[-1],
-                    "ct_phase": row[2],
+                    "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
+                    "ct_ids": [cid.split(":")[-1] for cid in (row[3] or [])],
                 }
                 for row in (rows or [])
             ]
@@ -143,6 +143,12 @@ def result(pmid):
         if c.data.get("criterion_type") == "exclusion"
     ]
 
+    ct_rows = client.query_tx(
+        "MATCH (ct:ClinicalTrial)-[:has_publication]->(pub:Publication {id: $pub_id}) RETURN ct.id",
+        pub_id=f"pubmed:{pmid}",
+    )
+    ct_ids = [row[0].split(":")[-1] for row in (ct_rows or [])]
+
     return render_template(
         "trial_results/result.html",
         pmid=pmid,
@@ -151,4 +157,5 @@ def result(pmid):
         comparisons_data=comparisons_data,
         inclusion=inclusion,
         exclusion=exclusion,
+        ct_ids=ct_ids,
     )

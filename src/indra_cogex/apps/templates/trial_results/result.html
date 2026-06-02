@@ -71,9 +71,9 @@
         <h2>{{ result.data.get("study_info", "Trial Result") }}</h2>
         <div style="font-size:0.8rem; color:#666;">
             PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}/" target="_blank" style="color:#1a5a8a;">{{ pmid }}</a>
-            {% if result.data.get("trial_ids") %} | Registry ID:
-                {% for nct in result.data.get("trial_ids", []) %}
-                    <a href="https://clinicaltrials.gov/study/{{ nct.strip() }}" target="_blank" style="color:#1a5a8a;">{{ nct.strip() }}</a>{% if not loop.last %}, {% endif %}
+            {% if ct_ids %} | Registry ID:
+                {% for nct in ct_ids %}
+                    <a href="https://clinicaltrials.gov/study/{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}
                 {% endfor %}
             {% endif %}
             {% if result.data.get("phase") %} | Phase: {{ result.data.get("phase") }}{% endif %}
