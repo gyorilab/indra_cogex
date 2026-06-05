@@ -10,6 +10,8 @@ from indra_cogex.client.queries import (
     get_full_trial_result,
     get_metrics_for_arm,
     get_metrics_for_statistical_comparison,
+    get_drugs_for_trial,
+    get_diseases_for_trial,
 )
 
 __all__ = ["trial_results_blueprint"]
@@ -60,11 +62,13 @@ def search():
                             f"Could not resolve gene '{query}'. "
                             "Try a symbol (e.g. BRCA1) or HGNC ID (e.g. hgnc:1100)."
                         ),
+                        processed=_get_processed_count(),
+                        total=_TOTAL_PAPERS,
                     )
                 ns = "hgnc"
                 gid = matches[0].term.id
                 query = f"hgnc:{gid}"
-            gene_name = bio_ontology.get_name("HGNC", gid)
+            gene_name = bio_ontology.get_name(ns.upper(), gid)
             gene_label = f"{gene_name} ({query})" if gene_name else query
             rows = client.query_tx(
                 """\
@@ -91,8 +95,10 @@ def search():
                 processed=_get_processed_count(),
                 total=_TOTAL_PAPERS,
             )
+    error_pmid = request.args.get("error")
     return render_template(
         "trial_results/search.html",
+        error=f"No trial result found for PMID {error_pmid}." if error_pmid else None,
         processed=_get_processed_count(),
         total=_TOTAL_PAPERS,
     )
@@ -103,7 +109,7 @@ def result(pmid):
     """Display the full trial result for a given PMID."""
     data = get_full_trial_result(pmid, client=client)
     if not data:
-        flask.abort(404, description=f"No trial result found for PMID {pmid}.")
+        return redirect(url_for("trial_results.search", error=pmid))
 
     result_node = data["result"]
     trial_result_tuple = (result_node.db_ns, result_node.db_id)
@@ -149,6 +155,16 @@ def result(pmid):
     )
     ct_ids = [row[0].split(":")[-1] for row in (ct_rows or [])]
 
+    seen_drugs, seen_diseases = {}, {}
+    for nct_id in ct_ids:
+        trial_tuple = ("clinicaltrials", nct_id)
+        for node in get_drugs_for_trial(trial_tuple, client=client):
+            key = f"{node.db_ns}:{node.db_id}"
+            seen_drugs[key] = node
+        for node in get_diseases_for_trial(trial_tuple, client=client):
+            key = f"{node.db_ns}:{node.db_id}"
+            seen_diseases[key] = node
+
     return render_template(
         "trial_results/result.html",
         pmid=pmid,
@@ -158,4 +174,6 @@ def result(pmid):
         inclusion=inclusion,
         exclusion=exclusion,
         ct_ids=ct_ids,
+        drugs=list(seen_drugs.values()),
+        diseases=list(seen_diseases.values()),
     )

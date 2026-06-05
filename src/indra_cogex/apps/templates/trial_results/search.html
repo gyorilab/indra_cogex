@@ -89,7 +89,7 @@
                         <tr>
                             <td class="guide-type">Gene symbol</td>
                             <td class="guide-arrow">→</td>
-                            <td class="guide-example">BRCA1, EGFR, TP53</td>
+                            <td class="guide-example">BRCA1</td>
                         </tr>
                         <tr>
                             <td class="guide-type">HGNC ID</td>
@@ -114,10 +114,10 @@
             <thead>
                 <tr>
                     <th>Study Info</th>
-                    <th>Phase</th>
+                    <th class="sortable-col" data-col="1" data-type="num" style="cursor:pointer; user-select:none; white-space:nowrap;">Phase <span class="sort-arrow" style="font-size:0.7rem; color:#aaa;">▲▼</span></th>
                     <th>Locations</th>
-                    <th>PubMed</th>
-                    <th>ClinicalTrials</th>
+                    <th class="sortable-col" data-col="3" data-type="num" style="cursor:pointer; user-select:none; white-space:nowrap;">PubMed <span class="sort-arrow" style="font-size:0.7rem; color:#aaa;">▲▼</span></th>
+                    <th class="sortable-col" data-col="4" data-type="str" style="cursor:pointer; user-select:none; white-space:nowrap;">ClinicalTrials <span class="sort-arrow" style="font-size:0.7rem; color:#aaa;">▲▼</span></th>
                     <th></th>
                 </tr>
             </thead>
@@ -161,6 +161,51 @@
         arrow.textContent = guide.classList.contains('open') ? '▴' : '▾';
     });
 
+    (function() {
+        const headers = document.querySelectorAll('.sortable-col');
+        if (!headers.length) return;
+        const table = headers[0].closest('table');
+        const tbody = table.querySelector('tbody');
+        let activeCol = 3;
+        let asc = true;
 
+        function sortTable(col, type) {
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function(a, b) {
+                const ta = a.children[col].textContent.trim();
+                const tb = b.children[col].textContent.trim();
+                if (type === 'num') {
+                    const va = parseFloat(ta) || 0;
+                    const vb = parseFloat(tb) || 0;
+                    return asc ? va - vb : vb - va;
+                }
+                return asc ? ta.localeCompare(tb) : tb.localeCompare(ta);
+            });
+            rows.forEach(function(r) { tbody.appendChild(r); });
+            headers.forEach(function(h) {
+                h.querySelector('.sort-arrow').textContent = '▲▼';
+                h.querySelector('.sort-arrow').style.color = '#aaa';
+            });
+            const activeHeader = table.querySelector('.sortable-col[data-col="' + col + '"]');
+            activeHeader.querySelector('.sort-arrow').textContent = asc ? '▲' : '▼';
+            activeHeader.querySelector('.sort-arrow').style.color = '#555';
+        }
+
+        sortTable(activeCol, 'num');
+
+        headers.forEach(function(h) {
+            h.addEventListener('click', function() {
+                const col = parseInt(h.dataset.col);
+                const type = h.dataset.type;
+                if (col === activeCol) {
+                    asc = !asc;
+                } else {
+                    activeCol = col;
+                    asc = true;
+                }
+                sortTable(col, type);
+            });
+        });
+    })();
 </script>
 {% endblock %}

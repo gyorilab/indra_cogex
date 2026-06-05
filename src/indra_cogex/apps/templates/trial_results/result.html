@@ -298,6 +298,36 @@
             </div>
         </div>
 
+        {# 7. Interventions & Conditions #}
+        <div class="field" style="--accent:#6b4a8a;">
+            <div class="field-header" style="background:#f0ebf8; color:#6b4a8a;">Interventions &amp; Conditions</div>
+            <div class="field-content">
+                {% if drugs %}
+                <div style="font-weight:bold; font-size:0.75rem; color:#6b4a8a; text-transform:uppercase; margin-bottom:6px;">Interventions</div>
+                {% for d in drugs %}
+                {% set did = d.db_ns ~ ":" ~ d.db_id %}
+                <div class="extraction">
+                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge" style="background:#6b4a8a;">{{ did }}</a>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if diseases %}
+                <div style="font-weight:bold; font-size:0.75rem; color:#6b4a8a; text-transform:uppercase; margin: {% if drugs %}12px{% else %}0{% endif %} 0 6px 0;">Conditions</div>
+                {% for d in diseases %}
+                {% set did = d.db_ns ~ ":" ~ d.db_id %}
+                <div class="extraction">
+                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge" style="background:#6b4a8a;">{{ did }}</a>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if not drugs and not diseases %}
+                <div class="empty-state">No intervention or condition data.</div>
+                {% endif %}
+            </div>
+        </div>
+
     </div>
 </div>
 
