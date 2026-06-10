@@ -59,7 +59,8 @@ def ensure_clinical_trials_df(
         needs to be reprocessed. Default: False.
     reprocess :
         If True, reprocess the data, even if it already exists. This will
-        reprocess the raw data
+        reprocess the raw data, but not redownload it if it already exists.
+        Default: False.
     max_pages :
         The maximum number of pages to download from the ClinicalTrials.gov API.
         If None, all pages will be downloaded. Default: None.
