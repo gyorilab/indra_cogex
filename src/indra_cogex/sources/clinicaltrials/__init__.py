@@ -130,6 +130,7 @@ class ClinicaltrialsProcessor(Processor):
                 target_ns=trial_ns,
                 target_id=trial_id,
                 rel_type=rel_type,
+                data={"grounding_source": row["grounding_source:string"]}
             )
             added.add((bioentity, nctid_curie, rel_type))
 
