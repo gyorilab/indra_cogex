@@ -130,7 +130,14 @@ class ClinicaltrialsProcessor(Processor):
                 target_ns=trial_ns,
                 target_id=trial_id,
                 rel_type=rel_type,
-                data={"grounding_source": row["grounding_source:string"]}
+                data={
+                    "mesh:boolean": get_bool(
+                        "mesh" in row["grounding_sources:string[]"]
+                    ),
+                    "gilda:boolean": get_bool(
+                        "gilda" in row["grounding_sources:string[]"]
+                    ),
+                },
             )
             added.add((bioentity, nctid_curie, rel_type))
 
