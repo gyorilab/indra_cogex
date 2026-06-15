@@ -11,6 +11,8 @@ import pystow
 import pandas as pd
 
 from indra.ontology.bio import bio_ontology
+from indra_cogex.client import process_identifier
+from indra_cogex.representation import dump_norm_id
 from trialsynth.ctgov import config, process
 
 __all__ = [
@@ -110,6 +112,24 @@ def _mesh_to_chebi(row) -> str:
     return chebi_id if chebi_id else curie
 
 
+def _normalize_bioentity_curie(curie: str) -> str:
+    if pd.isna(curie):
+        return curie
+    db_ns, db_id = process_identifier(curie)
+    return dump_norm_id(db_ns, db_id)
+
+
+def _merge_grounding_sources(sources: pd.Series) -> str:
+    merged: set[str] = set()
+    for value in sources:
+        if pd.isna(value) or value == "":
+            continue
+        merged.update(
+            item.strip() for item in str(value).split(";") if item.strip()
+        )
+    return ";".join(sorted(merged))
+
+
 def process_trialsynth_edges() -> pd.DataFrame:
     """Convert the edge file from the trialsynth to CoGEx format
 
@@ -138,6 +158,22 @@ def process_trialsynth_edges() -> pd.DataFrame:
     # Drop the "source_registry:string" column
     if "source_registry:string" in edges_df.columns:
         edges_df.drop(columns=["source_registry:string"], inplace=True)
+
+    # Normalize bioentity CURIEs so equivalent identifiers group together
+    edges_df["bioentity_mapped"] = edges_df["bioentity_mapped"].map(
+        _normalize_bioentity_curie
+    )
+
+    # Merge duplicate rows on trial, mapped bioentity, and relation type while
+    # unioning semicolon-separated grounding source lists
+    merge_keys = ["trial", "bioentity_mapped", "rel_type:string"]
+    agg_columns = {
+        col: "first"
+        for col in edges_df.columns
+        if col not in merge_keys + ["grounding_sources:string[]"]
+    }
+    agg_columns["grounding_sources:string[]"] = _merge_grounding_sources
+    edges_df = edges_df.groupby(merge_keys, as_index=False).agg(agg_columns)
 
     return edges_df
 
