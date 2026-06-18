@@ -43,16 +43,32 @@ def _gene_search(ns: str, gid: str, label: str):
         MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
               -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
         OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
-        RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase, collect(ct.id) AS ct_ids
+        OPTIONAL MATCH (drug:BioEntity)-[:tested_in]->(ct)
+        OPTIONAL MATCH (disease:BioEntity)-[:has_trial]->(ct)
+        RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
+               collect(DISTINCT ct.id) AS ct_ids,
+               collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
+               collect(DISTINCT {name: disease.name, id: disease.id}) AS conditions
         """,
         gene_id=f"{ns.lower()}:{gid}",
     )
+    def _parse_entities(raw):
+        out = []
+        for e in (raw or []):
+            if not e or not e.get("id"):
+                continue
+            ns_part, _, id_part = e["id"].partition(":")
+            out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
+        return out
+
     results = [
         {
             "result": client.neo4j_to_node(row[0]),
             "pmid": row[1].split(":")[-1],
             "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
             "ct_ids": [cid.split(":")[-1] for cid in (row[3] or [])],
+            "interventions": _parse_entities(row[4]),
+            "conditions": _parse_entities(row[5]),
         }
         for row in (rows or [])
     ]
@@ -64,17 +80,33 @@ def _run_entity_search(entity_id: str, label: str):
     rows = client.query_tx(
         """\
         MATCH (e:BioEntity {id: $entity_id})-[:tested_in|has_trial]->(ct:ClinicalTrial)
-              <-[:has_trial_source]-(r:TrialResult)<-[:has_trial_result]-(p:Publication)
-        RETURN DISTINCT r, p.id AS pub_id, ct.phase AS ct_phase, ct.id AS ct_id
+            -[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)
+        OPTIONAL MATCH (drug:BioEntity)-[:tested_in]->(ct)
+        OPTIONAL MATCH (disease:BioEntity)-[:has_trial]->(ct)
+        RETURN DISTINCT r, p.id AS pub_id, ct.phase AS ct_phase, ct.id AS ct_id,
+               collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
+               collect(DISTINCT {name: disease.name, id: disease.id}) AS conditions
         """,
         entity_id=entity_id,
     )
+
+    def _parse_entities(raw):
+        out = []
+        for e in (raw or []):
+            if not e or not e.get("id"):
+                continue
+            ns_part, _, id_part = e["id"].partition(":")
+            out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
+        return out
+
     results = [
         {
             "result": client.neo4j_to_node(row[0]),
             "pmid": row[1].split(":")[-1],
             "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
             "ct_ids": [row[3].split(":")[-1]] if row[3] else [],
+            "interventions": _parse_entities(row[4]),
+            "conditions": _parse_entities(row[5]),
         }
         for row in (rows or [])
     ]

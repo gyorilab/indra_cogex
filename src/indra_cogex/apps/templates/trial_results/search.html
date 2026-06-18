@@ -99,12 +99,12 @@
                         <tr>
                             <td class="guide-type">Drug name</td>
                             <td class="guide-arrow">→</td>
-                            <td class="guide-example">trastuzumab, docetaxel</td>
+                            <td class="guide-example">trastuzumab</td>
                         </tr>
                         <tr>
                             <td class="guide-type">Disease name</td>
                             <td class="guide-arrow">→</td>
-                            <td class="guide-example">breast cancer, prostate cancer</td>
+                            <td class="guide-example">breast cancer</td>
                         </tr>
                     </table>
                 </div>
@@ -128,6 +128,8 @@
                     <th>Locations</th>
                     <th class="sortable-col" data-col="3" data-type="num" style="cursor:pointer; user-select:none; white-space:nowrap;">PubMed <span class="sort-arrow" style="font-size:0.7rem; color:#aaa;">▲▼</span></th>
                     <th class="sortable-col" data-col="4" data-type="str" style="cursor:pointer; user-select:none; white-space:nowrap;">ClinicalTrials <span class="sort-arrow" style="font-size:0.7rem; color:#aaa;">▲▼</span></th>
+                    <th>Interventions</th>
+                    <th>Conditions</th>
                     <th></th>
                 </tr>
             </thead>
@@ -143,6 +145,16 @@
                     <td>
                         {% for nct in item.ct_ids %}
                             <a href="https://clinicaltrials.gov/study/{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for e in item.interventions %}
+                        <a href="https://bioregistry.io/{{ e.ns }}:{{ e.id }}" target="_blank" style="display:inline-block; margin:1px 2px 1px 0; padding:1px 6px; background:#1a5a8a; color:#fff; border-radius:3px; font-size:0.72rem; font-family:monospace; text-decoration:none;" title="{{ e.name }}">{{ e.name }}</a>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for e in item.conditions %}
+                        <a href="https://bioregistry.io/{{ e.ns }}:{{ e.id }}" target="_blank" style="display:inline-block; margin:1px 2px 1px 0; padding:1px 6px; background:#2e6b33; color:#fff; border-radius:3px; font-size:0.72rem; font-family:monospace; text-decoration:none;" title="{{ e.name }}">{{ e.name }}</a>
                         {% endfor %}
                     </td>
                     <td>
