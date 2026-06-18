@@ -54,8 +54,8 @@ def _gene_search(ns: str, gid: str, label: str):
         MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
               -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
         OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
-        OPTIONAL MATCH (drug:BioEntity)-[:tested_in]->(ct)
-        OPTIONAL MATCH (disease:BioEntity)-[:has_trial]->(ct)
+        OPTIONAL MATCH (drug:BioEntity)-[:tested_in {mesh: true}]->(ct)
+        OPTIONAL MATCH (disease:BioEntity)-[:has_trial {mesh: true}]->(ct)
         RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
                collect(DISTINCT ct.id) AS ct_ids,
                collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
@@ -83,8 +83,8 @@ def _run_entity_search(entity_id: str, label: str):
         """\
         MATCH (e:BioEntity {id: $entity_id})-[:tested_in|has_trial]->(ct:ClinicalTrial)
             -[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)
-        OPTIONAL MATCH (drug:BioEntity)-[:tested_in]->(ct)
-        OPTIONAL MATCH (disease:BioEntity)-[:has_trial]->(ct)
+        OPTIONAL MATCH (drug:BioEntity)-[:tested_in {mesh: true}]->(ct)
+        OPTIONAL MATCH (disease:BioEntity)-[:has_trial {mesh: true}]->(ct)
         RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
                collect(DISTINCT ct.id) AS ct_ids,
                collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
