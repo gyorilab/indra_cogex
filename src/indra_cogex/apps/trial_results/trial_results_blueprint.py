@@ -18,6 +18,17 @@ _ENTITY_NAMESPACES = ["CHEBI", "MESH", "DOID", "EFO"]
 
 __all__ = ["trial_results_blueprint"]
 
+
+def _parse_entities(raw):
+    """Split Neo4j BioEntity id (e.g. 'mesh:D001943') into ns/id for bioregistry badge rendering."""
+    out = []
+    for e in (raw or []):
+        if not e or not e.get("id"):
+            continue
+        ns_part, _, id_part = e["id"].partition(":")
+        out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
+    return out
+
 _TOTAL_PAPERS = 13712
 _processed_papers = None
 
@@ -52,15 +63,6 @@ def _gene_search(ns: str, gid: str, label: str):
         """,
         gene_id=f"{ns.lower()}:{gid}",
     )
-    def _parse_entities(raw):
-        out = []
-        for e in (raw or []):
-            if not e or not e.get("id"):
-                continue
-            ns_part, _, id_part = e["id"].partition(":")
-            out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
-        return out
-
     results = [
         {
             "result": client.neo4j_to_node(row[0]),
@@ -83,28 +85,19 @@ def _run_entity_search(entity_id: str, label: str):
             -[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)
         OPTIONAL MATCH (drug:BioEntity)-[:tested_in]->(ct)
         OPTIONAL MATCH (disease:BioEntity)-[:has_trial]->(ct)
-        RETURN DISTINCT r, p.id AS pub_id, ct.phase AS ct_phase, ct.id AS ct_id,
+        RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
+               collect(DISTINCT ct.id) AS ct_ids,
                collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
                collect(DISTINCT {name: disease.name, id: disease.id}) AS conditions
         """,
         entity_id=entity_id,
     )
-
-    def _parse_entities(raw):
-        out = []
-        for e in (raw or []):
-            if not e or not e.get("id"):
-                continue
-            ns_part, _, id_part = e["id"].partition(":")
-            out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
-        return out
-
     results = [
         {
             "result": client.neo4j_to_node(row[0]),
             "pmid": row[1].split(":")[-1],
             "ct_phase": row[2] if (row[2] is not None and row[2] != -1) else None,
-            "ct_ids": [row[3].split(":")[-1]] if row[3] else [],
+            "ct_ids": [cid.split(":")[-1] for cid in (row[3] or [])],
             "interventions": _parse_entities(row[4]),
             "conditions": _parse_entities(row[5]),
         }
