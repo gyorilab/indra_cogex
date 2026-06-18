@@ -76,6 +76,7 @@ def ensure_clinical_trials_df(
             ctconfig.edges_path,
             ctconfig.bio_entities_path,
             ctconfig.trials_path,
+            ctconfig.trial_publication_edges_path,
         )
     ):
         logger.info("ClinicalTrials.gov data already processed, skipping download.")
