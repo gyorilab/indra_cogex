@@ -13,6 +13,7 @@ from indra_cogex.sources.utils import get_bool
 from indra_cogex.sources.clinicaltrials.download import (
     ensure_clinical_trials_df,
     process_trialsynth_edges,
+    process_trialsynth_trial_publication_edges,
     process_trialsynth_bioentity_nodes,
     process_trialsynth_trial_nodes,
     load_all,
@@ -42,6 +43,7 @@ class ClinicaltrialsProcessor(Processor):
         # Warm up bio ontology
         _ = bio_ontology.get_name("HGNC", "1100")
         self.edges_df = process_trialsynth_edges()
+        self.publication_trial_edges_df = process_trialsynth_trial_publication_edges()
         self.mesh_chebi_map = {
             old_id: new_id for new_id, old_id in
             self.edges_df[["bioentity_mapped", "bioentity"]].values
@@ -50,6 +52,24 @@ class ClinicaltrialsProcessor(Processor):
         self.bioentities_df = process_trialsynth_bioentity_nodes(self.mesh_chebi_map)
 
     def get_nodes(self):
+        yield from self._get_trial_bioentity_nodes()
+        yield from self._get_publication_nodes()
+
+    def _get_publication_nodes(self):
+        for ix, row in tqdm.tqdm(
+            self.publication_trial_edges_df.iterrows(),
+            total=len(self.publication_trial_edges_df),
+            desc="Publication nodes",
+        ):
+            pmid = row["pmid"]
+            yield Node(
+                db_ns="PUBMED",
+                db_id=str(pmid),
+                labels=["Publication"],
+                data={},
+            )
+
+    def _get_trial_bioentity_nodes(self):
         yielded_nodes = set()
         for ix, row in tqdm.tqdm(
             self.trials_df.iterrows(), total=len(self.trials_df), desc="Trial nodes"
@@ -99,6 +119,24 @@ class ClinicaltrialsProcessor(Processor):
             )
 
     def get_relations(self):
+        yield from self._get_condition_intervention_relations()
+        yield from self._get_publication_trial_relations()
+
+    def _get_publication_trial_relations(self):
+        for ix, (trial_curie, pmid, _) in tqdm.tqdm(
+            self.publication_trial_edges_df.iterrows(), total=len(self.publication_trial_edges_df), desc="Publication-Trial edges"
+        ):
+            trial_ns, trial_id = process_identifier(trial_curie)
+
+            yield Relation(
+                source_ns=trial_ns,
+                source_id=trial_id,
+                target_ns="PUBMED",
+                target_id=str(pmid),
+                rel_type="has_publication",
+            )
+
+    def _get_condition_intervention_relations(self):
         added = set()
         rel_translation = {
             "has_condition": "has_trial",

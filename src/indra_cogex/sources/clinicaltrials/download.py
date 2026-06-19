@@ -132,7 +132,7 @@ def _merge_grounding_sources(sources: pd.Series) -> str:
 
 
 def process_trialsynth_edges() -> pd.DataFrame:
-    """Convert the edge file from the trialsynth to CoGEx format
+    """Convert the edge file from trialsynth to CoGEx format
 
     Returns
     -------
@@ -177,6 +177,20 @@ def process_trialsynth_edges() -> pd.DataFrame:
     edges_df = edges_df.groupby(merge_keys, as_index=False).agg(agg_columns)
 
     return edges_df
+
+
+def process_trialsynth_trial_publication_edges() -> pd.DataFrame:
+    """Load the  publication-trial edge file from trialsynth
+
+    Returns
+    -------
+    :
+        A dataframe with CoGEx formatted edges
+    """
+    publication_trial_df = pd.read_csv(
+        ctconfig.trial_publication_edges_path, sep="\t", compression="gzip"
+    )
+    return publication_trial_df
 
 
 def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.DataFrame:
