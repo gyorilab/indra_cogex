@@ -32,7 +32,7 @@ class SourceTargetForm(FlaskForm):
     target_genes = TextAreaField(
         "Target Genes",
         description="Enter target gene symbols, separated by commas or new lines" 
-                    " or, <a href=\"#\" onClick=\"fillExampleTargetGenes()\">click here for examples</a>",
+                    " or, <a href=\"#\" onClick=\"exampleGenes()\">click here for examples</a>",
         validators=[DataRequired()],
     )
 
@@ -75,6 +75,7 @@ def source_target_analysis_route():
     form = SourceTargetForm()
 
     # Define example genes for the template
+    example_source_gene = "BRCA1"
     example_target_genes = "TP53, PARP1, RAD51, CHEK2"
 
     if form.validate_on_submit():
@@ -118,5 +119,6 @@ def source_target_analysis_route():
     return flask.render_template(
         "source_target/source_target_form.html",
         form=form,
+        example_source_gene=example_source_gene,
         example_target_genes=example_target_genes,
     )
