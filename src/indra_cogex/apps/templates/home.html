@@ -298,8 +298,6 @@
             </div>
         </div>
 
-
-
         <!-- Directed Exploration Section with consistent spacing -->
         <h3 class="text-center">Directed Exploration</h3>
         <div class="card-deck" style="margin-bottom: 1em;">
@@ -382,8 +380,8 @@
                 <div class="card-body">
                     <h5 class="card-title">TF Explorer</h5>
                     <p class="card-text">
-                        Explore statements about transcription factors regulating the amounts of their targets not
-                        already appearing in databases like Pathway Commons.
+                        Explore statements about transcription factors regulating target abundance, with optional
+                        inclusion of database evidence from sources like Pathway Commons.
                     </p>
                 </div>
                 {{ start_button('explorer.tf') }}
@@ -394,8 +392,8 @@
                 <div class="card-body">
                     <h5 class="card-title">Kinase Explorer</h5>
                     <p class="card-text">
-                        Explore statements about kinases phosphorylating targets not
-                        already appearing in databases like PhosphoSitePlus.
+                        Explore statements about kinases phosphorylating targets, with optional inclusion of database
+                        evidence from sources like PhosphoSitePlus.
                     </p>
                 </div>
                 {{ start_button('explorer.kinase') }}
@@ -406,8 +404,8 @@
                 <div class="card-body">
                     <h5 class="card-title">Phosphatase Explorer</h5>
                     <p class="card-text">
-                        Explore statements about phosphatases dephosphorylating targets not
-                        already appearing in databases like Pathway Commons.
+                        Explore statements about phosphatases dephosphorylating targets, with optional inclusion of
+                        database evidence from sources like Pathway Commons.
                     </p>
                 </div>
                 {{ start_button('explorer.phosphatase') }}
@@ -426,12 +424,16 @@
         </div>
         <div class="card-deck" style="margin-top: 0.8em;">
             <div class="card">
-                <img class="card-img-top" style="height: 100px; object-fit: contain;"
-                     src="https://www.researchgate.net/profile/Abdullah-Kahtani/publication/328653994/figure/fig1/AS:688061251870722@1541057994885/Gene-Oncology-Structure-The-Gene-Ontology-2011_W640.jpg">
+                <div class="d-flex justify-content-center align-items-center" style="height: 120px; padding: 10px;">
+                    <img style="max-height: 100px; max-width: 100%; object-fit: contain;"
+                         src="{{ url_for("static", filename="go_annotation.png") }}"
+                         alt="Gene Ontology annotation diagram">
+                </div>
                 <div class="card-body">
                     <h5 class="card-title">GO Annotation Explorer</h5>
                     <p class="card-text">
-                        Explore gene-GO term associations that are not already available as GO annotations.
+                        Explore candidate gene-GO term associations, with optional inclusion of evidence from
+                        database sources.
                     </p>
                 </div>
                 {{ start_button('explorer.goa') }}
@@ -453,18 +455,23 @@
                 <div class="card-body">
                     <h5 class="card-title">PPI Explorer</h5>
                     <p class="card-text">
-                        Explore protein-protein interactions not already appearing in databases like BioGRID.
+                        Explore protein-protein interactions, with optional inclusion of database evidence from sources
+                        like BioGRID.
                     </p>
                 </div>
                 {{ start_button('explorer.ppi') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="height: 100px; object-fit: contain;"
-                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Examples_of_microRNA_stem-loops.jpg/400px-Examples_of_microRNA_stem-loops.jpg">
+                <div class="d-flex justify-content-center align-items-center" style="height: 120px; padding: 10px;">
+                    <img style="max-height: 100px; max-width: 100%; object-fit: contain;"
+                         src="{{ url_for("static", filename="mirna.png") }}"
+                         alt="miRNA stem-loop examples">
+                </div>
                 <div class="card-body">
                     <h5 class="card-title">miRNA Explorer</h5>
                     <p class="card-text">
-                        Explore miRNA-target interactions not already appearing in databases like miRTarBase.
+                        Explore miRNA-target interactions, with optional inclusion of database evidence from sources
+                        like miRTarBase.
                     </p>
                 </div>
                 {{ start_button('explorer.mirna') }}
@@ -475,7 +482,8 @@
                 <div class="card-body">
                     <h5 class="card-title">Disorder Explorer</h5>
                     <p class="card-text">
-                        Explore intrensically disordered proteins' interactions not already appearing in databases.
+                        Explore intrinsically disordered protein interactions, with optional inclusion of database
+                        evidence from database sources.
                     </p>
                 </div>
                 {{ start_button('explorer.disprot') }}
