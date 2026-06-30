@@ -15,6 +15,13 @@ from indra_cogex.client import process_identifier
 from indra_cogex.representation import dump_norm_id
 from trialsynth.ctgov import config, process
 
+
+def _clean(text: str) -> str:
+    """Strip control characters from free-text fields before TSV serialization."""
+    if not text:
+        return text
+    return text.replace("\x00", "").replace("\t", " ").replace("\n", " ").replace("\r", " ")
+
 __all__ = [
     "ensure_clinical_trials_df",
     "process_trialsynth_edges",
@@ -450,7 +457,7 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
     for result_id, pmid, data in _load_jsons(json_dir):
         result_nodes.append({
             "result_id": result_id,
-            "study_info": data.get("study_info", ""),
+            "study_info": _clean(data.get("study_info", "")),
             "trial_ids:string[]": ";".join(data.get("trial_ids", [])),
             "phase": data.get("phase") or "",
             "locations:string[]": ";".join(data.get("locations", [])),
@@ -461,32 +468,32 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
             arms.append({
                 "result_id": result_id,
                 "arm_id": arm_id,
-                "arm_name": arm.get("arm_name", ""),
+                "arm_name": _clean(arm.get("arm_name", "")),
                 "n": arm.get("n"),
-                "dosage": arm.get("dosage") or "",
-                "source_sentence": arm.get("source_sentence", ""),
+                "dosage": _clean(arm.get("dosage") or ""),
+                "source_sentence": _clean(arm.get("source_sentence", "")),
             })
             for m in arm.get("metrics", []):
                 metrics.append({
                     "parent_ns": "arm",
                     "parent_id": arm_id,
                     "metric_id": metric_id,
-                    "name": m.get("name", ""),
+                    "name": _clean(m.get("name", "")),
                     "value_numeric": m.get("value_numeric"),
-                    "unit": m.get("unit", ""),
-                    "value_text": m.get("value_text", ""),
-                    "source_sentence": m.get("source_sentence", ""),
+                    "unit": _clean(m.get("unit", "")),
+                    "value_text": _clean(m.get("value_text", "")),
+                    "source_sentence": _clean(m.get("source_sentence", "")),
                 })
                 metric_id += 1
             for ae in arm.get("adverse_events", []):
                 adverse_events.append({
                     "arm_id": arm_id,
                     "adverseevent_id": ae_id,
-                    "event_name": ae.get("event_name", ""),
+                    "event_name": _clean(ae.get("event_name", "")),
                     "incidence_numeric": ae.get("incidence_numeric"),
-                    "unit": ae.get("unit", ""),
-                    "value_text": ae.get("value_text", ""),
-                    "source_sentence": ae.get("source_sentence", ""),
+                    "unit": _clean(ae.get("unit", "")),
+                    "value_text": _clean(ae.get("value_text", "")),
+                    "source_sentence": _clean(ae.get("source_sentence", "")),
                 })
                 grounding = ae.get("grounding") or {}
                 if grounding.get("db") and grounding.get("id"):
@@ -502,9 +509,9 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
             criteria.append({
                 "result_id": result_id,
                 "criterion_id": criterion_id,
-                "text": item.get("text", ""),
+                "text": _clean(item.get("text", "")),
                 "criterion_type": "inclusion",
-                "evidence_text": item.get("evidence_text", ""),
+                "evidence_text": _clean(item.get("evidence_text", "")),
             })
             criterion_id += 1
 
@@ -512,9 +519,9 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
             criteria.append({
                 "result_id": result_id,
                 "criterion_id": criterion_id,
-                "text": item.get("text", ""),
+                "text": _clean(item.get("text", "")),
                 "criterion_type": "exclusion",
-                "evidence_text": item.get("evidence_text", ""),
+                "evidence_text": _clean(item.get("evidence_text", "")),
             })
             criterion_id += 1
 
@@ -522,8 +529,8 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
             outcomes.append({
                 "result_id": result_id,
                 "outcome_id": outcome_id,
-                "text": item.get("text", ""),
-                "evidence_text": item.get("evidence_text", ""),
+                "text": _clean(item.get("text", "")),
+                "evidence_text": _clean(item.get("evidence_text", "")),
             })
             outcome_id += 1
 
@@ -531,18 +538,18 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
             stat_comparisons.append({
                 "result_id": result_id,
                 "statcomparison_id": stat_id,
-                "comparison_name": comp.get("comparison_name", ""),
+                "comparison_name": _clean(comp.get("comparison_name", "")),
             })
             for m in comp.get("metrics", []):
                 metrics.append({
                     "parent_ns": "statcomparison",
                     "parent_id": stat_id,
                     "metric_id": metric_id,
-                    "name": m.get("name", ""),
+                    "name": _clean(m.get("name", "")),
                     "value_numeric": m.get("value_numeric"),
-                    "unit": m.get("unit", ""),
-                    "value_text": m.get("value_text", ""),
-                    "source_sentence": m.get("source_sentence", ""),
+                    "unit": _clean(m.get("unit", "")),
+                    "value_text": _clean(m.get("value_text", "")),
+                    "source_sentence": _clean(m.get("source_sentence", "")),
                 })
                 metric_id += 1
             stat_id += 1
@@ -557,6 +564,7 @@ def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
                         "hgnc_id": info["id"],
                         "symbol": info.get("entry_name", grounding.get("symbol", "")),
                         "variant": entry.get("variant"),
+                        "evidence_text": _clean(entry.get("evidence_text", "")),
                     })
 
     logger.info("Extracted %d TrialArm nodes", len(arms))
