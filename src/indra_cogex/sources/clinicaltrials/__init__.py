@@ -123,7 +123,7 @@ class ClinicaltrialsProcessor(Processor):
         yield from self._get_publication_trial_relations()
 
     def _get_publication_trial_relations(self):
-        for ix, (trial_curie, pmid, _) in tqdm.tqdm(
+        for ix, (trial_curie, pmid, _, source, ref_type) in tqdm.tqdm(
             self.publication_trial_edges_df.iterrows(), total=len(self.publication_trial_edges_df), desc="Publication-Trial edges"
         ):
             trial_ns, trial_id = process_identifier(trial_curie)
@@ -134,6 +134,14 @@ class ClinicaltrialsProcessor(Processor):
                 target_ns="PUBMED",
                 target_id=str(pmid),
                 rel_type="has_publication",
+                data={
+                    # ref_type is only available for relations sourced from
+                    # clinicaltrials.gov; see reference processing in the
+                    # trialsynth.ctgov.fetch module. For relations sourced from
+                    # PubMed, ref_type is None.
+                    "ref_type": ref_type,
+                    "source": source,
+                },
             )
 
     def _get_condition_intervention_relations(self):

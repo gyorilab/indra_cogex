@@ -18,6 +18,7 @@ from trialsynth.ctgov import config, process
 __all__ = [
     "ensure_clinical_trials_df",
     "process_trialsynth_edges",
+    "process_trialsynth_trial_publication_edges",
     "process_trialsynth_bioentity_nodes",
     "process_trialsynth_trial_nodes",
     "load_all",
@@ -180,7 +181,7 @@ def process_trialsynth_edges() -> pd.DataFrame:
 
 
 def process_trialsynth_trial_publication_edges() -> pd.DataFrame:
-    """Load the  publication-trial edge file from trialsynth
+    """Load the publication-trial edge file from trialsynth
 
     Returns
     -------
