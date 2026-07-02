@@ -138,7 +138,7 @@ class ClinicaltrialsProcessor(Processor):
                     # clinicaltrials.gov; see reference processing in the
                     # trialsynth.ctgov.fetch module. For relations sourced from
                     # PubMed, ref_type is None.
-                    "ref_type": ref_type,
+                    "ref_type": or_na(ref_type),
                     "source": source,
                 },
             )
