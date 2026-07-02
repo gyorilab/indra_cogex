@@ -177,7 +177,7 @@ class ClinicaltrialsProcessor(Processor):
                 target_id=trial_id,
                 rel_type=rel_type,
                 data={
-                    "mesh:boolean": get_bool(
+                    "ctgov:boolean": get_bool(
                         "mesh" in row["grounding_sources:string[]"]
                     ),
                     "gilda:boolean": get_bool(
