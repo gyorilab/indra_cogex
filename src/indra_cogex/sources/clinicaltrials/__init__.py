@@ -56,12 +56,11 @@ class ClinicaltrialsProcessor(Processor):
         yield from self._get_publication_nodes()
 
     def _get_publication_nodes(self):
-        for ix, row in tqdm.tqdm(
-            self.publication_trial_edges_df.iterrows(),
+        for pmid in tqdm.tqdm(
+            self.publication_trial_edges_df["pmid"].unique(),
             total=len(self.publication_trial_edges_df),
             desc="Publication nodes",
         ):
-            pmid = row["pmid"]
             yield Node(
                 db_ns="PUBMED",
                 db_id=str(pmid),
