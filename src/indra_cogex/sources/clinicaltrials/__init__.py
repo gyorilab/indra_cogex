@@ -70,6 +70,8 @@ class ClinicaltrialsProcessor(Processor):
 
     def _get_trial_bioentity_nodes(self):
         yielded_nodes = set()
+
+        # Get trial nodes from trials_df
         for ix, row in tqdm.tqdm(
             self.trials_df.iterrows(), total=len(self.trials_df), desc="Trial nodes"
         ):
@@ -102,6 +104,25 @@ class ClinicaltrialsProcessor(Processor):
                 },
             )
 
+        # Get trial nodes from trial-publication relations
+        trials = self.publication_trial_edges_df['trial_id'].unique()
+        for trial_curie in tqdm.tqdm(
+            trials,
+            total=len(trials),
+            desc="Publication relation trial nodes",
+        ):
+            if trial_curie in yielded_nodes:
+                continue
+            yielded_nodes.add(trial_curie)
+            db_ns, db_id = process_identifier(trial_curie)
+            yield Node(
+                db_ns=db_ns,
+                db_id=db_id,
+                labels=["ClinicalTrial"],
+                data={},
+            )
+
+        # Get bioentity nodes from bioentities_df
         for ix, row in tqdm.tqdm(
             self.bioentities_df.iterrows(), total=len(self.bioentities_df), desc="BioEntity nodes"
         ):
