@@ -104,24 +104,6 @@ class ClinicaltrialsProcessor(Processor):
                 },
             )
 
-        # Get trial nodes from trial-publication relations
-        trials = self.publication_trial_edges_df['trial_id'].unique()
-        for trial_curie in tqdm.tqdm(
-            trials,
-            total=len(trials),
-            desc="Publication relation trial nodes",
-        ):
-            if trial_curie in yielded_nodes:
-                continue
-            yielded_nodes.add(trial_curie)
-            db_ns, db_id = process_identifier(trial_curie)
-            yield Node(
-                db_ns=db_ns,
-                db_id=db_id,
-                labels=["ClinicalTrial"],
-                data={},
-            )
-
         # Get bioentity nodes from bioentities_df
         for ix, row in tqdm.tqdm(
             self.bioentities_df.iterrows(), total=len(self.bioentities_df), desc="BioEntity nodes"
@@ -146,6 +128,13 @@ class ClinicaltrialsProcessor(Processor):
         for ix, (trial_curie, pmid, _, source, ref_type) in tqdm.tqdm(
             self.publication_trial_edges_df.iterrows(), total=len(self.publication_trial_edges_df), desc="Publication-Trial edges"
         ):
+            # Skip relations to trial IDs not present in trials_df.
+            # Spot-checking of the trials that were present in the
+            # trial-publication relations but missing from trials_df gave that
+            # most of the trials in this set were missing from clinicaltrials.gov,
+            # thereforere they are skipped
+            if trial_curie not in self.trials_df["id:ID"].values:
+                continue
             trial_ns, trial_id = process_identifier(trial_curie)
 
             yield Relation(
