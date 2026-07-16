@@ -184,13 +184,13 @@ def build_node_ingestion_query(
     if headers is None:
         headers = read_file_headers(file_path)
     validate_headers(headers)
-    for mandatory_header in MANDATORY_NODE_COLUMNS:
-        if mandatory_header not in headers:
-            raise ValueError(
-                f"Node file headers must include '{mandatory_header}' as one of "
-                f"the mandatory headers. The mandatory headers are "
-                f"{', '.join(MANDATORY_NODE_COLUMNS)}"
-            )
+    if not set(headers) & MANDATORY_NODE_COLUMNS == MANDATORY_NODE_COLUMNS:
+        missing_headers = MANDATORY_NODE_COLUMNS - set(headers)
+        raise ValueError(
+            f"Node file headers must include at least "
+            f"{', '.join(MANDATORY_NODE_COLUMNS)}. {file_path} is "
+            f"missing {', '.join(missing_headers)}."
+        )
 
     property_headers = [h for h in headers if h not in MANDATORY_NODE_COLUMNS]
     set_clauses = format_set_clauses(property_headers)
