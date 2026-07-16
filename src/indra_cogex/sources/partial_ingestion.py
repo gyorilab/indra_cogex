@@ -62,16 +62,15 @@ NODE_INGESTION_QUERY = """\
 LOAD CSV WITH HEADERS FROM 'file://{file_name}' AS row
 FIELDTERMINATOR '\\t'
 CALL (row) {{
-  MERGE (n:{label} {{id: row['id:ID']}}){set_clause}
+    MERGE (n:{label} {{id: row['id:ID']}}){set_clause}
 }} IN TRANSACTIONS OF {batch_size} ROWS
 """
 
-# Optional SET clause for property assignments. If there are no properties to
-# set, this will be empty.
+# Optional SET clause for property assignments
 SET_CLAUSE = """
-  SET n += {{
+    SET n += {{
 {set_clauses}
-  }}"""
+    }}"""
 
 # Relationship query template. Note that the relationship variable is set to
 # 'n', this is to match the SET_CLAUSE template.
@@ -107,21 +106,21 @@ def read_file_headers(file_path: str | Path) -> list[str]:
         return next(csv.reader(fh, delimiter="\t"))
 
 
-def _row_getter(dtype: Optional[str], header: str) -> str:
-    # Helper for format the right hand side of a SET clause assignment. If the
-    # property is an array, we need to split the string and convert each
-    # element for non-string arrays. If it's a scalar, we just convert it
-    # directly.
+def _row_getter(header: str, dtype: Optional[str] = None) -> str:
+    # Helper for formatting the right hand side of a SET clause assignment. If
+    # the property is an array, the string representing it needs to be split
+    # into elements and possibly convert each element if it's a non-string
+    # array. If it's a scalar, convert it directly.
     conversion = _SCALAR_TYPE_CONVERSIONS.get(dtype) if dtype else None
 
     # Array value - split on ';'
     if header.endswith("[]"):
         array_set = f"CASE row['{header}'] WHEN '' THEN null "
-        array = "split(row['{header}'], ';')"
+        array = f"split(row['{header}'], ';')"
         # Conversion needed: convert per element in array
         if conversion:
             array_set += f"ELSE [x IN {array} | {conversion}(x)] END"
-        # Otherwise, user array as is
+        # Otherwise, use array as is
         else:
             array_set += f"ELSE {array} END"
         return array_set
@@ -134,12 +133,16 @@ def _row_getter(dtype: Optional[str], header: str) -> str:
 
 
 def _set_expression(header: str) -> str:
-    # Create one SET expression e.g.,
-    # 'prop_name: row["prop_header"]'
-    # 'prop_name: toInteger(row["prop_header:int"])'
-    # 'prop_name: [x IN split(row["prop_header:int[]"], ";") | toInteger(x)]'
+    # Create a SET expression for a property e.g.,
+    # prop_name: row["prop_name"]
+    # prop_name: toInteger(row["prop_name:int"])
+    # prop_name: [x IN split(row["prop_name:int[]"], ";") | toInteger(x)]
     if ":" in header:
         prop_name, dtype = header.split(":", 1)
+        if ":" in dtype:
+            raise ValueError(
+                f"Invalid header '{header}': multiple ':' characters found"
+            )
     else:
         prop_name, dtype = header, None
     if "." in prop_name:  # todo: check for other special characters that need escaping
@@ -149,33 +152,56 @@ def _set_expression(header: str) -> str:
     if dtype and dtype.endswith("[]"):
             dtype = dtype[:-2]
 
-    return f"{prop_name}: {_row_getter(dtype, header)}"
+    return f"{prop_name}: {_row_getter(header, dtype=dtype)}"
 
 
-def format_set_clauses_node(headers: list[str]) -> str:
-    """Build the property assignments for the SET clause from TSV headers."""
-    property_headers = [h for h in headers if h not in MANDATORY_HEADERS]
+def format_set_clauses(property_headers: list[str]) -> str:
+    """Build the property assignments for the SET clause from TSV headers
+
+    Parameters
+    ----------
+    property_headers :
+        The headers from the file to read the data properties from.
+
+    Returns
+    -------
+    :
+        A string containing the property assignments for the SET clause, or an
+        empty string if there are no properties to set.
+    """
     lines = [_set_expression(header) for header in property_headers]
-    return ",\n".join(f"    {line}" for line in lines) if lines else ""
+    return ",\n".join(f"        {line}" for line in lines) if lines else ""
 
 
 def build_node_ingestion_query(
     label: str,
-    file_name: str,
-    headers: list[str],
+    file_path: str | Path,
+    headers: Optional[list[str]] = None,
     batch_size: int = 10_000,
+    import_anywhere: bool = False,
 ) -> str:
     """Build a batched LOAD CSV query for ingesting nodes of a single label."""
+    if headers is None:
+        headers = read_file_headers(file_path)
     validate_headers(headers)
     for mandatory_header in MANDATORY_NODE_COLUMNS:
         if mandatory_header not in headers:
-            raise ValueError(f"Node file headers must include '{mandatory_header}'")
+            raise ValueError(
+                f"Node file headers must include '{mandatory_header}' as one of "
+                f"the mandatory headers. The mandatory headers are "
+                f"{', '.join(MANDATORY_NODE_COLUMNS)}"
+            )
 
-    set_clauses = format_set_clauses_node(headers)
+    property_headers = [h for h in headers if h not in MANDATORY_NODE_COLUMNS]
+    set_clauses = format_set_clauses(property_headers)
     set_clause = SET_CLAUSE.format(set_clauses=set_clauses) if set_clauses else ""
+    if import_anywhere:
+        file_import = Path(file_path).absolute().as_posix()
+    else:
+        file_import = "/" + Path(file_path).name
     return NODE_INGESTION_QUERY.format(
         label=label,
-        file_name=file_name,
+        file_name=file_import,
         set_clause=set_clause,
         batch_size=batch_size,
     )
@@ -216,13 +242,13 @@ def ingest_nodes_from_file(
         if '_' in file_name:
             label = file_name.split("_")[1].split(".")[0]
         else:
-            type_col = headers.index(":LABEL")
-            if type_col >= 0:
+            label_col = headers.index(":LABEL")
+            if label_col >= 0:
                 with gzip.open(file_path, mode="rt") as f:
                     reader = csv.reader(f, delimiter="\t")
                     next(reader)  # skip header
                     first_row = next(reader)
-                    label = first_row[type_col]
+                    label = first_row[label_col]
             else:
                 raise ValueError(
                     "Could not infer label from file name or :LABEL column. "
@@ -230,7 +256,7 @@ def ingest_nodes_from_file(
                 )
     query = build_node_ingestion_query(
         label=label,
-        file_name=file_name,
+        file_path=file_path,
         headers=headers,
         batch_size=batch_size,
     )
