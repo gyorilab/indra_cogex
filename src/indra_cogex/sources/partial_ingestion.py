@@ -232,9 +232,6 @@ def ingest_nodes_from_file(
     file_path = Path(file_path)
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
-    import_dir = Path("/var/lib/neo4j/import/")
-    if not file_path.is_relative_to(import_dir):
-        raise ValueError(f"File must be in {import_dir}")
     file_name = file_path.name
     headers = read_file_headers(file_path)
     if not label:
