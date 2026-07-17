@@ -532,6 +532,10 @@ def test_clinicaltrial_edges():
         assert {"tested_in", "has_trial", "has_publication"} == set(
             split_edge_files
         )
+        for rel_type, file_path in split_edge_files.items():
+            assert rel_type in file_path.name, \
+                f"File name {file_path.name} does not contain rel_type {rel_type}"
+
         tested_in_file_header = read_file_headers(split_edge_files["tested_in"])
         tested_in_file_header.remove("ref_type")
         tested_in_file_header.remove("source")
