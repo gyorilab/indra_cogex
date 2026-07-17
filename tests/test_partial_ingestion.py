@@ -18,7 +18,7 @@ def test_read_file_headers():
     with tempfile.NamedTemporaryFile(suffix=".tsv.gz") as temp_file:
         with gzip.open(temp_file.name, "wt") as f:
             csv_writer = csv.writer(f, delimiter="\t")
-            csv_writer.writerow(["header1","header2","header3"])
+            csv_writer.writerow(["header1", "header2", "header3"])
 
         headers = read_file_headers(temp_file.name)
         assert headers == ["header1", "header2", "header3"]
@@ -84,7 +84,12 @@ def test_set_expression_escape_dot():
 
 
 def test_format_set_clauses():
-    property_headers = ["prop1", "prop2:int", "prop3:string[]", "prop4:boolean[]"]
+    property_headers = [
+        "prop1",
+        "prop2:int",
+        "prop3:string[]",
+        "prop4:boolean[]",
+    ]
     query_set_clause = format_set_clauses(property_headers)
     assert query_set_clause == """\
         prop1: row['prop1'],
@@ -361,9 +366,15 @@ def test_split_edge_file_by_type():
         with gzip.open(temp_file.name, "wt") as tsv_file:
             csv_writer = csv.writer(tsv_file, delimiter="\t")
             csv_writer.writerow(header)
-            csv_writer.writerow(["start1", "end1", "TYPE_A", "val1", "1", "a;b;c", "true;false"])
-            csv_writer.writerow(["start2", "end2", "TYPE_B", "val2", "2", "d;e;f", "false;true"])
-            csv_writer.writerow(["start3", "end3", "TYPE_A", "val3", "3", "g;h;i", "true;true"])
+            csv_writer.writerow(
+                ["start1", "end1", "TYPE_A", "val1", "1", "a;b;c", "true;false"]
+            )
+            csv_writer.writerow(
+                ["start2", "end2", "TYPE_B", "val2", "2", "d;e;f", "false;true"]
+            )
+            csv_writer.writerow(
+                ["start3", "end3", "TYPE_A", "val3", "3", "g;h;i", "true;true"]
+            )
         outfiles = split_edge_file_by_type(file_path=temp_file.name)
         assert len(outfiles) == 2
         assert {"TYPE_A", "TYPE_B"} == set(outfiles)
@@ -379,8 +390,24 @@ def test_split_edge_file_by_type():
             assert type_a_header == header
             data_rows = list(reader)
             assert len(data_rows) == 2
-            assert data_rows[0] == ["start1", "end1", "TYPE_A", "val1", "1", "a;b;c", "true;false"]
-            assert data_rows[1] == ["start3", "end3", "TYPE_A", "val3", "3", "g;h;i", "true;true"]
+            assert data_rows[0] == [
+                "start1",
+                "end1",
+                "TYPE_A",
+                "val1",
+                "1",
+                "a;b;c",
+                "true;false",
+            ]
+            assert data_rows[1] == [
+                "start3",
+                "end3",
+                "TYPE_A",
+                "val3",
+                "3",
+                "g;h;i",
+                "true;true",
+            ]
 
         with gzip.open(outfiles["TYPE_B"], "rt") as f:
             reader = csv.reader(f, delimiter="\t")
@@ -388,4 +415,12 @@ def test_split_edge_file_by_type():
             assert type_b_header == header
             data_rows = list(reader)
             assert len(data_rows) == 1
-            assert data_rows[0] == ["start2", "end2", "TYPE_B", "val2", "2", "d;e;f", "false;true"]
+            assert data_rows[0] == [
+                "start2",
+                "end2",
+                "TYPE_B",
+                "val2",
+                "2",
+                "d;e;f",
+                "false;true",
+            ]
