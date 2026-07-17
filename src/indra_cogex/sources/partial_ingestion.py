@@ -467,23 +467,20 @@ def ingest_relations_from_file_by_type(
         raise FileNotFoundError(f"File not found: {file_path}")
 
     headers = read_file_headers(file_path)
+    # Get the relationship type from the file if not provided
     if not relationship_type:
-        # Get the relationship type from the file name: edges_<rel_type>.tsv.gz
-        if '_' in file_path.name:
-            relationship_type = file_path.name.split("_")[1].split(".")[0]
+        type_col = headers.index(":TYPE")
+        if type_col >= 0:
+            with gzip.open(file_path, mode="rt") as f:
+                reader = csv.reader(f, delimiter="\t")
+                next(reader)  # skip header
+                first_row = next(reader)
+                relationship_type = first_row[type_col]
         else:
-            type_col = headers.index(":TYPE")
-            if type_col >= 0:
-                with gzip.open(file_path, mode="rt") as f:
-                    reader = csv.reader(f, delimiter="\t")
-                    next(reader)  # skip header
-                    first_row = next(reader)
-                    relationship_type = first_row[type_col]
-            else:
-                raise ValueError(
-                    "Could not infer relationship type from file name or :TYPE "
-                    "column. Please provide a relationship type explicitly."
-                )
+            raise ValueError(
+                "Could not infer relationship type from file name or :TYPE "
+                "column. Please provide a relationship type explicitly."
+            )
     if isinstance(parallel_properties, str):
         parallel_properties = [parallel_properties]
 
