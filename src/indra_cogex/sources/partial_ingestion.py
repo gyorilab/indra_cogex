@@ -1,48 +1,83 @@
-"""An API for partial node ingestion via Cypher LOAD CSV.
+"""An API for partial node ingestion via Cypher's LOAD CSV.
 
-For node and edge files produced by the cogex processors with neo4j-admin import
-format, this module builds and runs batched MERGE queries when only a subset of
-nodes needs to be loaded into an existing database.
+For node and edge files produced by the cogex source processors with neo4j-admin
+import file header format, this module builds and runs batched MERGE or CREATE
+queries from specific files. This provides an opportunity to only a subset of
+nodes or relationships into an existing database.
+
+In order to be able to ingest CSV files using Cypher queries, the following
+settings need to be set for Neo4j:
+Writes to the database must be enabled (see
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.default_to_read_only,
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.read_only, and
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.writable)
+
+Optionally, a third setting which allows global file loading can also be set.
+This allows file loading outside the default import directory (e.g.,
+/var/lib/neo4j/import/ on Linux). See more at:
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_dbms.security.allow_csv_import_from_file_urls
+
+Read more about the LOAD CSV Cypher command at
+https://neo4j.com/docs/cypher-manual/current/clauses/load-csv/
+
+
+Examples:
+---------
+
+Node example:
+query = \"""\
+LOAD CSV WITH HEADERS FROM 'file:///nodes_ClinicalTrial.tsv.gz' AS row FIELDTERMINATOR '\t'
+CALL (row) {
+  MERGE (n:ClinicalTrial {id: row['id:ID']})
+  SET n += {
+    completion_year:             toInteger(row['completion_year:int']),
+    completion_year_anticipated: toBoolean(row['completion_year_anticipated:boolean']),
+    last_update_year:            toInteger(row['last_update_year:int']),
+    phase:                       toInteger(row['phase:int']),
+    randomized:                  toBoolean(row['randomized:boolean']),
+    start_year:                  toInteger(row['start_year:int']),
+    start_year_anticipated:      toBoolean(row['start_year_anticipated:boolean']),
+    status:                      row['status'],
+    study_type:                  row['study_type'],
+    why_stopped:                 row['why_stopped']
+    // Hypothetical float vector property -
+    my_array:                    CASE row['my_array:float[]']
+                                 WHEN '' THEN null
+                                 ELSE [x IN split(row['my_array:float[]'], ';') | toFloat(x)] END
+  }
+} IN TRANSACTIONS OF 10000 ROWS;\"""
+
+Edge example for tested_in relationship types:
+``
+LOAD CSV WITH HEADERS FROM 'file:///edges_clinicaltrials_tested_in.tsv.gz' AS row FIELDTERMINATOR '\t'
+CALL (row) {
+  MATCH (a:BioEntity {id: row[':START_ID']})
+  MATCH (b:ClinicalTrial {id: row[':END_ID']})
+  MERGE (a)-[r:tested_in]->(b)
+  SET r += {
+    gilda: toBoolean(row['gilda:boolean']),
+    ctgov: toBoolean(row['ctgov:boolean'])
+  }
+} IN TRANSACTIONS OF 10000 ROWS;
+``
+
+In order to create parallel edges, the MERGE clause can be replaced with
+CREATE, which will simply add another relationship. Additionally, or
+alternatively, to distinguish parallel relationships by data property, that data
+property is added to the relationship MERGE or CREATE clause:
+``
+LOAD CSV WITH HEADERS FROM 'file:///has_publication_edges.tsv.gz' AS row
+FIELDTERMINATOR '\t'
+CALL (row) {
+  MATCH (a:ClinicalTrial {id: row[':START_ID']})
+  MATCH (b:Publication {id: row[':END_ID']})
+  MERGE (a)-[r:has_publication {source: row['source']}]->(b)
+  SET r += {
+    ref_type: CASE row['ref_type'] WHEN '' THEN null ELSE row['ref_type'] END
+  }
+} IN TRANSACTIONS OF 10000 ROWS;
+``
 """
-
-
-# Node example:
-# ct_query = """\
-# LOAD CSV WITH HEADERS FROM 'file:///nodes_ClinicalTrial.tsv.gz' AS row FIELDTERMINATOR '\t'
-# CALL (row) {
-#   MERGE (n:ClinicalTrial {id: row['id:ID']})
-#   SET n += {
-#     completion_year:             toInteger(row['completion_year:int']),
-#     completion_year_anticipated: toBoolean(row['completion_year_anticipated:boolean']),
-#     last_update_year:            toInteger(row['last_update_year:int']),
-#     phase:                       toInteger(row['phase:int']),
-#     randomized:                  toBoolean(row['randomized:boolean']),
-#     start_year:                  toInteger(row['start_year:int']),
-#     start_year_anticipated:      toBoolean(row['start_year_anticipated:boolean']),
-#     status:                      row['status'],
-#     study_type:                  row['study_type'],
-#     why_stopped:                 row['why_stopped']
-#     // Hypothetical float vector property -
-#     my_array:                    CASE row['my_array:float[]']
-#                                  WHEN '' THEN null
-#                                  ELSE [x IN split(row['my_array:float[]'], ';') | toFloat(x)] END
-#     // String vector
-#   }
-# } IN TRANSACTIONS OF 10000 ROWS;"""
-#
-# Edge example:
-# query_tested_in = """\
-# LOAD CSV WITH HEADERS FROM 'file:///edges_clinicaltrials_tested_in.tsv.gz' AS row FIELDTERMINATOR '\t'
-# CALL (row) {
-#   MATCH (a:BioEntity {id: row[':START_ID']})
-#   MATCH (b:ClinicalTrial {id: row[':END_ID']})
-#   MERGE (a)-[r:tested_in]->(b)
-#   SET r += {
-#     gilda: toBoolean(row['gilda:boolean']),
-#     mesh:  toBoolean(row['mesh:boolean'])
-#   }
-# } IN TRANSACTIONS OF 10000 ROWS;"""
-
 
 import csv
 import gzip
@@ -101,7 +136,20 @@ _SCALAR_TYPE_CONVERSIONS = {
 
 
 def read_file_headers(file_path: str | Path) -> list[str]:
-    """Read the header row from a gzipped neo4j-admin node TSV file."""
+    """Read the file header row from a gzipped TSV file
+
+    Parameters
+    ----------
+    file_path :
+        Path to the gzipped TSV file. Headers are assumed to be on the first
+        line of the file.
+
+    Returns
+    -------
+    :
+        A list of strings containing the headers from the file in the order they
+        appear in the file.
+    """
     with gzip.open(file_path, "rt") as fh:
         return next(csv.reader(fh, delimiter="\t"))
 
@@ -167,7 +215,8 @@ def format_set_clauses(property_headers: list[str]) -> str:
     -------
     :
         A string containing the property assignments for the SET clause, or an
-        empty string if there are no properties to set.
+        empty string if there are no properties to set. The string is indented
+        by 8 spaces and each property assignment is on a new line.
     """
     lines = [_set_expression(header) for header in property_headers]
     return ",\n".join(f"        {line}" for line in lines) if lines else ""
@@ -180,7 +229,34 @@ def build_node_ingestion_query(
     batch_size: int = 10_000,
     import_anywhere: bool = False,
 ) -> str:
-    """Build a batched LOAD CSV query for ingesting nodes of a single label."""
+    """Build a batched LOAD CSV query for ingesting nodes of a single label
+
+    Parameters
+    ----------
+    label :
+        The Neo4j label for all nodes in the file. Note: hard coding the label
+        greatly speeds up ingestion, and it is assumed the TSV file is of only
+        one label. To split up the node file per label, see
+        ``split_node_file_by_label``.
+    file_path :
+        Path to the gzipped TSV file.
+    headers :
+        The headers from the file to use in creating the query. If not provided,
+        they will be read from the file and all headers will be used.
+    batch_size :
+        Number of rows per sub-transaction (default: 10,000).
+    import_anywhere :
+        If True, the file will be imported from the given path. If False, the
+        file is assumed to be in Neo4j's import directory e.g.,
+        ``/var/lib/neo4j/import/`` on Linux. Note: this setting is only used to
+        adapt the file path used in the query, and does not control the Neo4j
+        instance's configuration.
+
+    Returns
+    -------
+    :
+        A string containing the Cypher query to ingest the nodes with.
+    """
     if headers is None:
         headers = read_file_headers(file_path)
     validate_headers(headers)
@@ -220,8 +296,7 @@ def ingest_nodes_from_file(
     client :
         The client to use to ingest the nodes.
     file_path :
-        Path to the gzipped TSV file. Must be located in Neo4j's import
-        directory (``/var/lib/neo4j/import/``).
+        Path to the gzipped TSV file.
     label :
         The Neo4j label for all nodes in the file. If omitted, inferred from
         the file name as ``nodes_<label>.tsv.gz``. Note: This assumes there is
@@ -274,6 +349,70 @@ def build_relationship_ingestion_query(
     parallel_properties: Optional[list[str]] = None,
 ) -> str:
     """Build a batched LOAD CSV query for ingesting relationships of a single type.
+
+    Parameters
+    ----------
+    relationship_type :
+        The Neo4j relationship type for all relations in the file. Note: hard
+        coding the relationship type greatly speeds up ingestion, and it is
+        assumed the TSV file is of only one type. To split up the relationship
+        file per type, see ``split_edge_file_by_type``.
+    file_path :
+        Path to the gzipped TSV file.
+    headers :
+        The headers from the file to use in creating the query. If not provided,
+        they will be read from the file and all headers will be used.
+    start_node_label :
+        The label of the start node for the relationships.
+    end_node_label :
+        The label of the end node for the relationships.
+    batch_size :
+        Number of rows per sub-transaction (default: 10,000).
+    import_anywhere :
+        If True, the file will be imported from the given path. If False, the
+        file is assumed to be in Neo4j's import directory e.g.,
+        ``/var/lib/neo4j/import/`` on Linux. Note: this setting is only used to
+        adapt the file path used in the query, and does not control the Neo4j
+        instance's configuration.
+    parallel_edges :
+        If True, creates parallel edges instead of merging.
+    parallel_properties :
+        List of properties to use for parallel edges.
+
+    Returns
+    -------
+    :
+        A string containing the Cypher query to ingest the relationships with.
+
+    Examples
+    --------
+    Example relationship file headers and their corresponding query (using
+    default values):
+
+    Header: `:START_ID`, `:END_ID`, `:TYPE`, and `weight:float`
+    Query:
+    ``LOAD CSV WITH HEADERS FROM 'file:///edges.tsv.gz' AS row
+    FIELDTERMINATOR '\\t'
+    CALL (row) {
+        MATCH (a:StartNode {id: row[':START_ID']})
+        MATCH (b:EndNode {id: row[':END_ID']})
+        MERGE (a)-[n:rel_type]->(b)
+        SET n += {
+            weight: toFloat(row['weight:float'])
+        }
+    } IN TRANSACTIONS OF 10000 ROWS;``
+
+    Header: `:START_ID`, `:END_ID`, `:TYPE`, and `embedding:float[]`
+    ``LOAD CSV WITH HEADERS FROM 'file:///edges.tsv.gz' AS row
+    FIELDTERMINATOR '\\t'
+    CALL (row) {
+        MATCH (a:StartNode {id: row[':START_ID']})
+        MATCH (b:EndNode {id: row[':END_ID']})
+        MERGE (a)-[n:rel_type]->(b)
+        SET n += {
+            embedding: CASE row['embedding:float[]'] WHEN '' THEN null ELSE [x IN split(row['embedding:float[]'], ';') | toFloat(x)] END
+        }
+    } IN TRANSACTIONS OF 10000 ROWS;``
     """
     # Validate headers and check for the mandatory columns for relationships
     if headers is None:
@@ -336,14 +475,14 @@ def split_edge_file_by_type(
     file_path :
         Path to the gzipped TSV file
     output_dir :
-        Directory to write the split files to. If not provided, writes to same
-        path as the input relationship file
+        Directory to write the split files to. If not provided, writes to the
+         same directory as the input relationship file
 
     Returns
     -------
     :
         A dictionary where the key is the relationship type and the value is the
-        path to the split file
+        path to the split file for that relationship type
     """
     file_path = Path(file_path)
     input_lines = 0
