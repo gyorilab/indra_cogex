@@ -424,3 +424,191 @@ def test_split_edge_file_by_type():
                 "d;e;f",
                 "false;true",
             ]
+
+
+def test_node_ingestion_clinicaltrials():
+    # Testing a real-world example
+    with tempfile.NamedTemporaryFile(
+        suffix="_ClinicalTrial.tsv.gz"
+    ) as temp_file:
+        with gzip.open(temp_file.name, "wt") as tsv_file:
+            csv_writer = csv.writer(tsv_file, delimiter="\t")
+            csv_writer.writerow(
+                [
+                    "id:ID",
+                    ":LABEL",
+                    "completion_year:int",
+                    "completion_year_anticipated:boolean",
+                    "last_update_year:int",
+                    "phase:int",
+                    "randomized:boolean",
+                    "start_year:int",
+                    "start_year_anticipated:boolean",
+                    "status",
+                    "study_type",
+                    "why_stopped",
+                ]
+            )
+
+        headers = read_file_headers(temp_file.name)
+        query = build_node_ingestion_query(
+            label="ClinicalTrial",
+            file_path=temp_file.name,
+            headers=headers,
+            import_anywhere=False,
+        )
+        assert query == dedent("""\
+            LOAD CSV WITH HEADERS FROM 'file:///%s' AS row
+            FIELDTERMINATOR '\\t'
+            CALL (row) {
+                MERGE (n:ClinicalTrial {id: row['id:ID']})
+                SET n += {
+                    completion_year: toInteger(row['completion_year:int']),
+                    completion_year_anticipated: toBoolean(row['completion_year_anticipated:boolean']),
+                    last_update_year: toInteger(row['last_update_year:int']),
+                    phase: toInteger(row['phase:int']),
+                    randomized: toBoolean(row['randomized:boolean']),
+                    start_year: toInteger(row['start_year:int']),
+                    start_year_anticipated: toBoolean(row['start_year_anticipated:boolean']),
+                    status: row['status'],
+                    study_type: row['study_type'],
+                    why_stopped: row['why_stopped']
+                }
+            } IN TRANSACTIONS OF 10000 ROWS
+            """
+            ) % temp_file.name.split("/")[-1]
+
+
+def test_clinicaltrial_edges():
+    # Testing a real-world example of clinicaltrial edges
+    with tempfile.NamedTemporaryFile(
+        suffix=".tsv.gz"
+    ) as temp_file:
+        with gzip.open(temp_file.name, "wt") as tsv_file:
+            csv_writer = csv.writer(tsv_file, delimiter="\t")
+            csv_writer.writerows(
+                [
+                    [
+                        ":START_ID",
+                        ":END_ID",
+                        ":TYPE",
+                        "ctgov:boolean",
+                        "gilda:boolean",
+                        "ref_type",
+                        "source",
+                    ],
+                    [
+                        "chebi:10023",
+                        "clinicaltrials:NCT00003031",
+                        "tested_in",
+                        "true",
+                        "true",
+                        "",
+                        "",
+                    ],
+                    [
+                        "chebi:119915",
+                        "clinicaltrials:NCT01488149",
+                        "has_trial",
+                        "false",
+                        "true",
+                        "",
+                        "",
+                    ],
+                    [
+                        "clinicaltrials:NCT00000489",
+                        "pubmed:1512060",
+                        "has_publication",
+                        "",
+                        "",
+                        "BACKGROUND",
+                        "ctgov",
+                    ],
+                ]
+            )
+
+        split_edge_files = split_edge_file_by_type(file_path=temp_file.name)
+        assert len(split_edge_files) == 3
+        assert {"tested_in", "has_trial", "has_publication"} == set(
+            split_edge_files
+        )
+        tested_in_file_header = read_file_headers(split_edge_files["tested_in"])
+        tested_in_file_header.remove("ref_type")
+        tested_in_file_header.remove("source")
+        tested_in_query = build_relationship_ingestion_query(
+            relationship_type="tested_in",
+            file_path=split_edge_files["tested_in"],
+            start_node_label="BioEntity",
+            end_node_label="ClinicalTrial",
+            headers=tested_in_file_header,
+            import_anywhere=False,
+            parallel_edges=False,
+            parallel_properties=None,
+        )
+        assert tested_in_query == dedent("""\
+            LOAD CSV WITH HEADERS FROM 'file:///%s' AS row
+            FIELDTERMINATOR '\\t'
+            CALL (row) {
+                MATCH (a:BioEntity {id: row[':START_ID']})
+                MATCH (b:ClinicalTrial {id: row[':END_ID']})
+                MERGE (a)-[n:tested_in]->(b)
+                SET n += {
+                    ctgov: toBoolean(row['ctgov:boolean']),
+                    gilda: toBoolean(row['gilda:boolean'])
+                }
+            } IN TRANSACTIONS OF 10000 ROWS
+            """
+        ) % split_edge_files["tested_in"].name.split("/")[-1]
+
+        has_trial_file_header = read_file_headers(split_edge_files["has_trial"])
+        has_trial_file_header.remove("ref_type")
+        has_trial_file_header.remove("source")
+        has_trial_query = build_relationship_ingestion_query(
+            relationship_type="has_trial",
+            file_path=split_edge_files["has_trial"],
+            start_node_label="BioEntity",
+            end_node_label="ClinicalTrial",
+            headers=has_trial_file_header,
+            import_anywhere=False,
+            parallel_edges=False,
+            parallel_properties=None,
+        )
+        assert has_trial_query == dedent("""\
+        LOAD CSV WITH HEADERS FROM 'file:///%s' AS row
+        FIELDTERMINATOR '\\t'
+        CALL (row) {
+            MATCH (a:BioEntity {id: row[':START_ID']})
+            MATCH (b:ClinicalTrial {id: row[':END_ID']})
+            MERGE (a)-[n:has_trial]->(b)
+            SET n += {
+                ctgov: toBoolean(row['ctgov:boolean']),
+                gilda: toBoolean(row['gilda:boolean'])
+            }
+        } IN TRANSACTIONS OF 10000 ROWS
+        """) % split_edge_files["has_trial"].name.split("/")[-1]
+
+        has_publication_file_header = read_file_headers(split_edge_files["has_publication"])
+        has_publication_file_header.remove("ctgov:boolean")
+        has_publication_file_header.remove("gilda:boolean")
+        has_publication_query = build_relationship_ingestion_query(
+            relationship_type="has_publication",
+            file_path=split_edge_files["has_publication"],
+            start_node_label="ClinicalTrial",
+            end_node_label="Publication",
+            headers=has_publication_file_header,
+            import_anywhere=False,
+            parallel_edges=False,
+            parallel_properties=["source"],
+        )
+        assert has_publication_query == dedent("""\
+        LOAD CSV WITH HEADERS FROM 'file:///%s' AS row
+        FIELDTERMINATOR '\\t'
+        CALL (row) {
+            MATCH (a:ClinicalTrial {id: row[':START_ID']})
+            MATCH (b:Publication {id: row[':END_ID']})
+            MERGE (a)-[n:has_publication {source: row['source']}]->(b)
+            SET n += {
+                ref_type: row['ref_type']
+            }
+        } IN TRANSACTIONS OF 10000 ROWS
+        """) % split_edge_files["has_publication"].name.split("/")[-1]
