@@ -203,7 +203,7 @@ def test_build_relationship_ingestion_query_import_anywhere():
             end_node_label="EndNode",
             headers=headers,
             import_anywhere=True,
-            parallel_edges=False,
+            write_mode="MERGE",
             parallel_properties=None,
         )
         assert query == dedent("""\
@@ -247,7 +247,7 @@ def test_build_relationship_ingestion_query_restricted_import():
             end_node_label="EndNode",
             headers=headers,
             import_anywhere=False,
-            parallel_edges=False,
+            write_mode="MERGE",
             parallel_properties=None,
         )
         assert query == dedent("""\
@@ -290,7 +290,7 @@ def test_build_relationship_ingestion_query_parallel_edges():
             start_node_label="StartNode",
             end_node_label="EndNode",
             headers=headers,
-            parallel_edges=True,
+            write_mode="CREATE",
             parallel_properties=None,
         )
         assert query == dedent("""\
@@ -333,7 +333,7 @@ def test_build_relationship_ingestion_query_parallel_props():
             start_node_label="StartNode",
             end_node_label="EndNode",
             headers=headers,
-            parallel_edges=True,
+            write_mode="CREATE",
             parallel_properties=["prop1"],
         )
         assert query == dedent("""\
@@ -546,7 +546,7 @@ def test_clinicaltrial_edges():
             end_node_label="ClinicalTrial",
             headers=tested_in_file_header,
             import_anywhere=False,
-            parallel_edges=False,
+            write_mode="MERGE",
             parallel_properties=None,
         )
         assert tested_in_query == dedent("""\
@@ -574,7 +574,7 @@ def test_clinicaltrial_edges():
             end_node_label="ClinicalTrial",
             headers=has_trial_file_header,
             import_anywhere=False,
-            parallel_edges=False,
+            write_mode="MERGE",
             parallel_properties=None,
         )
         assert has_trial_query == dedent("""\
@@ -601,7 +601,7 @@ def test_clinicaltrial_edges():
             end_node_label="Publication",
             headers=has_publication_file_header,
             import_anywhere=False,
-            parallel_edges=False,
+            write_mode="MERGE",
             parallel_properties=["source"],
         )
         assert has_publication_query == dedent("""\
