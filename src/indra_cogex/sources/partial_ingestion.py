@@ -84,7 +84,7 @@ import gzip
 import logging
 from tqdm import tqdm
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 from indra_cogex.client import Neo4jClient
 from indra_cogex.sources.processor import validate_headers
@@ -93,6 +93,7 @@ from indra_cogex.sources.processor import validate_headers
 logger = logging.getLogger(__name__)
 
 
+WRITE_MODES = ["MERGE", "CREATE"]
 NODE_INGESTION_QUERY = """\
 LOAD CSV WITH HEADERS FROM 'file://{file_name}' AS row
 FIELDTERMINATOR '\\t'
@@ -345,7 +346,7 @@ def build_relationship_ingestion_query(
     headers: Optional[list[str]] = None,
     batch_size: int = 10_000,
     import_anywhere: bool = False,
-    parallel_edges: bool = False,
+    write_mode: Literal["MERGE", "CREATE"] = "MERGE",
     parallel_properties: Optional[list[str]] = None,
 ) -> str:
     """Build a batched LOAD CSV query for ingesting relationships of a single type.
@@ -374,8 +375,11 @@ def build_relationship_ingestion_query(
         ``/var/lib/neo4j/import/`` on Linux. Note: this setting is only used to
         adapt the file path used in the query, and does not control the Neo4j
         instance's configuration.
-    parallel_edges :
-        If True, creates parallel edges instead of merging.
+    write_mode :
+        The write mode for the relationships. Can be either "MERGE" or "CREATE".
+        With MERGE, if the relationship already exists, it will be updated with
+        the new properties. With CREATE, a new relationship will be created
+        regardless of existing relationships.
     parallel_properties :
         List of properties to use for parallel edges.
 
@@ -414,6 +418,10 @@ def build_relationship_ingestion_query(
         }
     } IN TRANSACTIONS OF 10000 ROWS;``
     """
+    if write_mode not in WRITE_MODES:
+        raise ValueError(
+            f"Invalid write mode: {write_mode}. Must be one of {', '.join(WRITE_MODES)}."
+        )
     # Validate headers and check for the mandatory columns for relationships
     if headers is None:
         headers = read_file_headers(file_path)
@@ -437,7 +445,6 @@ def build_relationship_ingestion_query(
 
     # Build the query
     property_headers = [h for h in headers if h not in MANDATORY_RELATIONSHIP_COLUMNS]
-    write_mode = "CREATE" if parallel_edges else "MERGE"
     if parallel_properties:
         parallel_props = " {" + ", ".join(
             [_set_expression(par_prop) for par_prop in parallel_properties]
@@ -555,7 +562,7 @@ def ingest_relations_from_file_by_type(
     relationship_type: Optional[str] = None,
     batch_size: int = 10_000,
     import_anywhere: bool = False,
-    parallel_edges: bool = False,
+    write_mode: Literal["MERGE", "CREATE"] = "MERGE",
     parallel_properties: Optional[list[str]] = None
 ):
     """Ingest relations from a neo4j-admin-format TSV file into the database.
@@ -588,10 +595,10 @@ def ingest_relations_from_file_by_type(
         ``/var/lib/neo4j/import/`` on Linux. Note: this setting is only used to
         adapt the file path used in the query, and does not control the Neo4j
         instance's configuration.
-    parallel_edges :
-        If True, duplicate relationships, defined as same start id, type, and
+    write_mode :
+        If "CREATE", duplicate relationships, defined as same start id, type, and
         end id (and properties in parallel_properties if provided), from the
-        input file will be ingested as parallel relationships. If False,
+        input file will be ingested as parallel relationships. If "MERGE",
         duplicate relationships will be overwritten by the last occurrence in
         the input file, unless parallel_properties is provided, in which case
         the relationships will be distinguished by the values of the properties
@@ -631,7 +638,7 @@ def ingest_relations_from_file_by_type(
         end_node_label=end_node_label,
         batch_size=batch_size,
         import_anywhere=import_anywhere,
-        parallel_edges=parallel_edges,
+        write_mode=write_mode,
         parallel_properties=parallel_properties,
     )
 
