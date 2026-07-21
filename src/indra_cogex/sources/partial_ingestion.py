@@ -1,19 +1,19 @@
-"""An API for partial node ingestion via Cypher's LOAD CSV.
+"""An API for partial node and relationship ingestion via Cypher's LOAD CSV.
 
 For node and edge files produced by the cogex source processors with neo4j-admin
 import file header format, this module builds and runs batched MERGE or CREATE
-queries from specific files. This provides an opportunity to only a subset of
-nodes or relationships into an existing database.
+queries from specific files. This makes it possible to ingest a subset of nodes
+or relationships into an existing database.
 
-In order to be able to ingest CSV files using Cypher queries, the following
-settings need to be set for Neo4j:
-Writes to the database must be enabled (see
+In order to be able to ingest CSV files using Cypher queries, the database needs
+to be writable. See
 https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.default_to_read_only,
-https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.read_only, and
-https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.writable)
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.read_only,
+and
+https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_server.databases.writable.
 
-Optionally, a third setting which allows global file loading can also be set.
-This allows file loading outside the default import directory (e.g.,
+Optionally, a setting which allows global file loading can also be set, which
+allows file loading outside the default import directory (e.g.,
 /var/lib/neo4j/import/ on Linux). See more at:
 https://neo4j.com/docs/operations-manual/current/configuration/configuration-settings/#config_dbms.security.allow_csv_import_from_file_urls
 
@@ -23,33 +23,35 @@ https://neo4j.com/docs/cypher-manual/current/clauses/load-csv/
 
 Examples:
 ---------
+Example query for a node file containing ClinicalTrial nodes:
 
-Node example:
-query = \"""\
-LOAD CSV WITH HEADERS FROM 'file:///nodes_ClinicalTrial.tsv.gz' AS row FIELDTERMINATOR '\t'
+LOAD CSV WITH HEADERS FROM 'file:///nodes_ClinicalTrial.tsv.gz' AS row
+FIELDTERMINATOR '\t'
 CALL (row) {
-  MERGE (n:ClinicalTrial {id: row['id:ID']})
-  SET n += {
-    completion_year:             toInteger(row['completion_year:int']),
-    completion_year_anticipated: toBoolean(row['completion_year_anticipated:boolean']),
-    last_update_year:            toInteger(row['last_update_year:int']),
-    phase:                       toInteger(row['phase:int']),
-    randomized:                  toBoolean(row['randomized:boolean']),
-    start_year:                  toInteger(row['start_year:int']),
-    start_year_anticipated:      toBoolean(row['start_year_anticipated:boolean']),
-    status:                      row['status'],
-    study_type:                  row['study_type'],
-    why_stopped:                 row['why_stopped']
-    // Hypothetical float vector property -
-    my_array:                    CASE row['my_array:float[]']
-                                 WHEN '' THEN null
-                                 ELSE [x IN split(row['my_array:float[]'], ';') | toFloat(x)] END
-  }
-} IN TRANSACTIONS OF 10000 ROWS;\"""
+    MERGE (n:ClinicalTrial {id: row['id:ID']})
+    SET n += {
+        completion_year:             toInteger(row['completion_year:int']),
+        completion_year_anticipated: toBoolean(row['completion_year_anticipated:boolean']),
+        last_update_year:            toInteger(row['last_update_year:int']),
+        phase:                       toInteger(row['phase:int']),
+        randomized:                  toBoolean(row['randomized:boolean']),
+        start_year:                  toInteger(row['start_year:int']),
+        start_year_anticipated:      toBoolean(row['start_year_anticipated:boolean']),
+        status:                      row['status'],
+        study_type:                  row['study_type'],
+        why_stopped:                 row['why_stopped']
+        // Hypothetical float vector property
+        my_array:                    CASE row['my_array:float[]']
+                                     WHEN '' THEN null
+                                     ELSE [x IN split(row['my_array:float[]'], ';') | toFloat(x)] END
+    }
+} IN TRANSACTIONS OF 10000 ROWS;
+
 
 Edge example for tested_in relationship types:
-``
-LOAD CSV WITH HEADERS FROM 'file:///edges_clinicaltrials_tested_in.tsv.gz' AS row FIELDTERMINATOR '\t'
+
+LOAD CSV WITH HEADERS FROM 'file:///edges_clinicaltrials_tested_in.tsv.gz' AS row
+FIELDTERMINATOR '\t'
 CALL (row) {
   MATCH (a:BioEntity {id: row[':START_ID']})
   MATCH (b:ClinicalTrial {id: row[':END_ID']})
@@ -59,13 +61,13 @@ CALL (row) {
     ctgov: toBoolean(row['ctgov:boolean'])
   }
 } IN TRANSACTIONS OF 10000 ROWS;
-``
+
 
 In order to create parallel edges, the MERGE clause can be replaced with
 CREATE, which will simply add another relationship. Additionally, or
 alternatively, to distinguish parallel relationships by data property, that data
 property is added to the relationship MERGE or CREATE clause:
-``
+
 LOAD CSV WITH HEADERS FROM 'file:///has_publication_edges.tsv.gz' AS row
 FIELDTERMINATOR '\t'
 CALL (row) {
@@ -76,7 +78,11 @@ CALL (row) {
     ref_type: CASE row['ref_type'] WHEN '' THEN null ELSE row['ref_type'] END
   }
 } IN TRANSACTIONS OF 10000 ROWS;
-``
+
+
+These two ways of creating (or not creating) parallel relationships are
+controlled by the parameters ``write_mode`` and ``parallel_properties`` in
+``ingest_relations_from_file_by_type``.
 """
 
 import csv
