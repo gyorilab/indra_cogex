@@ -46,6 +46,7 @@ edge_labels = {
     "variant_phenotype_association": "Variant Phenotype Associations",
     "has_activity": "Enzyme Annotations",
     "published_by": "Journal-Publisher Associations",
+    "codependent_with": "Gene knockout correlations",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
