@@ -156,35 +156,23 @@ class ClinicaltrialsProcessor(Processor):
 
     def _get_condition_intervention_relations(self):
         added = set()
-        rel_translation = {
-            "has_condition": "has_trial",
-            "has_intervention": "tested_in",
-        }
         for ix, row in tqdm.tqdm(
             self.edges_df.iterrows(), total=len(self.edges_df), desc="Edges"
         ):
-            # Conditions: use "has_trial" relation going to the trial from the condition
-            # Interventions: use "tested_in" relation going to the trial from the intervention
-            # The Trialsynth edges go from the trial to the bioentity with a
-            # has_intervention or has_condition relation. In CoGEx the edge goes
-            # from the bioentity to the trial with a tested_in or has_trial edge
-
             bioentity = row["bioentity_mapped"]
-            rel_type = rel_translation.get(row["rel_type:string"])
-            if rel_type is None:
-                raise ValueError(f"Unknown relation type: {row['rel_type:string']}")
+            rel_type = row["rel_type:string"]
 
             nctid_curie = row["trial"]
             if (bioentity, nctid_curie, rel_type) in added:
                 continue
 
-            db_ns, db_id = process_identifier(bioentity)
+            entity_ns, entity_id = process_identifier(bioentity)
             trial_ns, trial_id = process_identifier(nctid_curie)
             yield Relation(
-                source_ns=db_ns,
-                source_id=db_id,
-                target_ns=trial_ns,
-                target_id=trial_id,
+                source_ns=trial_ns,
+                source_id=trial_id,
+                target_ns=entity_ns,
+                target_id=entity_id,
                 rel_type=rel_type,
                 data={
                     "ctgov:boolean": get_bool(
