@@ -350,9 +350,9 @@ def get_trials_for_drug(
     """
     return client.get_targets(
         drug,
-        relation="tested_in",
-        source_type="BioEntity",
-        target_type="ClinicalTrial",
+        relation="has_intervention",
+        source_type="ClinicalTrial",
+        target_type="BioEntity",
     )
 
 
@@ -376,9 +376,9 @@ def get_trials_for_disease(
     """
     return client.get_targets(
         disease,
-        relation="has_trial",
-        source_type="BioEntity",
-        target_type="ClinicalTrial",
+        relation="has_condition",
+        source_type="ClinicalTrial",
+        target_type="BioEntity",
     )
 
 
@@ -402,9 +402,9 @@ def get_drugs_for_trial(
     """
     return client.get_sources(
         trial,
-        relation="tested_in",
-        source_type="BioEntity",
-        target_type="ClinicalTrial",
+        relation="has_intervention",
+        source_type="ClinicalTrial",
+        target_type="BioEntity",
     )
 
 
@@ -428,9 +428,9 @@ def get_diseases_for_trial(
     """
     return client.get_sources(
         trial,
-        relation="has_trial",
-        source_type="BioEntity",
-        target_type="ClinicalTrial",
+        relation="has_condition",
+        source_type="ClinicalTrial",
+        target_type="BioEntity",
     )
 
 
@@ -720,10 +720,11 @@ def get_trial_results_for_drug(
         The trial result nodes for trials involving the given drug.
     """
     drug_id = f"{drug[0].lower()}:{drug[1]}"
-    return client.query_nodes(
-        "MATCH (d:BioEntity {id: $drug_id})-[:tested_in]->(ct:ClinicalTrial)"
-        "-[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)"
-        " RETURN DISTINCT r",
+    return client.query_nodes("""\
+        MATCH (ct:ClinicalTrial)-[:has_intervention]->(:BioEntity {id: $drug_id})
+        MATCH (ct:ClinicalTrial)-[:has_publication]->(p:Publication)
+        MATCH (p:Publication)-[:has_trial_result]->(trial_result:TrialResult)
+        RETURN DISTINCT trial_result""",
         drug_id=drug_id,
     )
 
@@ -747,11 +748,12 @@ def get_trial_results_for_disease(
         The trial result nodes for trials involving the given disease.
     """
     disease_id = f"{disease[0].lower()}:{disease[1]}"
-    return client.query_nodes(
-        "MATCH (d:BioEntity {id: $disease_id})-[:has_trial]->(ct:ClinicalTrial)"
-        "-[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)"
-        " RETURN DISTINCT r",
-        disease_id=disease_id,
+    return client.query_nodes("""\
+        MATCH (ct:ClinicalTrial)-[:has_condition]->(:BioEntity {id: $disease_id})
+        MATCH (ct)-[:has_publication]->(p:Publication)
+        MATCH (p:Publication)-[:has_trial_result]->(trial_result:TrialResult)
+        RETURN DISTINCT trial_result""",
+        disease_id=disease_id
     )
 
 

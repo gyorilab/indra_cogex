@@ -83,13 +83,12 @@ trial_results_blueprint = flask.Blueprint(
 
 def _gene_search(ns: str, gid: str, label: str):
     """Run a trial result search via a gene (HGNC)."""
-    rows = client.query_tx(
-        """\
+    rows = client.query_tx("""\
         MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
-              -[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
+        MATCH (r:TrialResult)-[:has_genetic_criterion]->(g:BioEntity {id: $gene_id})
         OPTIONAL MATCH (ct:ClinicalTrial)-[:has_publication]->(p)
-        OPTIONAL MATCH (drug:BioEntity)-[:tested_in {ctgov: true}]->(ct)
-        OPTIONAL MATCH (disease:BioEntity)-[:has_trial {ctgov: true}]->(ct)
+        OPTIONAL MATCH (ct)-[:has_intervention {ctgov: true}]->(drug:BioEntity)
+        OPTIONAL MATCH (ct)-[:has_condition {ctgov: true}]->(disease:BioEntity)
         RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
                collect(DISTINCT ct.id) AS ct_ids,
                collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,
@@ -112,13 +111,13 @@ def _gene_search(ns: str, gid: str, label: str):
 
 
 def _run_entity_search(entity_id: str, label: str):
-    """Run a trial result search via a BioEntity, trying both tested_in and has_trial."""
-    rows = client.query_tx(
-        """\
-        MATCH (e:BioEntity {id: $entity_id})-[:tested_in|has_trial]->(ct:ClinicalTrial)
-            -[:has_publication]->(p:Publication)-[:has_trial_result]->(r:TrialResult)
-        OPTIONAL MATCH (drug:BioEntity)-[:tested_in {ctgov: true}]->(ct)
-        OPTIONAL MATCH (disease:BioEntity)-[:has_trial {ctgov: true}]->(ct)
+    """Run a trial result search via both conditions and interventions"""
+    rows = client.query_tx("""\
+        MATCH (ct:ClinicalTrial)-[:has_condition|has_intervention]->(e:BioEntity {id: $entity_id})
+        MATCH (ct:ClinicalTrial)-[:has_publication]->(p:Publication)
+        MATCH (p:Publication)-[:has_trial_result]->(r:TrialResult)
+        OPTIONAL MATCH (ct)-[:has_intervention {ctgov: true}]->(drug:BioEntity)
+        OPTIONAL MATCH (ct)-[:has_condition {ctgov: true}]->(disease:BioEntity)
         RETURN r, p.id AS pub_id, max(ct.phase) AS ct_phase,
                collect(DISTINCT ct.id) AS ct_ids,
                collect(DISTINCT {name: drug.name, id: drug.id}) AS interventions,

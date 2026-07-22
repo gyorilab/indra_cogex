@@ -37,7 +37,7 @@ def test_get_relations():
         assert relation.target_ns.lower() == "clinicaltrials"
         assert relation.target_id
         assert relation.target_id.startswith("NCT")
-        assert relation.rel_type in {"has_trial", "tested_in"}
+        assert relation.rel_type in {"has_condition", "has_intervention"}
         for prop_key, value in relation.data.items():
             data_type = prop_key.split(":")[1] if ":" in prop_key else "string"
             data_validator(data_type, value)
