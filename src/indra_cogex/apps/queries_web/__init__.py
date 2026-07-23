@@ -57,7 +57,6 @@ __all__ = [
     "analysis_ns",
     "subnetwork_ns",
     "trial_results_ns",
-    "schema_ns",
 ]
 
 # Define category descriptions
@@ -120,7 +119,6 @@ cell_line_properties_ns = Namespace("Cell Line Property Queries", CATEGORY_DESCR
 analysis_ns = Namespace("Analysis Queries", CATEGORY_DESCRIPTIONS['analysis'], path="/api")
 subnetwork_ns = Namespace("Subnetwork Queries", CATEGORY_DESCRIPTIONS['subnetwork'], path="/api")
 trial_results_ns = Namespace("Trial Results Queries", CATEGORY_DESCRIPTIONS['trial_results'], path="/api")
-schema_ns = Namespace("Schema Queries", CATEGORY_DESCRIPTIONS['schema'], path="/api")
 
 
 def get_example_data():
@@ -363,14 +361,6 @@ FUNCTION_CATEGORIES = {
             "get_full_trial_result",
         ]
     },
-    'schema': {
-        'namespace': schema_ns,
-        'functions': [
-            "get_node_counter",
-            "get_edge_counter",
-            "get_schema_graph",
-        ]
-    },
 }
 
 examples_dict = {
@@ -568,12 +558,23 @@ SKIP_ARGUMENTS = {
     "get_statements": {"mesh_term", "include_child_terms"}
 }
 
+# Functions to ignore from specific modules
+SKIP_FUNCTIONS = {
+    "queries": [
+        "get_node_counter",
+        "get_edge_counter",
+        "count_edges",
+        "get_curated_edge_counter",
+        "get_schema_graph",
+    ]
+}
+
 # This is the list of functions to be included
 # To add a new function, make sure it is part of __all__ in the respective module or is
 # listed explicitly below and properly documented in its docstring as well as having
 # example values for its parameters in the examples_dict above.
 module_functions = (
-    [(queries, fn) for fn in queries.__all__] +
+    [(queries, fn) for fn in queries.__all__ if fn not in SKIP_FUNCTIONS["queries"]] +
     [(subnetwork, fn) for fn in [
         "indra_subnetwork_relations",
         "indra_subnetwork_meta",
