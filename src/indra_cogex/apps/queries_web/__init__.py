@@ -531,12 +531,23 @@ SKIP_ARGUMENTS = {
     "get_statements": {"mesh_term", "include_child_terms"}
 }
 
+# Functions to ignore from specific modules
+SKIP_FUNCTIONS = {
+    "queries": [
+        "get_node_counter",
+        "get_edge_counter",
+        "count_edges",
+        "get_curated_edge_counter",
+        "get_schema_graph",
+    ]
+}
+
 # This is the list of functions to be included
 # To add a new function, make sure it is part of __all__ in the respective module or is
 # listed explicitly below and properly documented in its docstring as well as having
 # example values for its parameters in the examples_dict above.
 module_functions = (
-    [(queries, fn) for fn in queries.__all__] +
+    [(queries, fn) for fn in queries.__all__ if fn not in SKIP_FUNCTIONS["queries"]] +
     [(subnetwork, fn) for fn in [
         "indra_subnetwork_relations",
         "indra_subnetwork_meta",
