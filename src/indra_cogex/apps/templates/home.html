@@ -76,10 +76,9 @@
                 {{ count_column(node_counter, "Patent", "Patents", "copyright") }}
             </div>
             <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
-                {% for edge_type, _ in edge_counter.most_common() %}
-                    {% if edge_type not in ignore_labels %}
-                        {{ count_column_small(edge_counter, edge_type, edge_labels[edge_type]) }}
-                    {% endif %}
+                {% for spec in edge_specs_sorted %}
+                    {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
+                    {{ count_column_small(edge_counter, key, spec["label"]) }}
                 {% endfor %}
             </div>
         </div>
@@ -414,7 +413,8 @@
             {% for key in node_counter %}
                 $('.count-{{ key }}').counter();
             {% endfor %}
-            {% for key in edge_counter %}
+            {% for spec in edge_specs_sorted %}
+                {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
                 $('.count-{{ key }}').counter();
             {% endfor %}
         });

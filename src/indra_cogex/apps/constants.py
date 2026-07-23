@@ -1,4 +1,6 @@
+import json
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import Union
 
@@ -15,40 +17,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-edge_labels = {
-    "annotated_with": "MeSH Annotations",
-    "associated_with": "GO Annotations",
-    "has_citation": "Citations",
-    "indra_rel": "Causal Relations",
-    "expressed_in": "Gene Expressions",
-    "copy_number_altered_in": "CNVs",
-    "mutated_in": "Mutations",
-    "partof": "Part Of",
-    "has_trial": "Disease Trials",
-    "isa": "Subclasses",
-    "haspart": "Has Part",
-    "has_side_effect": "Side Effects",
-    "tested_in": "Drug Trials",
-    "sensitive_to": "Sensitivities",
-    "has_indication": "Drug Indications",
-    "has_phenotype": "Disease Phenotypes",
-    "phenotype_has_gene": "Phenotype Genes",
-    "has_publication": "Project Publications",
-    "has_clinical_trial": "Project Trials",
-    "has_patent": "Project Patents",
-    "has_marker": "Cell Markers",
-    "has_domain": "Protein Domains",
-    "gene_disease_association": "Gene Disease Associations",
-    # Links Publications to Journals
-    "published_in": "Journal Associations",
-    "variant_disease_association": "Variant Disease Associations",
-    "variant_gene_association": "Variant Gene Associations",
-    "variant_phenotype_association": "Variant Phenotype Associations",
-    "has_activity": "Enzyme Annotations",
-    "published_by": "Journal-Publisher Associations",
-    "codependent_with": "Gene knockout correlations",
-}
-
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {
     "t",
     "true",
@@ -58,11 +26,22 @@ APP_CACHE_MODULE = pystow.module("indra", "cogex", "app_cache")
 APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
+EDGE_COUNT_INFO_PATH = STATIC_DIR / "edge_count_info.json"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
 AGENT_NAME_CACHE = APP_CACHE_MODULE.join(name="search_agent_cache.pkl")
 GUNICORN_CONFIG = APPS_DIR / "gunicorn.conf.py"
+
+
+@lru_cache(1)
+def load_edge_count_info() -> list[dict]:
+    with EDGE_COUNT_INFO_PATH.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+edge_count_info = load_edge_count_info()
+
 
 # Set VUE parameters
 sources_dict = {

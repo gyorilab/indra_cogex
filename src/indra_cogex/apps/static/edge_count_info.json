@@ -1,0 +1,213 @@
+[
+  {
+    "rel_type": "annotated_with",
+    "label": "MeSH Annotations",
+    "info": "...text..."
+  },
+  {
+    "rel_type": "associated_with",
+    "label": "GO Annotations",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_citation",
+    "label": "Citations",
+    "info": "..."
+  },
+  {
+    "rel_type": "indra_rel",
+    "label": "Causal Relations",
+    "info": "..."
+  },
+  {
+    "rel_type": "expressed_in",
+    "label": "Gene Expressions",
+    "info": "..."
+  },
+  {
+    "rel_type": "copy_number_altered_in",
+    "label": "CNVs",
+    "info": "..."
+  },
+  {
+    "rel_type": "mutated_in",
+    "label": "Mutations",
+    "info": "..."
+  },
+  {
+    "rel_type": "partof",
+    "label": "Part Of",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_condition",
+    "label": "Disease Trials",
+    "info": "..."
+  },
+  {
+    "rel_type": "isa",
+    "label": "Subclasses",
+    "info": "..."
+  },
+  {
+    "rel_type": "haspart",
+    "label": "Has Part",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_side_effect",
+    "label": "Side Effects",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_intervention",
+    "label": "Drug Trials",
+    "info": "..."
+  },
+  {
+    "rel_type": "sensitive_to",
+    "label": "Sensitivities",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_indication",
+    "label": "Drug Indications",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_phenotype",
+    "label": "Disease Phenotypes",
+    "info": "..."
+  },
+  {
+    "rel_type": "phenotype_has_gene",
+    "label": "Phenotype Genes",
+    "info": "..."
+  },
+  {
+    "key": "project_publications",
+    "rel_type": "has_publication",
+    "source_label": "ResearchProject",
+    "target_label": "Publication",
+    "label": "Project Publications",
+    "info": "..."
+  },
+  {
+    "key": "trial_publications",
+    "rel_type": "has_publication",
+    "source_label": "ClinicalTrial",
+    "target_label": "Publication",
+    "label": "Trial Publications",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_clinical_trial",
+    "label": "Project Trials",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_patent",
+    "label": "Project Patents",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_marker",
+    "label": "Cell Markers",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_domain",
+    "label": "Protein Domains",
+    "info": "..."
+  },
+  {
+    "rel_type": "gene_disease_association",
+    "label": "Gene Disease Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "published_in",
+    "label": "Journal Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "variant_disease_association",
+    "label": "Variant Disease Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "variant_gene_association",
+    "label": "Variant Gene Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "variant_phenotype_association",
+    "label": "Variant Phenotype Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_activity",
+    "label": "Enzyme Annotations",
+    "info": "..."
+  },
+  {
+    "rel_type": "published_by",
+    "label": "Journal-Publisher Associations",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_trial_result",
+    "label": "Trial Results",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_arm",
+    "label": "Trial Arms",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_metric",
+    "label": "Trial Metrics",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_adverse_event",
+    "label": "Trial Adverse Events",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_inclusion_criterion",
+    "label": "Trial Inclusion Criteria",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_exclusion_criterion",
+    "label": "Trial Exclusion Criteria",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_outcome",
+    "label": "Trial Outcomes",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_statistical_comparison",
+    "label": "Trial Arm Comparisons",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_genetic_criterion",
+    "label": "Trial Genetic Eligibility",
+    "info": "..."
+  },
+  {
+    "rel_type": "has_trial_source",
+    "label": "Trial Source",
+    "info": "..."
+  },
+  {
+    "rel_type": "codependent_with",
+    "label": "Gene Knockout Correlations",
+    "info": "..."
+  }
+]
