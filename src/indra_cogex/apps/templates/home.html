@@ -26,11 +26,34 @@
         #home-decks > h3 {
             margin: 0.5em auto 1em; /* Reduced margins for section headers */
         }
+
+        .stats-summary {
+            cursor: pointer;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+        }
+
+        .stats-summary:hover {
+            background-color: rgba(0, 0, 0, .03);
+        }
+
+        .stats-chevron {
+            transition: transform .2s ease;
+        }
+
+        .stats-summary[aria-expanded="true"] .stats-chevron {
+            transform: rotate(180deg);
+        }
     </style>
 {% endblock %}
 
-{% macro count_column(counter, key, label, icon) -%}
-    <div class="col">
+{% macro count_column(counter, key, label, icon, info=None) -%}
+    <div class="col"
+         {% if info %}
+         data-toggle="tooltip"
+         data-placement="top"
+         title="{{ info }}"
+         {% endif %}>
         {% set count, suffix = format_number(counter[key]) %}
         <i class="fa fa-{{ icon }}"></i>
         <h2><span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}</h2>
@@ -38,8 +61,13 @@
     </div>
 {% endmacro %}
 
-{% macro count_column_small(counter, key, label) -%}
-    <div class="col" style="margin-bottom: 1em">
+{% macro count_column_small(counter, key, label, info=None) -%}
+    <div class="col" style="margin-bottom: 1em"
+         {% if info %}
+         data-toggle="tooltip"
+         data-placement="top"
+         title="{{ info }}"
+         {% endif %}>
         {% set count, suffix = format_number(counter[key]) %}
         <span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}<br/>
         <small>
@@ -67,19 +95,43 @@
                 relations, ontological relations, properties, and data, assembled at scale automatically from the
                 scientific literature and structured sources.
             </p>
-            <div class="row text-center stats">
-                {{ count_column(node_counter, "BioEntity", "Biological Entities", "dna") }}
-                {{ count_column(node_counter, "ClinicalTrial", "Clinical Trials", "clinic-medical") }}
-                {{ count_column(node_counter, "Publication", "Publications", "book") }}
-                {{ count_column(node_counter, "Evidence", "Evidences", "puzzle-piece") }}
-                {{ count_column(node_counter, "ResearchProject", "Research Projects", "flask") }}
-                {{ count_column(node_counter, "Patent", "Patents", "copyright") }}
+            {% set total_node_count, total_node_suffix = format_number(total_nodes) %}
+            {% set total_edge_count, total_edge_suffix = format_number(total_edges) %}
+            <div class="row text-center stats stats-summary"
+                 data-toggle="collapse"
+                 data-target="#graph-stats-details"
+                 aria-expanded="false"
+                 aria-controls="graph-stats-details"
+                 role="button"
+                 tabindex="0">
+                <div class="col">
+                    <i class="fa fa-database"></i>
+                    <h2><span class="count-total-nodes" data-to="{{ total_node_count }}" data-time="1000"></span>{{ total_node_suffix }}</h2>
+                    <p class="count-text">Nodes</p>
+                </div>
+                <div class="col">
+                    <i class="fa fa-project-diagram"></i>
+                    <h2><span class="count-total-edges" data-to="{{ total_edge_count }}" data-time="1000"></span>{{ total_edge_suffix }}</h2>
+                    <p class="count-text">Edges</p>
+                </div>
+                <div class="col-12">
+                    <small class="text-muted stats-toggle-hint">
+                        Detailed node and edge breakdown <i class="fa fa-chevron-down stats-chevron"></i>
+                    </small>
+                </div>
             </div>
-            <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
-                {% for spec in edge_specs_sorted %}
-                    {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
-                    {{ count_column_small(edge_counter, key, spec["label"]) }}
-                {% endfor %}
+            <div class="collapse" id="graph-stats-details">
+                <div class="row text-center stats">
+                    {% for spec in node_count_info %}
+                        {{ count_column(node_counter, spec["node_label"], spec["label"], spec["icon"], spec.get("info", "")) }}
+                    {% endfor %}
+                </div>
+                <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
+                    {% for spec in edge_specs_sorted %}
+                        {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
+                        {{ count_column_small(edge_counter, key, spec["label"], spec.get("info", "")) }}
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
@@ -386,37 +438,58 @@
     <script>
         (function ($) {
             $.fn.counter = function () {
-                const $this = $(this),
-                    numberFrom = 0,
-                    numberTo = parseInt($this.attr('data-to')),
-                    delta = numberTo - numberFrom,
-                    deltaPositive = delta > 0,
-                    time = parseInt($this.attr('data-time')),
-                    changeTime = 10;
+                return this.each(function () {
+                    const $this = $(this);
+                    if ($this.attr('data-counter-started')) {
+                        return;
+                    }
+                    $this.attr('data-counter-started', 'true');
 
-                let currentNumber = 0,
-                    value = delta * changeTime / time;
-                let interval1;
-                const changeNumber = () => {
-                    currentNumber += value;
-                    //checks if currentNumber reached numberTo
-                    (deltaPositive && currentNumber >= numberTo) || (!deltaPositive && currentNumber <= numberTo) ? currentNumber = numberTo : currentNumber;
-                    this.text(parseInt(currentNumber));
-                    currentNumber === numberTo ? clearInterval(interval1) : currentNumber;
-                }
+                    const numberFrom = 0,
+                        numberTo = parseInt($this.attr('data-to')),
+                        delta = numberTo - numberFrom,
+                        deltaPositive = delta > 0,
+                        time = parseInt($this.attr('data-time')),
+                        changeTime = 10;
 
-                interval1 = setInterval(changeNumber, changeTime);
+                    let currentNumber = 0,
+                        value = delta * changeTime / time;
+                    let interval1;
+                    const changeNumber = () => {
+                        currentNumber += value;
+                        //checks if currentNumber reached numberTo
+                        (deltaPositive && currentNumber >= numberTo) || (!deltaPositive && currentNumber <= numberTo) ? currentNumber = numberTo : currentNumber;
+                        $this.text(parseInt(currentNumber));
+                        currentNumber === numberTo ? clearInterval(interval1) : currentNumber;
+                    }
+
+                    interval1 = setInterval(changeNumber, changeTime);
+                });
             }
         }(jQuery));
 
         $(document).ready(function () {
-            {% for key in node_counter %}
-                $('.count-{{ key }}').counter();
-            {% endfor %}
-            {% for spec in edge_specs_sorted %}
-                {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
-                $('.count-{{ key }}').counter();
-            {% endfor %}
+            $('.count-total-nodes, .count-total-edges').counter();
+
+            $('#graph-stats-details [data-toggle="tooltip"]').tooltip({container: 'body'});
+
+            const $statsSummary = $('.stats-summary');
+            const $statsDetails = $('#graph-stats-details');
+            $statsDetails.on('shown.bs.collapse', function () {
+                $statsSummary.attr('aria-expanded', 'true');
+                $('.stats-toggle-hint').html('Hide breakdown <i class="fa fa-chevron-down stats-chevron"></i>');
+                $('#graph-stats-details [data-to]:not([data-counter-started])').counter();
+            });
+            $statsDetails.on('hidden.bs.collapse', function () {
+                $statsSummary.attr('aria-expanded', 'false');
+                $('.stats-toggle-hint').html('Show breakdown <i class="fa fa-chevron-down stats-chevron"></i>');
+            });
+            $statsSummary.on('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $statsDetails.collapse('toggle');
+                }
+            });
         });
     </script>
 {% endblock %}

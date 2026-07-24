@@ -3,7 +3,7 @@ from typing import Counter, Tuple
 
 from flask import Blueprint, current_app, render_template
 
-from indra_cogex.apps.constants import edge_count_info, pusher_key
+from indra_cogex.apps.constants import edge_count_info, node_count_info, pusher_key
 from indra_cogex.apps.proxies import client
 
 from ...client.queries import get_curated_edge_counter, get_node_counter
@@ -43,6 +43,8 @@ def _figure_number(n: int):
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
+    total_nodes = sum(node_counter.values())
+    total_edges = sum(edge_counter.values())
     edge_specs_sorted = sorted(
         edge_count_info,
         key=lambda spec: edge_counter[spec.get("key", spec["rel_type"])],
@@ -53,7 +55,10 @@ def home():
         format_number=_figure_number,
         node_counter=node_counter,
         edge_counter=edge_counter,
+        total_nodes=total_nodes,
+        total_edges=total_edges,
         edge_specs_sorted=edge_specs_sorted,
+        node_count_info=node_count_info,
         blueprints=current_app.blueprints,
         pusher_app_key=pusher_key,
     )
