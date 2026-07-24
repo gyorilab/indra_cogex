@@ -1,0 +1,56 @@
+[
+  {
+    "node_label": "BioEntity",
+    "label": "Biological Entities",
+    "icon": "dna",
+    "info": "Placeholder description for biological entities."
+  },
+  {
+    "node_label": "ClinicalTrial",
+    "label": "Clinical Trials",
+    "icon": "clinic-medical",
+    "info": "Placeholder description for clinical trials."
+  },
+  {
+    "node_label": "Publication",
+    "label": "Publications",
+    "icon": "book",
+    "info": "Placeholder description for publications."
+  },
+  {
+    "node_label": "Evidence",
+    "label": "Evidences",
+    "icon": "puzzle-piece",
+    "info": "Placeholder description for evidences."
+  },
+  {
+    "node_label": "ResearchProject",
+    "label": "Research Projects",
+    "icon": "flask",
+    "info": "Placeholder description for research projects."
+  },
+  {
+    "node_label": "Patent",
+    "label": "Patents",
+    "icon": "copyright",
+    "info": "Placeholder description for patents."
+  },
+  {
+    "node_label": "Journal",
+    "label": "Journals",
+    "icon": "newspaper",
+    "info": "Placeholder description for journals."
+  },
+  {
+    "node_label": "Publisher",
+    "label": "Publishers",
+    "icon": "building",
+    "info": "Placeholder description for publishers."
+  },
+  {
+    "node_label": "TrialResult",
+    "label": "Trial Results",
+    "icon": "clipboard-check",
+    "info": "Placeholder description for trial results."
+  }
+]

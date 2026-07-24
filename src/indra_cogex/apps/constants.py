@@ -27,6 +27,7 @@ APPS_DIR = Path(__file__).parent.absolute()
 TEMPLATES_DIR = APPS_DIR / "templates"
 STATIC_DIR = APPS_DIR / "static"
 EDGE_COUNT_INFO_PATH = STATIC_DIR / "edge_count_info.json"
+NODE_COUNT_INFO_PATH = STATIC_DIR / "node_count_info.json"
 INDRA_COGEX_EXTENSION = "indra_cogex_client"
 STATEMENT_CURATION_CACHE = "curation_cache"
 SOURCE_BADGES_CSS = STATIC_DIR / "source_badges.css"
@@ -41,6 +42,15 @@ def load_edge_count_info() -> list[dict]:
 
 
 edge_count_info = load_edge_count_info()
+
+
+@lru_cache(1)
+def load_node_count_info() -> list[dict]:
+    with NODE_COUNT_INFO_PATH.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+node_count_info = load_node_count_info()
 
 
 # Set VUE parameters
