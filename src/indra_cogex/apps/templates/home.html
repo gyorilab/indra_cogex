@@ -44,35 +44,96 @@
         .stats-summary[aria-expanded="true"] .stats-chevron {
             transform: rotate(180deg);
         }
+
+        #graph-stats-details .stats-breakdown-section {
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+            border-top: 1px solid rgba(0, 0, 0, .12);
+        }
+
+        #graph-stats-details .stats-breakdown-section:first-child {
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        #graph-stats-details .stats-breakdown-heading {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+
+        #graph-stats-details .stats-breakdown-row {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 0.4rem;
+        }
+
+        #graph-stats-details .stats-breakdown-row:last-child {
+            margin-bottom: 0;
+        }
+
+        #graph-stats-details .stats-breakdown-row--nodes .stats-breakdown-item {
+            flex: 0 0 calc(100% / 9);
+            max-width: calc(100% / 9);
+            min-width: 0;
+        }
+
+        @media (max-width: 768px) {
+            #graph-stats-details .stats-breakdown-row--nodes {
+                flex-wrap: wrap;
+            }
+
+            #graph-stats-details .stats-breakdown-row--nodes .stats-breakdown-item {
+                flex: 0 0 calc(100% / 3);
+                max-width: calc(100% / 3);
+            }
+        }
+
+        #graph-stats-details .stats-breakdown-row--edges .stats-breakdown-item {
+            flex: 0 0 calc(100% / 8);
+            max-width: calc(100% / 8);
+            min-width: 0;
+        }
+
+        #graph-stats-details .stats-breakdown-item > .col {
+            flex: none;
+            max-width: 100%;
+            width: 100%;
+            padding-left: 0.2rem;
+            padding-right: 0.2rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            line-height: 1.2;
+        }
+
+        #graph-stats-details .stats-breakdown-item small {
+            font-size: 0.75rem;
+            line-height: 1.15;
+        }
     </style>
 {% endblock %}
 
-{% macro count_column(counter, key, label, icon, info=None) -%}
+{% macro count_column_small(counter, key, label, info=None, icon=None) -%}
     <div class="col"
          {% if info %}
          data-toggle="tooltip"
          data-placement="top"
          title="{{ info }}"
          {% endif %}>
-        {% set count, suffix = format_number(counter[key]) %}
-        <i class="fa fa-{{ icon }}"></i>
-        <h2><span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}</h2>
-        <p class="count-text ">{{ label }}</p>
-    </div>
-{% endmacro %}
-
-{% macro count_column_small(counter, key, label, info=None) -%}
-    <div class="col" style="margin-bottom: 1em"
-         {% if info %}
-         data-toggle="tooltip"
-         data-placement="top"
-         title="{{ info }}"
-         {% endif %}>
+        {% if icon %}
+            <i class="fa fa-{{ icon }} fa-sm"></i><br/>
+        {% endif %}
         {% set count, suffix = format_number(counter[key]) %}
         <span class="count-{{ key }}" data-to="{{ count }}" data-time="1000"></span>{{ suffix }}<br/>
         <small>
             {% if label %}
-                {{ label|replace(" ", "&nbsp;")|safe }}
+                {{ label }}
             {% else %}
                 {{ key }}
             {% endif %}
@@ -121,15 +182,29 @@
                 </div>
             </div>
             <div class="collapse" id="graph-stats-details">
-                <div class="row text-center stats">
-                    {% for spec in node_count_info %}
-                        {{ count_column(node_counter, spec["node_label"], spec["label"], spec["icon"], spec.get("info", "")) }}
+                <div class="stats-breakdown-section">
+                    <h5 class="stats-breakdown-heading">Nodes</h5>
+                    {% for row in node_count_info|batch(9) %}
+                        <div class="stats-breakdown-row stats-breakdown-row--nodes stats">
+                            {% for spec in row %}
+                                <div class="stats-breakdown-item">
+                                    {{ count_column_small(node_counter, spec["node_label"], spec["label"], spec.get("info", ""), spec["icon"]) }}
+                                </div>
+                            {% endfor %}
+                        </div>
                     {% endfor %}
                 </div>
-                <div class="row text-center stats" style="padding-left: 3em; padding-right: 3em;">
-                    {% for spec in edge_specs_sorted %}
-                        {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
-                        {{ count_column_small(edge_counter, key, spec["label"], spec.get("info", "")) }}
+                <div class="stats-breakdown-section">
+                    <h5 class="stats-breakdown-heading">Edges</h5>
+                    {% for row in edge_specs_sorted|batch(8) %}
+                        <div class="stats-breakdown-row stats-breakdown-row--edges stats">
+                            {% for spec in row %}
+                                {% set key = spec["key"] if "key" in spec else spec["rel_type"] %}
+                                <div class="stats-breakdown-item">
+                                    {{ count_column_small(edge_counter, key, spec["label"], spec.get("info", "")) }}
+                                </div>
+                            {% endfor %}
+                        </div>
                     {% endfor %}
                 </div>
             </div>
