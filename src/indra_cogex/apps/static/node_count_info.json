@@ -3,54 +3,54 @@
     "node_label": "BioEntity",
     "label": "Biological Entities",
     "icon": "dna",
-    "info": "Placeholder description for biological entities."
+    "info": "Identified genes, proteins, small molecules, tissues, medical conditions and other biomedically relevant entitites"
   },
   {
     "node_label": "ClinicalTrial",
     "label": "Clinical Trials",
     "icon": "clinic-medical",
-    "info": "Placeholder description for clinical trials."
+    "info": "Clinical trials and their meta data from clinicaltrials.gov"
   },
   {
     "node_label": "Publication",
     "label": "Publications",
     "icon": "book",
-    "info": "Placeholder description for publications."
+    "info": "Publications registered on PubMed"
   },
   {
     "node_label": "Evidence",
     "label": "Evidences",
     "icon": "puzzle-piece",
-    "info": "Placeholder description for evidences."
+    "info": "INDRA Statement Evidences"
   },
   {
     "node_label": "ResearchProject",
     "label": "Research Projects",
     "icon": "flask",
-    "info": "Placeholder description for research projects."
+    "info": "NIH registered research projects"
   },
   {
     "node_label": "Patent",
     "label": "Patents",
     "icon": "copyright",
-    "info": "Placeholder description for patents."
+    "info": "Patents associated with NIH research projects"
   },
   {
     "node_label": "Journal",
     "label": "Journals",
     "icon": "newspaper",
-    "info": "Placeholder description for journals."
+    "info": "Scientific journals"
   },
   {
     "node_label": "Publisher",
     "label": "Publishers",
     "icon": "building",
-    "info": "Placeholder description for publishers."
+    "info": "Publishers of scientific journals"
   },
   {
     "node_label": "TrialResult",
     "label": "Trial Results",
     "icon": "clipboard-check",
-    "info": "Placeholder description for trial results."
+    "info": "LLM extracted clinical trial results from publications"
   }
 ]
