@@ -116,6 +116,8 @@ __all__ = [
     "get_network",
     # Summary functions
     "get_node_counter",
+    "count_edges",
+    "get_curated_edge_counter",
     "get_edge_counter",
     "get_schema_graph",
 ]
@@ -1698,6 +1700,81 @@ def get_prefix_counter(*, client: Neo4jClient) -> Counter:
         """MATCH (n) WITH split(n.id, ":")[0] as prefix RETURN prefix, count(prefix)"""
     )
     return Counter(dict(client.query_tx(cypher)))
+
+
+@autoclient(cache=True, maxsize=128)  # Expecting rel types to stay at < 128
+def count_edges(
+    rel_type: str,
+    *,
+    source_label: Optional[str] = None,
+    target_label: Optional[str] = None,
+    client: Neo4jClient,
+) -> int:
+    """Count edges of a given type, optionally filtered by endpoint labels
+
+    Parameters
+    ----------
+    rel_type :
+        The relationship type to count.
+    source_label :
+        The label of the source node. If None, counts all edges regardless of
+        source node label.
+    target_label :
+        The label of the target node. If None, counts all edges regardless of
+        target node label.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        The count of edges of the given type, optionally filtered by endpoint
+        labels.
+    """
+    source = f"(s:{source_label})" if source_label else "()"
+    target = f"(t:{target_label})" if target_label else "()"
+    return client.query_tx(
+        f"MATCH {source}-[r:{rel_type}]->{target} RETURN count(*)",
+        squeeze=True,
+    )[0]
+
+
+@autoclient()
+def get_curated_edge_counter(
+    edge_count_info: list[dict[str, str]], *, client: Neo4jClient
+) -> Counter:
+    """Get edge counts for a curated list of relationship specs
+
+    Parameters
+    ----------
+    edge_count_info :
+        A list of dictionaries, each containing the following keys:
+        - "rel_type": The relationship type to count.
+        - "label": The human-readable label for the relationship type. Defaults
+          to "rel_type".
+        - "info": The human-readable description of the relationship type.
+        - "key": The key to use in the returned Counter. Defaults to "rel_type".
+          This field is only used to distinguish between edges of the same
+          relationship type that are used in more than one context.
+        - "source_label": The label of the source node.
+        - "target_label": The label of the target node.
+
+    Returns
+    -------
+    :
+        A Counter containing the counts for each provided relationship type.
+    """
+    return Counter(
+        {
+            info_dict.get("key", info_dict["rel_type"]): count_edges(
+                info_dict["rel_type"],
+                source_label=info_dict.get("source_label"),
+                target_label=info_dict.get("target_label"),
+                client=client,
+            )
+            for info_dict in edge_count_info
+        }
+    )
 
 
 @autoclient(cache=True)

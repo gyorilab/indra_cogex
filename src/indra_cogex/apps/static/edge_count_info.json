@@ -1,0 +1,208 @@
+[
+  {
+    "rel_type": "annotated_with",
+    "label": "MeSH Annotations",
+    "info": "Article MeSH annotations<br>Source: ncbi.nlm.nih.gov"
+  },
+  {
+    "rel_type": "associated_with",
+    "label": "GO Annotations",
+    "info": "Gene Ontology (GO) annotations<br>Sources: geneontology.org and www.ebi.ac.uk/interpro/"
+  },
+  {
+    "rel_type": "has_citation",
+    "label": "Citations",
+    "info": "INDRA Evidence linked to a publication<br>Source: INDRA"
+  },
+  {
+    "rel_type": "indra_rel",
+    "label": "Causal Relations",
+    "info": "Casual relations extracted by INDRA as Statements<br>Source: INDRA"
+  },
+  {
+    "rel_type": "expressed_in",
+    "label": "Gene Expressions",
+    "info": "Gene Expression data connecting genes with tissues and organs they are expressed in<br>Source: bgee.org"
+  },
+  {
+    "rel_type": "copy_number_altered_in",
+    "label": "CNVs",
+    "info": "Gene copy number alteration in cell lines<br>Source: cbioportal.org"
+  },
+  {
+    "rel_type": "mutated_in",
+    "label": "Mutations",
+    "info": "Gene mutation in cell lines<br>Source: cbioportal.org"
+  },
+  {
+    "rel_type": "partof",
+    "label": "Part Of",
+    "info": "Gene complex membership<br>Source: INDRA BioOntology"
+  },
+  {
+    "rel_type": "has_trial",
+    "label": "Disease Trials",
+    "info": "Condition treated in clinical trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "isa",
+    "label": "Subclasses",
+    "info": "Gene family membership<br>Source: INDRA BioOntology"
+  },
+  {
+    "rel_type": "haspart",
+    "label": "Gene-pathway associations",
+    "info": "Genetic pathway memberships<br>Source: INDRA BioOntology"
+  },
+  {
+    "rel_type": "has_side_effect",
+    "label": "Side Effects",
+    "info": "Drug side effects<br>Source: sideeffects.embl.de"
+  },
+  {
+    "rel_type": "tested_in",
+    "label": "Drug Trials",
+    "info": "Drug (and other interventions) tested in clinical trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "sensitive_to",
+    "label": "Sensitivities",
+    "info": "Cell line drug sensitivity<br>Source: cbioportal.org"
+  },
+  {
+    "rel_type": "has_indication",
+    "label": "Drug Indications",
+    "info": "Drug indications<br>Source: www.ebi.ac.uk/chembl"
+  },
+  {
+    "rel_type": "has_phenotype",
+    "label": "Disease Phenotypes",
+    "info": "Disease phenotype annotations<br>Source: hpo.jax.org"
+  },
+  {
+    "rel_type": "phenotype_has_gene",
+    "label": "Phenotype Genes",
+    "info": "Phenotype-gene annotations<br>Source: hpo.jax.org"
+  },
+  {
+    "key": "project_publications",
+    "rel_type": "has_publication",
+    "source_label": "ResearchProject",
+    "target_label": "Publication",
+    "label": "Project Publications",
+    "info": "Publications of NIH research project with project numbers<br>Source: reporter.nih.gov/exporter/"
+  },
+  {
+    "key": "trial_publications",
+    "rel_type": "has_publication",
+    "source_label": "ClinicalTrial",
+    "target_label": "Publication",
+    "label": "Trial Publications",
+    "info": "Publications related to clinical trials<br>Sources: clinicaltrials.gov and ncbi.nlm.nih.gov"
+  },
+  {
+    "rel_type": "has_clinical_trial",
+    "label": "Project Trials",
+    "info": "Clinical trial associated with an NIH research project<br>Source: reporter.nih.gov/exporter/"
+  },
+  {
+    "rel_type": "has_patent",
+    "label": "Project Patents",
+    "info": "Patent associated with an NIH research project<br>Source: reporter.nih.gov/exporter/"
+  },
+  {
+    "rel_type": "has_marker",
+    "label": "Cell Markers",
+    "info": "Cell marker - gene associations<br>Source: xteam.xbio.top"
+  },
+  {
+    "rel_type": "has_domain",
+    "label": "Protein Domains",
+    "info": "Gene - protein domain association<br>Source: www.ebi.ac.uk/interpro/"
+  },
+  {
+    "rel_type": "gene_disease_association",
+    "label": "Gene Disease Associations",
+    "info": "Gene association with disease<br>Source: www.disgenet.org"
+  },
+  {
+    "rel_type": "published_in",
+    "label": "Journal Associations",
+    "info": "Journal used for publication<br>Source: ncbi.nlm.nih.gov"
+  },
+  {
+    "rel_type": "variant_disease_association",
+    "label": "Variant Disease Associations",
+    "info": "Genetic variant association with disease <br>Source: www.disgenet.org"
+  },
+  {
+    "rel_type": "variant_gene_association",
+    "label": "Variant Gene Associations",
+    "info": "Genetic variant - gene association<br>Source: www.ebi.ac.uk/gwas"
+  },
+  {
+    "rel_type": "variant_phenotype_association",
+    "label": "Variant Phenotype Associations",
+    "info": "Genetic variant - phenotype association<br>Source: www.ebi.ac.uk/gwas"
+  },
+  {
+    "rel_type": "has_activity",
+    "label": "Enzyme Annotations",
+    "info": "Gene - enzyme annotation<br>Source: www.genenames.org"
+  },
+  {
+    "rel_type": "published_by",
+    "label": "Journal-Publisher Associations",
+    "info": "Journals by publisher<br>Source: www.wikidata.org"
+  },
+  {
+    "rel_type": "has_trial_result",
+    "label": "Trial Results",
+    "info": "Clinical trial results<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_arm",
+    "label": "Trial Arms",
+    "info": "Clinical trial study arms<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_metric",
+    "label": "Trial Metrics",
+    "info": "Clinical trial arm metric<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_adverse_event",
+    "label": "Trial Adverse Events",
+    "info": "Clinical trial arm adverse event measurement<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_inclusion_criterion",
+    "label": "Trial Inclusion Criteria",
+    "info": "Criteria for inclusion in a clinical trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_exclusion_criterion",
+    "label": "Trial Exclusion Criteria",
+    "info": "Criteria for exclusion from the trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_outcome",
+    "label": "Trial Outcomes",
+    "info": "Clinical trial outcome<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_statistical_comparison",
+    "label": "Trial Arm Comparisons",
+    "info": "Clinical trial arms comparisons<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_genetic_criterion",
+    "label": "Trial Genetic Eligibility",
+    "info": "Genetic biomarker in clinical trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "codependent_with",
+    "label": "Gene Knockout Correlations",
+    "info": "Gene-gene correlations in knockout experiments<br>Source: depmap.org"
+  }
+]
