@@ -29,8 +29,42 @@ def _parse_entities(raw):
         out.append({"name": e.get("name") or e["id"], "ns": ns_part, "id": id_part})
     return out
 
-_TOTAL_PAPERS = 13712
-_processed_papers = None
+
+def _group_ct_ids(ct_rows):
+    grouped = {}
+    order = []
+    for row in ct_rows or []:
+        nct = row[0].split(":")[-1]
+        source = row[1]
+        ref_type = row[2]
+        if nct not in grouped:
+            grouped[nct] = []
+            order.append(nct)
+        source_data = {"source": source, "ref_type": ref_type}
+        if source_data not in grouped[nct]:
+            grouped[nct].append(source_data)
+
+    result_ncts = []
+    other_ncts = []
+    for nct in order:
+        source_data_list = grouped[nct]
+        item = {
+            "nct": nct,
+            "source_data_list": source_data_list,
+            "tooltip": "\n".join(
+                f"Source: {e['source']}; Type: {e['ref_type']}" if e["ref_type"] else f"Source: {e['source']}"
+                for e in source_data_list
+            ),
+        }
+        if any((e["ref_type"] or "").upper() == "RESULT" for e in source_data_list):
+            result_ncts.append(item)
+        else:
+            other_ncts.append(item)
+    return result_ncts, other_ncts
+
+
+_TOTAL_PAPERS = 13712  # TODO: get dynamically from the database
+_processed_papers = None  # TODO: What is this for again?
 
 
 def _get_processed_count() -> int:
@@ -225,14 +259,16 @@ def result(pmid):
     ]
 
     ct_rows = client.query_tx(
-        "MATCH (ct:ClinicalTrial)-[:has_publication]->(pub:Publication {id: $pub_id}) RETURN ct.id",
+        """\
+        MATCH (ct:ClinicalTrial)-[r:has_publication]->(pub:Publication {id: $pub_id})
+        RETURN ct.id, r.source, r.ref_type""",
         pub_id=f"pubmed:{pmid}",
     )
-    ct_ids = [row[0].split(":")[-1] for row in (ct_rows or [])]
+    result_ncts, other_ncts = _group_ct_ids(ct_rows)
 
     seen_drugs, seen_diseases = {}, {}
-    for nct_id in ct_ids:
-        trial_tuple = ("clinicaltrials", nct_id)
+    for item in result_ncts + other_ncts:
+        trial_tuple = ("clinicaltrials", item["nct"])
         for node in get_drugs_for_trial(trial_tuple, client=client):
             key = f"{node.db_ns}:{node.db_id}"
             seen_drugs[key] = node
@@ -248,7 +284,8 @@ def result(pmid):
         comparisons_data=comparisons_data,
         inclusion=inclusion,
         exclusion=exclusion,
-        ct_ids=ct_ids,
+        result_ncts=result_ncts,
+        other_ncts=other_ncts,
         drugs=list(seen_drugs.values()),
         diseases=list(seen_diseases.values()),
     )

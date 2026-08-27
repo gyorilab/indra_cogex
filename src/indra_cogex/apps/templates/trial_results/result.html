@@ -41,7 +41,55 @@
     .empty-state { color: #999; font-style: italic; font-size: 0.8rem; padding: 10px; text-align: center; }
 
     .evidence-wrap { display: inline-block; margin-left: 6px; }
-    .evidence-icon { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #1a5a8a; color: white; font-size: 10px; line-height: 14px; text-align: center; cursor: help; font-weight: bold; }
+    .evidence-icon, .nct-info-icon {
+        display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+        background: #1a5a8a; color: white; font-size: 10px; line-height: 14px;
+        text-align: center; cursor: help; font-weight: bold;
+    }
+    .nct-info-icon { cursor: pointer; vertical-align: middle; margin: 0 2px 0 4px; }
+
+    .nct-id {
+        color: #1a5a8a;
+        cursor: help;
+        text-decoration: underline dotted;
+        text-underline-offset: 2px;
+    }
+
+    .other-nct-wrap { position: relative; font-size: 0.8rem; color: #666; margin-top: 0.35rem; }
+    .other-nct-panel {
+        display: none;
+        position: absolute;
+        left: 0;
+        top: 100%;
+        z-index: 20;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        padding: 8px 12px;
+        margin-top: 4px;
+        min-width: 320px;
+        max-height: 280px;
+        overflow: auto;
+    }
+    .other-nct-panel.open { display: block; }
+    .other-nct-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .other-nct-table th {
+        text-align: left; padding: 4px 8px 4px 0; color: #777; font-weight: 600;
+        border-bottom: 1px solid #eee;
+    }
+    .other-nct-table td { padding: 4px 8px 4px 0; color: #333; }
+    .nct-more {
+        display: inline-block;
+        padding: 0 6px;
+        background: #e7f1f8;
+        color: #1a5a8a;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        line-height: 1.4;
+    }
 
     .floating-evidence-tooltip {
         display: none;
@@ -56,12 +104,21 @@
         box-shadow: 0 6px 18px rgba(0,0,0,0.2);
         font-size: 0.76rem;
         line-height: 1.45;
+        white-space: pre-line;
     }
 </style>
 {% endblock %}
 
 {% block main %}
 {% set result = data.result %}
+{% set other_visible = 3 %}
+
+{% macro nct_link(item) -%}
+<a href="https://clinicaltrials.gov/study/{{ item.nct }}"
+   class="nct-id"
+   data-evidence="{{ item.tooltip | e }}"
+   target="_blank">{{ item.nct }}</a>
+{%- endmacro %}
 
 <div class="trial-container">
 
@@ -71,14 +128,47 @@
         <h2>{{ result.data.get("study_info", "Trial Result") }}</h2>
         <div style="font-size:0.8rem; color:#666;">
             PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}/" target="_blank" style="color:#1a5a8a;">{{ pmid }}</a>
-            {% if ct_ids %} | Registry ID:
-                {% for nct in ct_ids %}
-                    <a href="https://clinicaltrials.gov/study/{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}
+            {% if result_ncts %} | Result registry ID:
+                {% for item in result_ncts %}
+                    {{ nct_link(item) }}{% if not loop.last %}, {% endif %}
                 {% endfor %}
             {% endif %}
             {% if result.data.get("phase") %} | Phase: {{ result.data.get("phase") }}{% endif %}
             {% if result.data.get("locations") %} | {{ result.data.get("locations") | join(", ") if result.data.get("locations") is iterable and result.data.get("locations") is not string else result.data.get("locations").replace(";", ", ") }}{% endif %}
         </div>
+        {% if other_ncts %}
+        <div class="other-nct-wrap">
+            Other registry IDs<span class="nct-info-icon" data-other-nct-toggle role="button" tabindex="0" aria-label="Show all other registry IDs">i</span>:
+            {% for item in other_ncts[:other_visible] %}
+                {{ nct_link(item) }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if other_ncts|length > other_visible %}
+                , <button type="button" class="nct-more" data-other-nct-toggle>+{{ other_ncts|length - other_visible }}</button>
+            {% endif %}
+            <div id="other-nct-panel" class="other-nct-panel">
+                <table class="other-nct-table">
+                    <thead>
+                        <tr>
+                            <th>Registry ID</th>
+                            <th>Source</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in other_ncts %}
+                            {% for source_data in item.source_data_list %}
+                            <tr>
+                                <td>{{ nct_link(item) }}</td>
+                                <td>{{ source_data.source or "—" }}</td>
+                                <td>{{ source_data.ref_type or "—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     {# --- 6-panel grid --- #}
@@ -339,6 +429,7 @@
 <script>
     const tooltip = document.getElementById('floating-evidence-tooltip');
     const margin = 12;
+    const tooltipSelector = '.evidence-icon, .nct-id';
 
     function positionTooltip(evt) {
         const rect = tooltip.getBoundingClientRect();
@@ -351,9 +442,9 @@
     }
 
     document.addEventListener('mouseover', function(evt) {
-        const icon = evt.target.closest('.evidence-icon');
-        if (!icon) return;
-        tooltip.textContent = icon.getAttribute('data-evidence') || '';
+        const target = evt.target.closest(tooltipSelector);
+        if (!target) return;
+        tooltip.textContent = target.getAttribute('data-evidence') || '';
         tooltip.style.display = 'block';
         positionTooltip(evt);
     });
@@ -363,7 +454,32 @@
     });
 
     document.addEventListener('mouseout', function(evt) {
-        if (evt.target.closest('.evidence-icon')) { tooltip.style.display = 'none'; }
+        if (evt.target.closest(tooltipSelector)) { tooltip.style.display = 'none'; }
+    });
+
+    const otherPanel = document.getElementById('other-nct-panel');
+    const otherToggles = document.querySelectorAll('[data-other-nct-toggle]');
+
+    function toggleOtherPanel(evt) {
+        if (!otherPanel) return;
+        evt.preventDefault();
+        evt.stopPropagation();
+        otherPanel.classList.toggle('open');
+    }
+
+    otherToggles.forEach(function(el) {
+        el.addEventListener('click', toggleOtherPanel);
+        el.addEventListener('keydown', function(evt) {
+            if (evt.key === 'Enter' || evt.key === ' ') {
+                toggleOtherPanel(evt);
+            }
+        });
+    });
+
+    document.addEventListener('click', function(evt) {
+        if (!otherPanel || !otherPanel.classList.contains('open')) return;
+        if (otherPanel.contains(evt.target) || evt.target.closest('[data-other-nct-toggle]')) return;
+        otherPanel.classList.remove('open');
     });
 </script>
 {% endblock %}
