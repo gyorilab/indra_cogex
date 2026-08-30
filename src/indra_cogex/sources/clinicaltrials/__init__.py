@@ -4,6 +4,7 @@ import logging
 
 import pandas as pd
 import tqdm
+import re
 
 from indra.ontology.bio import bio_ontology
 from indra_cogex.client import process_identifier
@@ -197,17 +198,12 @@ class ClinicaltrialsProcessor(Processor):
             added.add((bioentity, nctid_curie, rel_type))
 
 
-def or_na(x):
-    """Return None if x is NaN, otherwise return x"""
-    return None if pd.isna(x) else x
-
-
 class ClinicalTrialResultProcessor(Processor):
     """Processor for clinical trial result nodes extracted from publications.
 
-    Reads GPT-extracted grounded JSONs and emits 7 node types and 9 relation
-    types covering trial arms, metrics, adverse events, criteria, outcomes,
-    statistical comparisons, and genetic markers.
+    Reads LLM-extracted, grounded JSONs and produces 7 different types of nodes,
+    each with their own node label and 9 relationship types connecting the nodes
+    to each other.
     """
 
     name = "clinical_trial_results"
@@ -219,6 +215,7 @@ class ClinicalTrialResultProcessor(Processor):
         "TrialCriterion",
         "TrialOutcome",
         "TrialStatisticalComparison",
+        "Publication",
     ]
 
     def __init__(self):
@@ -239,13 +236,13 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.result_nodes_df),
                                 desc="TrialResult nodes"):
             yield Node(
-                db_ns="trial.result", db_id=str(row["result_id"]),
+                db_ns="trial.result",
+                db_id=str(row["result_id"]),
                 labels=["TrialResult"],
                 data={
-                    "study_info": row["study_info"],
-                    "trial_ids:string[]": row["trial_ids:string[]"],
-                    "phase": row["phase"],
-                    "locations:string[]": row["locations:string[]"],
+                    "study_info": clean_whitespace(row["study_info"]),
+                    "trial_ids:string[]": clean_whitespace(row["trial_ids:string[]"]),
+                    "locations:string[]": clean_whitespace(row["locations:string[]"]),
                 },
             )
 
@@ -253,13 +250,14 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.arms_df),
                                 desc="TrialArm nodes"):
             yield Node(
-                db_ns="trial.arm", db_id=str(row["arm_id"]),
+                db_ns="trial.arm",
+                db_id=str(row["arm_id"]),
                 labels=["TrialArm"],
                 data={
-                    "arm_name": row["arm_name"],
-                    "n:int": "" if pd.isna(row["n"]) else int(row["n"]),
-                    "dosage": row["dosage"],
-                    "source_sentence": row["source_sentence"],
+                    "arm_name": clean_whitespace(row["arm_name"]),
+                    "n:int": or_na(row["n"]),
+                    "dosage": clean_whitespace(row["dosage"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
                 },
             )
 
@@ -267,14 +265,15 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.metrics_df),
                                 desc="TrialMetric nodes"):
             yield Node(
-                db_ns="trial.metric", db_id=str(row["metric_id"]),
+                db_ns="trial.metric",
+                db_id=str(row["metric_id"]),
                 labels=["TrialMetric"],
                 data={
-                    "name": row["name"],
-                    "value_numeric:float": "" if pd.isna(row["value_numeric"]) else str(row["value_numeric"]),
-                    "unit": row["unit"],
-                    "value_text": row["value_text"],
-                    "source_sentence": row["source_sentence"],
+                    "name": clean_whitespace(row["name"]),
+                    "value_numeric:float": or_na(row["value_numeric"]),
+                    "unit": clean_whitespace(row["unit"]),
+                    "value_text": clean_whitespace(row["value_text"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
                 },
             )
 
@@ -282,14 +281,15 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.adverse_events_df),
                                 desc="TrialAdverseEvent nodes"):
             yield Node(
-                db_ns="trial.adverseevent", db_id=str(row["adverseevent_id"]),
+                db_ns="trial.adverseevent",
+                db_id=str(row["adverseevent_id"]),
                 labels=["TrialAdverseEvent"],
                 data={
-                    "event_name": row["event_name"],
-                    "incidence_numeric:float": "" if pd.isna(row["incidence_numeric"]) else str(row["incidence_numeric"]),
-                    "unit": row["unit"],
-                    "value_text": row["value_text"],
-                    "source_sentence": row["source_sentence"],
+                    "event_name": clean_whitespace(row["event_name"]),
+                    "incidence_numeric:float": or_na(row["incidence_numeric"]),
+                    "unit": clean_whitespace(row["unit"]),
+                    "value_text": clean_whitespace(row["value_text"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
                 },
             )
 
@@ -297,12 +297,13 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.criteria_df),
                                 desc="TrialCriterion nodes"):
             yield Node(
-                db_ns="trial.criterion", db_id=str(row["criterion_id"]),
+                db_ns="trial.criterion",
+                db_id=str(row["criterion_id"]),
                 labels=["TrialCriterion"],
                 data={
-                    "text": row["text"],
-                    "criterion_type": row["criterion_type"],
-                    "evidence_text": row["evidence_text"],
+                    "text": clean_whitespace(row["text"]),
+                    "criterion_type": clean_whitespace(row["criterion_type"]),
+                    "evidence_text": clean_whitespace(row["evidence_text"]),
                 },
             )
 
@@ -310,11 +311,12 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.outcomes_df),
                                 desc="TrialOutcome nodes"):
             yield Node(
-                db_ns="trial.outcome", db_id=str(row["outcome_id"]),
+                db_ns="trial.outcome",
+                db_id=str(row["outcome_id"]),
                 labels=["TrialOutcome"],
                 data={
-                    "text": row["text"],
-                    "evidence_text": row["evidence_text"],
+                    "text": clean_whitespace(row["text"]),
+                    "evidence_text": clean_whitespace(row["evidence_text"]),
                 },
             )
 
@@ -322,9 +324,22 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.stat_comparisons_df),
                                 desc="TrialStatisticalComparison nodes"):
             yield Node(
-                db_ns="trial.statcomparison", db_id=str(row["statcomparison_id"]),
+                db_ns="trial.statcomparison",
+                db_id=str(row["statcomparison_id"]),
                 labels=["TrialStatisticalComparison"],
-                data={"comparison_name": row["comparison_name"]},
+                data={
+                    "comparison_name": clean_whitespace(row["comparison_name"])
+                },
+            )
+
+        for pmid in tqdm.tqdm(self.publication_edges_df["pmid"].unique(),
+                              total=len(self.publication_edges_df["pmid"].unique()),
+                              desc="Publication nodes"):
+            yield Node(
+                db_ns="PUBMED",
+                db_id=clean_whitespace(pmid),
+                labels=["Publication"],
+                data={},
             )
 
     def get_relations(self):
@@ -332,8 +347,10 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.publication_edges_df),
                                 desc="Publication->TrialResult"):
             yield Relation(
-                source_ns="PUBMED", source_id=row["pmid"],
-                target_ns="trial.result", target_id=str(row["result_id"]),
+                source_ns="PUBMED",
+                source_id=clean_whitespace(row["pmid"]),
+                target_ns="trial.result",
+                target_id=str(row["result_id"]),
                 rel_type="has_trial_result",
             )
 
@@ -341,18 +358,27 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.arms_df),
                                 desc="TrialResult->TrialArm"):
             yield Relation(
-                source_ns="trial.result", source_id=str(row["result_id"]),
-                target_ns="trial.arm", target_id=str(row["arm_id"]),
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.arm",
+                target_id=str(row["arm_id"]),
                 rel_type="has_arm",
             )
 
-        for _, row in tqdm.tqdm(self.metrics_df.iterrows(),
-                                total=len(self.metrics_df),
-                                desc="TrialArm/TrialComparison->TrialMetric"):
-            parent_ns = "trial.arm" if row["parent_ns"] == "arm" else "trial.statcomparison"
+        for _, row in tqdm.tqdm(
+            self.metrics_df.iterrows(),
+            total=len(self.metrics_df),
+            desc="TrialArm/TrialComparison->TrialMetric",
+        ):
+            if row["parent_ns"] == "arm":
+                parent_ns = "trial.arm"
+            else:
+                parent_ns = "trial.statcomparison"
             yield Relation(
-                source_ns=parent_ns, source_id=str(row["parent_id"]),
-                target_ns="trial.metric", target_id=str(row["metric_id"]),
+                source_ns=parent_ns,
+                source_id=str(row["parent_id"]),
+                target_ns="trial.metric",
+                target_id=str(row["metric_id"]),
                 rel_type="has_metric",
             )
 
@@ -360,22 +386,25 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.adverse_events_df),
                                 desc="TrialArm->TrialAdverseEvent"):
             yield Relation(
-                source_ns="trial.arm", source_id=str(row["arm_id"]),
-                target_ns="trial.adverseevent", target_id=str(row["adverseevent_id"]),
+                source_ns="trial.arm",
+                source_id=str(row["arm_id"]),
+                target_ns="trial.adverseevent",
+                target_id=str(row["adverseevent_id"]),
                 rel_type="has_adverse_event",
             )
 
         for _, row in tqdm.tqdm(self.criteria_df.iterrows(),
                                 total=len(self.criteria_df),
                                 desc="TrialResult->TrialCriterion"):
-            rel_type = (
-                "has_inclusion_criterion"
-                if row["criterion_type"] == "inclusion"
-                else "has_exclusion_criterion"
-            )
+            if row["criterion_type"] == "inclusion":
+                rel_type = "has_inclusion_criterion"
+            else:
+                rel_type = "has_exclusion_criterion"
             yield Relation(
-                source_ns="trial.result", source_id=str(row["result_id"]),
-                target_ns="trial.criterion", target_id=str(row["criterion_id"]),
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.criterion",
+                target_id=str(row["criterion_id"]),
                 rel_type=rel_type,
             )
 
@@ -383,17 +412,23 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.outcomes_df),
                                 desc="TrialResult->TrialOutcome"):
             yield Relation(
-                source_ns="trial.result", source_id=str(row["result_id"]),
-                target_ns="trial.outcome", target_id=str(row["outcome_id"]),
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.outcome",
+                target_id=str(row["outcome_id"]),
                 rel_type="has_outcome",
             )
 
-        for _, row in tqdm.tqdm(self.stat_comparisons_df.iterrows(),
-                                total=len(self.stat_comparisons_df),
-                                desc="TrialResult->TrialStatisticalComparison"):
+        for _, row in tqdm.tqdm(
+            self.stat_comparisons_df.iterrows(),
+            total=len(self.stat_comparisons_df),
+            desc="TrialResult->TrialStatisticalComparison",
+        ):
             yield Relation(
-                source_ns="trial.result", source_id=str(row["result_id"]),
-                target_ns="trial.statcomparison", target_id=str(row["statcomparison_id"]),
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.statcomparison",
+                target_id=str(row["statcomparison_id"]),
                 rel_type="has_statistical_comparison",
             )
 
@@ -401,8 +436,10 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.genetic_edges_df),
                                 desc="TrialResult->Gene"):
             yield Relation(
-                source_ns="trial.result", source_id=str(row["result_id"]),
-                target_ns="HGNC", target_id=row["hgnc_id"],
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="HGNC",
+                target_id=row["hgnc_id"],
                 rel_type="has_genetic_criterion",
             )
 
@@ -410,22 +447,38 @@ class ClinicalTrialResultProcessor(Processor):
                                 total=len(self.ae_bioentity_edges_df),
                                 desc="TrialAdverseEvent->BioEntity"):
             yield Relation(
-                source_ns="trial.adverseevent", source_id=str(row["adverseevent_id"]),
-                target_ns=row["db"], target_id=row["id"],
+                source_ns="trial.adverseevent",
+                source_id=str(row["adverseevent_id"]),
+                target_ns=row["db"],
+                target_id=row["id"],
                 rel_type="adverse_event_grounded_as",
             )
 
-        for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
-                                total=len(self.result_nodes_df),
-                                desc="TrialResult->ClinicalTrial"):
-            trial_ids_raw = row.get("trial_ids:string[]", "")
-            if pd.isna(trial_ids_raw) or not trial_ids_raw:
-                continue
-            for nct_id in str(trial_ids_raw).split(";"):
-                nct_id = nct_id.strip()
-                if nct_id and nct_id.upper().startswith("NCT"):
-                    yield Relation(
-                        source_ns="trial.result", source_id=str(row["result_id"]),
-                        target_ns="clinicaltrials", target_id=nct_id,
-                        rel_type="has_trial_source",
-                    )
+        # The TrialResults are already linked to ClinicalTrials:
+        # ClinicalTrials -> Publication -> TrialResults
+        # for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
+        #                         total=len(self.result_nodes_df),
+        #                         desc="TrialResult->ClinicalTrial"):
+        #     trial_ids_raw = row.get("trial_ids:string[]", "")
+        #     if pd.isna(trial_ids_raw) or not trial_ids_raw:
+        #         continue
+        #     for nct_id in str(trial_ids_raw).split(";"):
+        #         nct_id = nct_id.strip()
+        #         if nct_id and nct_id.upper().startswith("NCT"):
+        #             yield Relation(
+        #                 source_ns="trial.result",
+        #                 source_id=str(row["result_id"]),
+        #                 target_ns="clinicaltrials",
+        #                 target_id=nct_id,
+        #                 rel_type="has_trial_source",
+        #             )
+
+
+def or_na(x):
+    """Return None if x is NaN, otherwise return x"""
+    return None if pd.isna(x) else x
+
+
+def clean_whitespace(s: str) -> str:
+    """Replace whitespace with a single space and strip it"""
+    return re.sub(r'\s+', ' ', s).strip()
