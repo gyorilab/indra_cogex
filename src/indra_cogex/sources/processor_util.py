@@ -187,6 +187,8 @@ def data_validator(data_type: str, value: Any):
                         f"type int, but got value of type str with value "
                         f"'{val}' instead."
                     ) from e
+            if isinstance(val, float):
+                val = int(val)
             if not isinstance(val, int):
                 raise DataTypeError(
                     f"Data value '{val}' is of the wrong type to conform with "
@@ -208,6 +210,8 @@ def data_validator(data_type: str, value: Any):
                         f"type float, but got value of type str with value "
                         f"'{val}' instead."
                     ) from e
+            if isinstance(val, int):
+                val = float(val)
             if not isinstance(val, float):
                 raise DataTypeError(
                     f"Data value '{val}' is of the wrong type to conform with "
