@@ -14,6 +14,7 @@ from indra.ontology.bio import bio_ontology
 from indra_cogex.client import process_identifier
 from indra_cogex.representation import dump_norm_id
 from trialsynth.ctgov import config, process
+from trialsynth.base.extract.paths import RESULTS_GROUNDED_DIR
 
 
 def _clean(text: str) -> str:
@@ -392,11 +393,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     return trials_nodes_df
 
 
-# Path to the directory containing GPT-extracted grounded JSON files.
-JSON_DIR = pystow.join("indra", "cogex", "clinical_trial_results", "grounded")
-
-
-def _load_jsons(json_dir: Path = JSON_DIR) -> List[Tuple[int, str, dict]]:
+def _load_jsons(json_dir: Path = RESULTS_GROUNDED_DIR) -> List[Tuple[int, str, dict]]:
     """Load all grounded JSON files, returning (result_id, pmid, data) tuples.
 
     Parameters
