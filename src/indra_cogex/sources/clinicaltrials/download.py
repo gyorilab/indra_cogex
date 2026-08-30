@@ -393,7 +393,7 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     return trials_nodes_df
 
 
-def _load_jsons(json_dir: Path = RESULTS_GROUNDED_DIR) -> List[Tuple[int, str, dict]]:
+def _load_jsons(json_dir: Path = RESULTS_GROUNDED_DIR.base) -> List[Tuple[int, str, dict]]:
     """Load all grounded JSON files, returning (result_id, pmid, data) tuples.
 
     Parameters
@@ -418,7 +418,7 @@ def _load_jsons(json_dir: Path = RESULTS_GROUNDED_DIR) -> List[Tuple[int, str, d
     return records
 
 
-def load_all(json_dir: Path = JSON_DIR) -> Dict[str, pd.DataFrame]:
+def load_all(json_dir: Path = RESULTS_GROUNDED_DIR.base) -> Dict[str, pd.DataFrame]:
     """Load all grounded JSONs in a single pass and return all DataFrames.
 
     Parameters
