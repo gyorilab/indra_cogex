@@ -295,7 +295,8 @@ def ingest_nodes_from_file(
     file_path: str | Path,
     label: Optional[str] = None,
     batch_size: int = 10_000,
-):
+    run_query: bool = True
+) -> Optional[str]:
     """Ingest nodes from a neo4j-admin-format TSV file into the database.
 
     Parameters
@@ -310,6 +311,15 @@ def ingest_nodes_from_file(
         only one label.
     batch_size :
         Number of rows per sub-transaction (default: 10,000).
+    run_query :
+        If True, the query will be executed. If False, the query will be
+        returned as a string.
+
+    Returns
+    -------
+    :
+        If ``run_query`` is False, returns the Cypher query string to ingest the
+        nodes. If ``run_query`` is True, returns None.
     """
     file_path = Path(file_path)
     if not file_path.exists():
@@ -339,9 +349,14 @@ def ingest_nodes_from_file(
         headers=headers,
         batch_size=batch_size,
     )
-    logger.info(f"Running ingestion query:\n{query}")
-    with client.driver.session() as session:
-        session.run(query)
+    if run_query:
+        logger.info(f"Running ingestion query:\n{query}")
+        with client.driver.session() as session:
+            session.run(query)
+    else:
+        print("run_query set to 'False'. Returning query string instead of "
+              "running it.")
+        return query
 
 
 def build_relationship_ingestion_query(
@@ -569,8 +584,9 @@ def ingest_relations_from_file_by_type(
     batch_size: int = 10_000,
     import_anywhere: bool = False,
     write_mode: Literal["MERGE", "CREATE"] = "MERGE",
-    parallel_properties: Optional[list[str]] = None
-):
+    parallel_properties: Optional[list[str]] = None,
+    run_query: bool = True,
+) -> Optional[str]:
     """Ingest relations from a neo4j-admin-format TSV file into the database.
 
     Parameters
@@ -608,11 +624,21 @@ def ingest_relations_from_file_by_type(
         duplicate relationships will be overwritten by the last occurrence in
         the input file, unless parallel_properties is provided, in which case
         the relationships will be distinguished by the values of the properties
-        in parallel_properties.
+        in parallel_properties. Default: "MERGE".
     parallel_properties :
         List of file headers that should be used to distinguish parallel
         relationships. If provided, a property match will be added for each of
-        these properties on the relationship MERGE clause.
+        these properties on the relationship MERGE clause. Default: None.
+    run_query :
+        If True, the query will be executed. If False, the query will be
+        returned as a string. Default: True.
+
+    Returns
+    -------
+    :
+        If ``run_query`` is False, returns the Cypher query string to ingest the
+        relationships. If ``run_query`` is True, runs the query and returns
+        None. Default: True.
     """
     file_path = Path(file_path)
     if not file_path.exists():
@@ -648,8 +674,13 @@ def ingest_relations_from_file_by_type(
         parallel_properties=parallel_properties,
     )
 
-    logger.info(
-        f"Running ingestion query for relationship type '{relationship_type}':\n{query}"
-    )
-    with client.driver.session() as session:
-        session.run(query)
+    if run_query:
+        logger.info(
+            f"Running ingestion query for relationship type '{relationship_type}':\n{query}"
+        )
+        with client.driver.session() as session:
+            session.run(query)
+    else:
+        print("run_query set to 'False'. Returning query string instead of "
+              "running it.")
+        return query
