@@ -63,8 +63,7 @@ def _group_ct_ids(ct_rows):
     return result_ncts, other_ncts
 
 
-_TOTAL_PAPERS = 13712  # TODO: get dynamically from the database
-_processed_papers = None  # TODO: What is this for again?
+_processed_papers = None
 
 
 def _get_processed_count() -> int:
@@ -149,7 +148,6 @@ def search():
                 "trial_results/search.html",
                 error="Please enter a search term.",
                 processed=_get_processed_count(),
-                total=_TOTAL_PAPERS,
             )
 
         if query.isdigit():
@@ -193,7 +191,6 @@ def search():
                             "or disease (e.g. breast cancer)."
                         ),
                         processed=_get_processed_count(),
-                        total=_TOTAL_PAPERS,
                     )
 
         return render_template(
@@ -201,14 +198,12 @@ def search():
             gene_query=search_label,
             gene_results=search_results,
             processed=_get_processed_count(),
-            total=_TOTAL_PAPERS,
         )
     error_pmid = request.args.get("error")
     return render_template(
         "trial_results/search.html",
         error=f"No trial result found for PMID {error_pmid}." if error_pmid else None,
         processed=_get_processed_count(),
-        total=_TOTAL_PAPERS,
     )
 
 
