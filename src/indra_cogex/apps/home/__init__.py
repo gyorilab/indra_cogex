@@ -43,8 +43,6 @@ def _figure_number(n: int):
 def home():
     """Render the home page."""
     node_counter, edge_counter = _get_counters()
-    total_nodes = sum(node_counter.values())
-    total_edges = sum(edge_counter.values())
     edge_specs_sorted = sorted(
         edge_count_info,
         key=lambda spec: edge_counter[spec.get("key", spec["rel_type"])],
@@ -55,8 +53,6 @@ def home():
         format_number=_figure_number,
         node_counter=node_counter,
         edge_counter=edge_counter,
-        total_nodes=total_nodes,
-        total_edges=total_edges,
         edge_specs_sorted=edge_specs_sorted,
         node_count_info=node_count_info,
         blueprints=current_app.blueprints,

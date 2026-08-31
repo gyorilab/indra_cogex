@@ -157,25 +157,13 @@
                 relations, ontological relations, properties, and data, assembled at scale automatically from the
                 scientific literature and structured sources.
             </p>
-            {% set total_node_count, total_node_suffix = format_number(total_nodes) %}
-            {% set total_edge_count, total_edge_suffix = format_number(total_edges) %}
-            <div class="row text-center stats stats-summary"
+            <div class="row text-center stats-summary"
                  data-toggle="collapse"
                  data-target="#graph-stats-details"
                  aria-expanded="false"
                  aria-controls="graph-stats-details"
                  role="button"
                  tabindex="0">
-                <div class="col">
-                    <i class="fa fa-database"></i>
-                    <h2><span class="count-total-nodes" data-to="{{ total_node_count }}" data-time="1000"></span>{{ total_node_suffix }}</h2>
-                    <p class="count-text">Nodes</p>
-                </div>
-                <div class="col">
-                    <i class="fa fa-project-diagram"></i>
-                    <h2><span class="count-total-edges" data-to="{{ total_edge_count }}" data-time="1000"></span>{{ total_edge_suffix }}</h2>
-                    <p class="count-text">Edges</p>
-                </div>
                 <div class="col-12">
                     <small class="text-muted stats-toggle-hint">
                         Detailed node and edge breakdown <i class="fa fa-chevron-down stats-chevron"></i>
@@ -545,8 +533,6 @@
         }(jQuery));
 
         $(document).ready(function () {
-            $('.count-total-nodes, .count-total-edges').counter();
-
             $('#graph-stats-details [data-toggle="tooltip"]').tooltip({container: 'body'});
 
             const $statsSummary = $('.stats-summary');
