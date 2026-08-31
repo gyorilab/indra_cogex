@@ -348,7 +348,7 @@ def get_trials_for_drug(
     :
         The trials for the given drug.
     """
-    return client.get_targets(
+    return client.get_sources(
         drug,
         relation="has_intervention",
         source_type="ClinicalTrial",
@@ -374,7 +374,7 @@ def get_trials_for_disease(
     :
         The trials for the given disease.
     """
-    return client.get_targets(
+    return client.get_sources(
         disease,
         relation="has_condition",
         source_type="ClinicalTrial",
@@ -400,7 +400,7 @@ def get_drugs_for_trial(
     :
         The drugs for the given trial.
     """
-    return client.get_sources(
+    return client.get_targets(
         trial,
         relation="has_intervention",
         source_type="ClinicalTrial",
@@ -426,7 +426,7 @@ def get_diseases_for_trial(
     :
         The diseases for the given trial.
     """
-    return client.get_sources(
+    return client.get_targets(
         trial,
         relation="has_condition",
         source_type="ClinicalTrial",
