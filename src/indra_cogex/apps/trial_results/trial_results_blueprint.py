@@ -267,7 +267,7 @@ def result(pmid):
     result_ncts, other_ncts = _group_ct_ids(ct_rows)
 
     seen_drugs, seen_diseases = {}, {}
-    for item in result_ncts + other_ncts:
+    for item in result_ncts:
         trial_tuple = ("clinicaltrials", item["nct"])
         for node in get_drugs_for_trial(trial_tuple, client=client):
             key = f"{node.db_ns}:{node.db_id}"
