@@ -557,12 +557,20 @@ module_functions = (
 # Maps function names to the actual functions
 func_mapping = {fname: getattr(module, fname) for module, fname in module_functions}
 
-# Validate that all functions in func_mapping are registered in FUNCTION_CATEGORIES.
-# This catches the common mistake of adding a function to module_functions but forgetting
-# to add it to FUNCTION_CATEGORIES, which would cause a runtime error later.
+# Validate that FUNCTION_CATEGORIES and func_mapping agree.
+# Missing callables are an error because they would fail when creating resources.
+# Uncategorized callables (e.g. get_schema_graph) are skipped by the resource loop.
 _registered_functions = set()
 for _category, _info in FUNCTION_CATEGORIES.items():
     _registered_functions.update(_info['functions'])
+
+_missing_from_mapping = _registered_functions - set(func_mapping.keys())
+if _missing_from_mapping:
+    raise ValueError(
+        f"The following functions are registered in FUNCTION_CATEGORIES but "
+        f"missing from func_mapping: {sorted(_missing_from_mapping)}. "
+        f"Add them to module_functions so they can be resolved."
+    )
 
 _unregistered_functions = set(func_mapping.keys()) - _registered_functions
 if _unregistered_functions:
@@ -573,110 +581,98 @@ if _unregistered_functions:
     )
 
 # Clean up temporary variables
-del _registered_functions, _unregistered_functions
+del _registered_functions, _missing_from_mapping, _unregistered_functions
 
-# Create resource for each query function
-for module, func_name in module_functions:
-    if not isfunction(getattr(module, func_name)) or func_name == "get_schema_graph":
-        continue
-
-    func = getattr(module, func_name)
-    func_sig = signature(func)
-    client_param = func_sig.parameters.get("client")
-    if client_param is None:
-        continue
-
-    # Find the appropriate namespace for this function
-    target_ns = None
-    for category, info in FUNCTION_CATEGORIES.items():
-        if func_name in info['functions']:
-            target_ns = info['namespace']
-            break
-
-    if target_ns is None:
-        raise ValueError(
-            f"Function '{func_name}' missing from api category mapping. Please add "
-            f"it to FUNCTION_CATEGORIES."
-        )
-
-    try:
-        short_doc, fixed_doc = get_docstring(
-            func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
-        )
-    except ValueError as e:
-        raise ValueError(
-            f"Error processing docstring for function '{func_name}': {e}"
-        ) from e
-
-    param_names = list(func_sig.parameters.keys())
-    param_names.remove("client")
-
-    model_name = f"{func_name}_model"
-
-    for param_name in param_names:
-        if param_name in SKIP_GLOBAL:
+# Create resource for each query function listed in FUNCTION_CATEGORIES
+for _category, info in FUNCTION_CATEGORIES.items():
+    target_ns = info["namespace"]
+    for func_name in info["functions"]:
+        func = func_mapping[func_name]
+        if not isfunction(func):
             continue
-        if param_name in SKIP_ARGUMENTS.get(func_name, set()):
+
+        func_sig = signature(func)
+        client_param = func_sig.parameters.get("client")
+        if client_param is None:
             continue
-        if param_name not in examples_dict:
-            raise KeyError(
-                f"Missing example for parameter '{param_name}' in function '{func_name}'"
+
+        try:
+            short_doc, fixed_doc = get_docstring(
+                func, skip_params=SKIP_GLOBAL | SKIP_ARGUMENTS.get(func_name, set())
             )
+        except ValueError as e:
+            raise ValueError(
+                f"Error processing docstring for function '{func_name}': {e}"
+            ) from e
 
-    # Get the parameters name for the other parameter that is not 'client'
-    query_model = target_ns.model(
-        model_name,
-        {
-            param_name: (
-                # If param has function-specific examples
-                examples_dict[param_name].get(func_name, examples_dict[param_name]["default"])
-                if isinstance(examples_dict[param_name], dict)
-                # If param has same example for all functions
-                else examples_dict[param_name]
-            )
-            for param_name in param_names
-            if param_name not in SKIP_GLOBAL
-               and param_name not in SKIP_ARGUMENTS.get(func_name, [])
-        },
-    )
+        param_names = list(func_sig.parameters.keys())
+        param_names.remove("client")
 
+        model_name = f"{func_name}_model"
 
-    @target_ns.expect(query_model)
-    @target_ns.route(f"/{func_name}", doc={"summary": short_doc})
-    class QueryResource(Resource):
-        """A resource for a query."""
-
-        func_name = func_name
-
-        def post(self):
-            """Get a query."""
-            json_dict = request.json
-            if json_dict is None:
-                abort(
-                    code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                    message="Missing application/json header or json body",
+        for param_name in param_names:
+            if param_name in SKIP_GLOBAL:
+                continue
+            if param_name in SKIP_ARGUMENTS.get(func_name, set()):
+                continue
+            if param_name not in examples_dict:
+                raise KeyError(
+                    f"Missing example for parameter '{param_name}' in function '{func_name}'"
                 )
 
-            try:
-                parsed_query = parse_json(json_dict)
-                result = func_mapping[self.func_name](**parsed_query, client=client)
+        # Get the parameters name for the other parameter that is not 'client'
+        query_model = target_ns.model(
+            model_name,
+            {
+                param_name: (
+                    # If param has function-specific examples
+                    examples_dict[param_name].get(func_name, examples_dict[param_name]["default"])
+                    if isinstance(examples_dict[param_name], dict)
+                    # If param has same example for all functions
+                    else examples_dict[param_name]
+                )
+                for param_name in param_names
+                if param_name not in SKIP_GLOBAL
+                   and param_name not in SKIP_ARGUMENTS.get(func_name, [])
+            },
+        )
 
-                # Any 'is' type query
-                if isinstance(result, bool):
-                    return jsonify({self.func_name: result})
-                else:
-                    return jsonify(process_result(result))
+        @target_ns.expect(query_model)
+        @target_ns.route(f"/{func_name}", doc={"summary": short_doc})
+        class QueryResource(Resource):
+            """A resource for a query."""
 
-            except ParseError as err:
-                logger.error(err)
-                abort(code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, message=str(err))
+            func_name = func_name
 
-            except ValueError as err:
-                logger.error(err)
-                abort(code=HTTPStatus.BAD_REQUEST, message=str(err))
+            def post(self):
+                """Get a query."""
+                json_dict = request.json
+                if json_dict is None:
+                    abort(
+                        code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                        message="Missing application/json header or json body",
+                    )
 
-            except Exception as err:
-                logger.error(err)
-                abort(code=HTTPStatus.INTERNAL_SERVER_ERROR)
+                try:
+                    parsed_query = parse_json(json_dict)
+                    result = func_mapping[self.func_name](**parsed_query, client=client)
 
-        post.__doc__ = fixed_doc
+                    # Any 'is' type query
+                    if isinstance(result, bool):
+                        return jsonify({self.func_name: result})
+                    else:
+                        return jsonify(process_result(result))
+
+                except ParseError as err:
+                    logger.error(err)
+                    abort(code=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, message=str(err))
+
+                except ValueError as err:
+                    logger.error(err)
+                    abort(code=HTTPStatus.BAD_REQUEST, message=str(err))
+
+                except Exception as err:
+                    logger.error(err)
+                    abort(code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+            post.__doc__ = fixed_doc
