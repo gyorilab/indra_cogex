@@ -13,6 +13,7 @@ from indra_cogex.sources.processor_util import (
     UnknownTypeError,  # If data_type is not recognized as a Neo4j data type
     NewLineInStringError,  # Raised when a string value contains a newline character
     InfinityValueError,  # Raised when a float value is +/-infinity
+    NaNValueError,  # Raised when a float value or string is NaN or 'nan'
     LabelNotAllowedError,  # Raised when a node label is not in the allowed set
     DuplicateNodeIDError,  # Raised when duplicate node IDs are found
     MissingNodeIDError,  # Raised when an edge file is missing an ID
@@ -115,6 +116,33 @@ def test_infinity_error():
     except Exception as e:
         assert isinstance(e, InfinityValueError)
         assert "infinity" in str(e)
+
+
+def test_nan_error():
+    try:
+        data_validator("float", float("nan"))
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NaNValueError)
+        assert "NaN" in str(e)
+    try:
+        data_validator("float", "nan")
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NaNValueError)
+        assert "NaN" in str(e)
+    try:
+        data_validator("string", "nan")
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NaNValueError)
+        assert "NaN" in str(e)
+    try:
+        data_validator("string", float("nan"))
+        assert False, "Expected exception"
+    except Exception as e:
+        assert isinstance(e, NaNValueError)
+        assert "NaN" in str(e)
 
 
 class MockProcessor(Processor, object):
@@ -487,7 +515,7 @@ def test_duplicate_node_id_check_bad():
         path = Path(temp_dir) / "nodes.tsv.gz"
 
         # Write a nodes file with duplicate IDs
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(["id:ID", ":LABEL"])
             writer.writerow(["ns:1", "LabelA"])
@@ -507,7 +535,7 @@ def test_duplicate_node_id_check_good():
         path = Path(temp_dir) / "nodes.tsv.gz"
 
         # Write a nodes file without duplicate IDs
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(["id:ID", ":LABEL"])
             writer.writerow(["ns:1", "LabelA"])
@@ -524,7 +552,7 @@ def test_missing_node_id_bad():
         path = Path(temp_dir) / "edges.tsv.gz"
 
         # Write an edges file
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(
                 [
@@ -553,7 +581,7 @@ def test_missing_node_id_good():
         path = Path(temp_dir) / "edges.tsv.gz"
 
         # Write an edges file
-        with gzip.open(path, "wt") as f:
+        with gzip.open(path, "wt", newline="") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerow(
                 [

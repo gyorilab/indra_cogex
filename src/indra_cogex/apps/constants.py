@@ -46,6 +46,16 @@ edge_labels = {
     "variant_phenotype_association": "Variant Phenotype Associations",
     "has_activity": "Enzyme Annotations",
     "published_by": "Journal-Publisher Associations",
+    "has_trial_result": "Trial Results",
+    "has_arm": "Trial Arms",
+    "has_metric": "Trial Metrics",
+    "has_adverse_event": "Trial Adverse Events",
+    "has_inclusion_criterion": "Trial Inclusion Criteria",
+    "has_exclusion_criterion": "Trial Exclusion Criteria",
+    "has_outcome": "Trial Outcomes",
+    "has_statistical_comparison": "Trial Arm Comparisons",
+    "has_genetic_criterion": "Trial Genetic Eligibility",
+    "has_trial_source": "Trial Source",
 }
 
 INDRA_COGEX_WEB_LOCAL = (get_config("INDRA_COGEX_WEB_LOCAL") or "").lower() in {

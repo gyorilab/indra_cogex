@@ -12,7 +12,7 @@ from .cbioportal import (
 )
 from .cellmarker import CellMarkerProcessor
 from .chembl import ChemblIndicationsProcessor
-from .clinicaltrials import ClinicaltrialsProcessor
+from .clinicaltrials import ClinicaltrialsProcessor, ClinicalTrialResultProcessor
 from .disgenet import DisgenetProcessor
 from .ec import HGNCEnzymeProcessor
 from .goa import GoaProcessor
@@ -42,6 +42,7 @@ __all__ = [
     "CcleMutationsProcessor",
     "CcleDrugResponseProcessor",
     "ClinicaltrialsProcessor",
+    "ClinicalTrialResultProcessor",
     "ChemblIndicationsProcessor",
     "SIDERSideEffectProcessor",
     "EvidenceProcessor",

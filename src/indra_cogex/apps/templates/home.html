@@ -183,12 +183,11 @@
             </div>
         </div>
 
-
         <!-- Directed Exploration Section with consistent spacing -->
         <h3 class="text-center">Directed Exploration</h3>
         <div class="card-deck" style="margin-bottom: 1em;">
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px" src="{{ url_for('static', filename='search/images/role_button3.png') }}">
+                <img class="card-img-top" style="height: 100px; object-fit: contain;" src="{{ url_for('static', filename='search/images/role_button3.png') }}">
                 <div class="card-body">
                     <h5 class="card-title">Search assembled statements</h5>
                     <p class="card-text">
@@ -198,8 +197,7 @@
                 {{ start_button('search.search', '/search/') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
-                     src="{{ url_for("static", filename="pathway.png") }}">
+                <div class="card-img-top" style="height: 100px; background: url('{{ url_for("static", filename="pathway.png") }}') no-repeat center 60% / 70%;"></div>
                 <div class="card-body">
                     <h5 class="card-title">GO Pathway Explorer</h5>
                     <p class="card-text">
@@ -209,8 +207,7 @@
                 {{ start_button('explorer.gene_ontology') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
-                     src="https://i.pinimg.com/originals/62/69/1d/62691dff8b3005c8064a0738ddb35aa0.jpg">
+                <div class="card-img-top" style="height: 100px; background: url('https://i.pinimg.com/originals/62/69/1d/62691dff8b3005c8064a0738ddb35aa0.jpg') no-repeat center / 70%;"></div>
                 <div class="card-body">
                     <h5 class="card-title">Topic Explorer</h5>
                     <p class="card-text">
@@ -219,8 +216,10 @@
                 </div>
                 {{ start_button('explorer.mesh') }}
             </div>
+        </div>
+        <div class="card-deck" style="margin-bottom: 1em;">
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://images.theconversation.com/files/45159/original/rptgtpxd-1396254731.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=754&fit=clip">
                 <div class="card-body">
                     <h5 class="card-title">Publication Explorer</h5>
@@ -231,7 +230,7 @@
                 {{ start_button('explorer.paper') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://www.keysight.com/content/dam/keysight/en/img/prd/ixia-homepage-redirect/network-visibility-and-network-test-products/Network-Monitoring.jpg">
                 <div class="card-body">
                     <h5 class="card-title">Subnetwork Explorer</h5>
@@ -241,13 +240,27 @@
                 </div>
                 {{ start_button('explorer.subnetwork') }}
             </div>
+            <div class="card">
+                <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
+                    <img style="max-height: 100px; max-width: 100%; object-fit: contain;"
+                         src="{{ url_for("static", filename="trial_results.png") }}"
+                         alt="Clinical Trial Results">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Clinical Trial Results</h5>
+                    <p class="card-text">
+                        Browse and search structured clinical trial results by publication or gene.
+                    </p>
+                </div>
+                {{ start_button('trial_results.search', '/trial-results/') }}
+            </div>
         </div>
 
         <!-- Proteocentric Exploration Section with consistent spacing -->
         <h3 class="text-center">Proteocentric Exploration</h3>
         <div class="card-deck" style="margin-bottom: 0.8em;">
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://www2.lbl.gov/Science-Articles/Archive/images1/TF-proteins.gif">
                 <div class="card-body">
                     <h5 class="card-title">TF Explorer</h5>
@@ -259,7 +272,7 @@
                 {{ start_button('explorer.tf') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://upload.wikimedia.org/wikipedia/commons/2/24/Riboflavin_kinase.png?20140204011711">
                 <div class="card-body">
                     <h5 class="card-title">Kinase Explorer</h5>
@@ -271,7 +284,7 @@
                 {{ start_button('explorer.kinase') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://upload.wikimedia.org/wikipedia/commons/7/79/Calcineurin.png?20070203003651">
                 <div class="card-body">
                     <h5 class="card-title">Phosphatase Explorer</h5>
@@ -283,7 +296,7 @@
                 {{ start_button('explorer.phosphatase') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://labsyspharm.github.io/dubportal/dubwheel.jpg">
                 <div class="card-body">
                     <h5 class="card-title">Deubiquitinase Explorer</h5>
@@ -311,7 +324,7 @@
                 {{ start_button('explorer.goa') }}
             </div>
             {# <div class="card">
-                <img class="card-img-top" style="max-height: 100px" alt="conflict resolution image"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;" alt="conflict resolution image"
                      src="https://www.gabek.com/wp-content/uploads/2013/02/konfliktloesung.png">
                 <div class="card-body">
                     <h5 class="card-title">Conflict Resolver</h5>
@@ -322,7 +335,7 @@
                 {{ start_button('curator.conflicts') }}
             </div> #}
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://upload.wikimedia.org/wikipedia/commons/5/56/1dfj_RNAseInhibitor-RNAse_complex.jpg">
                 <div class="card-body">
                     <h5 class="card-title">PPI Explorer</h5>
@@ -349,7 +362,7 @@
                 {{ start_button('explorer.mirna') }}
             </div>
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://upload.wikimedia.org/wikipedia/commons/b/bb/1a5r_SUMO-1_protein.gif">
                 <div class="card-body">
                     <h5 class="card-title">Disorder Explorer</h5>
@@ -365,7 +378,7 @@
         {# <h3 class="text-center">Chemocentric Curation</h3>
         <div class="card-deck">
             <div class="card">
-                <img class="card-img-top" style="max-height: 100px"
+                <img class="card-img-top" style="height: 100px; object-fit: contain;"
                      src="https://council.science/wp-content/uploads/2017/04/IUPAC-feature-image-1400x600.jpg">
                 <div class="card-body">
                     <h5 class="card-title">Modulator Curator</h5>

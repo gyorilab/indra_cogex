@@ -11,12 +11,26 @@ from indra_cogex.sources.depmap.constants import SUBMODULE
 
 # DepMap API
 URL = "https://depmap.org/portal/download/api/downloads"
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json,text/plain,*/*",
+    "Referer": "https://depmap.org/portal/download/",
+}
 
 
 @lru_cache(1)
 def get_downloads_table():
     """Get the full downloads table from the DepMap API."""
-    return requests.get(URL).json()
+    with requests.Session() as session:
+        resp = session.get(URL, headers=HEADERS, timeout=30)
+        resp.raise_for_status()
+        if "application/json" not in (resp.headers.get("content-type") or ""):
+            raise RuntimeError(f"Unexpected content type: {resp.headers.get('content-type')}")
+        return resp.json()
 
 
 @lru_cache(1)

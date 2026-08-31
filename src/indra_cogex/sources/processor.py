@@ -37,6 +37,7 @@ from indra_cogex.sources.processor_util import (
     UnknownTypeError,
     NewLineInStringError,
     InfinityValueError,
+    NaNValueError,
     LabelNotAllowedError,
 )
 
@@ -204,6 +205,9 @@ class Processor(ABC):
         except InfinityValueError as e:
             logger.error(f"Infinity value detected in node data values for {processor_name}")
             raise e
+        except NaNValueError as e:
+            logger.error(f"NaN detected in node data values for {processor_name}")
+            raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in node data values for {processor_name}")
             raise e
@@ -221,13 +225,13 @@ class Processor(ABC):
         )
 
         seen_ids = set()
-        with gzip.open(nodes_path, mode=write_mode) as node_file:
+        with gzip.open(nodes_path, mode=write_mode, encoding="utf-8") as node_file:
             node_writer = csv.writer(node_file, delimiter="\t")  # type: ignore
             # Only add header when writing to a new file
             if write_mode == "wt":
                 node_writer.writerow(header)
             if sample_path:
-                with sample_path.open("w") as node_sample_file:
+                with sample_path.open("w", encoding="utf-8") as node_sample_file:
                     node_sample_writer = csv.writer(node_sample_file, delimiter="\t")
                     node_sample_writer.writerow(header)
                     for _, node_row in zip(range(10), node_rows):
@@ -274,6 +278,9 @@ class Processor(ABC):
         except InfinityValueError as e:
             logger.error(f"Infinity value detected in edge data values for {self.name}")
             raise e
+        except NaNValueError as e:
+            logger.error(f"NaN detected in edge data values for {self.name}")
+            raise e
         except NewLineInStringError as e:
             logger.error(f"Newline in string detected in edge data values for {self.name}")
             raise e
@@ -291,7 +298,7 @@ class Processor(ABC):
             for rel in tqdm(rels, desc="Edges", unit_scale=True)
         )
 
-        with gzip.open(self.edges_path, mode=write_mode) as edge_file:
+        with gzip.open(self.edges_path, mode=write_mode, encoding="utf-8") as edge_file:
             edge_writer = csv.writer(edge_file, delimiter="\t")  # type: ignore
 
             # Only add header when writing to a new file
@@ -319,6 +326,11 @@ def assert_valid_node(
         if data and data.get("evidence:string"):
             ev = Evidence._from_json(json.loads(data["evidence:string"]))
             assert_valid_evidence(ev)
+    elif db_ns in {
+        "trial.result", "trial.arm", "trial.metric", "trial.adverseevent",
+        "trial.criterion", "trial.outcome", "trial.statcomparison",
+    }:
+        pass
     else:
         assert_valid_db_refs({db_ns: db_id})
 
@@ -374,6 +386,8 @@ def validate_nodes(
         If a data type does not match the value set in the header.
     InfinityValueError
         If an infinity value is detected in the data.
+    NaNValueError
+        If a NaN value is detected in the data.
     NewLineInStringError
         If a newline character is detected in the data.
     LabelNotAllowedError
@@ -409,6 +423,10 @@ def validate_nodes(
         except InfinityValueError as e:
             logger.error(f"{idx}: {node} - {e}")
             logger.error("Infinity value detected")
+            raise e
+        except NaNValueError as e:
+            logger.error(f"{idx}: {node} - {e}")
+            logger.error("NaN detected")
             raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {node} - {e}")
@@ -453,6 +471,8 @@ def validate_relations(
         If a data type does not match the value set in the header.
     InfinityValueError
         If an infinity value is detected in the data.
+    NaNValueError
+        If a NaN value is detected in the data.
     NewLineInStringError
         If a newline character is detected in a string value.
     """
@@ -481,6 +501,10 @@ def validate_relations(
         except InfinityValueError as e:
             logger.error(f"{idx}: {rel} - {e}")
             logger.error("Infinity value detected")
+            raise e
+        except NaNValueError as e:
+            logger.error(f"{idx}: {rel} - {e}")
+            logger.error("NaN detected")
             raise e
         except NewLineInStringError as e:
             logger.error(f"{idx}: {rel} - {e}")

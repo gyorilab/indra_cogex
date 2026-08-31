@@ -356,6 +356,10 @@ def _stmt_to_row(
     if remove_medscan and "medscan" in sources:
         del sources["medscan"]
 
+    # Only include sources with a non-zero evidence count
+    # _get_available_ev_source_counts initializes all INDRA sources to 0.
+    sources = {k: v for k, v in sources.items() if v}
+
     badges = [
         {
             "label": "evidence",

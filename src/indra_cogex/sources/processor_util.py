@@ -4,6 +4,7 @@
 # for available data types.
 import csv
 import gzip
+import math
 from tqdm import tqdm
 from typing import Literal, Any, Union
 
@@ -74,6 +75,10 @@ class InfinityValueError(ValueError):
     """Raised when a float value is infinity."""
 
 
+class NaNValueError(ValueError):
+    """Raised when a value is interpreted as NaN."""
+
+
 class DuplicateNodeIDError(ValueError):
     """Raised when a duplicate node ID is found in a node file."""
 
@@ -111,6 +116,26 @@ def _check_noinfinity(value: Union[float | str]):
             if fval == float("inf") or fval == float("-inf"):
                 raise InfinityValueError(
                     f"Float value '{value}' is infinity, which is not allowed in Neo4j."
+                )
+
+
+def _check_notnan(value: Union[str, float]):
+    if isinstance(value, float) and math.isnan(value):
+        raise NaNValueError(
+            f"Float value '{value}' is NaN, which is not allowed in Neo4j."
+        )
+    if isinstance(value, str):
+        try:
+            fval = float(value)
+        except ValueError:
+            # Not convertible to float (this is properly checked elsewhere, so
+            # no need to raise an Error here)
+            pass
+        else:
+            # Is convertible to float
+            if math.isnan(fval):
+                raise NaNValueError(
+                    f"Float value '{value}' is NaN, which is not allowed in Neo4j."
                 )
 
 
@@ -162,6 +187,8 @@ def data_validator(data_type: str, value: Any):
                         f"type int, but got value of type str with value "
                         f"'{val}' instead."
                     ) from e
+            if isinstance(val, float):
+                val = int(val)
             if not isinstance(val, int):
                 raise DataTypeError(
                     f"Data value '{val}' is of the wrong type to conform with "
@@ -183,13 +210,17 @@ def data_validator(data_type: str, value: Any):
                         f"type float, but got value of type str with value "
                         f"'{val}' instead."
                     ) from e
+            if isinstance(val, int):
+                val = float(val)
             if not isinstance(val, float):
                 raise DataTypeError(
                     f"Data value '{val}' is of the wrong type to conform with "
                     f"Neo4j type {data_type}. Expected a value of type float, "
                     f"but got value of type {type(val)} instead."
                 )
+            # val is now guaranteed to be a float
             _check_noinfinity(val)
+            _check_notnan(val)
     elif data_type == "boolean":
         for val in value_list:
             if not isinstance(val, str) or val not in ("true", "false"):
@@ -235,7 +266,9 @@ def data_validator(data_type: str, value: Any):
                     f"Neo4j type {data_type}. Expected a value of type str, "
                     f"int or float, but got value of type {type(val)} instead."
                 )
+            # val is now guaranteed to be a str
             _check_no_newlines(val)
+            _check_notnan(val)
     elif data_type == "point":
         raise NotImplementedError(
             "Neo4j point data type validation is not implemented"
@@ -291,7 +324,7 @@ def check_duplicated_nodes(nodes_tsv_gz_file) -> set[str]:
     """
     # Check for duplicate node IDs in the nodes_tsv_gz_file
     node_ids = set()
-    with gzip.open(nodes_tsv_gz_file, "rt") as f:
+    with gzip.open(nodes_tsv_gz_file, "rt", newline="") as f:
         tqdm.write(f"Checking {nodes_tsv_gz_file}")
         reader = csv.reader(f, delimiter="\t")
         header = next(reader)
@@ -323,7 +356,7 @@ def check_missing_node_ids_in_edges(edges_tsv_gz_file, node_ids: set[str]):
         If a node ID in the edges file does not exist in the nodes file.
     """
     # Check for missing node IDs in the edges_tsv_gz_file
-    with gzip.open(edges_tsv_gz_file, "rt") as f:
+    with gzip.open(edges_tsv_gz_file, "rt", newline="") as f:
         reader = csv.reader(f, delimiter="\t")
         header = next(reader)
         start_id_index = header.index(":START_ID")

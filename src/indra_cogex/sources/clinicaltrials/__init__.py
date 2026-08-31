@@ -4,6 +4,7 @@ import logging
 
 import pandas as pd
 import tqdm
+import re
 
 from indra.ontology.bio import bio_ontology
 from indra_cogex.client import process_identifier
@@ -13,8 +14,10 @@ from indra_cogex.sources.utils import get_bool
 from indra_cogex.sources.clinicaltrials.download import (
     ensure_clinical_trials_df,
     process_trialsynth_edges,
+    process_trialsynth_trial_publication_edges,
     process_trialsynth_bioentity_nodes,
-    process_trialsynth_trial_nodes
+    process_trialsynth_trial_nodes,
+    load_all,
 )
 
 
@@ -41,6 +44,7 @@ class ClinicaltrialsProcessor(Processor):
         # Warm up bio ontology
         _ = bio_ontology.get_name("HGNC", "1100")
         self.edges_df = process_trialsynth_edges()
+        self.publication_trial_edges_df = process_trialsynth_trial_publication_edges()
         self.mesh_chebi_map = {
             old_id: new_id for new_id, old_id in
             self.edges_df[["bioentity_mapped", "bioentity"]].values
@@ -49,7 +53,26 @@ class ClinicaltrialsProcessor(Processor):
         self.bioentities_df = process_trialsynth_bioentity_nodes(self.mesh_chebi_map)
 
     def get_nodes(self):
+        yield from self._get_trial_bioentity_nodes()
+        yield from self._get_publication_nodes()
+
+    def _get_publication_nodes(self):
+        for pmid in tqdm.tqdm(
+            self.publication_trial_edges_df["pmid"].unique(),
+            total=len(self.publication_trial_edges_df),
+            desc="Publication nodes",
+        ):
+            yield Node(
+                db_ns="PUBMED",
+                db_id=str(pmid),
+                labels=["Publication"],
+                data={},
+            )
+
+    def _get_trial_bioentity_nodes(self):
         yielded_nodes = set()
+
+        # Get trial nodes from trials_df
         for ix, row in tqdm.tqdm(
             self.trials_df.iterrows(), total=len(self.trials_df), desc="Trial nodes"
         ):
@@ -82,6 +105,7 @@ class ClinicaltrialsProcessor(Processor):
                 },
             )
 
+        # Get bioentity nodes from bioentities_df
         for ix, row in tqdm.tqdm(
             self.bioentities_df.iterrows(), total=len(self.bioentities_df), desc="BioEntity nodes"
         ):
@@ -98,6 +122,39 @@ class ClinicaltrialsProcessor(Processor):
             )
 
     def get_relations(self):
+        yield from self._get_condition_intervention_relations()
+        yield from self._get_publication_trial_relations()
+
+    def _get_publication_trial_relations(self):
+        for ix, (trial_curie, pmid, _, source, ref_type) in tqdm.tqdm(
+            self.publication_trial_edges_df.iterrows(), total=len(self.publication_trial_edges_df), desc="Publication-Trial edges"
+        ):
+            # Skip relations to trial IDs not present in trials_df.
+            # Spot-checking of the trials that were present in the
+            # trial-publication relations but missing from trials_df gave that
+            # most of the trials in this set were missing from clinicaltrials.gov,
+            # thereforere they are skipped
+            if trial_curie not in self.trials_df["id:ID"].values:
+                continue
+            trial_ns, trial_id = process_identifier(trial_curie)
+
+            yield Relation(
+                source_ns=trial_ns,
+                source_id=trial_id,
+                target_ns="PUBMED",
+                target_id=str(pmid),
+                rel_type="has_publication",
+                data={
+                    # ref_type is only available for relations sourced from
+                    # clinicaltrials.gov; see reference processing in the
+                    # trialsynth.ctgov.fetch module. For relations sourced from
+                    # PubMed, ref_type is None.
+                    "ref_type": or_na(ref_type),
+                    "source": source,
+                },
+            )
+
+    def _get_condition_intervention_relations(self):
         added = set()
         rel_translation = {
             "has_condition": "has_trial",
@@ -129,10 +186,299 @@ class ClinicaltrialsProcessor(Processor):
                 target_ns=trial_ns,
                 target_id=trial_id,
                 rel_type=rel_type,
+                data={
+                    "ctgov:boolean": get_bool(
+                        "mesh" in row["grounding_sources:string[]"]
+                    ),
+                    "gilda:boolean": get_bool(
+                        "gilda" in row["grounding_sources:string[]"]
+                    ),
+                },
             )
             added.add((bioentity, nctid_curie, rel_type))
+
+
+class ClinicalTrialResultProcessor(Processor):
+    """Processor for clinical trial result nodes extracted from publications.
+
+    Reads LLM-extracted, grounded JSONs and produces 7 different types of nodes,
+    each with their own node label and 9 relationship types connecting the nodes
+    to each other.
+    """
+
+    name = "clinical_trial_results"
+    node_types = [
+        "TrialResult",
+        "TrialArm",
+        "TrialMetric",
+        "TrialAdverseEvent",
+        "TrialCriterion",
+        "TrialOutcome",
+        "TrialStatisticalComparison",
+        "Publication",
+    ]
+
+    def __init__(self):
+        data = load_all()
+        self.result_nodes_df = data["result_nodes"]
+        self.arms_df = data["arms"]
+        self.metrics_df = data["metrics"]
+        self.adverse_events_df = data["adverse_events"]
+        self.criteria_df = data["criteria"]
+        self.outcomes_df = data["outcomes"]
+        self.stat_comparisons_df = data["stat_comparisons"]
+        self.genetic_edges_df = data["genetic_edges"]
+        self.ae_bioentity_edges_df = data["ae_bioentity_edges"]
+        self.publication_edges_df = data["publication_edges"]
+
+    def get_nodes(self):
+        for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
+                                total=len(self.result_nodes_df),
+                                desc="TrialResult nodes"):
+            yield Node(
+                db_ns="trial.result",
+                db_id=str(row["result_id"]),
+                labels=["TrialResult"],
+                data={
+                    "study_info": clean_whitespace(row["study_info"]),
+                    "trial_ids:string[]": clean_whitespace(row["trial_ids:string[]"]),
+                    "locations:string[]": clean_whitespace(row["locations:string[]"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.arms_df.iterrows(),
+                                total=len(self.arms_df),
+                                desc="TrialArm nodes"):
+            yield Node(
+                db_ns="trial.arm",
+                db_id=str(row["arm_id"]),
+                labels=["TrialArm"],
+                data={
+                    "arm_name": clean_whitespace(row["arm_name"]),
+                    "n:int": or_na(row["n"]),
+                    "dosage": clean_whitespace(row["dosage"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.metrics_df.iterrows(),
+                                total=len(self.metrics_df),
+                                desc="TrialMetric nodes"):
+            yield Node(
+                db_ns="trial.metric",
+                db_id=str(row["metric_id"]),
+                labels=["TrialMetric"],
+                data={
+                    "name": clean_whitespace(row["name"]),
+                    "value_numeric:float": or_na(row["value_numeric"]),
+                    "unit": clean_whitespace(row["unit"]),
+                    "value_text": clean_whitespace(row["value_text"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.adverse_events_df.iterrows(),
+                                total=len(self.adverse_events_df),
+                                desc="TrialAdverseEvent nodes"):
+            yield Node(
+                db_ns="trial.adverseevent",
+                db_id=str(row["adverseevent_id"]),
+                labels=["TrialAdverseEvent"],
+                data={
+                    "event_name": clean_whitespace(row["event_name"]),
+                    "incidence_numeric:float": or_na(row["incidence_numeric"]),
+                    "unit": clean_whitespace(row["unit"]),
+                    "value_text": clean_whitespace(row["value_text"]),
+                    "source_sentence": clean_whitespace(row["source_sentence"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.criteria_df.iterrows(),
+                                total=len(self.criteria_df),
+                                desc="TrialCriterion nodes"):
+            yield Node(
+                db_ns="trial.criterion",
+                db_id=str(row["criterion_id"]),
+                labels=["TrialCriterion"],
+                data={
+                    "text": clean_whitespace(row["text"]),
+                    "criterion_type": clean_whitespace(row["criterion_type"]),
+                    "evidence_text": clean_whitespace(row["evidence_text"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.outcomes_df.iterrows(),
+                                total=len(self.outcomes_df),
+                                desc="TrialOutcome nodes"):
+            yield Node(
+                db_ns="trial.outcome",
+                db_id=str(row["outcome_id"]),
+                labels=["TrialOutcome"],
+                data={
+                    "text": clean_whitespace(row["text"]),
+                    "evidence_text": clean_whitespace(row["evidence_text"]),
+                },
+            )
+
+        for _, row in tqdm.tqdm(self.stat_comparisons_df.iterrows(),
+                                total=len(self.stat_comparisons_df),
+                                desc="TrialStatisticalComparison nodes"):
+            yield Node(
+                db_ns="trial.statcomparison",
+                db_id=str(row["statcomparison_id"]),
+                labels=["TrialStatisticalComparison"],
+                data={
+                    "comparison_name": clean_whitespace(row["comparison_name"])
+                },
+            )
+
+        for pmid in tqdm.tqdm(self.publication_edges_df["pmid"].unique(),
+                              total=len(self.publication_edges_df["pmid"].unique()),
+                              desc="Publication nodes"):
+            yield Node(
+                db_ns="PUBMED",
+                db_id=clean_whitespace(pmid),
+                labels=["Publication"],
+                data={},
+            )
+
+    def get_relations(self):
+        for _, row in tqdm.tqdm(self.publication_edges_df.iterrows(),
+                                total=len(self.publication_edges_df),
+                                desc="Publication->TrialResult"):
+            yield Relation(
+                source_ns="PUBMED",
+                source_id=clean_whitespace(row["pmid"]),
+                target_ns="trial.result",
+                target_id=str(row["result_id"]),
+                rel_type="has_trial_result",
+            )
+
+        for _, row in tqdm.tqdm(self.arms_df.iterrows(),
+                                total=len(self.arms_df),
+                                desc="TrialResult->TrialArm"):
+            yield Relation(
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.arm",
+                target_id=str(row["arm_id"]),
+                rel_type="has_arm",
+            )
+
+        for _, row in tqdm.tqdm(
+            self.metrics_df.iterrows(),
+            total=len(self.metrics_df),
+            desc="TrialArm/TrialComparison->TrialMetric",
+        ):
+            if row["parent_ns"] == "arm":
+                parent_ns = "trial.arm"
+            else:
+                parent_ns = "trial.statcomparison"
+            yield Relation(
+                source_ns=parent_ns,
+                source_id=str(row["parent_id"]),
+                target_ns="trial.metric",
+                target_id=str(row["metric_id"]),
+                rel_type="has_metric",
+            )
+
+        for _, row in tqdm.tqdm(self.adverse_events_df.iterrows(),
+                                total=len(self.adverse_events_df),
+                                desc="TrialArm->TrialAdverseEvent"):
+            yield Relation(
+                source_ns="trial.arm",
+                source_id=str(row["arm_id"]),
+                target_ns="trial.adverseevent",
+                target_id=str(row["adverseevent_id"]),
+                rel_type="has_adverse_event",
+            )
+
+        for _, row in tqdm.tqdm(self.criteria_df.iterrows(),
+                                total=len(self.criteria_df),
+                                desc="TrialResult->TrialCriterion"):
+            if row["criterion_type"] == "inclusion":
+                rel_type = "has_inclusion_criterion"
+            else:
+                rel_type = "has_exclusion_criterion"
+            yield Relation(
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.criterion",
+                target_id=str(row["criterion_id"]),
+                rel_type=rel_type,
+            )
+
+        for _, row in tqdm.tqdm(self.outcomes_df.iterrows(),
+                                total=len(self.outcomes_df),
+                                desc="TrialResult->TrialOutcome"):
+            yield Relation(
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.outcome",
+                target_id=str(row["outcome_id"]),
+                rel_type="has_outcome",
+            )
+
+        for _, row in tqdm.tqdm(
+            self.stat_comparisons_df.iterrows(),
+            total=len(self.stat_comparisons_df),
+            desc="TrialResult->TrialStatisticalComparison",
+        ):
+            yield Relation(
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="trial.statcomparison",
+                target_id=str(row["statcomparison_id"]),
+                rel_type="has_statistical_comparison",
+            )
+
+        for _, row in tqdm.tqdm(self.genetic_edges_df.iterrows(),
+                                total=len(self.genetic_edges_df),
+                                desc="TrialResult->Gene"):
+            yield Relation(
+                source_ns="trial.result",
+                source_id=str(row["result_id"]),
+                target_ns="HGNC",
+                target_id=row["hgnc_id"],
+                rel_type="has_genetic_criterion",
+            )
+
+        for _, row in tqdm.tqdm(self.ae_bioentity_edges_df.iterrows(),
+                                total=len(self.ae_bioentity_edges_df),
+                                desc="TrialAdverseEvent->BioEntity"):
+            yield Relation(
+                source_ns="trial.adverseevent",
+                source_id=str(row["adverseevent_id"]),
+                target_ns=row["db"],
+                target_id=row["id"],
+                rel_type="adverse_event_grounded_as",
+            )
+
+        # The TrialResults are already linked to ClinicalTrials:
+        # ClinicalTrials -> Publication -> TrialResults
+        # for _, row in tqdm.tqdm(self.result_nodes_df.iterrows(),
+        #                         total=len(self.result_nodes_df),
+        #                         desc="TrialResult->ClinicalTrial"):
+        #     trial_ids_raw = row.get("trial_ids:string[]", "")
+        #     if pd.isna(trial_ids_raw) or not trial_ids_raw:
+        #         continue
+        #     for nct_id in str(trial_ids_raw).split(";"):
+        #         nct_id = nct_id.strip()
+        #         if nct_id and nct_id.upper().startswith("NCT"):
+        #             yield Relation(
+        #                 source_ns="trial.result",
+        #                 source_id=str(row["result_id"]),
+        #                 target_ns="clinicaltrials",
+        #                 target_id=nct_id,
+        #                 rel_type="has_trial_source",
+        #             )
 
 
 def or_na(x):
     """Return None if x is NaN, otherwise return x"""
     return None if pd.isna(x) else x
+
+
+def clean_whitespace(s: str) -> str:
+    """Replace whitespace with a single space and strip it"""
+    return re.sub(r'\s+', ' ', s).strip()
