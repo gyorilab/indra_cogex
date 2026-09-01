@@ -28,13 +28,25 @@
     .field-genetic .field-header { background: #fff8e6; color: #8a6d1a; }
     .field-inclusion .field-header { background: #e8f4f0; color: #2a6b5a; }
     .field-exclusion .field-header { background: #f3e8f4; color: #6b2a6b; }
+    .field-entities .field-header { background: #fafafa; color: #555; }
+    .field-entities .header-interventions { color: #1a5a8a; }
+    .field-entities .header-conditions { color: #2e6b33; }
 
     .arm-result-card { border: 1px solid #eee; background: #fff; margin-bottom: 1rem; border-left: 3px solid #2e6b33; }
     .arm-safety-card { border: 1px solid #eee; background: #fff; margin-bottom: 1rem; border-left: 3px solid #8a3a3a; }
+    .trial-entity-card { border: 1px solid #eee; background: #fff; margin-bottom: 1rem; border-left: 3px solid #dee2e6; }
+
+    .entity-section-label { font-weight:bold; font-size:0.75rem; text-transform:uppercase; margin-bottom:6px; }
+    .entity-section-label-intervention { color: #1a5a8a; }
+    .entity-section-label-condition { color: #2e6b33; }
+    .extraction-intervention { color: #1a5a8a; }
+    .extraction-condition { color: #2e6b33; }
     .arm-card-header { background: #fafafa; padding: 5px 10px; font-weight: bold; font-size: 0.75rem; border-bottom: 1px solid #eee; color: #333; }
     .arm-card-content { padding: 8px 10px; }
 
     .grounding-badge { display: inline-block; padding: 2px 8px; background: #ff4d4f; color: white !important; border-radius: 4px; font-family: monospace; font-size: 0.75rem; font-weight: bold; text-decoration: none; margin-left: 6px; }
+    .grounding-badge.grounding-badge-intervention { background: #1a5a8a; }
+    .grounding-badge.grounding-badge-condition { background: #2e6b33; }
 
     .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
     .data-table td { padding: 3px 0; border: none; font-size: 0.8rem; }
@@ -389,30 +401,43 @@
         </div>
 
         {# 7. Interventions & Conditions #}
-        <div class="field" style="--accent:#6b4a8a;">
-            <div class="field-header" style="background:#f0ebf8; color:#6b4a8a;">Interventions &amp; Conditions</div>
+        <div class="field field-entities">
+            <div class="field-header">
+                <span class="header-interventions">Interventions</span> &amp; <span class="header-conditions">Conditions</span>
+            </div>
             <div class="field-content">
-                {% if drugs %}
-                <div style="font-weight:bold; font-size:0.75rem; color:#6b4a8a; text-transform:uppercase; margin-bottom:6px;">Interventions</div>
-                {% for d in drugs %}
-                {% set did = d.db_ns ~ ":" ~ d.db_id %}
-                <div class="extraction">
-                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge" style="background:#6b4a8a;">{{ did }}</a>
-                </div>
-                {% endfor %}
-                {% endif %}
+                {% if trial_entities %}
+                    {% for entry in trial_entities %}
+                        <div class="trial-entity-card">
+                            <div class="arm-card-header">{{ nct_link(entry.nct_item) }}</div>
+                            <div class="arm-card-content">
+                                {% if entry.drugs %}
+                                <div class="entity-section-label entity-section-label-intervention">Interventions</div>
+                                {% for d in entry.drugs %}
+                                {% set did = d.db_ns ~ ":" ~ d.db_id %}
+                                <div class="extraction extraction-intervention">
+                                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge grounding-badge-intervention">{{ did }}</a>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
 
-                {% if diseases %}
-                <div style="font-weight:bold; font-size:0.75rem; color:#6b4a8a; text-transform:uppercase; margin: {% if drugs %}12px{% else %}0{% endif %} 0 6px 0;">Conditions</div>
-                {% for d in diseases %}
-                {% set did = d.db_ns ~ ":" ~ d.db_id %}
-                <div class="extraction">
-                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge" style="background:#6b4a8a;">{{ did }}</a>
-                </div>
-                {% endfor %}
-                {% endif %}
+                                {% if entry.diseases %}
+                                <div class="entity-section-label entity-section-label-condition" style="margin-top: {% if entry.drugs %}12px{% else %}0{% endif %};">Conditions</div>
+                                {% for d in entry.diseases %}
+                                {% set did = d.db_ns ~ ":" ~ d.db_id %}
+                                <div class="extraction extraction-condition">
+                                    {% if d.data.get("name") %}{{ d.data.get("name") }} {% endif %}<a href="https://bioregistry.io/{{ did }}" target="_blank" class="grounding-badge grounding-badge-condition">{{ did }}</a>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
 
-                {% if not drugs and not diseases %}
+                                {% if not entry.drugs and not entry.diseases %}
+                                <div class="empty-state">No intervention or condition data.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
                 <div class="empty-state">No intervention or condition data.</div>
                 {% endif %}
             </div>

@@ -41,10 +41,62 @@
     .view-link { display: inline-block; padding: 3px 12px; background: #1a5a8a; color: #fff !important; border-radius: 3px; font-size: 0.78rem; font-weight: 600; text-decoration: none; }
     .view-link:hover { background: #154d78; }
     .empty-results { padding: 2rem; text-align: center; color: #999; font-style: italic; font-size: 0.875rem; }
+
+    .nct-row { margin-bottom: 0.35rem; line-height: 1.5; }
+    .nct-row.nct-muted { opacity: 0.55; }
+    .nct-tag {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 0 5px;
+        border-radius: 3px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        vertical-align: middle;
+        background: #f4f4f4;
+        color: #666;
+    }
+    .nct-tag-pubmed { background: #eef6ee; color: #2e6b33; }
+    .nct-tag-result { background: #e7f1f8; color: #1a5a8a; }
+    .nct-tag-derived { background: #f4f4f4; color: #666; }
+    .nct-tag-background { background: #f4f4f4; color: #888; }
+
+    .trial-entity-group { margin-bottom: 0.5rem; }
+    .trial-entity-group:last-child { margin-bottom: 0; }
+    .trial-entity-nct {
+        font-size: 0.72rem;
+        color: #777;
+        margin-bottom: 2px;
+        font-weight: 600;
+    }
+    .entity-badge {
+        display: inline-block;
+        margin: 1px 2px 1px 0;
+        padding: 1px 6px;
+        color: #fff;
+        border-radius: 3px;
+        font-size: 0.72rem;
+        font-family: monospace;
+        text-decoration: none;
+    }
+    .entity-badge-intervention { background: #1a5a8a; }
+    .entity-badge-condition { background: #2e6b33; }
 </style>
 {% endblock %}
 
 {% block main %}
+{% macro entity_badge(e, kind) -%}
+<a href="https://bioregistry.io/{{ e.ns }}:{{ e.id }}" target="_blank"
+   class="entity-badge entity-badge-{{ kind }}" title="{{ e.name }}">{{ e.name }}</a>
+{%- endmacro %}
+
+{% macro nct_tags(trial) -%}
+{% for tag in trial.tags %}
+<span class="nct-tag nct-tag-{{ tag|lower }}">{{ tag }}</span>
+{% endfor %}
+{%- endmacro %}
+
 <div class="search-page">
 
     <div class="search-hero">
@@ -134,18 +186,30 @@
                         <a href="https://bioregistry.io/pubmed:{{ item.pmid }}" target="_blank" style="color:#1a5a8a;">{{ item.pmid }}</a>
                     </td>
                     <td>
-                        {% for nct in item.ct_ids %}
-                            <a href="https://clinicaltrials.gov/study/{{ nct }}" target="_blank" style="color:#1a5a8a;">{{ nct }}</a>{% if not loop.last %}, {% endif %}
+                        {% for trial in item.trials %}
+                        <div class="nct-row{% if not trial.priority %} nct-muted{% endif %}">
+                            <a href="https://clinicaltrials.gov/study/{{ trial.nct }}" target="_blank" style="color:#1a5a8a;">{{ trial.nct }}</a>{{ nct_tags(trial) }}
+                        </div>
                         {% endfor %}
                     </td>
                     <td>
-                        {% for e in item.interventions %}
-                        <a href="https://bioregistry.io/{{ e.ns }}:{{ e.id }}" target="_blank" style="display:inline-block; margin:1px 2px 1px 0; padding:1px 6px; background:#1a5a8a; color:#fff; border-radius:3px; font-size:0.72rem; font-family:monospace; text-decoration:none;" title="{{ e.name }}">{{ e.name }}</a>
+                        {% for trial in item.trials if trial.priority %}
+                        <div class="trial-entity-group">
+                            <div class="trial-entity-nct">{{ trial.nct }}</div>
+                            {% for e in trial.interventions %}
+                            {{ entity_badge(e, "intervention") }}
+                            {% endfor %}
+                        </div>
                         {% endfor %}
                     </td>
                     <td>
-                        {% for e in item.conditions %}
-                        <a href="https://bioregistry.io/{{ e.ns }}:{{ e.id }}" target="_blank" style="display:inline-block; margin:1px 2px 1px 0; padding:1px 6px; background:#2e6b33; color:#fff; border-radius:3px; font-size:0.72rem; font-family:monospace; text-decoration:none;" title="{{ e.name }}">{{ e.name }}</a>
+                        {% for trial in item.trials if trial.priority %}
+                        <div class="trial-entity-group">
+                            <div class="trial-entity-nct">{{ trial.nct }}</div>
+                            {% for e in trial.conditions %}
+                            {{ entity_badge(e, "condition") }}
+                            {% endfor %}
+                        </div>
                         {% endfor %}
                     </td>
                     <td>
