@@ -6,6 +6,7 @@ from flask import render_template, request, redirect, url_for
 from indra.ontology.bio import bio_ontology
 
 from indra_cogex.apps.proxies import client
+from indra_cogex.representation import norm_id
 from indra_cogex.client.queries import (
     get_full_trial_result,
     get_metrics_for_arm,
@@ -303,9 +304,10 @@ def search():
                 search_results, search_label = _gene_search(ns, gid, label)
             else:
                 name = bio_ontology.get_name(ns_upper, gid)
-                label = f"{name} ({query})" if name else query
+                entity_id = norm_id(ns, gid)
+                label = f"{name} ({entity_id})" if name else entity_id
                 search_results, search_label = _run_entity_search(
-                    f"{ns.lower()}:{gid}", label
+                    entity_id, label
                 )
         else:
             hgnc_matches = gilda.ground(query, namespaces=["HGNC"])
@@ -318,9 +320,10 @@ def search():
                 entity_matches = gilda.ground(query, namespaces=_ENTITY_NAMESPACES)
                 if entity_matches:
                     m = entity_matches[0].term
-                    label = f"{m.entry_name} ({m.db.lower()}:{m.id})"
+                    entity_id = norm_id(m.db, m.id)
+                    label = f"{m.entry_name} ({entity_id})"
                     search_results, search_label = _run_entity_search(
-                        f"{m.db.lower()}:{m.id}", label
+                        entity_id, label
                     )
                 else:
                     return render_template(
