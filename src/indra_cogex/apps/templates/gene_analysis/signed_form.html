@@ -29,3 +29,66 @@
     You can find it on the <a href="{{ config.get('APPLICATION_ROOT', '') }}/apidocs">API Docs</a> under the section 'Analysis
     Queries'.
 {% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    {% include "_compact_form.html" %}
+{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="h2">{{ self.header() }}</h1>
+        <p class="form-lead text-muted">{{ self.lead() }}</p>
+
+        <form method="POST" id="main-form">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.positive_genes.label(class="font-weight-bold") }}
+                {{ form.positive_genes(class="form-control", rows=3) }}
+                <small class="form-text text-muted">
+                    {{ form.positive_genes.description|safe }}
+                </small>
+            </div>
+
+            <div class="form-group">
+                {{ form.negative_genes.label(class="font-weight-bold") }}
+                {{ form.negative_genes(class="form-control", rows=3) }}
+                <small class="form-text text-muted">
+                    {{ form.negative_genes.description|safe }}
+                </small>
+            </div>
+
+            <div class="form-row param-row">
+                <div class="form-group col-md-4">
+                    {{ form.minimum_evidence.label(class="font-weight-bold") }}
+                    {{ form.minimum_evidence(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.minimum_evidence.description }}
+                    </small>
+                </div>
+                <div class="form-group col-md-4">
+                    {{ form.minimum_belief.label(class="font-weight-bold") }}
+                    {{ form.minimum_belief(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.minimum_belief.description }}
+                    </small>
+                </div>
+                <div class="form-group col-md-4">
+                    {{ form.alpha.label(class="font-weight-bold") }}
+                    {{ form.alpha(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.alpha.description }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group form-check">
+                {{ form.keep_insignificant(class="form-check-input") }}
+                {{ form.keep_insignificant.label(class="form-check-label") }}
+            </div>
+
+            {{ form.submit(class="btn btn-primary") }}
+        </form>
+    </div>
+{% endblock %}
