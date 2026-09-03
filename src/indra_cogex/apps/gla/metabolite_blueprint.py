@@ -16,7 +16,8 @@ from indra_cogex.analysis.metabolite_analysis import (
     enzyme_analysis,
     parse_metabolites,
 )
-from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES
+from indra_cogex.client.enrichment.mla import EXAMPLE_CHEBI_CURIES, \
+    get_metabolomics_network
 
 from .fields import (
     alpha_field,
@@ -33,6 +34,9 @@ __all__ = [
 ]
 
 metabolite_blueprint = flask.Blueprint("mla", __name__, url_prefix="/metabolite")
+
+# Number of top enzymes shown in the results network
+NETWORK_MAX_ENZYMES = 25
 
 
 def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
@@ -55,8 +59,10 @@ def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
 metabolites_field = TextAreaField(
     "Metabolites",
     description="Paste your list of CHEBI identifiers, or"
-                ' CURIEs here or click here to use <a href="#" onClick="exampleMetabolites()">an'
-                " example list of metabolites</a>.",
+                ' CURIEs here or click here to use'
+                ' <a href="#"'
+                ' onClick="exampleMetabolites(); return false;">'
+                "an example list of metabolites</a>.",
     validators=[DataRequired()],
 )
 
@@ -93,6 +99,14 @@ def discrete_analysis_route():
             minimum_belief=form.minimum_belief.data,
         )
 
+        network = get_metabolomics_network(
+            client=client,
+            chebi_ids=list(metabolite_chebi_ids),
+            ec_codes=results["curie"].tolist()[:NETWORK_MAX_ENZYMES],
+            minimum_evidence_count=form.minimum_evidence.data,
+            minimum_belief=form.minimum_belief.data,
+        ) if not results.empty else {"nodes": [], "edges": []}
+
         return flask.render_template(
             "metabolite_analysis/discrete_results.html",
             metabolites=metabolite_chebi_ids,
@@ -100,6 +114,7 @@ def discrete_analysis_route():
             method=form.correction.data,
             alpha=form.alpha.data,
             results=results,
+            network=network,
         )
 
     return flask.render_template(
