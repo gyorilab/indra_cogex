@@ -5,11 +5,11 @@ import json
 from collections import defaultdict
 from functools import lru_cache
 from textwrap import dedent
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 import indra.statements
 import pandas as pd
-from indra.databases.hgnc_client import hgnc_to_enzymes
+from indra.databases.hgnc_client import enzyme_to_hgncs, hgnc_to_enzymes
 from indra.ontology.bio import bio_ontology
 from indra.statements import stmts_from_json
 
@@ -26,6 +26,7 @@ __all__ = [
     "EXAMPLE_CHEBI_CURIES",
     "metabolomics_ora",
     "metabolomics_explanation",
+    "get_metabolomics_network",
 ]
 
 
@@ -69,7 +70,8 @@ def get_metabolomics_sets(
     query = dedent(
         f"""\
     MATCH
-        (enzyme:BioEntity)-[:xref]-(family:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
     WHERE
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
@@ -80,7 +82,9 @@ def get_metabolomics_sets(
         enzyme.id, enzyme.name, collect(chemical.id)
     UNION ALL
     MATCH
-        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        <-[:isa|partof*1..]-(gene:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
     WHERE
         enzyme.id STARTS WITH "ec-code"
         and family.id STARTS WITH "fplx"
@@ -192,7 +196,8 @@ def metabolomics_explanation(
     query = dedent(
         f"""\
     MATCH
-        (enzyme:BioEntity)-[:xref]-(family:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
     WHERE
         enzyme.id IN ["ec-code:{ec_code}"]
         and family.id STARTS WITH "fplx"
@@ -203,7 +208,9 @@ def metabolomics_explanation(
         r.stmt_json
     UNION ALL
     MATCH
-        (enzyme:BioEntity)-[:xref]-(family:BioEntity)<-[:isa|partof*1..]-(gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        <-[:isa|partof*1..]-(gene:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
     WHERE
         enzyme.id in ["ec-code:{ec_code}"]
         and family.id STARTS WITH "fplx"
@@ -218,6 +225,220 @@ def metabolomics_explanation(
     stmts = stmts_from_json(stmts_json)
     # TODO add some deduplication
     return stmts
+
+
+# Node colors and shapes
+METABOLITE_STYLE = ("#FF9800", "diamond")
+ENZYME_STYLE = ("#4CAF50", "box")
+FAMILY_STYLE = ("#1B5E20", "hexagon")
+
+# Edge colors per statement type
+STMT_TYPE_COLORS = {
+    "Activation": "#00CC00",
+    "Inhibition": "#FF0000",
+    "Phosphorylation": "#000000",
+    "Complex": "#0000FF",
+    "IncreaseAmount": "#00CC00",
+    "DecreaseAmount": "#FF0000",
+}
+DASHED_STMT_TYPES = {"IncreaseAmount", "DecreaseAmount"}
+
+
+def get_metabolomics_network(
+    *,
+    client: Neo4jClient,
+    chebi_ids: Iterable[str],
+    ec_codes: Iterable[str],
+    minimum_evidence_count: Optional[float] = None,
+    minimum_belief: Optional[float] = None,
+) -> Mapping[str, List[Dict]]:
+    """Build a three-layer network of metabolites, enzymes and enzyme families.
+
+    The network is laid out in three levels: the queried metabolites at level 0,
+    the enzymes that regulate them at level 1, and the EC classes those enzymes
+    belong to at level 2. Nodes and edges are returned in the shape expected by
+    vis.js.
+
+    Parameters
+    ----------
+    client :
+        The Neo4j client.
+    chebi_ids :
+        The ChEBI local identifiers that were queried.
+    ec_codes :
+        The EC codes to include, in the form ``W.X.Y.Z``.
+    minimum_evidence_count :
+        The minimum number of evidences for a relationship to be included.
+    minimum_belief :
+        The minimum belief for a relationship to be included.
+
+    Returns
+    -------
+    :
+        A dictionary with ``nodes`` and ``edges`` keys.
+    """
+    chebi_curies = [f"chebi:{chebi_id}" for chebi_id in chebi_ids]
+    ec_curies = [f"ec-code:{ec_code}" for ec_code in ec_codes]
+    if not chebi_curies or not ec_curies:
+        return {"nodes": [], "edges": []}
+
+    evidence_line = minimum_evidence_helper(minimum_evidence_count)
+    belief_line = minimum_belief_helper(minimum_belief)
+
+    # Relationships attributed to the family, then to its member genes
+    query = dedent(
+        f"""\
+    MATCH
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        enzyme.id IN $ec_curies
+        and family.id STARTS WITH "fplx"
+        and chemical.id IN $chebi_curies
+        {evidence_line}
+        {belief_line}
+    RETURN
+        enzyme.id AS ec_id, enzyme.name AS ec_name,
+        family.id AS mid_id, family.name AS mid_name,
+        chemical.id AS met_id, chemical.name AS met_name,
+        r.stmt_type AS stmt_type, r.belief AS belief,
+        r.evidence_count AS evidence_count
+    UNION ALL
+    MATCH
+        (enzyme:BioEntity)-[:xref]-(family:BioEntity)
+        <-[:isa|partof*1..]-(gene:BioEntity)
+        -[r:indra_rel]->(chemical:BioEntity)
+    WHERE
+        enzyme.id IN $ec_curies
+        and family.id STARTS WITH "fplx"
+        and chemical.id IN $chebi_curies
+        {evidence_line}
+        {belief_line}
+    RETURN
+        enzyme.id AS ec_id, enzyme.name AS ec_name,
+        gene.id AS mid_id, gene.name AS mid_name,
+        chemical.id AS met_id, chemical.name AS met_name,
+        r.stmt_type AS stmt_type, r.belief AS belief,
+        r.evidence_count AS evidence_count
+    """
+    )
+    rows = list(
+        client.query_tx(query, ec_curies=ec_curies, chebi_curies=chebi_curies)
+    )
+
+    # Genes mapped to EC codes outside the FamPlex hierarchy
+    hgnc_to_ec = defaultdict(set)
+    for ec_code in ec_codes:
+        for hgnc_id in enzyme_to_hgncs.get(ec_code, []):
+            hgnc_to_ec[hgnc_id].add(ec_code)
+    if hgnc_to_ec:
+        gene_query = dedent(
+            f"""\
+        MATCH
+            (gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        WHERE
+            gene.id IN $hgnc_curies
+            and chemical.id IN $chebi_curies
+            {evidence_line}
+            {belief_line}
+        RETURN
+            gene.id AS mid_id, gene.name AS mid_name,
+            chemical.id AS met_id, chemical.name AS met_name,
+            r.stmt_type AS stmt_type, r.belief AS belief,
+            r.evidence_count AS evidence_count
+        """
+        )
+        gene_rows = client.query_tx(
+            gene_query,
+            hgnc_curies=[f"hgnc:{hgnc_id}" for hgnc_id in hgnc_to_ec],
+            chebi_curies=chebi_curies,
+        )
+        for mid_id, mid_name, met_id, met_name, stmt_type, belief, \
+                ev in gene_rows:
+            hgnc_id = mid_id.split(":", 1)[1]
+            for ec_code in hgnc_to_ec.get(hgnc_id, set()):
+                ec_name = bio_ontology.get_name("ECCODE", ec_code)
+                rows.append((f"ec-code:{ec_code}", ec_name, mid_id,
+                             mid_name, met_id, met_name, stmt_type,
+                             belief, ev))
+
+    return assemble_metabolomics_network(rows)
+
+
+def assemble_metabolomics_network(rows) -> Mapping[str, List[Dict]]:
+    """Turn (family, enzyme, metabolite) rows into vis.js nodes and edges."""
+    nodes = {}
+    statements_by_edge = defaultdict(list)
+    membership = set()
+
+    def add_node(node_id, label, level, style, node_type):
+        if node_id in nodes:
+            return
+        color, shape = style
+        nodes[node_id] = {
+            "id": node_id,
+            "label": label or node_id,
+            "level": level,
+            "color": color,
+            "shape": shape,
+            "type": node_type,
+            "title": f"{node_type}: {label or node_id}",
+            "details": {"id": node_id},
+        }
+
+    # Cross-references are stored in both directions, so rows can repeat
+    for row in {tuple(row) for row in rows}:
+        ec_id, ec_name, mid_id, mid_name, met_id, met_name, stmt_type, \
+            belief, evidence_count = row
+        node_type = "FPLX" if mid_id.startswith("fplx") else "HGNC"
+        add_node(met_id, met_name, 0, METABOLITE_STYLE, "CHEBI")
+        add_node(mid_id, mid_name, 1, ENZYME_STYLE, node_type)
+        add_node(ec_id, ec_name or ec_id, 2, FAMILY_STYLE, "ECCODE")
+
+        statements_by_edge[mid_id, met_id].append(
+            {
+                "statement_type": stmt_type,
+                "belief": belief,
+                "evidence_count": evidence_count or 0,
+            }
+        )
+        membership.add((ec_id, mid_id))
+
+    edges = []
+    for (mid_id, met_id), statements in statements_by_edge.items():
+        # The statement type with the most evidence determines the style
+        statements.sort(key=lambda s: s["evidence_count"], reverse=True)
+        dominant = statements[0]["statement_type"]
+        total_evidence = sum(s["evidence_count"] for s in statements)
+        edges.append(
+            {
+                "from": mid_id,
+                "to": met_id,
+                "color": {"color": STMT_TYPE_COLORS.get(dominant, "#999999")},
+                "dashes": dominant in DASHED_STMT_TYPES,
+                "arrows": {"to": {"enabled": True, "scaleFactor": 0.5}},
+                "details": {
+                    "statement_type": dominant,
+                    "belief": statements[0]["belief"],
+                    "evidence_count": total_evidence,
+                    "aggregated_statements": statements,
+                },
+            }
+        )
+
+    for ec_id, mid_id in membership:
+        edges.append(
+            {
+                "from": ec_id,
+                "to": mid_id,
+                "color": {"color": "#BBBBBB"},
+                "dashes": True,
+                "arrows": {"to": {"enabled": False}},
+                "details": {"statement_type": "member of EC class"},
+            }
+        )
+
+    return {"nodes": list(nodes.values()), "edges": edges}
 
 
 #: Various alcohol dehydrogenase products

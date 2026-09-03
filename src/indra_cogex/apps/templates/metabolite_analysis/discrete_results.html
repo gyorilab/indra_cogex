@@ -97,6 +97,8 @@
                     </a>
                 {% endfor %}
             </p>
+            {% include "metabolite_analysis/_metabolite_network.html" %}
+
             <h3>Over-Representation Analysis</h3>
             <div>
                 {{ render_table(results, "table-results") }}
