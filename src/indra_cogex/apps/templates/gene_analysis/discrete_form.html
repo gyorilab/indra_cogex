@@ -4,6 +4,11 @@
 
 {% block header %}Gene Set Analysis{% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    {% include "_compact_form.html" %}
+{% endblock %}
+
 {% block scripts %}
     {{ super() }}
     <script>
@@ -32,4 +37,91 @@
     The corresponding REST API endpoint for this analysis is
     <code>/api/discrete_analysis</code>. You can find it on the <a href="{{ config.get('APPLICATION_ROOT', '') }}/apidocs">API
     Docs</a> under the section 'Analysis Queries'.
+{% endblock %}
+
+{% block container %}
+    <div class="card card-body bg-light">
+        <h1 class="h2">{{ self.header() }}</h1>
+        <p class="form-lead text-muted">{{ self.lead() }}</p>
+
+        <form method="POST" id="main-form">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.genes.label(class="font-weight-bold") }}
+                {{ form.genes(class="form-control", rows=4) }}
+                <small class="form-text text-muted">
+                    {{ form.genes.description|safe }}
+                </small>
+            </div>
+
+            <div class="form-group secondary-field">
+                {{ form.background_genes.label(class="text-muted") }}
+                {{ form.background_genes(class="form-control", rows=2) }}
+                <small class="form-text text-muted">
+                    {{ form.background_genes.description|safe }}
+                </small>
+            </div>
+
+            <div class="form-row param-row">
+                <div class="form-group col-md-4">
+                    {{ form.minimum_evidence.label(class="font-weight-bold") }}
+                    {{ form.minimum_evidence(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.minimum_evidence.description }}
+                    </small>
+                </div>
+                <div class="form-group col-md-4">
+                    {{ form.minimum_belief.label(class="font-weight-bold") }}
+                    {{ form.minimum_belief(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.minimum_belief.description }}
+                    </small>
+                </div>
+                <div class="form-group col-md-4">
+                    {{ form.alpha.label(class="font-weight-bold") }}
+                    {{ form.alpha(class="form-control") }}
+                    <small class="form-text text-muted">
+                        {{ form.alpha.description }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    {{ form.indra_path_analysis(class="form-check-input") }}
+                    {{ form.indra_path_analysis.label(
+                        class="form-check-label") }}
+                </div>
+                <div class="form-check">
+                    {{ form.keep_insignificant(class="form-check-input") }}
+                    {{ form.keep_insignificant.label(
+                        class="form-check-label") }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="font-weight-bold">
+                    {{ form.correction.label.text }}
+                </label>
+                <div class="radio-options">
+                    {% for option in form.correction %}
+                        <div class="form-check">
+                            {{ option(class="form-check-input") }}
+                            {{ option.label(class="form-check-label") }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if 'local_download' in form %}
+                <div class="form-group form-check">
+                    {{ form.local_download(class="form-check-input") }}
+                    {{ form.local_download.label(class="form-check-label") }}
+                </div>
+            {% endif %}
+
+            {{ form.submit(class="btn btn-primary") }}
+        </form>
+    </div>
 {% endblock %}

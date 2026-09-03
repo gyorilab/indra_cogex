@@ -89,7 +89,7 @@ def test_get_trials_for_drug():
     assert trials
     assert isinstance(trials[0], Node)
     assert trials[0].db_ns == "CLINICALTRIALS"
-    assert ("CLINICALTRIALS", "NCT00000674") in {t.grounding() for t in trials}
+    assert ("CLINICALTRIALS", "NCT01744730") in {t.grounding() for t in trials}
 
 
 @pytest.mark.nonpublic
