@@ -35,8 +35,8 @@ __all__ = [
 
 metabolite_blueprint = flask.Blueprint("mla", __name__, url_prefix="/metabolite")
 
-# Number of top enzymes shown in the results network
-NETWORK_MAX_ENZYMES = 25
+# Number of top EC classes shown in the results network
+NETWORK_MAX_ENZYMES = 10
 
 
 def parse_metabolites_field(s: str) -> Tuple[Dict[str, str], List[str]]:
@@ -99,13 +99,19 @@ def discrete_analysis_route():
             minimum_belief=form.minimum_belief.data,
         )
 
-        network = get_metabolomics_network(
-            client=client,
-            chebi_ids=list(metabolite_chebi_ids),
-            ec_codes=results["curie"].tolist()[:NETWORK_MAX_ENZYMES],
-            minimum_evidence_count=form.minimum_evidence.data,
-            minimum_belief=form.minimum_belief.data,
-        ) if not results.empty else {"nodes": [], "edges": []}
+        if results.empty:
+            network = {"nodes": [], "edges": []}
+        else:
+            top = results.head(NETWORK_MAX_ENZYMES)
+            score_column = "mlq" if "mlq" in top else "mlp"
+            network = get_metabolomics_network(
+                client=client,
+                chebi_ids=list(metabolite_chebi_ids),
+                ec_codes=top["curie"].tolist(),
+                minimum_evidence_count=form.minimum_evidence.data,
+                minimum_belief=form.minimum_belief.data,
+                ec_significance=dict(zip(top["curie"], top[score_column])),
+            )
 
         return flask.render_template(
             "metabolite_analysis/discrete_results.html",

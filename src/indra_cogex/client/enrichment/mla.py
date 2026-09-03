@@ -232,6 +232,28 @@ METABOLITE_STYLE = ("#FF9800", "diamond")
 ENZYME_STYLE = ("#4CAF50", "box")
 FAMILY_STYLE = ("#1B5E20", "hexagon")
 
+# Enrichment shading for EC class nodes, weakest to strongest
+SIGNIFICANCE_COLORS = [
+    (2.0, "#A5D6A7"),
+    (3.0, "#66BB6A"),
+    (5.0, "#43A047"),
+    (10.0, "#2E7D32"),
+]
+STRONGEST_COLOR = "#1B5E20"
+UNSCORED_COLOR = "#9E9E9E"
+
+
+def significance_style(score):
+    """Color and size for an EC node from its -log10 q value."""
+    if score is None:
+        return UNSCORED_COLOR, 22
+    color = STRONGEST_COLOR
+    for threshold, value in SIGNIFICANCE_COLORS:
+        if score < threshold:
+            color = value
+            break
+    return color, 18 + min(score, 12) * 2
+
 # Edge colors per statement type
 STMT_TYPE_COLORS = {
     "Activation": "#00CC00",
@@ -251,6 +273,7 @@ def get_metabolomics_network(
     ec_codes: Iterable[str],
     minimum_evidence_count: Optional[float] = None,
     minimum_belief: Optional[float] = None,
+    ec_significance: Optional[Mapping[str, float]] = None,
 ) -> Mapping[str, List[Dict]]:
     """Build a three-layer network of metabolites, enzymes and enzyme families.
 
@@ -362,16 +385,18 @@ def get_metabolomics_network(
                              mid_name, met_id, met_name, stmt_type,
                              belief, ev))
 
-    return assemble_metabolomics_network(rows)
+    return assemble_metabolomics_network(rows, ec_significance)
 
 
-def assemble_metabolomics_network(rows) -> Mapping[str, List[Dict]]:
+def assemble_metabolomics_network(
+    rows, ec_significance: Optional[Mapping[str, float]] = None,
+) -> Mapping[str, List[Dict]]:
     """Turn (family, enzyme, metabolite) rows into vis.js nodes and edges."""
     nodes = {}
     statements_by_edge = defaultdict(list)
     membership = set()
 
-    def add_node(node_id, label, level, style, node_type):
+    def add_node(node_id, label, level, style, node_type, size=None):
         if node_id in nodes:
             return
         color, shape = style
@@ -385,15 +410,21 @@ def assemble_metabolomics_network(rows) -> Mapping[str, List[Dict]]:
             "title": f"{node_type}: {label or node_id}",
             "details": {"id": node_id},
         }
+        if size is not None:
+            nodes[node_id]["size"] = size
 
     # Cross-references are stored in both directions, so rows can repeat
     for row in {tuple(row) for row in rows}:
         ec_id, ec_name, mid_id, mid_name, met_id, met_name, stmt_type, \
             belief, evidence_count = row
         node_type = "FPLX" if mid_id.startswith("fplx") else "HGNC"
-        add_node(met_id, met_name, 0, METABOLITE_STYLE, "CHEBI")
+        add_node(met_id, met_name, 2, METABOLITE_STYLE, "CHEBI")
         add_node(mid_id, mid_name, 1, ENZYME_STYLE, node_type)
-        add_node(ec_id, ec_name or ec_id, 2, FAMILY_STYLE, "ECCODE")
+        ec_code = ec_id.split(":", 1)[-1]
+        score = (ec_significance or {}).get(ec_code)
+        ec_color, ec_size = significance_style(score)
+        add_node(ec_id, ec_name or ec_id, 0,
+                 (ec_color, FAMILY_STYLE[1]), "ECCODE", ec_size)
 
         statements_by_edge[mid_id, met_id].append(
             {
