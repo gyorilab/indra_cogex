@@ -500,12 +500,18 @@ def assemble_metabolomics_network(
     return {"nodes": list(nodes.values()), "edges": edges}
 
 
-#: Various alcohol dehydrogenase products
+# Monoamine neurotransmitters with their precursors and metabolites
 EXAMPLE_CHEBI_IDS = [
-    "15366",  # acetic acid
-    "15343",  # acetaldehyde
-    "16995",  # oxalic acid
-    "16842",  # formaldehyde
+    "17895",  # L-tyrosine
+    "15765",  # L-dopa
+    "18243",  # dopamine
+    "33569",  # noradrenaline
+    "33568",  # adrenaline
+    "16828",  # L-tryptophan
+    "28790",  # serotonin
+    "16796",  # melatonin
+    "18295",  # histamine
+    "16865",  # gamma-aminobutyric acid
 ]
 
 EXAMPLE_CHEBI_CURIES = [f"CHEBI:{i}" for i in EXAMPLE_CHEBI_IDS]

@@ -9,12 +9,13 @@ indra_path_analysis_field = BooleanField("Include INDRA path-based analysis (slo
 minimum_evidence_field = IntegerField(
     "Minimum Evidence Count",
     default=1,
-    description="The minimum number of evidences, if using INDRA path-based analysis.",
+    description="The minimum number of evidences for a relationship to be"
+    " included.",
 )
 minimum_belief_field = FloatField(
     "Minimum Belief",
     default=0.0,
-    description="The minimum belief score, if using INDRA path-based analysis.",
+    description="The minimum belief score for a relationship to be included.",
 )
 keep_insignificant_field = BooleanField(
     "Keep insignificant results (leads to long results lists)"
