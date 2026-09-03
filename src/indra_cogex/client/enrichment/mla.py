@@ -221,10 +221,38 @@ def metabolomics_explanation(
         r.stmt_json
     """
     )
-    stmts_json = [json.loads(row[0]) for row in client.query_tx(query)]
-    stmts = stmts_from_json(stmts_json)
-    # TODO add some deduplication
-    return stmts
+    rows = list(client.query_tx(query))
+
+    # Genes mapped to EC codes outside the FamPlex hierarchy
+    hgnc_ids = enzyme_to_hgncs.get(ec_code, set())
+    if hgnc_ids:
+        gene_query = dedent(
+            f"""\
+        MATCH
+            (gene:BioEntity)-[r:indra_rel]->(chemical:BioEntity)
+        WHERE
+            gene.id IN $hgnc_curies
+            and chemical.id {entity_line}
+            {evidence_line}
+            {belief_line}
+        RETURN
+            r.stmt_json
+        """
+        )
+        rows += client.query_tx(
+            gene_query,
+            hgnc_curies=[f"hgnc:{hgnc_id}" for hgnc_id in hgnc_ids],
+        )
+
+    # Cross-references are stored in both directions, so rows can repeat
+    seen = set()
+    stmts_json = []
+    for row in rows:
+        if row[0] in seen:
+            continue
+        seen.add(row[0])
+        stmts_json.append(json.loads(row[0]))
+    return stmts_from_json(stmts_json)
 
 
 # Node colors and shapes
