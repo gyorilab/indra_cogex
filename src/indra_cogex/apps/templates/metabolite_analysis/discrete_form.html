@@ -6,20 +6,7 @@
 
 {% block styles %}
     {{ super() }}
-    <style>
-        .correction-options {
-            column-count: 2;
-            column-gap: 2rem;
-        }
-        .correction-options .form-check {
-            break-inside: avoid;
-            margin-bottom: 0.2rem;
-        }
-        @media (max-width: 767px) {
-            .correction-options { column-count: 1; }
-        }
-        .param-row .form-control { max-width: 8rem; }
-    </style>
+    {% include "_compact_form.html" %}
 {% endblock %}
 
 {% block scripts %}
@@ -48,8 +35,8 @@
 
 {% block container %}
     <div class="card card-body bg-light">
-        <h1 class="display-4">{{ self.header() }}</h1>
-        <p class="lead">{{ self.lead() }}</p>
+        <h1 class="h2">{{ self.header() }}</h1>
+        <p class="form-lead text-muted">{{ self.lead() }}</p>
 
         <form method="POST" id="main-form">
             {{ form.hidden_tag() }}
