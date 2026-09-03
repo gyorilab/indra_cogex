@@ -9,6 +9,16 @@
             href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.0.7/b-3.0.2/b-html5-3.0.2/datatables.min.css"
             rel="stylesheet"
     />
+    <style>
+        .table-ora th, .table-ora td {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .table-ora th.col-name, .table-ora td.col-name {
+            white-space: normal;
+            width: 100%;
+        }
+    </style>
 {% endblock %}
 
 {% block scripts %}
@@ -18,6 +28,7 @@
     <script>
         const datatablesConf = {
             "order": [[2, "asc"]],
+            columnDefs: [{orderable: false, targets: -1}],
             pageLength: 10,
             layout: {
                 // Full documentation of layout:
@@ -57,20 +68,26 @@
         <thead>
         <tr>
             <th scope="col">EC Code</th>
-            <th scope="col">Name</th>
+            <th scope="col" class="col-name">Name</th>
             <th scope="col"><i>p</i>-value</th>
             <th scope="col"><i>q</i>-value</th>
-            <th scope="col"></th>
+            <th scope="col">Statements</th>
         </tr>
         </thead>
         <tbody>
         {% for ec_code, name, p, mlp, q, mlq in df.values %}
             <tr>
                 <td><a href="https://bioregistry.io/eccode:{{ ec_code }}" target="_blank">{{ ec_code }}</a></td>
-                <td>{% if name %}{{ name }}{% endif %}</td>
+                <td class="col-name">{% if name %}{{ name }}{% endif %}</td>
                 <td>{{ "{:.2e}".format(p) }}</td>
                 <td>{{ "{:.2e}".format(q) }}</td>
-                <td><a href="{{ url_for("mla.enzyme_route", ec_code=ec_code, q=",".join(metabolites)) }}"><i class="fas fa-external-link-alt"></i></a></td>
+                <td>
+                    <a href="{{ url_for('mla.enzyme_route',
+                        ec_code=ec_code,
+                        q=",".join(metabolites)) }}"
+                        target="_blank"
+                        class="btn btn-primary btn-sm">View Statements</a>
+                </td>
             </tr>
         {% endfor %}
         </tbody>
