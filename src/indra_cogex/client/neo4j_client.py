@@ -941,6 +941,61 @@ class Neo4jClient:
         query = """MATCH(n) DETACH DELETE n"""
         return self.create_tx(query)
 
+    def delete_nodes_by_label(
+        self, node_label: str, batch_size: Optional[int] = 10_000
+    ):
+        """Delete nodes by their labels
+
+        Parameters
+        ----------
+        node_label :
+            The label of the nodes to delete.
+        batch_size :
+            The number of nodes to delete in each transaction. Default: 10,000.
+            Set to 0 or None to skip batching and delete all matching nodes in a
+            single transaction.
+        """
+        query = f"MATCH (n:{node_label}) CALL (n) {{ DELETE n }}"
+        if batch_size and batch_size > 0:
+            query += f" IN TRANSACTIONS OF {batch_size}"
+
+        # Implicit transaction needed for batching
+        with self.driver.session() as session:
+            session.run(query)
+
+    def delete_relationships_by_type(
+        self,
+        relationship_type: str,
+        start_label: Optional[str] = None,
+        end_label: Optional[str] = None,
+        batch_size: Optional[int] = 10_000
+    ):
+        """Delete relationships by their type, optionally match on labels
+
+        Parameters
+        ----------
+        relationship_type :
+            The type of the relationships to delete.
+        start_label :
+            The label of the start node in the relationship.
+        end_label :
+            The label of the end node in the relationship.
+        batch_size :
+            The number of relationships to delete in each transaction. Default:
+            10,000. Set to 0 or None to skip batching and delete all matching
+            relationships in a single transaction.
+        """
+        start_label = f":{start_label}" if start_label else ""
+        end_label = f":{end_label}" if end_label else ""
+        query = f"MATCH ({start_label})-[r:{relationship_type}]->({end_label})"
+        query += " CALL (r) {{ DELETE r }}"
+        if batch_size and batch_size > 0:
+            query += f" IN TRANSACTIONS OF {batch_size}"
+
+        # Implicit transaction needed when using ... IN TRANSACTIONS OF ...
+        with self.driver.session() as session:
+            session.run(query)
+
     def create_nodes(self, nodes: List[Node]):
         """Create a set of new graph nodes."""
         nodes_str = ",\n".join([str(n) for n in nodes])
