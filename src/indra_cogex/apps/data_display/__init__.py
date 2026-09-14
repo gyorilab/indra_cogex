@@ -291,7 +291,10 @@ def get_evidence(stmt_hash):
 
         # Get the formatted evidence rows
         stmt_rows = format_stmts(
-            stmts=[stmt], evidence_counts=ev_counts, curations=curations
+            stmts=[stmt],
+            evidence_counts=ev_counts,
+            curations=curations,
+            remove_medscan=remove_medscan,
         )
 
         # Return the evidence json for the statement
