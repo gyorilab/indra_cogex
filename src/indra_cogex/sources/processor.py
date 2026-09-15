@@ -42,6 +42,7 @@ from indra_cogex.sources.processor_util import (
 
 __all__ = [
     "Processor",
+    "validate_headers",
 ]
 
 logger = logging.getLogger(__name__)
@@ -496,12 +497,13 @@ def validate_headers(headers: Iterable[str]) -> None:
     for header in headers:
         # If : is in the header and there is something after it check if
         # it's a valid data type
-        if ":" in header and header.split(":")[1]:
-            dtype = header.split(":")[1]
+        if ":" in header:
+            dtype = header.split(":", maxsplit=1)[1]
 
             # Strip trailing '[]' for array types
             if dtype.endswith("[]"):
                 dtype = dtype[:-2]
+                # Catch 'prop_name:[]'
                 if not dtype:
                     raise ValueError(f"Data type value for header '{header}' is empty!")
 
