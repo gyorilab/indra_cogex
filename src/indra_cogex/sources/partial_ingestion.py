@@ -20,6 +20,11 @@ https://neo4j.com/docs/operations-manual/current/configuration/configuration-set
 Read more about the LOAD CSV Cypher command at
 https://neo4j.com/docs/cypher-manual/current/clauses/load-csv/
 
+Important note: If replacing nodes or relationships that already exist in the
+database, it is important to consider deleting the existing nodes or
+relationships before ingesting the new ones, as neither of the MERGE or CREATE
+commands will delete existing nodes or relationships that don't match the new data.
+This can lead to mixed or outdated data in the database.
 
 Examples:
 ---------
