@@ -638,7 +638,7 @@ def ingest_relations_from_file_by_type(
     :
         If ``run_query`` is False, returns the Cypher query string to ingest the
         relationships. If ``run_query`` is True, runs the query and returns
-        None. Default: True.
+        None.
     """
     file_path = Path(file_path)
     if not file_path.exists():
