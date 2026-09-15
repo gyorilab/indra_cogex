@@ -1,0 +1,56 @@
+[
+  {
+    "node_label": "BioEntity",
+    "label": "Biological Entities",
+    "icon": "dna",
+    "info": "Identified genes, proteins, small molecules, tissues, medical conditions and other biomedically relevant entitites"
+  },
+  {
+    "node_label": "ClinicalTrial",
+    "label": "Clinical Trials",
+    "icon": "clinic-medical",
+    "info": "Clinical trials and their meta data from clinicaltrials.gov"
+  },
+  {
+    "node_label": "Publication",
+    "label": "Publications",
+    "icon": "book",
+    "info": "Publications registered on PubMed"
+  },
+  {
+    "node_label": "Evidence",
+    "label": "Evidences",
+    "icon": "puzzle-piece",
+    "info": "INDRA Statement Evidences"
+  },
+  {
+    "node_label": "ResearchProject",
+    "label": "Research Projects",
+    "icon": "flask",
+    "info": "NIH registered research projects"
+  },
+  {
+    "node_label": "Patent",
+    "label": "Patents",
+    "icon": "copyright",
+    "info": "Patents associated with NIH research projects"
+  },
+  {
+    "node_label": "Journal",
+    "label": "Journals",
+    "icon": "newspaper",
+    "info": "Scientific journals"
+  },
+  {
+    "node_label": "Publisher",
+    "label": "Publishers",
+    "icon": "building",
+    "info": "Publishers of scientific journals"
+  },
+  {
+    "node_label": "TrialResult",
+    "label": "Trial Results",
+    "icon": "clipboard-check",
+    "info": "LLM extracted clinical trial results from publications"
+  }
+]
