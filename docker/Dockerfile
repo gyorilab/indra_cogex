@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG INDRA_NEO4J_URL
 ARG INDRA_NEO4J_USER
@@ -28,7 +28,7 @@ RUN apt-get update && \
     apt-get install -y openjdk-8-jdk && \
     # jnius-indra requires cython which requires gcc
     apt-get install -y git wget zip unzip bzip2 gcc graphviz graphviz-dev \
-        pkg-config python3-pip cmake libxml2-dev swig && \
+        pkg-config python3 python3-pip python3.12-venv && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Set default character encoding
@@ -44,15 +44,21 @@ ENV LC_ALL en_US.UTF-8
 ENV BNGPATH $DIRPATH/BioNetGen-2.4.0
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 
+# Create virtual environment (required for ubuntu 24.04)
+ENV VENV_PATH=$DIRPATH/venv
+RUN python3 -m venv $VENV_PATH
+ENV PATH="$VENV_PATH/bin:$PATH"
+
 RUN mkdir -p /root/.config/indra && \
     echo "[indra]" > /root/.config/indra/config.ini && \
     # Install Python dependencies
     pip install --upgrade pip && \
     # Install cython first for pyjnius
-    pip install "cython<3" && \
+    pip install "cython<3.0" setuptools setuptools_scm wheel && \
     pip install "pyjnius==1.1.4" --no-build-isolation && \
     pip install --prefer-binary python-libsbml || true && \
-    pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
+    pip install "pysb>=1.17.0" && \
+    pip install "indra[all] @ git+https://github.com/gyorilab/indra.git" && \
     pip uninstall -y enum34 && \
     # Pre-build the bio ontology
     python -m indra.ontology.bio build && \
@@ -73,7 +79,7 @@ RUN mkdir -p /root/.config/indra && \
     pip install gunicorn
 
 # CoGEx specific setup
-RUN pip3 install git+https://github.com/gyorilab/indra_cogex.git#egg=indra_cogex[web,gunicorn,gsea]
+RUN pip install "indra_cogex[web,gunicorn,gsea] @ git+https://github.com/gyorilab/indra_cogex.git"
 
 # Force rebuild the pickle caches for the GSEA and MSEA apps
 RUN python -m indra_cogex.client.enrichment.utils --force
@@ -81,6 +87,6 @@ RUN python -m indra_cogex.client.enrichment.utils --force
 # Save agent name in cache for search
 RUN python -m indra_cogex.apps.search.utils --force
 
-ENV GUNICORN_CONF /usr/local/lib/python3.10/dist-packages/indra_cogex/apps/gunicorn.conf.py
+ENV GUNICORN_CONF /sw/venv/lib/python3.12/site-packages/indra_cogex/apps/gunicorn.conf.py
 
 ENTRYPOINT gunicorn -w 2 -c $GUNICORN_CONF -t 300 -b 0.0.0.0:5000 indra_cogex.apps.wsgi:app
