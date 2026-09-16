@@ -1,0 +1,307 @@
+{% if network and network.nodes %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.css">
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js">
+</script>
+
+<style>
+  .legend-swatch {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      margin-right: 5px;
+  }
+  .legend-hexagon {
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%,
+                         75% 100%, 25% 100%, 0% 50%);
+  }
+  .legend-box {
+      clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+  .legend-diamond {
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .legend-line {
+      display: inline-block;
+      width: 15px;
+      height: 3px;
+      margin-right: 5px;
+  }
+  #metabolite-network-container {
+      width: 100%;
+      height: 800px;
+      border: 1px solid #ddd;
+  }
+</style>
+
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between
+              align-items-center">
+    <h5 class="mb-0">Network Visualization</h5>
+    <div>
+      <button class="btn btn-sm btn-outline-secondary"
+              id="toggle-metabolite-network">Hide Network</button>
+      <button class="btn btn-sm btn-outline-secondary"
+              id="reset-metabolite-network">Reset view</button>
+    </div>
+  </div>
+  <div class="card-body" id="metabolite-network-body">
+    <div id="metabolite-network-container"></div>
+    <div class="mt-2 d-flex flex-wrap">
+      <div class="mr-4">
+        <strong>Node Types:</strong>
+        <div class="d-flex flex-wrap">
+          <div class="legend-item mr-3">
+            <div class="legend-swatch legend-hexagon"
+                 style="background-color: #1B5E20;"></div>
+            <small>Enzyme family (EC class)</small>
+          </div>
+          <div class="legend-item mr-3">
+            <div class="legend-swatch legend-box"
+                 style="background-color: #4CAF50;"></div>
+            <small>Enzyme</small>
+          </div>
+          <div class="legend-item mr-3">
+            <div class="legend-swatch legend-diamond"
+                 style="background-color: #FF9800;"></div>
+            <small>Input metabolite</small>
+          </div>
+        </div>
+      </div>
+      <div class="mr-4">
+        <strong>Enrichment:</strong>
+        <div class="d-flex flex-wrap align-items-center">
+          <small class="mr-1">weaker</small>
+          <div class="legend-swatch legend-hexagon"
+               style="background-color: #A5D6A7;"></div>
+          <div class="legend-swatch legend-hexagon"
+               style="background-color: #66BB6A;"></div>
+          <div class="legend-swatch legend-hexagon"
+               style="background-color: #43A047;"></div>
+          <div class="legend-swatch legend-hexagon"
+               style="background-color: #2E7D32;"></div>
+          <div class="legend-swatch legend-hexagon"
+               style="background-color: #1B5E20;"></div>
+          <small class="ml-1">stronger</small>
+        </div>
+      </div>
+      <div>
+        <strong>Edge Types:</strong>
+        <div class="d-flex flex-wrap">
+          <div class="legend-item mr-3">
+            <span class="legend-line"
+                  style="background-color: #00CC00;"></span>
+            <small>Activation / IncreaseAmount</small>
+          </div>
+          <div class="legend-item mr-3">
+            <span class="legend-line"
+                  style="background-color: #FF0000;"></span>
+            <small>Inhibition / DecreaseAmount</small>
+          </div>
+          <div class="legend-item mr-3">
+            <span class="legend-line"
+                  style="background-color: #999999;"></span>
+            <small>Other</small>
+          </div>
+          <div class="legend-item">
+            <span class="legend-line"
+                  style="background-color: #BBBBBB;"></span>
+            <small>EC class membership</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+    const networkData = {{ network|tojson|safe }};
+
+    // Dialog styling
+    function injectDialogStyles() {
+        const id = 'style[data-id="metabolite-dialog-styles"]';
+        if (document.querySelector(id)) return;
+        const style = document.createElement('style');
+        style.setAttribute('data-id', 'metabolite-dialog-styles');
+        style.textContent = `
+        .metabolite-dialog {
+            position: absolute;
+            box-sizing: border-box;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 12px 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            width: 320px;
+            max-height: 360px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+        .metabolite-dialog .close-btn {
+            position: absolute;
+            right: 8px;
+            top: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            color: #999;
+        }
+        .metabolite-dialog h3 {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 0 0 8px 0;
+            padding: 0 18px 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .metabolite-dialog dl { margin: 0; }
+        .metabolite-dialog dt {
+            font-weight: 600;
+            margin-top: 6px;
+            color: #555;
+        }
+        .metabolite-dialog dd { margin: 0 0 4px 0; }`;
+        document.head.appendChild(style);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        injectDialogStyles();
+        const containerId = 'metabolite-network-container';
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const nodes = new vis.DataSet(networkData.nodes);
+        const edges = new vis.DataSet(networkData.edges);
+
+        const options = {
+            nodes: {
+                font: {color: '#000000', face: 'arial', size: 16},
+                borderWidth: 2,
+                shadow: true
+            },
+            edges: {
+                width: 2,
+                smooth: {
+                    enabled: true,
+                    type: 'cubicBezier',
+                    forceDirection: 'vertical',
+                    roundness: 0.4
+                }
+            },
+            // Per-node levels place EC classes left, metabolites right
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    direction: 'LR',
+                    sortMethod: 'directed',
+                    levelSeparation: 260,
+                    nodeSpacing: 70,
+                    treeSpacing: 100
+                }
+            },
+            physics: {enabled: false},
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                zoomView: true,
+                dragView: true,
+                selectable: true
+            }
+        };
+
+        const data = {nodes: nodes, edges: edges};
+        const network = new vis.Network(container, data, options);
+        window.metaboliteNetworkInstance = network;
+
+        let detailsDialog = null;
+
+        function closeDialog() {
+            if (detailsDialog) {
+                document.body.removeChild(detailsDialog);
+                detailsDialog = null;
+            }
+        }
+
+        function openDialog(title, rows, canvasPoint) {
+            closeDialog();
+            detailsDialog = document.createElement('div');
+            detailsDialog.className = 'metabolite-dialog';
+            let html = '<span class="close-btn">&times;</span>';
+            html += '<h3>' + title + '</h3><dl>';
+            for (const [k, v] of Object.entries(rows)) {
+                if (v === null || v === undefined || v === '') continue;
+                html += '<dt>' + k + '</dt><dd>' + v + '</dd>';
+            }
+            detailsDialog.innerHTML = html + '</dl>';
+            const domPos = network.canvasToDOM(canvasPoint);
+            const rect = container.getBoundingClientRect();
+            const left = rect.left + window.scrollX + domPos.x + 25;
+            const top = rect.top + window.scrollY + domPos.y - 25;
+            detailsDialog.style.left = left + 'px';
+            detailsDialog.style.top = top + 'px';
+            document.body.appendChild(detailsDialog);
+            const closeBtn = detailsDialog.querySelector('.close-btn');
+            closeBtn.addEventListener('click', closeDialog);
+        }
+
+        network.on('click', function (params) {
+            if (params.nodes && params.nodes.length > 0) {
+                const node = nodes.get(params.nodes[0]);
+                const pos = network.getPositions([node.id])[node.id];
+                openDialog(node.label, {
+                    'Identifier': node.id,
+                    'Type': node.type
+                }, pos);
+            } else if (params.edges && params.edges.length > 0) {
+                const edge = edges.get(params.edges[0]);
+                const d = edge.details || {};
+                const pos = network.getPositions([edge.from, edge.to]);
+                const mid = {
+                    x: (pos[edge.from].x + pos[edge.to].x) / 2,
+                    y: (pos[edge.from].y + pos[edge.to].y) / 2
+                };
+                const belief = (typeof d.belief === 'number')
+                    ? d.belief.toFixed(2) : null;
+                openDialog('Edge Details', {
+                    'Statement Type': d.statement_type,
+                    'Evidence Count': d.evidence_count,
+                    'Belief': belief
+                }, mid);
+            } else {
+                closeDialog();
+            }
+        });
+
+        const body = document.getElementById('metabolite-network-body');
+        const toggleId = 'toggle-metabolite-network';
+        document.getElementById(toggleId)
+            .addEventListener('click', function () {
+                if (body.style.display === 'none') {
+                    body.style.display = '';
+                    this.textContent = 'Hide Network';
+                    network.redraw();
+                } else {
+                    body.style.display = 'none';
+                    this.textContent = 'Show Network';
+                }
+            });
+
+        const resetId = 'reset-metabolite-network';
+        document.getElementById(resetId)
+            .addEventListener('click', function () {
+                network.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            });
+    });
+})();
+</script>
+{% endif %}
