@@ -1,9 +1,18 @@
 {% extends "base.html" %}
 {% import "bootstrap4/form.html" as wtf %}
+{% block styles %}
+    {{ super() }}
+    <style>
+        .form-lead {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+    </style>
+{% endblock %}
 {% block container %}
     <div class="card card-body bg-light">
-        <h1 class="display-4">{% block header %}{% endblock %}</h1>
-        <p class="lead">
+        <h1 class="h2">{% block header %}{% endblock %}</h1>
+        <p class="form-lead text-muted">
             {% block lead %}{% endblock %}
         </p>
         {{ wtf.render_form(form, method="POST", id="main-form") }}

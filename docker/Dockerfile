@@ -47,10 +47,7 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN mkdir -p /root/.config/indra && \
     echo "[indra]" > /root/.config/indra/config.ini && \
     # Install Python dependencies
-    pip install --upgrade pip && \
-    # Install cython first for pyjnius
-    pip install "cython<3" && \
-    pip install "pyjnius==1.1.4" --no-build-isolation && \
+    pip install --upgrade pip setuptools wheel && \
     pip install --prefer-binary python-libsbml || true && \
     pip install git+https://github.com/gyorilab/indra.git#egg=indra[all] && \
     pip uninstall -y enum34 && \
