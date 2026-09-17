@@ -46,12 +46,50 @@ class SearchForm(FlaskForm):
     submit = SubmitField("Search")
 
 
+@autoclient(cache=True, maxsize=1)
+def get_search_summary(*, client: Neo4jClient):
+    """
+    Get the summary statistics on the cogex search page
+    """
+
+    def format_summary_display(n: int) -> str:
+        def _format_scaled(value: float, suffix: str) -> str:
+            formatted = f"{value:.1f}".rstrip("0").rstrip(".")
+            return f"{formatted} {suffix}"
+
+        if n >= 1_000_000:
+            return _format_scaled(n / 1_000_000, "million")
+        if n >= 1_000:
+            return f"{round(n / 1_000)} thousand"
+        return str(n)
+
+    query = """
+    MATCH ()-[r:indra_rel]->()
+    WITH count(r) AS statement_count
+    MATCH (e:Evidence)
+    WITH statement_count, count(e) AS evidence_count
+    MATCH (b:BioEntity)
+    WITH statement_count, evidence_count, count(b) AS entity_count
+    RETURN statement_count, evidence_count, entity_count
+    """
+    statement_count, evidence_count, entity_count = client.query_tx(query)[0]
+    return {
+        "statement_count": statement_count,
+        "statement_count_display": format_summary_display(statement_count),
+        "evidence_count": evidence_count,
+        "evidence_count_display": format_summary_display(evidence_count),
+        "entity_count": entity_count,
+        "entity_count_display": format_summary_display(entity_count),
+    }
+
+
 @search_blueprint.route("/", methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def search():
     stmt_types = {c.__name__ for c in get_all_descendants(Statement)}
     stmt_types -= {"Influence", "Event", "Unresolved"}
     stmt_types_json = json.dumps(sorted(list(stmt_types)))
+    search_summary = get_search_summary()
 
     form = SearchForm()
 
@@ -76,6 +114,7 @@ def search():
                     "search/search_page.html",
                     form=form,
                     stmt_types_json=stmt_types_json,
+                    search_summary=search_summary,
                     agent_not_found=True,
                     error_agent=error_agent
                 )
@@ -162,6 +201,7 @@ def search():
         "search/search_page.html",
         form=form,
         stmt_types_json=stmt_types_json,
+        search_summary=search_summary,
     )
 
 
