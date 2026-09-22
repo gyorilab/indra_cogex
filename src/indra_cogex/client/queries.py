@@ -42,6 +42,7 @@ __all__ = [
     "isa_or_partof",
     "get_pmids_for_mesh",
     "get_pmids_for_stmt_hash",
+    "get_pmids_for_stmt_hashes",
     "get_mesh_ids_for_pmid",
     "get_mesh_ids_for_pmids",
     "get_mesh_annotated_evidence",
@@ -843,15 +844,15 @@ def get_pmids_for_stmt_hashes(stmt_hashes: list[int], *, client: Neo4jClient) ->
     Returns
     -------
     :
-        The PubMed IDs for the given statement hashes.
+        The PubMed IDs for the given statement hashes as a dictionary
     """
     query = """
         MATCH (e:Evidence)-[:has_citation]-(p:Publication)
         WHERE p.id STARTS WITH 'pubmed:' AND e.stmt_hash IN $hashes
-        RETURN e.stmt_hash AS stmt_hash, COLLECT(DISTINCT p.id) AS pmids
+        RETURN e.stmt_hash AS stmt_hash, COLLECT(DISTINCT p.id)
         """
     pmids = {
-        row[0]: [pc.split(":")[0] for pc in row[1]]
+        row[0]: [pc.split(":")[1] for pc in row[1]]
         for row in client.query_tx(query, hashes=stmt_hashes)
     }
     return pmids

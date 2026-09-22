@@ -127,6 +127,8 @@ def get_example_data():
 
 continuous_analysis_example_names, continuous_analysis_example_data = get_example_data()
 
+
+# Add a function here to make it appear in the REST API
 FUNCTION_CATEGORIES = {
     'gene_expression': {
         'namespace': gene_expression_ns,
@@ -183,6 +185,7 @@ FUNCTION_CATEGORIES = {
         'functions': [
             "get_pmids_for_mesh",
             "get_pmids_for_stmt_hash",
+            "get_pmids_for_stmt_hashes",
             "get_mesh_ids_for_pmid",
             "get_mesh_ids_for_pmids",
             "get_publisher_for_journal",
@@ -395,6 +398,11 @@ examples_dict = {
                 "9864896957797950", "20136431766023466", "-18896592574172325"
             ]
         ),
+        "get_pmids_for_stmt_hashes": fields.List(
+            fields.String, example=[
+                "1859767900859605", "7749695986846245", "-18076457961526352"
+            ]
+        ),
         "default": fields.List(fields.String,
                                example=["12198579805553967", "30651649296901235"])
     },
@@ -531,10 +539,13 @@ SKIP_ARGUMENTS = {
     "get_statements": {"mesh_term", "include_child_terms"}
 }
 
-# This is the list of functions to be included
-# To add a new function, make sure it is part of __all__ in the respective module or is
-# listed explicitly below and properly documented in its docstring as well as having
-# example values for its parameters in the examples_dict above.
+# This is the list of functions per module and used to the create the function
+# mapping below.
+# To add a new function, make sure it is part of __all__ in the respective
+# module or is listed explicitly below and properly documented in its docstring
+# as well as having example values for its parameters in the examples_dict
+# above. Then add it to FUNCTION_CATEGORIES above. FUNCTION_CATEGORIES is
+# ultimately what's looped below to register endpoints.
 module_functions = (
     [(queries, fn) for fn in queries.__all__] +
     [(subnetwork, fn) for fn in [
