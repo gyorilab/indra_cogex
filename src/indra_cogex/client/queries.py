@@ -823,10 +823,37 @@ def get_pmids_for_stmt_hash(stmt_hash: int, *, client: Neo4jClient) -> List[str]
     """
     query = """
         MATCH (e:Evidence {stmt_hash: $hash})-[:has_citation]-(p:Publication)
-        WHERE p.id STARTS WITH 'pubmed:'
         RETURN DISTINCT last(split(p.id, ':')) AS pmid
         """
     pmids = [row[0] for row in client.query_tx(query, hash=stmt_hash)]
+    return pmids
+
+
+@autoclient()
+def get_pmids_for_stmt_hashes(stmt_hashes: list[int], *, client: Neo4jClient) -> dict[str, List[str]]:
+    """Return the PubMed IDs for the given statement hashes.
+
+    Parameters
+    ----------
+    stmt_hashes :
+        The statement hashes to query.
+    client :
+        The Neo4j client.
+
+    Returns
+    -------
+    :
+        The PubMed IDs for the given statement hashes.
+    """
+    query = """
+        MATCH (e:Evidence)-[:has_citation]-(p:Publication)
+        WHERE p.id STARTS WITH 'pubmed:' AND e.stmt_hash IN $hashes
+        RETURN e.stmt_hash AS stmt_hash, COLLECT(DISTINCT p.id) AS pmids
+        """
+    pmids = {
+        row[0]: [pc.split(":")[0] for pc in row[1]]
+        for row in client.query_tx(query, hashes=stmt_hashes)
+    }
     return pmids
 
 
