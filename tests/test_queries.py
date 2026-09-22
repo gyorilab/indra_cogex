@@ -1101,3 +1101,146 @@ def test_is_cell_line_sensitive_to_drug():
     # Test a relationship that shouldn't exist
     wrong_drug = ("mesh", "C000000")
     assert not is_cell_line_sensitive_to_drug(cell_line, wrong_drug, client=client)
+
+
+# PMID 16236737: trastuzumab breast cancer trial - known to exist in EC2
+_TEST_PMID = "16236737"
+_TEST_TRIAL_RESULT = ("trial.result", "8")
+_TEST_STAT_COMPARISON = ("trial.statcomparison", "18")
+_TEST_GENE = ("hgnc", "1100")  # BRCA1
+
+
+@pytest.mark.nonpublic
+def test_get_trial_result_for_pmid():
+    client = _get_client()
+    results = list(get_trial_result_for_pmid(_TEST_PMID, client=client))
+    assert results
+    assert isinstance(results[0], Node)
+    assert results[0].db_ns == "TRIAL.RESULT"
+
+    # Negative: nonexistent PMID returns empty
+    assert not list(get_trial_result_for_pmid("00000000", client=client))
+
+
+@pytest.mark.nonpublic
+def test_get_arms_for_trial_result():
+    client = _get_client()
+    arms = list(get_arms_for_trial_result(_TEST_TRIAL_RESULT, client=client))
+    assert arms
+    assert isinstance(arms[0], Node)
+    assert arms[0].db_ns == "TRIAL.ARM"
+    # Every arm must have a non-empty arm_name
+    assert all(a.data.get("arm_name") for a in arms)
+    # Arms with sample size must have a positive integer n
+    arms_with_n = [a for a in arms if a.data.get("n") is not None]
+    assert all(isinstance(a.data["n"], (int, float)) and a.data["n"] > 0 for a in arms_with_n)
+
+
+@pytest.mark.nonpublic
+def test_get_metrics_for_arm():
+    client = _get_client()
+    metrics = list(get_metrics_for_arm(_TEST_TRIAL_RESULT, client=client))
+    assert metrics
+    assert isinstance(metrics[0], Node)
+    assert metrics[0].db_ns == "TRIAL.METRIC"
+    # Every metric must have a non-empty name
+    assert all(m.data.get("name") for m in metrics)
+    # Metrics with numeric values must be floats
+    metrics_with_value = [m for m in metrics if m.data.get("value_numeric") is not None]
+    assert all(isinstance(m.data["value_numeric"], float) for m in metrics_with_value)
+
+
+@pytest.mark.nonpublic
+def test_get_adverse_events_for_trial():
+    client = _get_client()
+    aes = list(get_adverse_events_for_trial(_TEST_TRIAL_RESULT, client=client))
+    assert aes
+    assert isinstance(aes[0], Node)
+    assert aes[0].db_ns == "TRIAL.ADVERSEEVENT"
+    # Every adverse event must have a non-empty event_name
+    assert all(ae.data.get("event_name") for ae in aes)
+    # AEs with incidence must be floats
+    aes_with_incidence = [ae for ae in aes if ae.data.get("incidence_numeric") is not None]
+    assert all(isinstance(ae.data["incidence_numeric"], float) for ae in aes_with_incidence)
+
+
+@pytest.mark.nonpublic
+def test_get_criteria_for_trial_result():
+    client = _get_client()
+    criteria = list(get_criteria_for_trial_result(_TEST_TRIAL_RESULT, client=client))
+    assert criteria
+    assert isinstance(criteria[0], Node)
+    assert criteria[0].db_ns == "TRIAL.CRITERION"
+    # Every criterion must have non-empty text and a valid criterion_type
+    assert all(c.data.get("text") for c in criteria)
+    assert all(c.data.get("criterion_type") in {"inclusion", "exclusion"} for c in criteria)
+
+
+@pytest.mark.nonpublic
+def test_get_outcomes_for_trial_result():
+    client = _get_client()
+    outcomes = list(get_outcomes_for_trial_result(_TEST_TRIAL_RESULT, client=client))
+    assert outcomes
+    assert isinstance(outcomes[0], Node)
+    assert outcomes[0].db_ns == "TRIAL.OUTCOME"
+    # Every outcome must have non-empty text
+    assert all(o.data.get("text") for o in outcomes)
+
+
+@pytest.mark.nonpublic
+def test_get_statistical_comparisons_for_trial_result():
+    client = _get_client()
+    comps = list(get_statistical_comparisons_for_trial_result(_TEST_TRIAL_RESULT, client=client))
+    assert comps
+    assert isinstance(comps[0], Node)
+    assert comps[0].db_ns == "TRIAL.STATCOMPARISON"
+    # Every comparison must have a non-empty comparison_name
+    assert all(c.data.get("comparison_name") for c in comps)
+
+
+@pytest.mark.nonpublic
+def test_get_metrics_for_statistical_comparison():
+    client = _get_client()
+    metrics = list(get_metrics_for_statistical_comparison(_TEST_STAT_COMPARISON, client=client))
+    assert metrics
+    assert isinstance(metrics[0], Node)
+    assert metrics[0].db_ns == "TRIAL.METRIC"
+    assert all(m.data.get("name") for m in metrics)
+
+
+@pytest.mark.nonpublic
+def test_get_genes_for_trial_result():
+    client = _get_client()
+    trial_result = ("trial.result", "1042")
+    genes = list(get_genes_for_trial_result(trial_result, client=client))
+    assert genes
+    assert isinstance(genes[0], Node)
+    assert genes[0].db_ns == "HGNC"
+
+    # Negative: result with no genetic criteria returns empty
+    assert not list(get_genes_for_trial_result(("trial.result", "1"), client=client))
+
+
+@pytest.mark.nonpublic
+def test_get_trial_results_for_gene():
+    client = _get_client()
+    results = list(get_trial_results_for_gene(_TEST_GENE, client=client))
+    assert results
+    assert isinstance(results[0], Node)
+    assert results[0].db_ns == "TRIAL.RESULT"
+
+    # Negative: gene with no trial results returns empty
+    assert not list(get_trial_results_for_gene(("hgnc", "0000000"), client=client))
+
+
+@pytest.mark.nonpublic
+def test_get_full_trial_result():
+    client = _get_client()
+    data = get_full_trial_result(_TEST_PMID, client=client)
+    assert data
+    assert "result" in data
+    assert "arms" in data
+    assert data["arms"]
+
+    # Negative: nonexistent PMID returns empty dict
+    assert get_full_trial_result("00000000", client=client) == {}

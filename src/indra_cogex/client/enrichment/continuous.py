@@ -628,5 +628,7 @@ def gsea(
             # If statement metadata fails, just log and continue without it
             print(f"Warning: Could not fetch statement metadata: {e}")
             rv["statements"] = [[] for _ in range(len(rv))]
+    else:
+        rv["statements"] = [[] for _ in range(len(rv))]
 
     return rv

@@ -447,7 +447,7 @@
                                 {% for _, row in results.upstream.get('shared_entities').iterrows() %}
                                     <tr>
                                         <td>{{ row.curie if 'curie' in row else 'N/A' }}</td>
-                                        <td>{{ row.name }}</td>
+                                        <td>{{ row['name'] }}</td>
                                         <td>{{ '%.2e'|format(row.p) if 'p' in row else 'N/A' }}</td>
                                         <td>{{ '%.2e'|format(row.q) if 'q' in row else 'N/A' }}</td>
                                         <td>
@@ -460,7 +460,7 @@
                                                    target="_blank">View Statements</a>
                                             {% else %}
                                                 <!-- Fallback to name-based search -->
-                                                <a href="{{ url_for('search.search', agent=row.name) }}"
+                                                <a href="{{ url_for('search.search', agent=row['name']) }}"
                                                    class="btn btn-primary"
                                                    target="_blank">View Statements</a>
                                             {% endif %}

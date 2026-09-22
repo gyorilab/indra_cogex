@@ -1,21 +1,35 @@
 """
 Download and parse the ClinicalTrials.gov data using Trialsynth.
 """
+import json
 import logging
 import os
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import pystow
 import pandas as pd
 
 from indra.ontology.bio import bio_ontology
+from indra_cogex.client import process_identifier
+from indra_cogex.representation import dump_norm_id
 from trialsynth.ctgov import config, process
+from trialsynth.base.extract.paths import RESULTS_GROUNDED_DIR
+
+
+def _clean(text: str) -> str:
+    """Strip control characters from free-text fields before TSV serialization."""
+    if not text:
+        return text
+    return text.replace("\x00", "").replace("\t", " ").replace("\n", " ").replace("\r", " ")
 
 __all__ = [
     "ensure_clinical_trials_df",
     "process_trialsynth_edges",
+    "process_trialsynth_trial_publication_edges",
     "process_trialsynth_bioentity_nodes",
     "process_trialsynth_trial_nodes",
+    "load_all",
 ]
 
 CLINICAL_TRIALS_MODULE = pystow.module(
@@ -56,7 +70,8 @@ def ensure_clinical_trials_df(
         needs to be reprocessed. Default: False.
     reprocess :
         If True, reprocess the data, even if it already exists. This will
-        reprocess the raw data
+        reprocess the raw data, but not redownload it if it already exists.
+        Default: False.
     max_pages :
         The maximum number of pages to download from the ClinicalTrials.gov API.
         If None, all pages will be downloaded. Default: None.
@@ -70,6 +85,7 @@ def ensure_clinical_trials_df(
             ctconfig.edges_path,
             ctconfig.bio_entities_path,
             ctconfig.trials_path,
+            ctconfig.trial_publication_edges_path,
         )
     ):
         logger.info("ClinicalTrials.gov data already processed, skipping download.")
@@ -106,8 +122,26 @@ def _mesh_to_chebi(row) -> str:
     return chebi_id if chebi_id else curie
 
 
+def _normalize_bioentity_curie(curie: str) -> str:
+    if pd.isna(curie):
+        return curie
+    db_ns, db_id = process_identifier(curie)
+    return dump_norm_id(db_ns, db_id)
+
+
+def _merge_grounding_sources(sources: pd.Series) -> str:
+    merged: set[str] = set()
+    for value in sources:
+        if pd.isna(value) or value == "":
+            continue
+        merged.update(
+            item.strip() for item in str(value).split(";") if item.strip()
+        )
+    return ";".join(sorted(merged))
+
+
 def process_trialsynth_edges() -> pd.DataFrame:
-    """Convert the edge file from the trialsynth to CoGEx format
+    """Convert the edge file from trialsynth to CoGEx format
 
     Returns
     -------
@@ -135,7 +169,37 @@ def process_trialsynth_edges() -> pd.DataFrame:
     if "source_registry:string" in edges_df.columns:
         edges_df.drop(columns=["source_registry:string"], inplace=True)
 
+    # Normalize bioentity CURIEs so equivalent identifiers group together
+    edges_df["bioentity_mapped"] = edges_df["bioentity_mapped"].map(
+        _normalize_bioentity_curie
+    )
+
+    # Merge duplicate rows on trial, mapped bioentity, and relation type while
+    # unioning semicolon-separated grounding source lists
+    merge_keys = ["trial", "bioentity_mapped", "rel_type:string"]
+    agg_columns = {
+        col: "first"
+        for col in edges_df.columns
+        if col not in merge_keys + ["grounding_sources:string[]"]
+    }
+    agg_columns["grounding_sources:string[]"] = _merge_grounding_sources
+    edges_df = edges_df.groupby(merge_keys, as_index=False).agg(agg_columns)
+
     return edges_df
+
+
+def process_trialsynth_trial_publication_edges() -> pd.DataFrame:
+    """Load the publication-trial edge file from trialsynth
+
+    Returns
+    -------
+    :
+        A dataframe with CoGEx formatted edges
+    """
+    publication_trial_df = pd.read_csv(
+        ctconfig.trial_publication_edges_path, sep="\t", compression="gzip"
+    )
+    return publication_trial_df
 
 
 def process_trialsynth_bioentity_nodes(mesh_chebi_map: Dict[str, str]) -> pd.DataFrame:
@@ -327,3 +391,214 @@ def process_trialsynth_trial_nodes() -> pd.DataFrame:
     ).str.strip()
 
     return trials_nodes_df
+
+
+def _load_jsons(json_dir: Path = RESULTS_GROUNDED_DIR.base) -> List[Tuple[int, str, dict]]:
+    """Load all grounded JSON files, returning (result_id, pmid, data) tuples.
+
+    Parameters
+    ----------
+    json_dir :
+        Path to directory containing grounded JSON files.
+
+    Returns
+    -------
+    :
+        List of (result_id, pmid, data) tuples, one per JSON file.
+    """
+    records = []
+    for result_id, path in enumerate(sorted(json_dir.glob("*.json")), start=1):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            pmid = str(data.get("pmid", path.stem))
+            records.append((result_id, pmid, data))
+        except Exception as e:
+            logger.warning("Failed to load %s: %s", path.name, e)
+    logger.info("Loaded %d JSON files from %s", len(records), json_dir)
+    return records
+
+
+def load_all(json_dir: Path = RESULTS_GROUNDED_DIR.base) -> Dict[str, pd.DataFrame]:
+    """Load all grounded JSONs in a single pass and return all DataFrames.
+
+    Parameters
+    ----------
+    json_dir :
+        Path to the directory containing grounded JSON files.
+
+    Returns
+    -------
+    :
+        Dictionary with keys: result_nodes, arms, metrics, adverse_events,
+        criteria, outcomes, stat_comparisons, genetic_edges, ae_bioentity_edges,
+        publication_edges.
+    """
+    result_nodes = []
+    arms = []
+    metrics = []
+    adverse_events = []
+    criteria = []
+    outcomes = []
+    stat_comparisons = []
+    genetic_edges = []
+    ae_bioentity_edges = []
+    publication_edges = []
+
+    arm_id = 1
+    metric_id = 1
+    ae_id = 1
+    criterion_id = 1
+    outcome_id = 1
+    stat_id = 1
+
+    for result_id, pmid, data in _load_jsons(json_dir):
+        result_nodes.append({
+            "result_id": result_id,
+            "study_info": _clean(data.get("study_info", "")),
+            "trial_ids:string[]": ";".join(data.get("trial_ids", [])),
+            "phase": data.get("phase") or "",
+            "locations:string[]": ";".join(data.get("locations", [])),
+        })
+        publication_edges.append({"pmid": pmid, "result_id": result_id})
+
+        for arm in data.get("arms", []):
+            arms.append({
+                "result_id": result_id,
+                "arm_id": arm_id,
+                "arm_name": _clean(arm.get("arm_name", "")),
+                "n": arm.get("n"),
+                "dosage": _clean(arm.get("dosage") or ""),
+                "source_sentence": _clean(arm.get("source_sentence", "")),
+            })
+            for m in arm.get("metrics", []):
+                metrics.append({
+                    "parent_ns": "arm",
+                    "parent_id": arm_id,
+                    "metric_id": metric_id,
+                    "name": _clean(m.get("name", "")),
+                    "value_numeric": m.get("value_numeric"),
+                    "unit": _clean(m.get("unit", "")),
+                    "value_text": _clean(m.get("value_text", "")),
+                    "source_sentence": _clean(m.get("source_sentence", "")),
+                })
+                metric_id += 1
+            for ae in arm.get("adverse_events", []):
+                adverse_events.append({
+                    "arm_id": arm_id,
+                    "adverseevent_id": ae_id,
+                    "event_name": _clean(ae.get("event_name", "")),
+                    "incidence_numeric": ae.get("incidence_numeric"),
+                    "unit": _clean(ae.get("unit", "")),
+                    "value_text": _clean(ae.get("value_text", "")),
+                    "source_sentence": _clean(ae.get("source_sentence", "")),
+                })
+                grounding = ae.get("grounding") or {}
+                if grounding.get("db") and grounding.get("id"):
+                    ae_bioentity_edges.append({
+                        "adverseevent_id": ae_id,
+                        "db": grounding["db"],
+                        "id": grounding["id"],
+                    })
+                ae_id += 1
+            arm_id += 1
+
+        for item in data.get("inclusion_criteria", []):
+            criteria.append({
+                "result_id": result_id,
+                "criterion_id": criterion_id,
+                "text": _clean(item.get("text", "")),
+                "criterion_type": "inclusion",
+                "evidence_text": _clean(item.get("evidence_text", "")),
+            })
+            criterion_id += 1
+
+        for item in data.get("exclusion_criteria", []):
+            criteria.append({
+                "result_id": result_id,
+                "criterion_id": criterion_id,
+                "text": _clean(item.get("text", "")),
+                "criterion_type": "exclusion",
+                "evidence_text": _clean(item.get("evidence_text", "")),
+            })
+            criterion_id += 1
+
+        for item in data.get("results", []):
+            outcomes.append({
+                "result_id": result_id,
+                "outcome_id": outcome_id,
+                "text": _clean(item.get("text", "")),
+                "evidence_text": _clean(item.get("evidence_text", "")),
+            })
+            outcome_id += 1
+
+        for comp in data.get("statistical_comparisons", []):
+            stat_comparisons.append({
+                "result_id": result_id,
+                "statcomparison_id": stat_id,
+                "comparison_name": _clean(comp.get("comparison_name", "")),
+            })
+            for m in comp.get("metrics", []):
+                metrics.append({
+                    "parent_ns": "statcomparison",
+                    "parent_id": stat_id,
+                    "metric_id": metric_id,
+                    "name": _clean(m.get("name", "")),
+                    "value_numeric": m.get("value_numeric"),
+                    "unit": _clean(m.get("unit", "")),
+                    "value_text": _clean(m.get("value_text", "")),
+                    "source_sentence": _clean(m.get("source_sentence", "")),
+                })
+                metric_id += 1
+            stat_id += 1
+
+        grounded = data.get("genetic", {}).get("grounded_inclusion", [])
+        for entry in grounded:
+            for grounding in entry.get("groundings", []):
+                info = grounding.get("info", {})
+                if info.get("db") == "HGNC" and info.get("id"):
+                    genetic_edges.append({
+                        "result_id": result_id,
+                        "hgnc_id": info["id"],
+                        "symbol": info.get("entry_name", grounding.get("symbol", "")),
+                        "variant": entry.get("variant"),
+                        "evidence_text": _clean(entry.get("evidence_text", "")),
+                    })
+
+    logger.info("Extracted %d TrialArm nodes", len(arms))
+    logger.info("Extracted %d TrialMetric nodes", len(metrics))
+    logger.info("Extracted %d TrialAdverseEvent nodes", len(adverse_events))
+    logger.info("Extracted %d TrialCriterion nodes", len(criteria))
+    logger.info("Extracted %d TrialOutcome nodes", len(outcomes))
+    logger.info("Extracted %d TrialStatisticalComparison nodes", len(stat_comparisons))
+    logger.info("Extracted %d has_genetic_criterion edges", len(genetic_edges))
+    logger.info("Extracted %d adverse_event_grounded_as edges", len(ae_bioentity_edges))
+
+    genetic_edges_df = pd.DataFrame(genetic_edges)
+    if not genetic_edges_df.empty:
+        genetic_edges_df = genetic_edges_df.drop_duplicates(subset=["result_id", "hgnc_id"])
+        logger.info(
+            "%d unique has_genetic_criterion edges after deduplication",
+            len(genetic_edges_df),
+        )
+    ae_bioentity_edges_df = pd.DataFrame(ae_bioentity_edges)
+    if not ae_bioentity_edges_df.empty:
+        ae_bioentity_edges_df = ae_bioentity_edges_df.drop_duplicates(
+            subset=["adverseevent_id", "db", "id"]
+        )
+        logger.info(
+            "%d unique adverse_event_grounded_as edges after deduplication",
+            len(ae_bioentity_edges_df),
+        )
+
+    return {
+        "result_nodes": pd.DataFrame(result_nodes),
+        "arms": pd.DataFrame(arms),
+        "metrics": pd.DataFrame(metrics),
+        "adverse_events": pd.DataFrame(adverse_events),
+        "criteria": pd.DataFrame(criteria),
+        "outcomes": pd.DataFrame(outcomes),
+        "stat_comparisons": pd.DataFrame(stat_comparisons),
+        "genetic_edges": genetic_edges_df,
+        "ae_bioentity_edges": ae_bioentity_edges_df,
+        "publication_edges": pd.DataFrame(publication_edges),
+    }

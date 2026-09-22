@@ -23,7 +23,8 @@ from .queries_web import (
     enzyme_activity_ns,
     cell_line_properties_ns,
     analysis_ns,
-    subnetwork_ns
+    subnetwork_ns,
+    trial_results_ns,
 )
 
 
@@ -57,5 +58,6 @@ api.add_namespace(cell_line_properties_ns)
 api.add_namespace(analysis_ns)
 api.add_namespace(subnetwork_ns)
 api.add_namespace(bioentity_ns)
+api.add_namespace(trial_results_ns)
 
 __all__ = ["api"]

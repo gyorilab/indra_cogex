@@ -17,7 +17,7 @@
   {
     "rel_type": "indra_rel",
     "label": "Causal Relations",
-    "info": "Casual relations extracted by INDRA as Statements<br>Source: INDRA"
+    "info": "Causal relations extracted by INDRA as Statements<br>Source: INDRA"
   },
   {
     "rel_type": "expressed_in",
@@ -40,7 +40,7 @@
     "info": "Gene complex membership<br>Source: INDRA BioOntology"
   },
   {
-    "rel_type": "has_trial",
+    "rel_type": "has_condition",
     "label": "Disease Trials",
     "info": "Condition treated in clinical trial<br>Source: clinicaltrials.gov"
   },
@@ -60,7 +60,7 @@
     "info": "Drug side effects<br>Source: sideeffects.embl.de"
   },
   {
-    "rel_type": "tested_in",
+    "rel_type": "has_intervention",
     "label": "Drug Trials",
     "info": "Drug (and other interventions) tested in clinical trial<br>Source: clinicaltrials.gov"
   },
@@ -199,6 +199,11 @@
     "rel_type": "has_genetic_criterion",
     "label": "Trial Genetic Eligibility",
     "info": "Genetic biomarker in clinical trial<br>Source: clinicaltrials.gov"
+  },
+  {
+    "rel_type": "has_trial_source",
+    "label": "Trial Source",
+    "info": "Clinical trial linked as the source of a trial result<br>Source: clinicaltrials.gov"
   },
   {
     "rel_type": "codependent_with",

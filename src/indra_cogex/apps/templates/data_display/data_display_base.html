@@ -264,7 +264,7 @@
                 for (const st of this.stmts) {
                 if (st && st.sources) {
                   for (const s of Object.keys(st.sources)) {
-                    if (!this.sources_present[s]) this.$set(this.sources_present, s, true);
+                    if (st.sources[s] > 0 && !this.sources_present[s]) this.$set(this.sources_present, s, true);
                   }
                 }
               }
