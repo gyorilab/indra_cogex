@@ -7,6 +7,9 @@ import threading
 from indralab_auth_tools.src.database import monitor_database_connection
 
 
+limit_request_line = 8190
+
+
 def post_fork(server, worker):
     """Function to run after forking a worker
 

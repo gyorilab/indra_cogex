@@ -126,6 +126,8 @@ function fetchWithRetry(url, options, maxRetries = 3, delay = 1000) {
 // Unified function to initialize network for all types
 function initializeNetwork(prefix, identifier) {
     console.log("initializeNetwork called with:", prefix, identifier);
+    const appRoot = "{{ config.get('APPLICATION_ROOT', '') }}";
+    const normalizedAppRoot = appRoot ? appRoot.replace(/\/$/, '') : '';
 
     const container = document.getElementById('network-container');
     if (!container) {
@@ -142,9 +144,9 @@ function initializeNetwork(prefix, identifier) {
     // Determine API endpoint based on prefix
     let fetchUrl;
     if (prefix === 'statements') {
-        fetchUrl = '/api/get_network_for_statements';
+        fetchUrl = `${normalizedAppRoot}/api/get_network_for_statements`;
     } else {
-        fetchUrl = '/api/get_network';
+        fetchUrl = `${normalizedAppRoot}/api/get_network`;
     }
 
     // Prepare payload based on prefix
