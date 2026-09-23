@@ -35,10 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const exampleText4 = document.getElementById('clickable-text-example4');
         const exampleText5 = document.getElementById('clickable-text-example5');
 
-        const infoIcon = document.getElementById('info-icon');
-        const tooltip = document.getElementById('tooltip');
-
-
         // First button clicked by default
         const firstButton = roleButtons[0];
          if (firstButton) {
@@ -306,26 +302,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         exampleText5.addEventListener('click', function () {
             resetExampleValues('seliciclib', '', 'subject', ['Inhibition']);
-        });
-
-
-
-        // Show/hide tooltip when the icon is clicked
-        infoIcon.addEventListener('click', function (event) {
-            event.stopPropagation(); // Prevent clicks from propagating
-            if (tooltip.style.display === 'none' || tooltip.style.display === '') {
-                tooltip.style.display = 'block';
-            } else {
-                tooltip.style.display = 'none';
-            }
-        });
-
-
-        // Hide the tooltip when clicking outside
-        document.addEventListener('click', function (event) {
-            if (!infoIcon.contains(event.target) && !tooltip.contains(event.target)) {
-                tooltip.style.display = 'none';
-            }
         });
 
     });
