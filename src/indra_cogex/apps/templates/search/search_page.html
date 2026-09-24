@@ -338,7 +338,7 @@
         </p>
     </div>
 
-    <form method="POST" id="agent-form">
+    <form method="POST" id="main-form">
         <div class="form-group example-usage-section">
             <label for="clickable-text-list" class="example-usage-label">Example Usages (Click to auto-fill)</label>
             <ul id="clickable-text-list" class="example-usage-list">
@@ -511,7 +511,9 @@
 
         <input type="hidden" id="mesh-tuple" name="mesh_tuple" value="">
 
-        <button type="submit" class="btn btn-primary mt-4 search-submit-btn">Search</button>
+        <div class="d-flex align-items-center mt-4">
+            <button type="submit" id="submit-btn" class="btn btn-primary search-submit-btn">Search</button>
+        </div>
         </div>
 
     </form>
