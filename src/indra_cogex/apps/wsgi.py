@@ -18,7 +18,6 @@ from indra_cogex.apps.constants import (
     STATEMENT_CURATION_CACHE,
     AGENT_NAME_CACHE,
 )
-from indra_cogex.apps.chat_page import chat_blueprint
 from indra_cogex.apps.curator import explorer_blueprint
 from indra_cogex.apps.curation_cache import CurationCache
 from indra_cogex.apps.data_display import data_display_blueprint
@@ -85,7 +84,6 @@ app.register_blueprint(gene_blueprint)
 app.register_blueprint(metabolite_blueprint)
 app.register_blueprint(data_display_blueprint)
 app.register_blueprint(explorer_blueprint)
-app.register_blueprint(chat_blueprint)
 app.register_blueprint(search_blueprint)
 app.register_blueprint(source_target_blueprint)
 app.register_blueprint(trial_results_blueprint)
