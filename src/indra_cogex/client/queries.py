@@ -4,6 +4,7 @@ import pickle
 import time
 import math
 from collections import Counter, defaultdict
+from functools import lru_cache
 from textwrap import dedent
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union, Any
 import networkx as nx
@@ -1950,20 +1951,22 @@ def get_statements(
     return stmts, source_counts
 
 
+@lru_cache(maxsize=1)
+def _load_agent_name_cache():
+    with open(AGENT_NAME_CACHE, "rb") as fh:
+        return pickle.load(fh)
+
+
 def check_agent_existence(
     agent: Union[str, Tuple[str, str]],
 ) -> Union[bool, None]:
     """Check if an agent exists in the database."""
-    if AGENT_NAME_CACHE.exists():
-        with open(AGENT_NAME_CACHE, 'rb') as f:
-            agent_cache = pickle.load(f)
-    else:
+    if not AGENT_NAME_CACHE.exists():
         return None
+    agent_cache = _load_agent_name_cache()
     if isinstance(agent, tuple):
         agent = norm_id(*agent)
-        return agent in agent_cache
-    else:
-        return agent in agent_cache
+    return agent in agent_cache
 
 
 @autoclient()
