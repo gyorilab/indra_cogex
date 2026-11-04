@@ -3441,8 +3441,7 @@ def get_drugs_for_indication(
     :
         Molecule nodes (CHEBI or CHEMBL) associated with this indication
     """
-    indication_id = f"{indication[0]}:{indication[1]}" if indication[
-                                                              0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
+    indication_id = norm_id(*indication)
     query = """
     MATCH (m:BioEntity)-[r:has_indication]->(i:BioEntity {id: $indication_id})
     RETURN m
@@ -3471,8 +3470,7 @@ def drug_has_indication(
         True if the molecule is associated with the indication
     """
     molecule_id = f"{molecule[0]}:{molecule[1]}".lower()
-    indication_id = f"{indication[0]}:{indication[1]}" if indication[
-                                                              0].lower() == "mesh" else f"{indication[0]}:{indication[1]}".lower()
+    indication_id = norm_id(*indication)
     query = """
     MATCH (m:BioEntity {id: $molecule_id})-[r:has_indication]->(i:BioEntity {id: $indication_id})
     RETURN COUNT(r) > 0 as exists
