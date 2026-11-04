@@ -1835,17 +1835,20 @@ def get_statements(
         A list of statements filtered by the provided constraints.
     """
     where_clauses = []
-    mesh_all_term, hash_in_rel = None, ""
+    mesh_all_term = None
     if paper_term:
         paper_param, paper_clause = generate_paper_clause(paper_term)
     else:
         paper_clause = ""
 
+    # Evidence constraints are matched after the relations so that the query
+    # starts from the (few) relations of the agent rather than from all
+    # evidences
+    evidence_clause = ""
     if mesh_term or paper_term:
-        query = (f"MATCH (e:Evidence)-[:has_citation]->"
-                 f"(pub:Publication {paper_clause})-[:annotated_with] "
-                 f"-> (mesh_term:BioEntity)")
-        hash_in_rel = "{stmt_hash: e.stmt_hash}"
+        evidence_clause = (f"MATCH (e:Evidence {{stmt_hash: r.stmt_hash}})"
+                           f"-[:has_citation]->"
+                           f"(pub:Publication {paper_clause})")
         if mesh_term:
             norm_mesh = norm_id(*mesh_term)
             if include_child_terms:
@@ -1857,9 +1860,8 @@ def get_statements(
                 mesh_all_term = list(mesh_all_term)
             else:
                 mesh_all_term = [norm_mesh]
-            where_clauses.append("mesh_term.id IN $mesh_terms")
-    else:
-        query = ""
+            evidence_clause += ("-[:annotated_with]->(mesh_term:BioEntity) "
+                                "WHERE mesh_term.id IN $mesh_terms")
 
     # Agent being CURIE
     if isinstance(agent, tuple):
@@ -1880,15 +1882,15 @@ def get_statements(
         other_agent_match_clause = "(b:BioEntity)"
 
     if agent_role == "subject" and other_role == "object":
-        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
     elif agent_role == "object" and other_role == "subject":
-        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
     elif agent_role == "subject":
-        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]->{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel]->{other_agent_match_clause}"
     elif agent_role == "object":
-        match_clause = f"{other_agent_match_clause}-[r:indra_rel {hash_in_rel}]->{agent_match_clause}"
+        match_clause = f"{other_agent_match_clause}-[r:indra_rel]->{agent_match_clause}"
     else:
-        match_clause = f"{agent_match_clause}-[r:indra_rel {hash_in_rel}]-{other_agent_match_clause}"
+        match_clause = f"{agent_match_clause}-[r:indra_rel]-{other_agent_match_clause}"
 
     if rel_types:
         if isinstance(rel_types, str):
@@ -1903,8 +1905,9 @@ def get_statements(
     if where_clauses:
         match_clause += " WHERE " + " AND ".join(where_clauses)
 
-    query += f"""
+    query = f"""
         MATCH p = {match_clause}
+        {evidence_clause}
         WITH distinct r.stmt_hash AS hash, r.evidence_count as ev_count, collect(p) as pp
         RETURN pp
         ORDER BY ev_count DESC
